@@ -111,3 +111,24 @@ def test_doctor_script_declares_all_checks() -> None:
     # 必须给出 SSH 与 HTTPS 的修法，否则提醒不可执行
     assert "ssh-keygen" in text
     assert "set-url origin" in text
+
+def test_repo_carries_cross_machine_reminder() -> None:
+    """换机器提醒必须**跟仓库走**：AGENTS.md + pre-push hook 都要在。
+
+    用户要求"在任何其它电脑上都提醒配 SSH key"。本地记忆跟不了换机器，
+    所以载体是仓库文件本身：AGENTS.md（人/agent 第一页）与
+    scripts/hooks/pre-push（真正的拦截器）。
+    """
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parent.parent
+    agents = root / "AGENTS.md"
+    hook = root / "scripts" / "hooks" / "pre-push"
+    assert agents.is_file(), "缺少 AGENTS.md"
+    assert hook.is_file(), "缺少 scripts/hooks/pre-push"
+    a = agents.read_text(encoding="utf-8")
+    h = hook.read_text(encoding="utf-8")
+    assert "scripts/doctor.py" in a and "ssh-keygen" in a
+    assert "ssh-keygen" in h and "set-url" in h
+    # hook 必须能被 install_hooks.py 识别为"自己装的"（幂等）
+    assert "managed by swkit scripts/install_hooks.py" in h

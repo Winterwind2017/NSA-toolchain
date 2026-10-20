@@ -255,7 +255,7 @@ python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks）
 > `serverInfo.version` 显示的是底层 `mcp` 库版本（FastMCP 构造函数没有 version 参数）；
 > 本包版本看 `swkit status` 的 `swkit_version`。
 
-### 换机器第一件事：跑 `doctor`
+### 换机器第一件事：跑 `doctor`（或直接读 [AGENTS.md](AGENTS.md)）
 
 > 仓库自带自检脚本，**跟代码走**——换哪台机器 clone 下来都能跑，不依赖任何本地记忆：
 
