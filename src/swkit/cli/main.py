@@ -562,6 +562,38 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_zoom(args: argparse.Namespace) -> int:
+    from ..verified import view_measure as VM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = VM.zoom_to_fit(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_view_orient(args: argparse.Namespace) -> int:
+    from ..verified import view_measure as VM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = VM.set_view_orientation(doc, args.name)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_measure(args: argparse.Namespace) -> int:
+    from ..verified import view_measure as VM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    p1 = [float(v) for v in args.p1.split(",")]
+    p2 = [float(v) for v in args.p2.split(",")]
+    res = VM.measure_distance(doc, p1, p2, args.expected, args.tol)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_open_doc(args: argparse.Namespace) -> int:
     from ..verified import config_io as CI
     res = CI.open_document(args.path)
@@ -1117,6 +1149,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("zoom", help="缩放到合适（verified）")
+    p.set_defaults(func=cmd_zoom)
+
+    p = sub.add_parser("view-orient", help="视图定向（verified）")
+    p.add_argument("name", nargs="?", default="isometric",
+                   choices=list(__import__("swkit.verified.view_measure",
+                                           fromlist=["ORIENTATION_IDS"]).ORIENTATION_IDS))
+    p.set_defaults(func=cmd_view_orient)
+
+    p = sub.add_parser("measure", help="量两个面的距离（verified，mm）")
+    p.add_argument("--p1", required=True, help="面 1 上的点 x,y,z（mm）")
+    p.add_argument("--p2", required=True, help="面 2 上的点 x,y,z（mm）")
+    p.add_argument("--expected", type=float, default=20.0)
+    p.add_argument("--tol", type=float, default=0.2)
+    p.set_defaults(func=cmd_measure)
 
     p = sub.add_parser("open-doc", help="打开文档（verified）")
     p.add_argument("--path", required=True)

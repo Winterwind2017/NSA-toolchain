@@ -456,6 +456,29 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_zoom_to_fit")
+def sw_zoom_to_fit() -> Dict[str, Any]:
+    """缩放到合适（verified）：判据 Scale2 可读且 > 0。"""
+    from ..verified import view_measure as VM
+    return _with_doc(VM.zoom_to_fit)
+
+
+@mcp.tool(name="sw_set_view_orientation")
+def sw_set_view_orientation(view_name: str = "isometric") -> Dict[str, Any]:
+    """视图定向（verified）：判据 Orientation 矩阵变化。"""
+    from ..verified import view_measure as VM
+    return _with_doc(VM.set_view_orientation, view_name)
+
+
+@mcp.tool(name="sw_measure_distance")
+def sw_measure_distance(p1: List[float], p2: List[float],
+                        expected_mm: float = 20.0,
+                        tol_mm: float = 0.2) -> Dict[str, Any]:
+    """量两面距离（verified，mm）：判据与期望值之差 ≤ 容差。"""
+    from ..verified import view_measure as VM
+    return _with_doc(VM.measure_distance, p1, p2, expected_mm, tol_mm)
+
+
 @mcp.tool(name="sw_open_document")
 def sw_open_document(path: str) -> Dict[str, Any]:
     """打开文档（verified）：判据文档数 +1。"""

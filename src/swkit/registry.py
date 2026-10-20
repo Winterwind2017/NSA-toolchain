@@ -162,6 +162,17 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 视图/测量（2026-10-20 真机 3/3）────────────────────────────────
+_VIEW_MEASURE: List[Tuple[str, ToolEntry]] = [
+    _e("sw_zoom_to_fit", "view", "IModelDoc2.ViewZoomtofit2",
+       "Scale2 可读且 > 0（实测 4.4976；刚建好就合适故不变化）"),
+    _e("sw_set_view_orientation", "view", "IModelDoc2.ShowNamedView2",
+       "Orientation 矩阵变化：0.884→0.707 / -0.240→-0.408 / 0.400→0.577"),
+    _e("sw_measure_distance", "view", "IModelDocExtension.CreateMeasure",
+       "40×25×20 方块的前后面距离 **20.0 mm**（期望 20，容差 0.2）",
+       "pywin32 取不到 IMeasure 成员（找不到成员）→ 必须 comtypes"),
+]
+
 # ── 文档开关 / 配置（2026-10-20 真机 9/9）────────────────────────────
 _CONFIG_IO: List[Tuple[str, ToolEntry]] = [
     _e("sw_open_document", "io", "ISldWorks.OpenDoc6", "文档数 0→1，标题 box_hole"),
@@ -381,7 +392,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -407,6 +418,8 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 视图/测量（verified/view_measure.py，2026-10-20 真机 3/3）
+    "sw_zoom_to_fit", "sw_set_view_orientation", "sw_measure_distance",
     # 文档开关 / 配置（verified/config_io.py，2026-10-20 真机 9/9）
     "sw_open_document", "sw_close_document", "sw_close_all", "sw_save_all",
     "sw_save_as_copy", "sw_list_configurations", "sw_add_configuration",

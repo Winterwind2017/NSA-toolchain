@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 94 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 97 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
 | 未达可用 | 17 | 已登记但没打通 |
-| 未复核 | 71 | **待办**：还没验证 |
+| 未复核 | 68 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -84,6 +84,7 @@
 | `sw_list_features` | — | 已覆盖 | 本仓库有实现且有真机判据 | 837 |
 | `sw_list_materials` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2290 |
 | `sw_list_open_documents` | — | 已覆盖 | 本仓库有实现且有真机判据 | 748 |
+| `sw_measure_distance` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1697 |
 | `sw_mirror_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3218 |
 | `sw_move_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3248 |
 | `sw_offset_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2614 |
@@ -100,6 +101,7 @@
 | `sw_set_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1640 |
 | `sw_set_display_mode` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1966 |
 | `sw_set_material` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2260 |
+| `sw_set_view_orientation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1936 |
 | `sw_shell` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1208 |
 | `sw_show_all_components` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1475 |
 | `sw_sketch_arc` | — | 已覆盖 | 本仓库有实现且有真机判据 | 954 |
@@ -119,6 +121,7 @@
 | `sw_thicken_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2145 |
 | `sw_unsuppress_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1396 |
 | `sw_view_rotate` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3368 |
+| `sw_zoom_to_fit` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1953 |
 | `sw_add_bom_table` | — | 未复核 | Add a Bill of Materials (BOM) table to the active drawing. | 1603 |
 | `sw_add_drawing_view` | — | 未复核 | Add a model view to the active drawing document. | 1533 |
 | `sw_add_end_cap` | — | 未复核 | Add an end cap to a selected structural member end face.""" | 2841 |
@@ -159,7 +162,6 @@
 | `sw_list_global_variables` | — | 未复核 | List all global variables in the active model.""" | 3431 |
 | `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
 | `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
-| `sw_measure_distance` | — | 未复核 | Measure the minimum distance between two entities (faces, edges, verti | 1697 |
 | `sw_move_body` | — | 未复核 | Move or copy the selected body by translation (mm) and rotation (deg). | 2359 |
 | `sw_parting_line` | — | 未复核 | Create a parting line for mold design (used to separate core from cavi | 2874 |
 | `sw_planar_surface` | — | 未复核 | Create a planar surface from selected closed sketch profile or edges." | 2584 |
@@ -173,7 +175,6 @@
 | `sw_set_appearance_color` | — | 未复核 | Set RGB color and transparency on the active part's solid bodies.""" | 2280 |
 | `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
 | `sw_set_global_variable` | — | 未复核 | Set or create a global variable (used in equations like 'Diameter=2*\" | 3441 |
-| `sw_set_view_orientation` | — | 未复核 | Set the 3D view orientation and zoom-to-fit. | 1936 |
 | `sw_show_all_sketches` | — | 未复核 | Show all sketches in the viewport.""" | 3358 |
 | `sw_shut_off_surface` | — | 未复核 | Automatically create shut-off surfaces over holes for mold separation. | 2884 |
 | `sw_sketch_chamfer` | — | 未复核 | Chamfer (bevel) the corner between two selected sketch lines.""" | 2533 |
@@ -189,7 +190,6 @@
 | `sw_trim_surface` | — | 未复核 | Trim a surface using selected trim tool.""" | 2624 |
 | `sw_trim_weldment` | — | 未复核 | Trim selected weldment members to a planar or solid trim tool.""" | 2851 |
 | `sw_wrap` | — | 未复核 | Wrap a sketch around a selected curved face (emboss/deboss/scribe).""" | 3606 |
-| `sw_zoom_to_fit` | — | 未复核 | Zoom the view to fit the entire model on screen (Ctrl+Shift+F equivale | 1953 |
 | `sw_add_detail_view` | — | 未达可用 | 已登记但没打通： | 3012 |
 | `sw_add_equation` | — | 未达可用 | 已登记但没打通： | 1859 |
 | `sw_add_revision_table` | — | 未达可用 | 已登记但没打通： | 3112 |
@@ -243,10 +243,10 @@
 |---|---|
 | `sketch` | 13 |
 | `other` | 12 |
-| `inspect` | 9 |
 | `surface` | 9 |
-| `drawing` | 8 |
 | `feature` | 8 |
+| `drawing` | 7 |
+| `inspect` | 7 |
 | `assembly` | 3 |
 | `macro_io` | 3 |
 | `weldment` | 3 |
