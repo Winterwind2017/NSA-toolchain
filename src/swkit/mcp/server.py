@@ -378,16 +378,15 @@ def sw_add_balloon(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
 
 
 @mcp.tool(name="sw_check_interference")
-def sw_check_interference() -> Dict[str, Any]:
-    """干涉检查（verified）。**count=0 也算成功**——判据是"能读到计数"。
+def sw_check_interference(expected: Optional[int] = None) -> Dict[str, Any]:
+    """装配干涉检查（verified）：分开 120mm→0、重叠 20mm→1、完全重合→1。
 
-    A/B 实测：两件重叠 → 1 处；分开 → 0 处。
+    走 `IAssemblyDoc.InterferenceDetectionManager`（无模态对话框）。
+    `expected` 给定时判据 = 实测 == 期望；不给则只要求计数可读。
+    注意组件定位单位是 **mm**（传 0.12 会几乎叠在原点）。
     """
-    from ..verified import asm_ops
-    def _do():
-        doc = _doc(_app())
-        return ({"ok": False, "error": "没有打开的文档"} if doc is None
-                else asm_ops.check_interference(doc))
+    from ..verified import analysis as AN
+    return _with_doc(AN.interference_check, expected)
     return _com(_do)
 
 

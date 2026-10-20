@@ -390,12 +390,12 @@ def cmd_balloon(args: argparse.Namespace) -> int:
 
 
 def cmd_interf(args: argparse.Namespace) -> int:
-    from ..verified import asm_ops
+    from ..verified import analysis as AN
     doc = _active_doc()
     if doc is None:
         _dump({"ok": False, "error": "没有打开的文档"})
         return 2
-    res = asm_ops.check_interference(doc)
+    res = AN.interference_check(doc, args.expected)
     _dump(res)
     return 0 if res.get("ok") else 4
 
@@ -1191,6 +1191,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_balloon)
 
     p = sub.add_parser("interf", help="干涉检查（verified，count=0 也算成功）")
+    p.add_argument("--expected", type=int, default=None)
     p.set_defaults(func=cmd_interf)
 
     p = sub.add_parser("fix-component", help="固定组件（verified）")

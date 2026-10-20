@@ -8,10 +8,10 @@
 | 归宿 | 数量 | 含义 |
 |---|---|---|
 | 已覆盖 | 111 | 本仓库有实现、有真机判据 |
-| 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
+| 已判死 | 5 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 27 | 已登记但没打通 |
-| 未复核 | 44 | **待办**：还没验证 |
+| 未达可用 | 28 | 已登记但没打通 |
+| 未复核 | 42 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -19,6 +19,7 @@
 
 | 工具 | 判死 API | 归属 | 说明 | 上游行 |
 |---|---|---|---|---|
+| `sw_check_geometry` | — | 已判死 | 本仓库实测不可用： | 1714 |
 | `sw_delete_face` | — | 已判死 | 本仓库实测不可用：option=0/1/2/4/8 × flag=T/F 共 10 组全 (False,False)，面数不变 | 2644 |
 | `sw_knit_surfaces` | — | 已判死 | 本仓库实测不可用：sldworks.tlb 无 InsertKnitSurface | 2165 |
 | `sw_start_macro_recording` | — | 已判死 | 本仓库实测不可用：类型库穷举无 StartRecording | 2049 |
@@ -142,9 +143,7 @@
 | `sw_add_mate` | — | 未复核 | Add a mate constraint between two entities in an assembly. | 1433 |
 | `sw_add_projected_view` | — | 未复核 | Add a projected view derived from an existing drawing view.""" | 2992 |
 | `sw_add_structural_member` | — | 未复核 | Add a structural member along selected sketch path(s) using a weldment | 2821 |
-| `sw_analyze_draft` | — | 未复核 | Perform draft analysis on the active part model. | 1731 |
 | `sw_boundary_boss` | — | 未复核 | Create a boundary boss/cut from two or more profile curves.""" | 3626 |
-| `sw_check_geometry` | — | 未复核 | Check the active part for geometry errors (invalid faces, edges, etc.) | 1714 |
 | `sw_composite_curve` | — | 未复核 | Combine selected edges and sketch entities into a single composite cur | 2445 |
 | `sw_create_design_table` | — | 未复核 | Create a design table for driving multiple configurations from a sprea | 1898 |
 | `sw_create_drawing` | — | 未复核 | Create a new SolidWorks drawing document. | 732 |
@@ -184,6 +183,7 @@
 | `sw_add_equation` | — | 未达可用 | 已登记但没打通： | 1859 |
 | `sw_add_revision_table` | — | 未达可用 | 已登记但没打通： | 3112 |
 | `sw_add_section_view` | — | 未达可用 | 已登记但没打通： | 1553 |
+| `sw_analyze_draft` | — | 未达可用 | 已登记但没打通： | 1731 |
 | `sw_chamfer` | — | 未达可用 | 已登记但没打通： | 1190 |
 | `sw_combine_bodies` | — | 未达可用 | 已登记但没打通： | 2339 |
 | `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
@@ -243,12 +243,12 @@
 | 类别 | 待验证数 |
 |---|---|
 | `other` | 9 |
-| `feature` | 6 |
 | `surface` | 6 |
+| `feature` | 5 |
 | `sketch` | 5 |
 | `drawing` | 4 |
-| `inspect` | 4 |
 | `macro_io` | 3 |
+| `inspect` | 3 |
 | `weldment` | 3 |
 | `assembly` | 2 |
 | `sheet_metal` | 1 |

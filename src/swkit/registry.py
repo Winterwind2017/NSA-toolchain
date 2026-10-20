@@ -76,8 +76,10 @@ _VERIFIED: List[Tuple[str, ToolEntry]] = [
        "1200×800 / 24bit / 2.88 MB"),
     _e("sw_activate_display_state", "meta", "ApplyDisplayState(name)", "返回 True"),
     # ── 装配（round 40 全部打通，9/9）────────────────────────────
-    _e("sw_check_interference", "assembly", "IToolsCheckInterference2",
-       "A/B：重叠 1 处 vs 分开 0 处"),
+    _e("sw_check_interference", "assembly",
+       "IAssemblyDoc.InterferenceDetectionManager.GetInterferenceCount",
+       "分开 120mm→**0**；重叠 20mm→**1**；完全重合→**1**（组件按 mm 定位）",
+       "老实现走 IToolsCheckInterference2（会弹对话框）；改用管理器，无模态、可回读开关"),
     _e("sw_fix_component", "assembly", "IComponent2.IsFixed=True", "IsFixed 读回 True"),
     _e("sw_explode_assembly", "assembly", "IViewManager.CreateExplodedView", "爆炸视图数 1"),
     _e("sw_show_all_components", "assembly", "IAssemblyDoc.ShowComponent", "可调"),
@@ -386,6 +388,12 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_analyze_draft", ToolEntry("sw_analyze_draft", "feature", "unverified",
+        "IModelDoc2.MoldDraftAnalysis(4 参)", "",
+        "该 API 是 Sub(void)，只给面着色；TLB 无 GetDraftAnalysisFaces 之类读回方法，拿不到计数")),
+    ("sw_check_geometry", ToolEntry("sw_check_geometry", "feature", "broken",
+        "(无公开 API)", "",
+        "sldworks.tlb 只有 IModelDoc2.DebugCheckBody/DebugCheckIgesGeom，没有 CheckGeometry")),
     ("sw_add_section_view", ToolEntry("sw_add_section_view", "drawing", "unverified",
         "IDrawingDoc.CreateSectionViewAt", "",
         "图纸里没有\"前视基准面\"（剖视需在视图上画剖切线，不是选基准面）→ 找不到基准面")),
