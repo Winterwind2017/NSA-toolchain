@@ -60,18 +60,24 @@ def cmd_registry(args: argparse.Namespace) -> int:
     for entry in REGISTRY.values():
         if args.status and entry.status != args.status:
             continue
+        if args.implemented and not entry.implemented:
+            continue
         rows.append({"name": entry.name, "group": entry.group, "status": entry.status,
-                     "api": entry.api, "evidence": entry.evidence, "note": entry.note})
-    rows.sort(key=lambda r: (r["status"] != "verified", r["group"], r["name"]))
+                     "implemented": entry.implemented, "api": entry.api,
+                     "evidence": entry.evidence, "note": entry.note})
+    rows.sort(key=lambda r: (not r["implemented"], r["status"] != "verified",
+                             r["group"], r["name"]))
     if args.json:
         _dump({"count": len(rows), "summary": summary(), "tools": rows})
         return 0
-    print("%-34s %-10s %-14s %s" % ("工具", "状态", "分组", "依据"))
-    print("-" * 110)
+    print("%-34s %-10s %-11s %-13s %s" % ("工具", "状态", "已编码", "分组", "依据"))
+    print("-" * 122)
     for r in rows:
-        print("%-34s %-10s %-14s %s" % (r["name"], r["status"], r["group"], r["evidence"]))
+        print("%-34s %-10s %-11s %-13s %s"
+              % (r["name"], r["status"], "✔" if r["implemented"] else "·",
+                 r["group"], r["evidence"]))
         if r["note"]:
-            print("%-34s %-10s %-14s └ %s" % ("", "", "", r["note"]))
+            print("%-34s %-10s %-11s %-13s └ %s" % ("", "", "", "", r["note"]))
     print("\n合计 %d 条：%s" % (len(rows), summary()))
     return 0
 
@@ -241,7 +247,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("status", help="连接状态 + 注册表摘要").set_defaults(func=cmd_status)
 
     p = sub.add_parser("registry", help="列出工具及其依据")
-    p.add_argument("--status", default="", help="verified / unstable / broken")
+    p.add_argument("--status", default="", help="verified / unstable / unverified / broken")
+    p.add_argument("--implemented", action="store_true", help="只看本仓库已编码、可调用的")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_registry)
 

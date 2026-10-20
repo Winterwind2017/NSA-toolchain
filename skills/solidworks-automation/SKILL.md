@@ -14,8 +14,9 @@ SolidWorks 的 COM API 有一批**反直觉**的地方：同一个功能有"存�
 ## 开工前 30 秒
 
 1. `swkit status` —— 确认连上了、SW 版本、当前文档。
-2. `swkit registry --status verified` —— **只从这张表里挑能力**。
-   表里没有的，要么是 `unverified`（可以试，但必须自己补判据），要么是 `broken`（别再试）。
+2. `swkit registry --implemented` —— **只用这张表**（本仓库已编码、可直接调）。
+   想看全部已验证配方用 `--status verified`（其中 32 条标 `·` 的是配方已验证但尚未编码）。
+   表里没有的，要么 `unverified`（可试，但必须自己补判据），要么 `broken`（别再试）。
 3. 如果要做装配：确认零件已 `OpenDoc` 打开、用 comtypes 的 `AddComponent5`（8 参）插组件。
 
 ## 铁律（违反必踩坑）

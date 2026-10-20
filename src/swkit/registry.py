@@ -29,10 +29,12 @@ class ToolEntry:
     api: str
     evidence: str = ""
     note: str = ""
+    implemented: bool = False      # 本仓库里是否已编码、可经 CLI/MCP 直接调用
 
 
-def _e(name: str, group: str, api: str, evidence: str, note: str = "") -> Tuple[str, ToolEntry]:
-    return name, ToolEntry(name, group, "verified", api, evidence, note)
+def _e(name: str, group: str, api: str, evidence: str, note: str = "",
+       implemented: bool = False) -> Tuple[str, ToolEntry]:
+    return name, ToolEntry(name, group, "verified", api, evidence, note, implemented)
 
 
 _VERIFIED: List[Tuple[str, ToolEntry]] = [
@@ -82,7 +84,7 @@ _VERIFIED: List[Tuple[str, ToolEntry]] = [
        "读回 '1'（BOM 项号）"),
     _e("sw_mirror_component", "assembly",
        "CreateDefinition(116) + IMirrorComponentFeatureData + CreateFeature",
-       "特征『镜像零部件1』、组件 2→4、IsMirrored×2；负面对照可复现旧法 no-op",
+       "特征『镜向零部件1』、组件 2→4、IsMirrored×2；负面对照可复现旧法 no-op",
        "MirrorComponents3 在 SW2025 已废弃"),
     _e("sw_pattern_component_linear", "assembly", "FeatureLinearPattern5",
        "组件 2→4/2→5、特征 +3/+4、IsPatternInstance×2/×3",
@@ -174,6 +176,30 @@ for _name, _entry in _VERIFIED + _STUDY_META + _UNSTABLE + _UNVERIFIED + _BROKEN
     REGISTRY[_name] = _entry
 
 
+# ── 本仓库已编码、可经 CLI/MCP 直接调用的条目（单一事实来源）───────────────
+_IMPLEMENTED = {
+    # 装配（verified/*）
+    "sw_pattern_component_linear", "sw_pattern_component_circular", "sw_mirror_component",
+    # 仿真 / 运动（study/*）
+    "sw_sim_status", "sw_sim_faces", "sw_sim_setup", "sw_sim_mesh", "sw_sim_run",
+    "sw_sim_read", "sw_sim_solve", "sw_sim_addin_check",
+    "sw_motion_list", "sw_motion_read",
+    # 元数据（meta/*）
+    "sw_props", "sw_scan", "swdm_stats", "swdm_query", "swdm_bom", "swdm_tables",
+    "sw_ovba_selftest", "sw_ovba_dump",
+}
+
+import dataclasses as _dc
+for _n in _IMPLEMENTED:
+    _entry = REGISTRY.get(_n)
+    if _entry is not None and not _entry.implemented:
+        REGISTRY[_n] = _dc.replace(_entry, implemented=True)
+
+# 另有 3 个元信息工具不在表内（sw_status / sw_registry / sw_document_info），
+# 由 MCP/CLI 直接提供，不需要判据。
+META_TOOLS = ("sw_status", "sw_registry", "sw_document_info")
+
+
 def get(name: str) -> ToolEntry:
     try:
         return REGISTRY[name]
@@ -186,7 +212,15 @@ def by_status(status: str) -> List[ToolEntry]:
 
 
 def summary() -> Dict[str, int]:
+    """按状态计数，并单列"已验证但本仓库尚未编码"的数量。
+
+    这样清单不会虚高：`verified` 是"配方已验证"，`implemented` 才是"现在就能调"。
+    """
     out: Dict[str, int] = {}
     for entry in REGISTRY.values():
         out[entry.status] = out.get(entry.status, 0) + 1
+    out["implemented"] = sum(1 for e in REGISTRY.values() if e.implemented)
+    out["verified_not_implemented"] = sum(
+        1 for e in REGISTRY.values() if e.status == "verified" and not e.implemented)
+    out["meta_tools"] = len(META_TOOLS)
     return out

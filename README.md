@@ -41,7 +41,7 @@ pip install -e .
 swkit selftest
 
 # 3) 看哪些工具真的能用
-swkit registry --status verified
+swkit registry --implemented
 
 # 4) 对当前打开的装配做组件阵列
 swkit pattern-component --kind linear --count 3 --spacing 0.05
@@ -81,8 +81,12 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_ovba_selftest` / `sw_vba_dump` | VBA 工程解压 | `enable.swp`：737 B→1106 B、2 模块、304 B 源码 |
 | `sw_document_info` / `sw_status` / `sw_registry` | — | 元信息，无需判据 |
 
-外加 registry 里 **53 条 verified** 记录（特征 / 草图 / 出图 / 装配 / 仿真 / 元数据），
+外加 registry 里 **53 条 verified 配方**（特征 / 草图 / 出图 / 装配 / 仿真 / 元数据），
 每条都带 API 名与"用什么数字证明它成了"。
+
+> 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **21 已编码 / 32 待编码**。
+> 用 `swkit registry --implemented` 只看能直接用的那批。
 
 ### Tier B · api（透传，**unverified**）
 

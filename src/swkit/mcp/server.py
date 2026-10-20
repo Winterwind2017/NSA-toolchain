@@ -88,8 +88,10 @@ def sw_registry(status: str = "") -> Dict[str, Any]:
         if status and entry.status != status:
             continue
         rows.append({"name": entry.name, "group": entry.group, "status": entry.status,
-                     "api": entry.api, "evidence": entry.evidence, "note": entry.note})
-    rows.sort(key=lambda r: (r["status"] != "verified", r["group"], r["name"]))
+                     "implemented": entry.implemented, "api": entry.api,
+                     "evidence": entry.evidence, "note": entry.note})
+    rows.sort(key=lambda r: (not r["implemented"], r["status"] != "verified",
+                             r["group"], r["name"]))
     return {"count": len(rows), "summary": summary(), "tools": rows}
 
 
