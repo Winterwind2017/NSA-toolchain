@@ -698,6 +698,18 @@ def sw_get_referenced_documents() -> Dict[str, Any]:
     return _with_doc(CI.get_referenced_documents)
 
 
+@mcp.tool(name="sw_analyze_draft")
+def sw_analyze_draft(angle_deg: float = 1.0, feature_name: str = "") -> Dict[str, Any]:
+    r"""拔模分析（读取侧）：需要零件里**已有分型线特征**。
+
+    `IPartingLineFeatureData.DraftAnalysis` + `GetFacesByTypeCount`（0正/1负/2无/3跨）。
+    分型线本身无法用 API 创建（`CreateDefinition` 无该类型、`InsertMoldPartingLine`
+    恒 None），所以没有分型线时会**明确拒绝**而不是假装成功。
+    """
+    from ..verified import draft as DR
+    return _with_doc(DR.analyze, angle_deg, (feature_name or None))
+
+
 @mcp.tool(name="sw_flow_check")
 def sw_flow_check() -> Dict[str, Any]:
     r"""Flow Simulation 自检（verified）：版本、静默模式、Flow 文档、工程数。

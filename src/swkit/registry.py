@@ -197,6 +197,10 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
     _e("sw_fillet", "feature", "FeatureFillet3（高层 14 参版，comtypes）",
        "80×50×12 板 4 条边圆角 5mm：体积 48000→**47382.87**（Δ=-617.13）、面 6→**10**、边 12→**20**",
        "同名两套签名：底层 9 参在 pywin32 下第 7 参 Radii 恒报类型不匹配；高层 14 参（Options 开头）走 comtypes 才通"),
+    _e("sw_analyze_draft", "feature",
+       "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount",
+       "分型线1（夹具 tests/fixtures/draft_parting_line.SLDPRT）：正拔模 **1**、负拔模 **1**、无拔模 **4**、跨面 **0**，合计 6 = 实体面数",
+       "顺序关键：AccessSelections 必须在 DraftAnalysis 之前，否则恒 False；GetDefinition 是属性；pywin32 无 QueryInterface 需走 comtypes；分型线本身无法用 API 创建"),
     _e("sw_chamfer", "feature", "IFeatureManager.InsertFeatureChamfer(8 参)",
        "80×50×12 板 4 条边倒角 5mm：体积 48000→**46616.667**（Δ=-1383.33）、面 6→**10**、边 12→**20**",
        "内核把前两参写反（Options/ChamferType）→ 建出空特征；改正后几何真变"),
@@ -416,11 +420,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_dimxpert_autodim", ToolEntry("sw_dimxpert_autodim", "meta", "unverified",
         "IDimXpertPart.AutoDimensionScheme(option)", "",
         "实测返回 False、GetAnnotationCount 仍 0；需预设 PartType/ToleranceType 或先选要素")),
-    ("sw_analyze_draft", ToolEntry("sw_analyze_draft", "feature", "unverified",
-        "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount", "",
-        "判据存在但入口堵：GetFacesByTypeCount(0正/1负/2无/3跨) 是硬判据，"
-        "可 CreateDefinition 的 swFm(132)/swFeatureNameID(8) 都没有分型线类型；"
-        "InsertMoldPartingLine 恒 None；MoldDraftAnalysis 恒 False 且面颜色无变化（tests/draft_check.py 固化）。读取侧已实现 verified/draft.py，只缺分型线夹具")),
+
     ("sw_check_geometry", ToolEntry("sw_check_geometry", "feature", "broken",
         "(无公开 API)", "",
         "sldworks.tlb 只有 IModelDoc2.DebugCheckBody/DebugCheckIgesGeom，没有 CheckGeometry")),
@@ -562,7 +562,7 @@ _IMPLEMENTED = {
     # 图纸补充（verified/drawing_extra.py，2026-10-20 真机 3/5）
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
-    "sw_extrude", "sw_chamfer", "sw_fillet", "sw_export_step", "sw_export_stl", "sw_export_file",
+    "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",
     # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
     "sw_create_assembly", "sw_insert_component", "sw_get_assembly_tree",

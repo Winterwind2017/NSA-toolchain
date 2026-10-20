@@ -31,7 +31,9 @@ from swkit.verified import sketch_ops as S             # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--part", default="", help="含分型线特征的零件（可选）")
+    default_part = os.path.join(HERE, "fixtures", "draft_parting_line.SLDPRT")
+    ap.add_argument("--part", default=default_part,
+                    help="含分型线特征的零件（默认仓库内夹具）")
     args = ap.parse_args()
 
     app = pyw().Dispatch("SldWorks.Application")
