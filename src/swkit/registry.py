@@ -417,8 +417,10 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "IDimXpertPart.AutoDimensionScheme(option)", "",
         "实测返回 False、GetAnnotationCount 仍 0；需预设 PartType/ToleranceType 或先选要素")),
     ("sw_analyze_draft", ToolEntry("sw_analyze_draft", "feature", "unverified",
-        "IModelDoc2.MoldDraftAnalysis(4 参)", "",
-        "该 API 是 Sub(void)，只给面着色；TLB 无 GetDraftAnalysisFaces 之类读回方法，拿不到计数")),
+        "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount", "",
+        "判据存在但入口堵：GetFacesByTypeCount(0正/1负/2无/3跨) 是硬判据，"
+        "可 CreateDefinition 的 swFm(132)/swFeatureNameID(8) 都没有分型线类型；"
+        "InsertMoldPartingLine 恒 None；MoldDraftAnalysis 恒 False 且面颜色无变化（tests/draft_check.py 固化）")),
     ("sw_check_geometry", ToolEntry("sw_check_geometry", "feature", "broken",
         "(无公开 API)", "",
         "sldworks.tlb 只有 IModelDoc2.DebugCheckBody/DebugCheckIgesGeom，没有 CheckGeometry")),
