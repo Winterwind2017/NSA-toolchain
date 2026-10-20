@@ -162,6 +162,33 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 文档级基础操作（2026-10-20 真机 7/8）────────────────────────────
+_DOC_OPS: List[Tuple[str, ToolEntry]] = [
+    _e("sw_connect", "doc", "Application.RevisionNumber", "版本 33.4.1 + 文档数可读"),
+    _e("sw_create_part", "doc", "Application.NewDocument(.prtdot)", "GetType==1"),
+    _e("sw_create_reference_plane", "doc", "IFeatureManager.InsertRefPlane",
+       "RefPlane 3→4（基准面1）",
+       "参考面在 pywin32 下只认选择类型 PLANE，不认 DATUMPLANE/BODYFEATURE"),
+    _e("sw_select_entity", "doc", "IModelDocExtension.SelectByID2",
+       "选择集 1"),
+    _e("sw_clear_selection", "doc", "IModelDoc2.ClearSelection2", "选择集 1→0"),
+    _e("sw_capture_screenshot", "doc", "IModelDocExtension.SaveAs(PNG)",
+       "PNG 魔数 89504e47，125,249 B"),
+    _e("sw_delete_feature", "doc", "IModelDocExtension.DeleteSelection2",
+       "特征数 -1（删基准面1）"),
+]
+
+# ── 图纸补充（2026-10-20 真机 3/5）──────────────────────────────────
+_DRAWING_EXTRA: List[Tuple[str, ToolEntry]] = [
+    _e("sw_view_rotate", "drawing", "IDrawingDoc.DrawingViewRotate",
+       "IView.Angle 0°→15°",
+       "视图不能用 Select2 选，要 SelectByID2(name,'DRAWINGVIEW')"),
+    _e("sw_export_drawing_pdf", "drawing", "IModelDoc2.SaveAs(PDF)",
+       "109,332 B，%PDF-1.4"),
+    _e("sw_export_drawing_dwg", "drawing", "IModelDoc2.SaveAs(DWG)",
+       "36,478 B，AC1015（图纸导出比零件 DXF 可靠）"),
+]
+
 # ── 上游特征/导出族（2026-10-20 真机：拉伸 20000mm³ 精确；导出 4/6）────
 _FEATURE_UPSTREAM: List[Tuple[str, ToolEntry]] = [
     _e("sw_extrude", "feature", "FeatureManager.FeatureExtrusion3",
@@ -252,6 +279,17 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_add_equation", ToolEntry("sw_add_equation", "doc", "unverified",
+        "IEquationMgr.Add", "",
+        "IModelDoc2 没有 AddEquation；IEquationMgr 需 comtypes 强类型，pywin32 下 GetEquationMgr 报找不到成员")),
+    ("sw_delete_equation", ToolEntry("sw_delete_equation", "doc", "unverified",
+        "IEquationMgr.Delete", "", "同上，随 add_equation 一起待解")),
+    ("sw_add_revision_table", ToolEntry("sw_add_revision_table", "drawing", "unverified",
+        "ISheet.InsertRevisionTable2(7 参)", "",
+        "空模板与真实 .sldrevtbt 模板都返回 None，RevisionTable 仍为 None（SW2025 此上下文不可用）")),
+    ("sw_add_detail_view", ToolEntry("sw_add_detail_view", "drawing", "unverified",
+        "IDrawingDoc.CreateDetailViewAt3(9 参)", "",
+        "返回 None、视图数不变：详图需要父视图上已有详图圆（detail circle）")),
     # ── 特征族里没打通/不可验证的（2026-10-20 实测依据）──────────────
     ("sw_revolve", ToolEntry("sw_revolve", "feature", "unverified",
         "FeatureManager.FeatureRevolve2", "",
@@ -298,7 +336,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _UNSTABLE
+                     + _DOC_OPS + _DRAWING_EXTRA + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
 
@@ -323,6 +361,11 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 文档级基础操作（verified/doc_ops.py，2026-10-20 真机 7/8）
+    "sw_connect", "sw_create_part", "sw_create_reference_plane", "sw_select_entity",
+    "sw_clear_selection", "sw_capture_screenshot", "sw_delete_feature",
+    # 图纸补充（verified/drawing_extra.py，2026-10-20 真机 3/5）
+    "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
     "sw_extrude", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",

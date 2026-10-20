@@ -45,6 +45,20 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 文档级基础操作（verified）
+
+```python
+from swkit.verified import doc_ops as DO
+DO.connect(); DO.create_part()
+DO.create_reference_plane(doc, "前视基准面", 50)   # RefPlane 3→4
+DO.select_entity(doc, "前视基准面", "PLANE"); DO.clear_selection(doc)
+DO.capture_screenshot(doc, path)                  # PNG 魔数校验
+DO.delete_feature(doc, "基准面1")                  # 特征数 -1
+```
+
+要点：参考面在 pywin32 下**只认选择类型 `PLANE`**（`DATUMPLANE`/`BODYFEATURE` 都 False）；
+所以按名字删特征时要按 `BODYFEATURE → FEATURE → PLANE → SKETCH` 逐类试。
+
 ### 特征建模与导出（verified）
 
 ```python

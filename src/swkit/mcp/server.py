@@ -452,6 +452,82 @@ def _with_doc(fn, *args, **kwargs):
     return _com(_do)
 
 
+def _doc_ops_tools() -> None:
+    """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
+
+
+@mcp.tool(name="sw_connect")
+def sw_connect() -> Dict[str, Any]:
+    """连接检查（verified）：版本 + 文档数。"""
+    from ..verified import doc_ops as DO
+    return _com(DO.connect)
+
+
+@mcp.tool(name="sw_create_part")
+def sw_create_part(template: str = "") -> Dict[str, Any]:
+    """新建零件（verified）：判据 GetType==1。"""
+    from ..verified import doc_ops as DO
+    return _com(lambda: DO.create_part(template))
+
+
+@mcp.tool(name="sw_create_reference_plane")
+def sw_create_reference_plane(base_plane: str = "前视基准面",
+                              offset_mm: float = 50.0) -> Dict[str, Any]:
+    """基准面偏移（verified）：判据 RefPlane +1。选择类型只认 PLANE。"""
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.create_reference_plane, base_plane, offset_mm)
+
+
+@mcp.tool(name="sw_select_entity")
+def sw_select_entity(name: str, kind: str = "PLANE",
+                     append: bool = False) -> Dict[str, Any]:
+    """按名字选中（verified）：判据选择集 ≥1。"""
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.select_entity, name, kind, append)
+
+
+@mcp.tool(name="sw_clear_selection")
+def sw_clear_selection() -> Dict[str, Any]:
+    """清空选择（verified）。"""
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.clear_selection)
+
+
+@mcp.tool(name="sw_capture_screenshot")
+def sw_capture_screenshot(path: str = "") -> Dict[str, Any]:
+    """截图（verified）：判据 PNG 魔数 + 大小。"""
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.capture_screenshot, path)
+
+
+@mcp.tool(name="sw_delete_feature")
+def sw_delete_feature(name: str) -> Dict[str, Any]:
+    """删除特征（verified）：判据特征数 -1。"""
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.delete_feature, name)
+
+
+@mcp.tool(name="sw_view_rotate")
+def sw_view_rotate(angle_deg: float = 15.0) -> Dict[str, Any]:
+    """旋转图纸视图（verified）：判据 IView.Angle 变化。"""
+    from ..verified import drawing_extra as DX
+    return _with_doc(DX.view_rotate, angle_deg)
+
+
+@mcp.tool(name="sw_export_drawing_pdf")
+def sw_export_drawing_pdf(path: str) -> Dict[str, Any]:
+    """图纸导出 PDF（verified）：判据 %PDF。"""
+    from ..verified import drawing_extra as DX
+    return _with_doc(DX.export_pdf, path)
+
+
+@mcp.tool(name="sw_export_drawing_dwg")
+def sw_export_drawing_dwg(path: str) -> Dict[str, Any]:
+    """图纸导出 DWG（verified）：判据 AC10xx。"""
+    from ..verified import drawing_extra as DX
+    return _with_doc(DX.export_dwg, path)
+
+
 @mcp.tool(name="sw_extrude")
 def sw_extrude(depth_mm: float = 20.0, draft_deg: float = 0.0,
                is_cut: bool = False) -> Dict[str, Any]:

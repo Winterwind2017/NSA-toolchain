@@ -562,6 +562,75 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_new_part(args: argparse.Namespace) -> int:
+    from ..verified import doc_ops as DO
+    res = DO.create_part(args.template)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_ref_plane(args: argparse.Namespace) -> int:
+    from ..verified import doc_ops as DO
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = DO.create_reference_plane(doc, args.base, args.offset)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_select(args: argparse.Namespace) -> int:
+    from ..verified import doc_ops as DO
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = (DO.clear_selection(doc) if args.clear
+           else DO.select_entity(doc, args.name, args.kind, args.append))
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_screenshot(args: argparse.Namespace) -> int:
+    from ..verified import doc_ops as DO
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = DO.capture_screenshot(doc, args.path)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_delete_feature(args: argparse.Namespace) -> int:
+    from ..verified import doc_ops as DO
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = DO.delete_feature(doc, args.name)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_view_rotate(args: argparse.Namespace) -> int:
+    from ..verified import drawing_extra as DX
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = DX.view_rotate(doc, args.angle)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_export_sheet(args: argparse.Namespace) -> int:
+    from ..verified import drawing_extra as DX
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    fn = DX.export_pdf if args.format == "pdf" else DX.export_dwg
+    res = fn(doc, args.path)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_extrude(args: argparse.Namespace) -> int:
     from ..verified import features as ft
     doc = _doc_or_none()
@@ -969,6 +1038,39 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("new-part", help="新建零件（verified）")
+    p.add_argument("--template", default="")
+    p.set_defaults(func=cmd_new_part)
+
+    p = sub.add_parser("ref-plane", help="建基准面（verified，mm）")
+    p.add_argument("--base", default="前视基准面")
+    p.add_argument("--offset", type=float, default=50.0)
+    p.set_defaults(func=cmd_ref_plane)
+
+    p = sub.add_parser("select", help="选择/清空选择（verified）")
+    p.add_argument("--name", default="")
+    p.add_argument("--kind", default="PLANE")
+    p.add_argument("--append", action="store_true")
+    p.add_argument("--clear", action="store_true")
+    p.set_defaults(func=cmd_select)
+
+    p = sub.add_parser("shot", help="视口截图 PNG（verified）")
+    p.add_argument("--path", default="")
+    p.set_defaults(func=cmd_screenshot)
+
+    p = sub.add_parser("delete-feature", help="删除特征（verified）")
+    p.add_argument("--name", required=True)
+    p.set_defaults(func=cmd_delete_feature)
+
+    p = sub.add_parser("view-rotate", help="旋转图纸视图（verified，度）")
+    p.add_argument("--angle", type=float, default=15.0)
+    p.set_defaults(func=cmd_view_rotate)
+
+    p = sub.add_parser("export-sheet", help="图纸导出 pdf/dwg（verified）")
+    p.add_argument("--format", required=True, choices=["pdf", "dwg"])
+    p.add_argument("--path", required=True)
+    p.set_defaults(func=cmd_export_sheet)
 
     p = sub.add_parser("extrude", help="拉伸当前草图（verified，mm）")
     p.add_argument("--depth", type=float, default=20.0)

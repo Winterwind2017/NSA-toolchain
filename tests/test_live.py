@@ -22,7 +22,7 @@ ROOT = os.path.dirname(HERE)
 
 SUITES = ["selftest", "mcp_smoke", "live", "part", "sketch", "sketch_ops",
           "inspect", "asm_ops", "asm_state", "features", "io",
-          "drawing", "balloon"]
+          "doc_ops", "drawing_extra", "drawing", "balloon"]
 
 
 def _run(only: str, timeout: float) -> subprocess.CompletedProcess:
