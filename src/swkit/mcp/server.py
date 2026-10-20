@@ -561,6 +561,16 @@ def sw_sketch_linear_pattern(x_count: int = 3, y_count: int = 1,
     return _with_doc(SO.linear_pattern, x_count, y_count, x_spacing_mm, y_spacing_mm)
 
 
+@mcp.tool(name="sw_sketch_convert_entities")
+def sw_sketch_convert_entities(chain: bool = True) -> Dict[str, Any]:
+    r"""转换实体引用（verified）：先选中模型边/面，再调用 `SketchUseEdge3(Chain, InnerLoops)`。
+
+    现役是 `SketchUseEdge3`；旧 `SketchUseEdge`/`SketchUseEdge2` 在 pywin32 下不可调。
+    """
+    from ..verified import sketch_ops as SO
+    return _with_doc(SO.convert_entities, chain)
+
+
 @mcp.tool(name="sw_sketch_trim")
 def sw_sketch_trim(x: float = 60.0, y: float = 12.5) -> Dict[str, Any]:
     """草图裁剪（verified）：判据是线段总长/数量变化。"""

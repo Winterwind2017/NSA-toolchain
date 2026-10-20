@@ -203,6 +203,9 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
     _e("sw_mirror_feature", "feature", "IFeatureManager.InsertMirrorFeature2(5 参)",
        "40×25×20 实体跨前视基准面镜像：体积 20000→**40000**（比 **2.0**）、特征「镜向1」",
        "选择标记：待镜像特征 = **1**，镜像面/基准面 = **2**（官方 Remarks 表）"),
+    _e("sw_sketch_convert_entities", "sketch", "ISketchManager.SketchUseEdge3(2 参)",
+       "选中 25mm 实体边 → 草图片段 0→**1**、总长 0→**25.0**（长度与边一致）",
+       "现役是 SketchUseEdge3(Chain, InnerLoops)；旧 SketchUseEdge/SketchUseEdge2 在 pywin32 下不可调"),
     _e("sw_sketch_circular_pattern", "sketch",
        "ISketchManager.CreateCircularSketchStepAndRepeat(9 参)",
        "Ø6 圆绕半径 20mm 阵列 4 份：线段 1→**4**、总长 18.85→**75.40**（×4）",
@@ -426,6 +429,11 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_edge_flange", ToolEntry("sw_edge_flange", "sheet_metal", "unverified",
+        "IModelDoc2.InsertSheetMetalEdgeFlange(11 参)", "",
+        "能**建出空特征**：InsertSketchForEdgeFlange 先造草图8（第 2 参必须传**草图特征对象**，"
+        "传名字报类型不匹配），再 InsertSheetMetalEdgeFlange 得到 EdgeFlange 特征，"
+        "但体积 4800→4800、面 6→6 不变；EdgeFlange2 的 VARIANT 数组版在 pywin32 下第 13 参类型不匹配")),
     ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
         "IFeatureManager.HoleWizard5(27 参)", "",
         "按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），"
@@ -462,17 +470,13 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_sketch_extend", ToolEntry("sw_sketch_extend", "sketch", "unverified",
         "ISketchManager.SketchExtend(3 参)", "",
         "选中线段后调用，长度 20→20 不变（未知是否需要选端点或标记）")),
-    ("sw_sketch_convert_entities", ToolEntry("sw_sketch_convert_entities", "sketch",
-        "unverified", "ISketchManager.SketchUseEdge/SketchUseEdge2", "",
-        "pywin32 报 DISP_E_PARAMNOTOPTIONAL；comtypes 下 SketchUseEdge() 无报错但线段数不变")),
+
     ("sw_unfold", ToolEntry("sw_unfold", "sheet_metal", "unverified",
         "IModelDoc2.InsertSheetMetalUnfold()", "",
         "平板无折弯时该动作无效果：特征 22→22、GetBendState 恒 1（需带折弯的钣金件才能验证）")),
     ("sw_fold", ToolEntry("sw_fold", "sheet_metal", "unverified",
         "IModelDoc2.InsertSheetMetalFold()", "", "同上：先要有展开态才谈折叠")),
-    ("sw_edge_flange", ToolEntry("sw_edge_flange", "sheet_metal", "unverified",
-        "InsertSheetMetalEdgeFlange(11 参)", "",
-        "选 1 条边 + SketchFeat 传 None/none_dispatch 都返回 None；疑需法兰轮廓草图")),
+
     ("sw_miter_flange", ToolEntry("sw_miter_flange", "sheet_metal", "unverified",
         "InsertSheetMetalMiterFlange(11 参)", "", "同 edge_flange，需先有可选边集与轮廓")),
     ("sw_export_flat_pattern", ToolEntry("sw_export_flat_pattern", "sheet_metal",
@@ -572,7 +576,8 @@ _IMPLEMENTED = {
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
     "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft",
-    "sw_revolve", "sw_mirror_feature", "sw_sketch_circular_pattern", "sw_export_step", "sw_export_stl", "sw_export_file",
+    "sw_revolve", "sw_mirror_feature", "sw_sketch_circular_pattern",
+    "sw_sketch_convert_entities", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",
     # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
     "sw_create_assembly", "sw_insert_component", "sw_get_assembly_tree",

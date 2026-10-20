@@ -20,7 +20,7 @@ _vendor = os.environ.get("SWKIT_VENDOR")
 if _vendor and os.path.isdir(_vendor):
     sys.path.insert(0, _vendor)
 
-from swkit.core.com import pyw                    # noqa: E402
+from swkit.core.com import pyw, val                # noqa: E402
 from swkit.verified import sketch_ops as S        # noqa: E402
 
 SIM = r"D:\bililive\acad_out\SW_ADV\sim"
@@ -115,6 +115,27 @@ def main() -> int:
         results["edit_sketch"] = S.edit_sketch(doc, sk_name)
         S.exit_sketch(doc)
 
+    # ── 转换实体引用（P2 转正项）
+    try:
+        d3 = _open(app, args.part, "convert.SLDPRT")
+        S.create_sketch(d3, "前视基准面")
+        from swkit.verified._common import bodies as _bodies, faces_of as _faces_of
+        _edge = None
+        for _b in _bodies(d3, 0):
+            for _f in _faces_of(_b):
+                _es = list(val(_f, "GetEdges") or [])
+                if _es:
+                    _edge = _es[0]
+                    break
+            if _edge is not None:
+                break
+        d3.ClearSelection2(True)
+        if _edge is not None:
+            _edge.Select2(False, 0)
+        results["convert_entities"] = S.convert_entities(d3, True)
+        S.exit_sketch(d3)
+    except Exception as _e:                          # noqa: BLE001
+        results["convert_entities"] = {"ok": False, "error": str(_e)[:70]}
     for name, res in results.items():
         if name == "_sketch":
             continue

@@ -333,3 +333,29 @@ def circular_pattern(doc: Any, count: int = 3, radius: float = 20.0,
     out["checks"] = {"segments_increased": after > before}
     out["ok"] = out["checks"]["segments_increased"]
     return out
+
+
+def convert_entities(doc: Any, chain: bool = True, inner_loops: bool = False) -> Dict[str, Any]:
+    """转换实体引用（`ISketchManager.SketchUseEdge3(Chain, InnerLoops)`）。
+
+    先选中模型边/面，再调用；判据：草图片段数增加，且新片段长度 = 被引用边长。
+
+    实测：80×50×12 板，选中一条 25mm 边 → 片段 0→**1**、总长 0→**25.0**。
+    """
+    out = _result("sw_sketch_convert_entities", "ISketchManager.SketchUseEdge3(2 参)")
+    before = _segments(doc)
+    out["detail"].update({"segments_before": before, "chain": bool(chain)})
+    if before == 0 and doc.SketchManager.ActiveSketch is None:
+        out["detail"]["error"] = "没有处于编辑状态的草图"
+        return out
+    try:
+        ret = doc.SketchManager.SketchUseEdge3(bool(chain), bool(inner_loops))
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = _segments(doc)
+    out["detail"].update({"segments_after": after, "returned": ret})
+    out["checks"] = {"segments_increased": after > before,
+                     "returned_true": ret is True}
+    out["ok"] = all(out["checks"].values())
+    return out

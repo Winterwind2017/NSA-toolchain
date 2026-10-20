@@ -111,6 +111,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_mirror_feature` | `InsertMirrorFeature2`（标记 1/2） | 20000→**40000**（比 2.0），特征「镜向1」 |
 | `sw_revolve` | `IModelDoc.FeatureRevolve2`（5 参） | 25132.741 mm³ = πR²h；360°:180° = **2.0000** |
 | `sw_sketch_circular_pattern` | `CreateCircularSketchStepAndRepeat`（9 参） | 线段 1→**4**、总长 ×4 |
+| `sw_sketch_convert_entities` | `SketchUseEdge3`（2 参） | 选 25mm 边 → 片段 0→**1**、总长 0→**25.0** |
 | `sw_extruded_surface` | `FeatureExtruRefSurface3`（22 参） | 闭合草图 → 曲面 **0→1** |
 | `sw_sketch_offset` / `sw_sketch_linear_pattern` | `SketchOffset2`(6 参) / `CreateLinearSketchStepAndRepeat`(12 参) | 偏移 4→**8** 段；阵列 1→**3** 份（长度 ×3） |
 | `sw_scale_body` | `InsertScale`（5 参） | 选中实体后 40×25×20 → **80×50×40** |
@@ -160,7 +161,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **144 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **145 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -212,17 +213,17 @@ src/swkit/
 
 | 归宿 | 数量 |
 |---|---|
-| 已覆盖（本仓库有实现 + 真机判据） | 119 |
+| 已覆盖（本仓库有实现 + 真机判据） | 120 |
 | 已判死（调用不存在/废弃 API，或实测不可用） | 5 |
 | 已知不稳（不进回归） | 2 |
-| 未达可用（已登记但没打通） | 20 |
+| 未达可用（已登记但没打通） | 19 |
 | **未复核（待办）** | 42 |
 
 外加本仓库**超出上游**的 23 条（仿真/运动/元数据、以及上游根本没有的 `sw_cut_extrude`）。
 
 > **两层数字别混淆**：
 > * **上游 188 条** → 已覆盖 **111** / 未达可用 **27** / 未复核 **44**（其余判死 4、不稳 2）
-> * **registry 的 verified 144** = 上游同名 **119** + 本仓库自有 **25**
+> * **registry 的 verified 145** = 上游同名 **120** + 本仓库自有 **25**
 >
 > 逐条"卡在哪里"见 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) 的 unverified 分类表
 > （参数未定 / 假成功 / 夹具造不出 / 枚举不存在 / 方程接口 / 破坏性不主动做）。
