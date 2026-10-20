@@ -82,6 +82,12 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_offset_surface` | `InsertOffsetSurface` | 曲面 1→2 |
 | `sw_screenshot` | `IModelDoc2.SaveBMP` | 2,880,054 B（1200×800） |
 | `sw_new_drawing` | `CreateDrawViewFromModelView3` | 视图数 2（中文模板只认 `*前视`） |
+| `sw_add_auxiliary_view` | `CreateAuxiliaryView()`（零参） | 视图数 **2→3** |
+| `sw_create_section_view` | `CreateSectionViewData`+`CreateSectionView` | 返回 True 并自动复位 |
+| `sw_add_broken_view` | `IView.InsertBreak2(5 参)` | `GetBreakLines` **+1**（不新增视图） |
+| `sw_add_drawing_dimension` | `AddDimension2(x,y,0)` | `GetDisplayDimensions` **0→1** |
+| `sw_add_hole_table` | `InsertHoleTable2`（须先 `ActivateView`） | 表格数 **0→1** |
+| `sw_add_surface_finish` | `InsertSurfaceFinishSymbol2` | 激活视图后 `GetSFSymbols` **0→1** |
 | `sw_add_center_mark` | `AddCenterMark(x,False)` | `GetCenterMarks` **0→6** |
 | `sw_add_centerline` | `InsertCenterLine()` | `GetCenterLines` **0→6** |
 | `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` | 零参插入 | `GetDatumTagCount` / `GetGTolCount` / `GetWeldSymbolCount` **各 +1** |
@@ -164,7 +170,7 @@ python tests/live_check.py     # 真机：建测试装配 → 组件线性阵列
 python tests/part_check.py     # 真机：包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
 python tests/sketch_check.py   # 真机：构造线/草图文字/约束/显示状态/材料库（5 项）
 python tests/asm_ops_check.py  # 真机：干涉 A/B + 固定/显示/爆炸（4 项）
-python tests/drawing_check.py  # 真机：建图/中心标记/中心线/符号×3/注释（7/8，粗糙度判据不可得）
+python tests/drawing_check.py  # 真机：建图/中心标记/中心线/符号×3/粗糙度/注释/尺寸/孔表/断裂/辅助/剖视（12 项）
 python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
 ```
 

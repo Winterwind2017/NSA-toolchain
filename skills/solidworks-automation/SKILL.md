@@ -45,6 +45,26 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 出图（verified）
+
+```python
+from swkit.verified import drawing
+drawing.new_drawing(part, view="front")      # 中文模板只认 *前视，*Front 返回 None
+view = drawing.first_model_view(dwg)
+drawing.center_mark(dwg); drawing.centerline(dwg)
+drawing.symbol(dwg, "gtol")                  # datum / gtol / weld，判据是各自计数 +1
+drawing.surface_finish(dwg)                  # 先 ActivateView，判据 GetSFSymbols 0→1
+drawing.note(dwg, "技术要求…"); drawing.drawing_dimension(dwg)
+drawing.hole_table(dwg)                      # 必须先 ActivateView
+drawing.broken_view(view)                    # 判据 GetBreakLines，不是视图数
+drawing.aux_view(dwg); drawing.section_view(part_doc, "前视基准面")
+```
+
+要点：出图类 API 的返回值几乎都不可信，判据一律用**对应集合的计数**
+（`GetCenterMarks` / `GetCenterLines` / `GetDatumTagCount` / `GetGTolCount` /
+`GetWeldSymbolCount` / `GetSFSymbols` / `GetDisplayDimensions` / `GetBreakLines`）。
+**`None` 常常是"0 个"，不是"没有判据"**——先激活视图/换条件重测再下结论。
+
 ### 装配检查与整理（verified）
 
 ```python

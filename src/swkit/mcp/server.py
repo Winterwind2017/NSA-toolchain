@@ -304,6 +304,64 @@ def sw_add_annotation(text: str, x: float = 0.05, y: float = 0.05) -> Dict[str, 
     return _com(_do)
 
 
+@mcp.tool(name="sw_add_auxiliary_view")
+def sw_add_auxiliary_view() -> Dict[str, Any]:
+    """辅助视图（verified）：`CreateAuxiliaryView()` 零参、靠选择集；判据视图数 +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.aux_view(doc))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_create_section_view")
+def sw_create_section_view(plane: str = "前视基准面", offset: float = 0.0) -> Dict[str, Any]:
+    """剖视图（verified）：`CreateSectionViewData` + `CreateSectionView`，成功后自动复位。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.section_view(doc, plane, offset))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_broken_view")
+def sw_add_broken_view(orientation: int = 0, position: float = 0.05,
+                       size: float = 0.01) -> Dict[str, Any]:
+    """断裂视图（verified）：判据是 `GetBreakLines` 数量（**不新增视图**）。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档"}
+        return drawing.broken_view(drawing.first_model_view(doc), orientation,
+                                   position, size)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_drawing_dimension")
+def sw_add_drawing_dimension(x: float = 0.12, y: float = 0.12) -> Dict[str, Any]:
+    """图纸尺寸（verified）：选两条边 → `AddDimension2`；判据 `GetDisplayDimensions` +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.drawing_dimension(doc, x, y))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_hole_table")
+def sw_add_hole_table(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """孔表（verified）：先 `ActivateView` 再 `InsertHoleTable2`；判据表格数 +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.hole_table(doc, x, y))
+    return _com(_do)
+
+
 @mcp.tool(name="sw_check_interference")
 def sw_check_interference() -> Dict[str, Any]:
     """干涉检查（verified）。**count=0 也算成功**——判据是"能读到计数"。

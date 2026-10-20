@@ -43,6 +43,10 @@ def main() -> int:
         print("打不开零件：%s" % args.part)
         return 2
 
+    # 剖视必须在零件文档上验，且要在建图之前（建图会切换 ActiveDoc）
+    part_doc = pyw().Dispatch(app.ActiveDoc)
+    results["section_view"] = D.section_view(part_doc, "前视基准面", 0.0)
+
     fx = D.new_drawing(args.part, view="front")
     results["new_drawing"] = fx
     doc = pyw().Dispatch(app.ActiveDoc)
@@ -55,6 +59,12 @@ def main() -> int:
         results["symbol_weld"] = D.symbol(doc, "weld")
         results["surface_finish"] = D.surface_finish(doc)
         results["note"] = D.note(doc, "技术要求：未注公差按 GB/T 1804-m")
+        results["drawing_dimension"] = D.drawing_dimension(doc)
+        results["hole_table"] = D.hole_table(doc)
+        view = D.first_model_view(doc)
+        results["broken_view"] = D.broken_view(view)
+        results["aux_view"] = D.aux_view(doc)
+
     else:
         print("夹具失败，后续项跳过")
 

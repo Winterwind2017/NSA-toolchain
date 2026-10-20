@@ -322,6 +322,62 @@ def cmd_note(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_aux_view(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.aux_view(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_section_view(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.section_view(doc, args.plane, args.offset)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_broken_view(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.broken_view(drawing.first_model_view(doc), args.orientation,
+                              args.position, args.size)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_drawing_dimension(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.drawing_dimension(doc, args.x, args.y)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_hole_table(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.hole_table(doc, args.x, args.y)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_interf(args: argparse.Namespace) -> int:
     from ..verified import asm_ops
     doc = _active_doc()
@@ -564,6 +620,30 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--x", type=float, default=0.05)
     p.add_argument("--y", type=float, default=0.05)
     p.set_defaults(func=cmd_note)
+
+    p = sub.add_parser("aux-view", help="辅助视图（verified）")
+    p.set_defaults(func=cmd_aux_view)
+
+    p = sub.add_parser("section-view", help="剖视图（verified，创建后自动复位）")
+    p.add_argument("--plane", default="前视基准面")
+    p.add_argument("--offset", type=float, default=0.0)
+    p.set_defaults(func=cmd_section_view)
+
+    p = sub.add_parser("broken-view", help="断裂视图（verified，判据是断裂线数量）")
+    p.add_argument("--orientation", type=int, default=0)
+    p.add_argument("--position", type=float, default=0.05)
+    p.add_argument("--size", type=float, default=0.01)
+    p.set_defaults(func=cmd_broken_view)
+
+    p = sub.add_parser("drawing-dimension", help="图纸尺寸（verified）")
+    p.add_argument("--x", type=float, default=0.12)
+    p.add_argument("--y", type=float, default=0.12)
+    p.set_defaults(func=cmd_drawing_dimension)
+
+    p = sub.add_parser("hole-table", help="孔表（verified；视图须先激活）")
+    p.add_argument("--x", type=float, default=0.10)
+    p.add_argument("--y", type=float, default=0.16)
+    p.set_defaults(func=cmd_hole_table)
 
     p = sub.add_parser("interf", help="干涉检查（verified，count=0 也算成功）")
     p.set_defaults(func=cmd_interf)

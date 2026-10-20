@@ -89,16 +89,20 @@
 - **未跑通求解**，所以不能算打通
 ---
 
-## 降级（原 verified → unverified）：`sw_add_surface_finish`
+---
 
-2026-10-20 复核时发现**判据不可得**，已从 verified 降级：
+## 勘误：`sw_add_surface_finish` 曾被误降级（已恢复 verified）
 
-- `IModelDoc2.InsertSurfaceFinishSymbol2(...)` **调用成功但只返回 `True`**（不是 annotation 对象）；
-- 类型库里 `IDrawingDoc` 只有 `InsertSurfaceFinishSymbol` / `ModifySurfaceFinishSymbol`；
-  `IModelDocExtension` 只有 `InsertSurfaceFinishSymbol3`；
-- `IView` 上**没有任何**粗糙度 getter（对比：中心标记有 `GetCenterMarkCount`，
-  基准有 `GetDatumTagCount`，形位公差有 `GetGTolCount`，焊接有 `GetWeldSymbolCount`）；
-- 试过 `GetSurfaceFinishSymbols`（不存在）、`GetSFSymbols` / `GetAnnotations`（都返回 `None`）。
+2026-10-20 我先把它从 verified 降到 unverified，理由是"插入只返回 True、IView 没有
+粗糙度 getter"。**这个结论是错的**，错在测量条件：
 
-⇒ **无法证明符号真的生成**，所以不列为可用能力。若将来找到计数句柄（或在文档里数
-annotation 总数），可以重新验。
+| 条件 | `GetSFSymbols` 返回 | 我的误读 |
+|---|---|---|
+| 视图**未激活** | `None` | 当成"没有这个 getter"→ 判据不可得 |
+| 视图**已激活**（`ActivateView`） | 插入前 0、插入后 1 | 真正可计数 |
+
+所以正确做法是：**先 `ActivateView` 再插入，用 `GetSFSymbols` 的 0→1 做判据**。
+代码已按此修正（`None` 一律当 0），并恢复 verified。
+
+教训：**"取不到数"和"没有判据"是两件事**。遇到 `None` 要先换条件重测（激活视图、换视图类型、
+换选择标记），再决定降级。这条比任何一条 API 坑都值钱。
