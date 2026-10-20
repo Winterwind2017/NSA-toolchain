@@ -31,7 +31,7 @@ from ._common import com_app, com_doc, wrap
 
 __all__ = ["new_drawing", "first_model_view", "center_mark", "centerline", "symbol",
            "surface_finish", "note", "aux_view", "section_view", "broken_view",
-           "drawing_dimension", "hole_table", "VIEW_MAP", "DEFAULT_TEMPLATE"]
+           "drawing_dimension", "hole_table", "balloon", "VIEW_MAP", "DEFAULT_TEMPLATE"]
 
 DEFAULT_TEMPLATE = (r"C:\ProgramData\SolidWorks\SOLIDWORKS 2025\templates"
                     r"\gb_a3.drwdot")
@@ -681,3 +681,111 @@ def hole_table(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
     out["detail"].update({"tables_after": n_tables(), "attempts": attempts[-8:]})
     out["checks"] = {"table_added": False}
     return out
+
+def balloon(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """自动零件序号（球标）。**依赖 BOM 表**——序号来自 BOM 项号，所以先建 BOM。
+
+    两步都是"返回值不可信"，判据用计数：
+
+    1. `IView.InsertBomTable2(UseAnchorPoint, X, Y, AnchorType, BomType,
+       Configuration, TableTemplate)` —— **7 个参数**（少传会直接被拒）；
+    2. `IDrawingDoc.AutoBalloon2(Layout, IgnoreMultiple)` —— 返回气球数组，
+       人工计数用 `IView.GetNoteCount` 兜底。
+
+    前提：图纸来自**装配**（零件图没有 BOM 项）。
+    """
+    out = _result("sw_add_balloon", "IDrawingDoc.AutoBalloon2")
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+    try:
+        doc_w.ActivateView(_val_safe(view, "Name"))
+    except Exception:
+        pass
+
+    def n_notes() -> int:
+        v = val(view, "GetNoteCount")
+        if isinstance(v, int):
+            return v
+        notes = val(view, "GetNotes")
+        try:
+            return len(list(notes))
+        except TypeError:
+            return -1
+
+    before_notes = n_notes()
+    bom = None
+    try:
+        bom = view.GetBomTable()
+        if callable(bom):
+            bom = bom()
+    except Exception:
+        bom = None
+    bom_created = False
+    attempts = []
+    if bom is None:
+        # BomType=0 是无效值（实测直接返回 None）；1/2/3 才能建表。
+        for bom_type in (1, 2, 3):
+            for anchor in (1, 0):
+                try:
+                    bom = view.InsertBomTable2(True, float(x), float(y), anchor,
+                                               bom_type, "", "")
+                except Exception as exc:            # noqa: BLE001
+                    attempts.append({"bom_type": bom_type, "anchor": anchor,
+                                     "error": str(exc)[:70]})
+                    continue
+                attempts.append({"bom_type": bom_type, "anchor": anchor,
+                                 "returned": type(bom).__name__ if bom is not None else None})
+                if bom is not None:
+                    bom_created = True
+                    break
+            if bom is not None:
+                break
+    out["detail"].update({"view": _val_safe(view, "Name"),
+                          "bom_present": bom is not None,
+                          "bom_created": bom_created,
+                          "notes_before": before_notes,
+                          "bom_attempts": attempts})
+    if bom is None:
+        out["detail"]["error"] = ("没有 BOM 表，且 InsertBomTable2 未能创建"
+                                  "（球标依赖 BOM 项号；需装配图）")
+        out["checks"] = {"bom_available": False}
+        return out
+    # 必须**先选中视图**（pywin32 的 view.Select2 不可用，只能 SelectByID2 + DRAWINGVIEW），
+    # 否则 AutoBalloon2 返回空数组（实测：选中后返回 2 个气球）。
+    selected = False
+    try:
+        doc_w.ClearSelection2(True)
+        selected = bool(doc_w.Extension.SelectByID2(_val_safe(view, "Name"), "DRAWINGVIEW",
+                                                    0, 0, 0, False, 0,
+                                                    none_dispatch(), 0))
+    except Exception:
+        selected = False
+    balloons = None
+    try:
+        balloons = doc_w.AutoBalloon2(1, True)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["auto_error"] = str(exc)[:90]
+    n_balloons = -1
+    try:
+        n_balloons = len(list(balloons)) if balloons is not None else 0
+    except TypeError:
+        n_balloons = 1 if balloons is not None else 0
+    after_notes = n_notes()
+    out["detail"].update({"view_selected": selected, "balloons": n_balloons,
+                          "notes_after": after_notes})
+    out["checks"] = {
+        "bom_available": True,
+        "balloons_created": n_balloons > 0 or after_notes > before_notes,
+    }
+    out["ok"] = out["checks"]["balloons_created"]
+    return out
+
+
+def _val_safe(obj: Any, name: str) -> Any:
+    try:
+        v = getattr(obj, name)
+        return v() if callable(v) else v
+    except Exception:
+        return None

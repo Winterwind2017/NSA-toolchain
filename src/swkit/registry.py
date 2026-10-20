@@ -196,7 +196,7 @@ _IMPLEMENTED = {
     "sw_add_center_mark", "sw_add_centerline", "sw_add_datum_feature", "sw_add_gtol",
     "sw_add_weld_symbol", "sw_note", "sw_add_annotation", "sw_add_surface_finish",
     "sw_add_auxiliary_view", "sw_create_section_view", "sw_add_broken_view",
-    "sw_add_drawing_dimension", "sw_add_hole_table",
+    "sw_add_drawing_dimension", "sw_add_hole_table", "sw_add_balloon",
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",

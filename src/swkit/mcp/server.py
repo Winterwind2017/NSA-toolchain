@@ -362,6 +362,21 @@ def sw_add_hole_table(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_add_balloon")
+def sw_add_balloon(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """自动球标（verified）：先 `InsertBomTable2`（7 参、`BomType` 必须 1/2/3），
+    再**选中视图**（`SelectByID2(name,"DRAWINGVIEW")`）→ `AutoBalloon2(1, True)`。
+
+    实测：装配图 2 组件 → 2 个气球、2 条注释。零件图没有 BOM 项，会如实返回 `bom_available=False`。
+    """
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.balloon(doc, x, y))
+    return _com(_do)
+
+
 @mcp.tool(name="sw_check_interference")
 def sw_check_interference() -> Dict[str, Any]:
     """干涉检查（verified）。**count=0 也算成功**——判据是"能读到计数"。

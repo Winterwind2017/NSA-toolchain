@@ -58,6 +58,7 @@ drawing.note(dwg, "技术要求…"); drawing.drawing_dimension(dwg)
 drawing.hole_table(dwg)                      # 必须先 ActivateView
 drawing.broken_view(view)                    # 判据 GetBreakLines，不是视图数
 drawing.aux_view(dwg); drawing.section_view(part_doc, "前视基准面")
+drawing.balloon(dwg)   # 需装配图：先 InsertBomTable2(BomType=1) 再选中视图 AutoBalloon2
 ```
 
 要点：出图类 API 的返回值几乎都不可信，判据一律用**对应集合的计数**

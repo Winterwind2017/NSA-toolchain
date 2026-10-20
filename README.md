@@ -88,6 +88,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_add_drawing_dimension` | `AddDimension2(x,y,0)` | `GetDisplayDimensions` **0→1** |
 | `sw_add_hole_table` | `InsertHoleTable2`（须先 `ActivateView`） | 表格数 **0→1** |
 | `sw_add_surface_finish` | `InsertSurfaceFinishSymbol2` | 激活视图后 `GetSFSymbols` **0→1** |
+| `sw_add_balloon` | `InsertBomTable2` + `AutoBalloon2` | 装配图 2 组件 → **2 个气球 / 2 条注释** |
 | `sw_add_center_mark` | `AddCenterMark(x,False)` | `GetCenterMarks` **0→6** |
 | `sw_add_centerline` | `InsertCenterLine()` | `GetCenterLines` **0→6** |
 | `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` | 零参插入 | `GetDatumTagCount` / `GetGTolCount` / `GetWeldSymbolCount` **各 +1** |
@@ -170,7 +171,8 @@ python tests/live_check.py     # 真机：建测试装配 → 组件线性阵列
 python tests/part_check.py     # 真机：包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
 python tests/sketch_check.py   # 真机：构造线/草图文字/约束/显示状态/材料库（5 项）
 python tests/asm_ops_check.py  # 真机：干涉 A/B + 固定/显示/爆炸（4 项）
-python tests/drawing_check.py  # 真机：建图/中心标记/中心线/符号×3/粗糙度/注释/尺寸/孔表/断裂/辅助/剖视（12 项）
+python tests/drawing_check.py  # 真机：剖视/建图/中心标记/中心线/符号×3/粗糙度/注释/尺寸/孔表/断裂/辅助（13 项）
+python tests/balloon_check.py  # 真机：装配图 BOM + 自动球标（2 气球）
 python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
 ```
 

@@ -378,6 +378,17 @@ def cmd_hole_table(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_balloon(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.balloon(doc, args.x, args.y)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_interf(args: argparse.Namespace) -> int:
     from ..verified import asm_ops
     doc = _active_doc()
@@ -644,6 +655,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--x", type=float, default=0.10)
     p.add_argument("--y", type=float, default=0.16)
     p.set_defaults(func=cmd_hole_table)
+
+    p = sub.add_parser("balloon", help="自动球标（verified；需装配图 BOM）")
+    p.add_argument("--x", type=float, default=0.10)
+    p.add_argument("--y", type=float, default=0.16)
+    p.set_defaults(func=cmd_balloon)
 
     p = sub.add_parser("interf", help="干涉检查（verified，count=0 也算成功）")
     p.set_defaults(func=cmd_interf)
