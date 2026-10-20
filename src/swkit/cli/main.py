@@ -562,6 +562,36 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_equations(args: argparse.Namespace) -> int:
+    from ..verified import equations as EQ
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = EQ.list_equations(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_set_var(args: argparse.Namespace) -> int:
+    from ..verified import equations as EQ
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = EQ.set_global_variable(doc, args.name, args.value)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_ref_axis(args: argparse.Namespace) -> int:
+    from ..verified import equations as EQ
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = EQ.create_reference_axis(doc, args.plane1, args.plane2)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_zoom(args: argparse.Namespace) -> int:
     from ..verified import view_measure as VM
     doc = _doc_or_none()
@@ -1149,6 +1179,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("equations", help="列方程/全局变量（verified）")
+    p.set_defaults(func=cmd_equations)
+
+    p = sub.add_parser("set-var", help="写全局变量（verified）")
+    p.add_argument("--name", required=True)
+    p.add_argument("--value", type=float, required=True)
+    p.set_defaults(func=cmd_set_var)
+
+    p = sub.add_parser("ref-axis", help="两基准面建参考轴（verified）")
+    p.add_argument("--plane1", default="前视基准面")
+    p.add_argument("--plane2", default="上视基准面")
+    p.set_defaults(func=cmd_ref_axis)
 
     p = sub.add_parser("zoom", help="缩放到合适（verified）")
     p.set_defaults(func=cmd_zoom)

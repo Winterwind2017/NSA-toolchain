@@ -162,6 +162,21 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 方程/全局变量/参考轴（2026-10-20 真机 4/4）──────────────────
+_EQUATIONS: List[Tuple[str, ToolEntry]] = [
+    _e("sw_get_equations", "doc", "IEquationMgr.GetCount/Equation/Value",
+       "空件 0 条；写入后 1 条可读",
+       "IModelDoc2 无 AddEquation；IEquationMgr 必须 comtypes（pywin32 找不到成员）"),
+    _e("sw_list_global_variables", "doc", "IEquationMgr.Equation(i)",
+       "列出 \"myvar\" = 5.0（值 5.0）",
+       "全局变量语法是 \"名字\" = 数值（名字带引号）；Add 成功返回下标、失败返回 -1"),
+    _e("sw_set_global_variable", "doc", "IEquationMgr.Add(-1, expr)",
+       "计数 0→1，Value 读回 5.0 且等式回读一致"),
+    _e("sw_create_reference_axis", "doc", "IModelDoc2.InsertAxis2",
+       "选前视+上视两个基准面 → RefAxis 0→1",
+       "只选一个面时 InsertAxis2 返回 bool 但不出特征"),
+]
+
 # ── 视图/测量（2026-10-20 真机 3/3）────────────────────────────────
 _VIEW_MEASURE: List[Tuple[str, ToolEntry]] = [
     _e("sw_zoom_to_fit", "view", "IModelDoc2.ViewZoomtofit2",
@@ -392,7 +407,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -418,6 +433,9 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 方程/全局变量/参考轴（verified/equations.py，2026-10-20 真机 4/4）
+    "sw_get_equations", "sw_list_global_variables", "sw_set_global_variable",
+    "sw_create_reference_axis",
     # 视图/测量（verified/view_measure.py，2026-10-20 真机 3/3）
     "sw_zoom_to_fit", "sw_set_view_orientation", "sw_measure_distance",
     # 文档开关 / 配置（verified/config_io.py，2026-10-20 真机 9/9）

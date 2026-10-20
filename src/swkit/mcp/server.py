@@ -456,6 +456,35 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_get_equations")
+def sw_get_equations() -> Dict[str, Any]:
+    """列方程（verified）：走 comtypes IEquationMgr。"""
+    from ..verified import equations as EQ
+    return _with_doc(EQ.list_equations)
+
+
+@mcp.tool(name="sw_list_global_variables")
+def sw_list_global_variables() -> Dict[str, Any]:
+    """列全局变量（verified）：语法 `"名字" = 数值`。"""
+    from ..verified import equations as EQ
+    return _with_doc(EQ.list_equations)
+
+
+@mcp.tool(name="sw_set_global_variable")
+def sw_set_global_variable(name: str, value: float) -> Dict[str, Any]:
+    """写全局变量（verified）：判据计数 +1 且 Value 读回。"""
+    from ..verified import equations as EQ
+    return _with_doc(EQ.set_global_variable, name, value)
+
+
+@mcp.tool(name="sw_create_reference_axis")
+def sw_create_reference_axis(plane1: str = "前视基准面",
+                            plane2: str = "上视基准面") -> Dict[str, Any]:
+    """两基准面建参考轴（verified）：判据 RefAxis +1（只选一个面不出特征）。"""
+    from ..verified import equations as EQ
+    return _with_doc(EQ.create_reference_axis, plane1, plane2)
+
+
 @mcp.tool(name="sw_zoom_to_fit")
 def sw_zoom_to_fit() -> Dict[str, Any]:
     """缩放到合适（verified）：判据 Scale2 可读且 > 0。"""

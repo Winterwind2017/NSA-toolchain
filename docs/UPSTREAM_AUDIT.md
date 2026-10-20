@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 97 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 101 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
 | 未达可用 | 17 | 已登记但没打通 |
-| 未复核 | 68 | **待办**：还没验证 |
+| 未复核 | 64 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -50,6 +50,7 @@
 | `sw_connect` | — | 已覆盖 | 本仓库有实现且有真机判据 | 611 |
 | `sw_create_assembly` | — | 已覆盖 | 本仓库有实现且有真机判据 | 716 |
 | `sw_create_part` | — | 已覆盖 | 本仓库有实现且有真机判据 | 699 |
+| `sw_create_reference_axis` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2103 |
 | `sw_create_reference_plane` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2084 |
 | `sw_create_section_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3298 |
 | `sw_create_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 855 |
@@ -68,6 +69,7 @@
 | `sw_get_bounding_box` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1680 |
 | `sw_get_custom_properties` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1752 |
 | `sw_get_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1621 |
+| `sw_get_equations` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1842 |
 | `sw_get_flat_pattern_info` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2201 |
 | `sw_get_mass_properties` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1661 |
 | `sw_get_material` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2270 |
@@ -82,6 +84,7 @@
 | `sw_list_configurations` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1790 |
 | `sw_list_display_states` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3474 |
 | `sw_list_features` | — | 已覆盖 | 本仓库有实现且有真机判据 | 837 |
+| `sw_list_global_variables` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3431 |
 | `sw_list_materials` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2290 |
 | `sw_list_open_documents` | — | 已覆盖 | 本仓库有实现且有真机判据 | 748 |
 | `sw_measure_distance` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1697 |
@@ -100,6 +103,7 @@
 | `sw_set_custom_property` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1771 |
 | `sw_set_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1640 |
 | `sw_set_display_mode` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1966 |
+| `sw_set_global_variable` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3441 |
 | `sw_set_material` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2260 |
 | `sw_set_view_orientation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1936 |
 | `sw_shell` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1208 |
@@ -140,7 +144,6 @@
 | `sw_create_drawing` | — | 未复核 | Create a new SolidWorks drawing document. | 732 |
 | `sw_create_helix` | — | 未复核 | Create a helix from a selected sketch circle (used as a sweep path for | 2405 |
 | `sw_create_motion_study` | — | 未复核 | Create a new motion study (requires SOLIDWORKS Motion add-in).""" | 3385 |
-| `sw_create_reference_axis` | — | 未复核 | Create a reference axis from selected geometry. | 2103 |
 | `sw_create_reference_point` | — | 未复核 | Create a reference point at the specified XYZ coordinates (in mm). | 2127 |
 | `sw_create_simulation_study` | — | 未复核 | Create a new SOLIDWORKS Simulation study (requires Simulation add-in). | 3403 |
 | `sw_curve_driven_pattern` | — | 未复核 | Pattern a seed feature along a curve.""" | 3661 |
@@ -152,14 +155,12 @@
 | `sw_fill_pattern` | — | 未复核 | Pattern a seed feature to fill a target face.""" | 3651 |
 | `sw_filled_surface` | — | 未复核 | Fill a closed boundary of edges with a new surface.""" | 2654 |
 | `sw_flatten_sheet_metal` | — | 未复核 | Toggle the flat pattern view of the active sheet metal part. | 2184 |
-| `sw_get_equations` | — | 未复核 | List all equations and global variables in the active document. | 1842 |
 | `sw_hide_all_planes` | — | 未复核 | Hide all reference planes in the viewport.""" | 3328 |
 | `sw_hide_all_sketches` | — | 未复核 | Hide all sketches in the viewport.""" | 3348 |
 | `sw_insert_weldment` | — | 未复核 | Insert the weldment feature into the active part (enables weldment too | 2811 |
 | `sw_intersect` | — | 未复核 | Create intersection regions from selected bodies/surfaces.""" | 3616 |
 | `sw_jog` | — | 未复核 | Add a jog bend at the active sketch line on a sheet metal face.""" | 2749 |
 | `sw_link_dimension_to_equation` | — | 未复核 | Link a dimension to an expression via an equation (drives the dimensio | 3457 |
-| `sw_list_global_variables` | — | 未复核 | List all global variables in the active model.""" | 3431 |
 | `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
 | `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
 | `sw_move_body` | — | 未复核 | Move or copy the selected body by translation (mm) and rotation (deg). | 2359 |
@@ -174,7 +175,6 @@
 | `sw_scale_body` | — | 未复核 | Uniformly scale the selected body by a factor.""" | 2379 |
 | `sw_set_appearance_color` | — | 未复核 | Set RGB color and transparency on the active part's solid bodies.""" | 2280 |
 | `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
-| `sw_set_global_variable` | — | 未复核 | Set or create a global variable (used in equations like 'Diameter=2*\" | 3441 |
 | `sw_show_all_sketches` | — | 未复核 | Show all sketches in the viewport.""" | 3358 |
 | `sw_shut_off_surface` | — | 未复核 | Automatically create shut-off surfaces over holes for mold separation. | 2884 |
 | `sw_sketch_chamfer` | — | 未复核 | Chamfer (bevel) the corner between two selected sketch lines.""" | 2533 |
@@ -242,11 +242,11 @@
 | 类别 | 待验证数 |
 |---|---|
 | `sketch` | 13 |
-| `other` | 12 |
+| `other` | 11 |
 | `surface` | 9 |
 | `feature` | 8 |
 | `drawing` | 7 |
-| `inspect` | 7 |
+| `inspect` | 4 |
 | `assembly` | 3 |
 | `macro_io` | 3 |
 | `weldment` | 3 |
