@@ -44,11 +44,11 @@ def main() -> int:
     S.rectangle(doc, -10, -10, 10, 10)
     results["revolved"] = SUR.revolved_surface(doc, 360.0)
 
-    # extruded：已知未打通（返回 None、曲面数 0）→ 单列，不计入通过率
+    # extruded：走 FeatureExtruRefSurface3（22 参 + 草图 mark 0）
     doc = F.new_part()
     S.create_sketch(doc, "前视基准面")
     S.rectangle(doc, 0, 0, 40, 25)
-    known["extruded"] = "FeatureExtruRefSurface(15 参) 返回 None、曲面数 0；IFeatureManager 版 21 参语义未定"
+    results["extruded"] = SUR.extruded_surface(doc, 20.0)
 
     for name, res in results.items():
         print("== %-9s ok=%-5s checks=%s" % (name, res.get("ok"), res.get("checks")))

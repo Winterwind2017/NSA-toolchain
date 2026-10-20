@@ -70,7 +70,13 @@ def revolved_surface(doc: Any, angle_deg: float = 360.0) -> Dict[str, Any]:
     return out
 
 
-def extruded_surface(doc: Any, depth_mm: float = 20.0) -> Dict[str, Any]:
+SW_END_BLIND = 0
+SW_END_THROUGH_ALL = 1
+SW_START_SKETCH = 0
+
+
+def extruded_surface(doc: Any, depth_mm: float = 20.0,
+                     through_all: bool = False) -> Dict[str, Any]:
     """拉伸曲面（需草图）。判据：曲面数 +1。
 
     `IModelDoc::FeatureExtruRefSurface` 是 15 参：
@@ -83,18 +89,29 @@ def extruded_surface(doc: Any, depth_mm: float = 20.0) -> Dict[str, Any]:
     out["detail"].update({"depth_mm": depth_mm, "before": before})
     depth = float(depth_mm) / 1000.0
     try:
-        # 先把草图选上（不选时返回 None 且不出曲面）
-        try:
-            sk = doc.SketchManager.ActiveSketch
-            name = val(sk, "Name") if sk is not None else None
-            if name:
-                doc.Extension.SelectByID2(name, "SKETCH", 0, 0, 0, False, 0,
-                                          none_dispatch(), 0)
-        except Exception:
-            pass
-        feat = doc.FeatureExtruRefSurface(
-            False, False, False, 0, 0,
-            depth, 0.0, True, False, False, False, 0.0, 0.0, False, False)
+        # 现役 API 是 **IFeatureManager.FeatureExtruRefSurface3（22 参）**；
+        # IModelDoc.FeatureExtruRefSurface（15 参）是老接口，调了返回 None 且不出曲面。
+        # 官方 Remarks：调用前必须 SelectByID2 选草图（**mark 0**）。
+        sk = doc.SketchManager.ActiveSketch
+        name = val(sk, "Name") if sk is not None else None
+        if name:
+            doc.ClearSelection2(True)
+            doc.Extension.SelectByID2(name, "SKETCH", 0, 0, 0, False, 0,
+                                      none_dispatch(), 0)
+        args = [
+            True,           # Sd 单边
+            False,          # Dir 不反转
+            SW_START_SKETCH, 0.0,   # StartCond, OffsetVal
+            SW_END_THROUGH_ALL if through_all else SW_END_BLIND, 0,
+            depth, 0.0,
+            False, False, False, False, 0.0, 0.0,
+            False, False, False, False,   # OffsetReverse1/2, TranslateSurface1/2
+            False, False,   # CapEnd1/2（不封端 = 真曲面）
+            False,          # DeleteOriginalFace
+            True,           # KnitResult
+        ]
+        out["detail"]["param_count"] = len(args)
+        feat = doc.FeatureManager.FeatureExtruRefSurface3(*args)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out

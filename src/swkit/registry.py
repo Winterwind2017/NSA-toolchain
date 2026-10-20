@@ -181,6 +181,9 @@ _SURFACES: List[Tuple[str, ToolEntry]] = [
        "它在本机是**属性**：读取即执行，加括号报 'bool' object is not callable"),
     _e("sw_revolved_surface", "surface", "IModelDoc.InsertRevolvedRefSurface(4 参)",
        "矩形+中心线 → 曲面 0→1；API 在 IModelDoc 上，不在 IModelDoc2"),
+    _e("sw_extruded_surface", "surface", "IFeatureManager.FeatureExtruRefSurface3(22 参)",
+       "闭合矩形草图 → 曲面 0→1，特征类型 ExtruRefSurface",
+       "老接口 IModelDoc.FeatureExtruRefSurface(15 参) 返回 None 不出面；必须先 SelectByID2 选草图 mark 0"),
 ]
 
 # ── 切除（2026-10-20 真机 3/3，修 P0）────────────────────────────────
@@ -201,6 +204,12 @@ _BODIES: List[Tuple[str, ToolEntry]] = [
 
 # ── 草图编辑（2026-10-20 真机 4/4）──────────────────────────────────
 _SKETCH_EDIT: List[Tuple[str, ToolEntry]] = [
+    _e("sw_sketch_offset", "sketch", "ISketchManager.SketchOffset2(6 参)",
+       "矩形 4 段/130mm → **8 段/300mm**（偏移 5mm）",
+       "真实签名 6 参（TLB 只列 3）：Offset,BothDirections,Chain,CapEnds,MakeConstruction,AddDimensions"),
+    _e("sw_sketch_linear_pattern", "sketch", "ISketchManager.CreateLinearSketchStepAndRepeat(12 参)",
+       "Ø6 圆 1→**3** 段、总长 18.85→**56.55**（3×20mm 间距）",
+       "真实签名 12 参（TLB 只列 6）：第 7 参 DeleteInstances 是字符串，三个 Dim 传 None，须 comtypes"),
     _e("sw_sketch_trim", "sketch", "ISketchManager.SketchTrim(4 参)",
        "矩形+伸出横线：总长 200→190 mm（正好切掉 10 mm 伸出段）"),
     _e("sw_sketch_fillet", "sketch", "ISketchManager.CreateFillet(2 参)",
@@ -267,6 +276,9 @@ _SHEET_METAL: List[Tuple[str, ToolEntry]] = [
        "BaseFlange 返回 None 但特征确实建出来了 —— 判据必须看特征树，不能看返回值"),
     _e("sw_get_flat_pattern_info", "sheet_metal", "IFeature(FlatPattern) + GetBodyBox",
        "FlatPattern 特征存在；GetBendState=1"),
+    _e("sw_insert_bends", "sheet_metal", "IPartDoc.InsertBends(6 参)",
+       "L 形等厚实体+选底面 → 特征 **SheetMetal+ProcessBends+FlatPattern**，bendState 0→**3**",
+       "第 2 参是折弯表名字符串不是 bool；不选面时返回 True 但什么都不生成"),
     _e("sw_hem", "sheet_metal", "IModelDoc2.InsertSheetMetalHem(8 参)",
        "特征 22→23，特征树出现 Hem"),
 ]
@@ -397,9 +409,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_add_section_view", ToolEntry("sw_add_section_view", "drawing", "unverified",
         "IDrawingDoc.CreateSectionViewAt", "",
         "图纸里没有\"前视基准面\"（剖视需在视图上画剖切线，不是选基准面）→ 找不到基准面")),
-    ("sw_extruded_surface", ToolEntry("sw_extruded_surface", "surface", "unverified",
-        "IModelDoc.FeatureExtruRefSurface(15 参)", "",
-        "选中草图后仍返回 None、曲面数 0；IFeatureManager 版是 21 参，语义未定")),
+
     ("sw_hide_all_planes", ToolEntry("sw_hide_all_planes", "view", "unverified",
         "IModelDoc2.SetUserPreferenceToggle", "",
         "swUserPreferenceToggle_e 里没有基准面/草图开关（实测仅 10 项：DisplayAxes/EntityPoints/…）")),
@@ -468,12 +478,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_export_dxf", ToolEntry("sw_export_dxf", "feature", "unverified",
         "IModelDoc2.SaveAs(DXF)", "",
         "零件直接导 DXF 无输出（DXF 需工程图或展开图上下文）")),
-    ("sw_sketch_offset", ToolEntry("sw_sketch_offset", "sketch", "unverified",
-        "SketchManager.SketchOffset2", "",
-        "pywin32 迟绑定报 DISP_E_PARAMNOTOPTIONAL；comtypes 要求 CapEnds 等必填维")),
-    ("sw_sketch_linear_pattern", ToolEntry("sw_sketch_linear_pattern", "sketch",
-        "unverified", "CreateLinearSketchStepAndRepeat", "",
-        "comtypes 要求 XSpacingDim/YSpacingDim 等尺寸对象参数，无法只传数值")),
+
     ("sw_sketch_circular_pattern", ToolEntry("sw_sketch_circular_pattern", "sketch",
         "unverified", "CreateCircularSketchStepAndRepeat", "",
         "comtypes 要求 RadiusDim 等尺寸对象参数")),
@@ -520,14 +525,15 @@ _IMPLEMENTED = {
     "sw_explode_assembly", "sw_move_component",
     # 图纸视图/BOM（verified/drawing_extra.py，2026-10-20 真机 2/3）
     "sw_add_drawing_view", "sw_add_bom_table",
-    # 曲面（verified/surfaces.py，2026-10-20 真机 2/3）
-    "sw_planar_surface", "sw_revolved_surface",
+    # 曲面（verified/surfaces.py，2026-10-20 真机 3/3）
+    "sw_planar_surface", "sw_revolved_surface", "sw_extruded_surface",
     # 切除（verified/cuts.py，2026-10-20 真机 3/3）
     "sw_cut_extrude",
     # 实体级操作（verified/bodies.py，2026-10-20 真机 2/2）
     "sw_scale_body", "sw_delete_body",
     # 草图编辑（verified/sketch_edit.py，2026-10-20 真机 4/4）
     "sw_sketch_trim", "sw_sketch_fillet", "sw_sketch_chamfer", "sw_start_3d_sketch",
+    "sw_sketch_offset", "sw_sketch_linear_pattern",
     # 方程/全局变量/参考轴（verified/equations.py，2026-10-20 真机 4/4）
     "sw_get_equations", "sw_list_global_variables", "sw_set_global_variable",
     "sw_create_reference_axis",
@@ -538,7 +544,7 @@ _IMPLEMENTED = {
     "sw_save_as_copy", "sw_list_configurations", "sw_add_configuration",
     "sw_activate_configuration", "sw_get_referenced_documents",
     # 钣金（verified/sheet_metal.py，2026-10-20 真机 3/4）
-    "sw_base_flange", "sw_get_flat_pattern_info", "sw_hem",
+    "sw_base_flange", "sw_get_flat_pattern_info", "sw_hem", "sw_insert_bends",
     # 文档级基础操作（verified/doc_ops.py，2026-10-20 真机 7/8）
     "sw_connect", "sw_create_part", "sw_create_reference_plane", "sw_select_entity",
     "sw_clear_selection", "sw_capture_screenshot", "sw_delete_feature",

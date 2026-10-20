@@ -482,6 +482,13 @@ def sw_cut_extrude(depth: float = 12.0, through_all: bool = False,
     return _with_doc(C.cut_extrude, depth, through_all, flip_side)
 
 
+@mcp.tool(name="sw_extruded_surface")
+def sw_extruded_surface(depth: float = 20.0, through_all: bool = False) -> Dict[str, Any]:
+    """拉伸曲面（verified）：需草图；走 FeatureExtruRefSurface3（22 参，草图 mark 0）。"""
+    from ..verified import surfaces as SUR
+    return _with_doc(SUR.extruded_surface, depth, through_all)
+
+
 @mcp.tool(name="sw_planar_surface")
 def sw_planar_surface() -> Dict[str, Any]:
     """平面区域曲面（verified）：需闭合草图；判据曲面数 +1。"""
@@ -508,6 +515,22 @@ def sw_delete_body(body_index: int = 0) -> Dict[str, Any]:
     """删除实体（verified）：判据实体数 -1。"""
     from ..verified import bodies as B
     return _with_doc(B.delete_body, body_index)
+
+
+@mcp.tool(name="sw_sketch_offset")
+def sw_sketch_offset(offset_mm: float = 5.0, outward: bool = True) -> Dict[str, Any]:
+    """草图偏移（verified）：先选中草图实体；判据线段数增加（4→8）。"""
+    from ..verified import sketch_ops as SO
+    return _with_doc(SO.offset, offset_mm, outward)
+
+
+@mcp.tool(name="sw_sketch_linear_pattern")
+def sw_sketch_linear_pattern(x_count: int = 3, y_count: int = 1,
+                             x_spacing_mm: float = 20.0,
+                             y_spacing_mm: float = 0.0) -> Dict[str, Any]:
+    """草图线性阵列（verified）：12 参真实签名；判据线段数按份数增加。"""
+    from ..verified import sketch_ops as SO
+    return _with_doc(SO.linear_pattern, x_count, y_count, x_spacing_mm, y_spacing_mm)
 
 
 @mcp.tool(name="sw_sketch_trim")
@@ -651,6 +674,13 @@ def sw_get_referenced_documents() -> Dict[str, Any]:
     """引用文档（verified）：判据依赖数 > 0。"""
     from ..verified import config_io as CI
     return _with_doc(CI.get_referenced_documents)
+
+
+@mcp.tool(name="sw_insert_bends")
+def sw_insert_bends(radius: float = 5.0) -> Dict[str, Any]:
+    """实体转钣金（verified）：先选中一个固定面；判据出现 SheetMetal+ProcessBends+FlatPattern。"""
+    from ..verified import sheet_metal as SM
+    return _with_doc(SM.insert_bends, radius)
 
 
 @mcp.tool(name="sw_base_flange")

@@ -7,10 +7,10 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 111 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 114 | 本仓库有实现、有真机判据 |
 | 已判死 | 5 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 28 | 已登记但没打通 |
+| 未达可用 | 25 | 已登记但没打通 |
 | 未复核 | 42 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
@@ -68,6 +68,7 @@
 | `sw_export_step` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3686 |
 | `sw_export_stl` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3696 |
 | `sw_extrude` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1133 |
+| `sw_extruded_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2594 |
 | `sw_fix_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1459 |
 | `sw_get_assembly_tree` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3258 |
 | `sw_get_bounding_box` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1680 |
@@ -123,6 +124,8 @@
 | `sw_sketch_ellipse` | — | 已覆盖 | 本仓库有实现且有真机判据 | 971 |
 | `sw_sketch_fillet` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2523 |
 | `sw_sketch_line` | — | 已覆盖 | 本仓库有实现且有真机判据 | 904 |
+| `sw_sketch_linear_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1053 |
+| `sw_sketch_offset` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1021 |
 | `sw_sketch_polygon` | — | 已覆盖 | 本仓库有实现且有真机判据 | 987 |
 | `sw_sketch_rectangle` | — | 已覆盖 | 本仓库有实现且有真机判据 | 936 |
 | `sw_sketch_spline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1004 |
@@ -189,7 +192,6 @@
 | `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
 | `sw_edge_flange` | — | 未达可用 | 已登记但没打通： | 2719 |
 | `sw_export_flat_pattern` | — | 未达可用 | 已登记但没打通： | 2218 |
-| `sw_extruded_surface` | — | 未达可用 | 已登记但没打通： | 2594 |
 | `sw_fillet` | — | 未达可用 | 已登记但没打通： | 1172 |
 | `sw_fold` | — | 未达可用 | 已登记但没打通： | 2779 |
 | `sw_hide_all_planes` | — | 未达可用 | 已登记但没打通： | 3328 |
@@ -203,12 +205,10 @@
 | `sw_sketch_circular_pattern` | — | 未达可用 | 已登记但没打通： | 1069 |
 | `sw_sketch_convert_entities` | — | 未达可用 | 已登记但没打通： | 2483 |
 | `sw_sketch_extend` | — | 未达可用 | 已登记但没打通： | 2503 |
-| `sw_sketch_linear_pattern` | — | 未达可用 | 已登记但没打通： | 1053 |
-| `sw_sketch_offset` | — | 未达可用 | 已登记但没打通： | 1021 |
 | `sw_split_body` | — | 未达可用 | 已登记但没打通： | 2349 |
 | `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
 
-## 本仓库超出上游的能力（21 条）
+## 本仓库超出上游的能力（22 条）
 
 这些来自第 ③ 类资产（`sw-extra` 的仿真/运动/元数据）与 ④ 的修复层，上游 `server.py` 里没有对应工具，所以**不算覆盖上游**：
 
@@ -216,6 +216,7 @@
 |---|---|
 | `sw_add_gtol` | drawing |
 | `sw_cut_extrude` | feature |
+| `sw_insert_bends` | sheet_metal |
 | `sw_motion_list` | study |
 | `sw_motion_read` | study |
 | `sw_note` | drawing |

@@ -622,6 +622,12 @@ def cmd_sketch_edit(args: argparse.Namespace) -> int:
         return 2
     if args.action == "trim":
         res = SE.trim(doc, args.x, args.y)
+    elif args.action == "offset":
+        from ..verified import sketch_ops as SO
+        res = SO.offset(doc, args.radius)
+    elif args.action == "pattern":
+        from ..verified import sketch_ops as SO
+        res = SO.linear_pattern(doc, 3, 1, args.radius, 0.0)
     elif args.action == "fillet":
         res = SE.fillet(doc, args.radius)
     elif args.action == "chamfer":
@@ -739,6 +745,16 @@ def cmd_refs(args: argparse.Namespace) -> int:
     if doc is None:
         return 2
     res = CI.get_referenced_documents(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_bends(args: argparse.Namespace) -> int:
+    from ..verified import sheet_metal as SM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = SM.insert_bends(doc, args.radius)
     _dump(res)
     return 0 if res.get("ok") else 4
 
@@ -1276,7 +1292,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_body_op)
 
     p = sub.add_parser("sketch-edit", help="草图编辑 trim/fillet/chamfer/3d（verified）")
-    p.add_argument("action", choices=["trim", "fillet", "chamfer", "3d"])
+    p.add_argument("action", choices=["trim", "fillet", "chamfer", "3d", "offset", "pattern"])
     p.add_argument("--x", type=float, default=60.0)
     p.add_argument("--y", type=float, default=12.5)
     p.add_argument("--radius", type=float, default=5.0)
@@ -1331,6 +1347,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("refs", help="引用文档（verified）")
     p.set_defaults(func=cmd_refs)
+
+    p = sub.add_parser("bends", help="实体转钣金（verified，先选中一个固定面）")
+    p.add_argument("--radius", type=float, default=5.0)
+    p.set_defaults(func=cmd_bends)
 
     p = sub.add_parser("base-flange", help="钣金基体法兰（verified，mm）")
     p.add_argument("--thickness", type=float, default=2.0)

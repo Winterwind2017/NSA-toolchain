@@ -209,3 +209,46 @@ def export_flat_pattern(doc: Any, path: str = "") -> Dict[str, Any]:
     out["checks"] = {"file_exists": size > 0, "dxf_signature": b"SECTION" in head}
     out["ok"] = all(out["checks"].values())
     return out
+def _sm_kinds(doc: Any) -> List[str]:
+    from ._common import iter_features
+    want = ("SheetMetal", "ProcessBends", "FlatPattern", "SMBaseFlange",
+            "SolidToSheetMetal", "Flange", "SketchedBend")
+    return [k for k in (str(val(f, "GetTypeName2")) for f in iter_features(doc))
+            if k in want]
+
+
+def insert_bends(doc: Any, radius_mm: float = 5.0, auto_relief: bool = True,
+                 offset_ratio: float = 0.5) -> Dict[str, Any]:
+    """实体转钣金（`IPartDoc.InsertBends`，给等厚实体加折弯）。
+
+    判据：特征里出现 **SheetMetal + ProcessBends + FlatPattern**，且 bendState 由 0 变 3。
+
+    两个坑（实测）：
+    * 第 2 参是**折弯表名字符串**，不是 bool（TLB 同名列写 `UseBendTable` 会误导）
+    * 调用前必须**先选中一个固定面**；不选面时返回 True 但什么都不生成
+    """
+    out = _result("sw_insert_bends", "IPartDoc.InsertBends(6 参)")
+    before = _sm_kinds(doc)
+    state0 = val(doc, "GetBendState")
+    out["detail"].update({"before": before, "bend_state_before": state0,
+                          "radius_mm": radius_mm})
+    try:
+        from ._common import com_doc
+        _sw, md = com_doc()
+        part = md.QueryInterface(_sw.IPartDoc)
+        res = part.InsertBends(float(radius_mm) / 1000.0, "", bool(auto_relief),
+                               False, bool(auto_relief), float(offset_ratio))
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = _sm_kinds(doc)
+    state1 = val(doc, "GetBendState")
+    out["detail"].update({"after": after, "bend_state_after": state1,
+                          "returned": res})
+    out["checks"] = {
+        "sheet_metal_added": "SheetMetal" in after,
+        "process_bends_added": "ProcessBends" in after,
+        "flat_pattern_added": "FlatPattern" in after,
+    }
+    out["ok"] = all(out["checks"].values())
+    return out

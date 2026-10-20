@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from math import radians
+
 from ..core.com import none_dispatch, val
 
 __all__ = ["create_sketch", "edit_sketch", "exit_sketch", "line", "circle",
@@ -247,11 +249,14 @@ def offset(doc: Any, distance: float = 2.0, outward: bool = True) -> Dict[str, A
     if selected == 0:
         out["detail"]["error"] = "没有可偏移的草图实体"
         return out
-    # 直接调 `SketchOffset2(Offset, BothDirections, Chain)`（TLB 3 参）；
+    # 直接调 `SketchOffset2(Offset, BothDirections, Chain, CapEnds, MakeConstruction, AddDimensions)`（TLB 3 参）；
     # 内核的 sketch_offset 在当前形态下调用失败，所以这里不走内核。
     try:
+        # 真实签名是 **6 参**（TLB 只列了 3 个）：
+        # (Offset, BothDirections, Chain, CapEnds, MakeConstruction, AddDimensions)
         doc.SketchManager.SketchOffset2(float(distance) / 1000.0,
-                                        not bool(outward), True)
+                                        not bool(outward), True,
+                                        False, False, False)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
@@ -277,9 +282,17 @@ def linear_pattern(doc: Any, x_count: int = 2, y_count: int = 1,
     # TLB: CreateLinearSketchStepAndRepeat(NumX, NumY, SpacingX, SpacingY,
     #                                     AngleX, AngleY, DeleteInstances)
     try:
-        doc.SketchManager.CreateLinearSketchStepAndRepeat(
+        # 必须 comtypes：三个 Dim 参数要传 None，pywin32 动态调度报“类型不匹配”。
+        from ._common import com_doc as _com_doc
+        _sw, _md = _com_doc()
+        _md.SketchManager.CreateLinearSketchStepAndRepeat(
+            # 真实签名 **12 参**（TLB 只列 6 个）：
+            # (NumX, NumY, SpacingX, SpacingY, AngleX, AngleY,
+            #  DeleteInstances:str, XSpacingDim, YSpacingDim, AngleDim,
+            #  CreateNumDimX:bool, CreateNumDimY:bool)
             int(x_count), int(y_count), float(x_spacing) / 1000.0,
-            float(y_spacing) / 1000.0, float(x_angle), 0.0, "")
+            float(y_spacing) / 1000.0, radians(float(x_angle)), 0.0, "",
+            None, None, None, False, False)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out

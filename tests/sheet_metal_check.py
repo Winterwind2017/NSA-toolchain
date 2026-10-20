@@ -70,6 +70,22 @@ def main() -> int:
     print("   钣金特征 =", SM._sheet_features(doc))
     print("   GetBendState =", SM.bend_state(doc))
 
+
+    # ── insert_bends：等厚 L 形实体 → 选底面 → 转钣金
+    try:
+        from swkit.verified import sketch_ops as _S
+        from swkit.core.com import none_dispatch as _nd
+        _doc = F.new_part()
+        _S.create_sketch(_doc, "前视基准面")
+        _pts = [(0, 0), (100, 0), (100, 10), (10, 10), (10, 80), (0, 80), (0, 0)]
+        for _i in range(len(_pts) - 1):
+            _S.line(_doc, _pts[_i][0], _pts[_i][1], _pts[_i + 1][0], _pts[_i + 1][1])
+        F.extrude(_doc, 40.0)
+        _doc.ClearSelection2(True)
+        _doc.Extension.SelectByID2("", "FACE", 0.05, 0.005, 0.0, False, 0, _nd(), 0)
+        results["insert_bends"] = SM.insert_bends(_doc, 5.0)
+    except Exception as _exc:                       # noqa: BLE001
+        results["insert_bends"] = {"ok": False, "error": str(_exc)[:80]}
     for name, res in results.items():
         if res.get("ok") is None:
             print("-- %-14s SKIP  %s" % (name, res.get("skipped")))

@@ -78,17 +78,17 @@ def main() -> int:
     doc = fresh("sk8.SLDPRT")
     results["centerline"] = S.centerline(doc, -20, 0, 20, 0)
 
-    # 这 3 条已确认**在 pywin32 迟绑定下不可调**（DISP_E_PARAMNOTOPTIONAL：可选参数
+    # circular_pattern 仍不可调（需 RadiusDim 尺寸对象）；offset/linear_pattern 已于 P2 转正。
     # 不能省），comtypes 又要求 CapEnds / XSpacingDim / RadiusDim 等尺寸对象参数。
     # 因此单列"已知不可验证"，不参与通过判定，但如实打印。
     known_unverified = {}
     doc = fresh("sk9.SLDPRT")
     S.rectangle(doc, 0, 0, 40, 25)
-    known_unverified["offset"] = S.offset(doc, distance=3.0)
+    results["offset"] = S.offset(doc, distance=3.0)
 
     doc = fresh("sk10.SLDPRT")
     S.rectangle(doc, 0, 0, 40, 25)
-    known_unverified["linear_pattern"] = S.linear_pattern(
+    results["linear_pattern"] = S.linear_pattern(
         doc, x_count=2, y_count=2, x_spacing=20.0, y_spacing=15.0)
 
     doc = fresh("sk11.SLDPRT")
