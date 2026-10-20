@@ -166,14 +166,32 @@ src/swkit/
 - Python 3.10+，`pywin32` / `comtypes` / `mcp>=1.0`
 - 验收脚本：[`tests/live_check.py`](tests/live_check.py)（真机，非单测）
 
+一条命令跑全部真机套件（8 个，约 40 s–10 min，取决于 SolidWorks 是否已热）：
+
 ```powershell
-python tests/live_check.py     # 真机：建测试装配 → 组件线性阵列 → 镜像 → 证据字典
-python tests/part_check.py     # 真机：包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
-python tests/sketch_check.py   # 真机：构造线/草图文字/约束/显示状态/材料库（5 项）
-python tests/asm_ops_check.py  # 真机：干涉 A/B + 固定/显示/爆炸（4 项）
-python tests/drawing_check.py  # 真机：剖视/建图/中心标记/中心线/符号×3/粗糙度/注释/尺寸/孔表/断裂/辅助（13 项）
-python tests/balloon_check.py  # 真机：装配图 BOM + 自动球标（2 气球）
-python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
+python tests/run_all.py                       # 全跑，失败会打印每个套件的尾部
+python tests/run_all.py --only drawing,balloon # 只跑指定套件
+python tests/run_all.py --json out.json        # 机器可读结果
+python tests/run_all.py --list                 # 看套件清单
+```
+
+pytest 两个入口（真机用例默认**跳过**，见 `tests/conftest.py`）：
+
+```powershell
+pytest                 # 只跑离线契约（registry 口径、标记常量、CLI/MCP 结构）
+pytest --live          # 连真机一起跑（等价于 run_all.py 的 8 个套件）
+```
+
+单套件直跑（排查时用）：
+
+```powershell
+python tests/live_check.py     # 装配：组件线性阵列 + 镜像
+python tests/part_check.py     # 包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
+python tests/sketch_check.py   # 构造线/草图文字/约束/显示状态/材料库（5 项）
+python tests/asm_ops_check.py  # 干涉 A/B + 固定/显示/平移/爆炸（4 项）
+python tests/drawing_check.py  # 剖视/建图/中心标记/中心线/符号×3/粗糙度/注释/尺寸/孔表/断裂/辅助（13 项）
+python tests/balloon_check.py  # 装配图 BOM + 自动球标（2 气球）
+python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks）
 ```
 
 > `serverInfo.version` 显示的是底层 `mcp` 库版本（FastMCP 构造函数没有 version 参数）；
