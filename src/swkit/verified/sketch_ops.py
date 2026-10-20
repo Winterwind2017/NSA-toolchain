@@ -314,14 +314,17 @@ def circular_pattern(doc: Any, count: int = 3, radius: float = 20.0,
     if selected == 0:
         out["detail"]["error"] = "没有可阵列的草图实体"
         return out
-    # TLB: CreateCircularSketchStepAndRepeat(ArcRadius, ArcAngle, PatternNum,
-    #                                       PatternSpacing, PatternRotate,
-    #                                       DeleteInstances)
+    # 真实签名 **9 参**（TLB 只列了 6 个）：
+    #   (ArcRadius, ArcAngle, PatternNum, PatternSpacing, PatternRotate,
+    #    DeleteInstances:str, RadiusDim, AngleDim, CreateNumOfInstancesDim)
+    # 三个 Dim 传 None 即可（实测 1 段 → 4 段、长度 ×4）；必须走 comtypes。
     import math as _math
     try:
-        doc.SketchManager.CreateCircularSketchStepAndRepeat(
+        from ._common import com_doc as _com_doc
+        _sw, _md = _com_doc()
+        _md.SketchManager.CreateCircularSketchStepAndRepeat(
             float(radius) / 1000.0, _math.radians(float(angle_deg)), int(count),
-            _math.radians(float(angle_deg)), True, "")
+            _math.radians(float(angle_deg)), True, "", None, None, False)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out

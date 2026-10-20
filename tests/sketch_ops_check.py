@@ -93,7 +93,7 @@ def main() -> int:
 
     doc = fresh("sk11.SLDPRT")
     S.rectangle(doc, 0, 0, 40, 25)
-    known_unverified["circular_pattern"] = S.circular_pattern(doc, count=4, radius=20.0)
+    results["circular_pattern"] = S.circular_pattern(doc, count=4, radius=20.0)
 
     # edit_sketch：回到第一个草图再画一条线
     doc = _open(app, args.part, "sk12.SLDPRT")

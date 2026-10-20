@@ -496,6 +496,34 @@ def sw_planar_surface() -> Dict[str, Any]:
     return _with_doc(SUR.planar_surface)
 
 
+@mcp.tool(name="sw_mirror_feature")
+def sw_mirror_feature(plane: str = "前视基准面") -> Dict[str, Any]:
+    """镜像特征（verified）：判据 体积必须翻倍。
+
+    选择标记（官方 Remarks）：待镜像特征 = **1**，镜像面/基准面 = **2**。
+    """
+    from ..verified import features as FE
+    return _with_doc(FE.mirror_feature, plane)
+
+
+@mcp.tool(name="sw_revolve")
+def sw_revolve(angle_deg: float = 360.0) -> Dict[str, Any]:
+    """旋转凸台（verified）：草图需含中心线；判据 体积>0 且小于同外径实心圆柱。
+
+    `FeatureRevolve2` 的 5 参版在 **IModelDoc** 上（不在 IModelDoc2）。
+    """
+    from ..verified import features as FE
+    return _with_doc(FE.revolve, angle_deg)
+
+
+@mcp.tool(name="sw_sketch_circular_pattern")
+def sw_sketch_circular_pattern(count: int = 4, radius: float = 20.0,
+                               angle_deg: float = 360.0) -> Dict[str, Any]:
+    """草图圆周阵列（verified）：9 参真实签名，三个 Dim 传 None，须 comtypes。"""
+    from ..verified import sketch_ops as SO
+    return _with_doc(SO.circular_pattern, count, radius, angle_deg)
+
+
 @mcp.tool(name="sw_revolved_surface")
 def sw_revolved_surface(angle_deg: float = 360.0) -> Dict[str, Any]:
     """旋转曲面（verified）：需草图+中心线；判据曲面数 +1。"""

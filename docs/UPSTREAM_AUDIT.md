@@ -7,10 +7,10 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 117 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 119 | 本仓库有实现、有真机判据 |
 | 已判死 | 5 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 22 | 已登记但没打通 |
+| 未达可用 | 20 | 已登记但没打通 |
 | 未复核 | 42 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
@@ -105,6 +105,7 @@
 | `sw_planar_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2584 |
 | `sw_rebuild_model` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1982 |
 | `sw_replace_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3188 |
+| `sw_revolve` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1153 |
 | `sw_revolved_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2604 |
 | `sw_save_all` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3518 |
 | `sw_save_as_copy` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3538 |
@@ -123,6 +124,7 @@
 | `sw_sketch_centerline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1037 |
 | `sw_sketch_chamfer` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2533 |
 | `sw_sketch_circle` | — | 已覆盖 | 本仓库有实现且有真机判据 | 920 |
+| `sw_sketch_circular_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1069 |
 | `sw_sketch_construction` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2513 |
 | `sw_sketch_ellipse` | — | 已覆盖 | 本仓库有实现且有真机判据 | 971 |
 | `sw_sketch_fillet` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2523 |
@@ -200,15 +202,13 @@
 | `sw_mirror` | — | 未达可用 | 已登记但没打通： | 1284 |
 | `sw_miter_flange` | — | 未达可用 | 已登记但没打通： | 2729 |
 | `sw_move_body` | — | 未达可用 | 已登记但没打通： | 2359 |
-| `sw_revolve` | — | 未达可用 | 已登记但没打通： | 1153 |
 | `sw_show_all_sketches` | — | 未达可用 | 已登记但没打通： | 3358 |
-| `sw_sketch_circular_pattern` | — | 未达可用 | 已登记但没打通： | 1069 |
 | `sw_sketch_convert_entities` | — | 未达可用 | 已登记但没打通： | 2483 |
 | `sw_sketch_extend` | — | 未达可用 | 已登记但没打通： | 2503 |
 | `sw_split_body` | — | 未达可用 | 已登记但没打通： | 2349 |
 | `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
 
-## 本仓库超出上游的能力（24 条）
+## 本仓库超出上游的能力（25 条）
 
 这些来自第 ③ 类资产（`sw-extra` 的仿真/运动/元数据）与 ④ 的修复层，上游 `server.py` 里没有对应工具，所以**不算覆盖上游**：
 
@@ -219,6 +219,7 @@
 | `sw_dxp` | meta |
 | `sw_flow_check` | meta |
 | `sw_insert_bends` | sheet_metal |
+| `sw_mirror_feature` | feature |
 | `sw_motion_list` | study |
 | `sw_motion_read` | study |
 | `sw_note` | drawing |

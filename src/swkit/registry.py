@@ -197,6 +197,16 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
     _e("sw_fillet", "feature", "FeatureFillet3（高层 14 参版，comtypes）",
        "80×50×12 板 4 条边圆角 5mm：体积 48000→**47382.87**（Δ=-617.13）、面 6→**10**、边 12→**20**",
        "同名两套签名：底层 9 参在 pywin32 下第 7 参 Radii 恒报类型不匹配；高层 14 参（Options 开头）走 comtypes 才通"),
+    _e("sw_revolve", "feature", "IModelDoc.FeatureRevolve2(5 参)",
+       "10–30 矩形绕 X 轴 360°：体积 **25132.741 mm³** = πR²h（R=20,h=20）；360°:180° 体积比 **2.0000**",
+       "5 参版在 IModelDoc 上（不在 IModelDoc2），内核走错接口才报'非选择性的参数'；须 comtypes QI"),
+    _e("sw_mirror_feature", "feature", "IFeatureManager.InsertMirrorFeature2(5 参)",
+       "40×25×20 实体跨前视基准面镜像：体积 20000→**40000**（比 **2.0**）、特征「镜向1」",
+       "选择标记：待镜像特征 = **1**，镜像面/基准面 = **2**（官方 Remarks 表）"),
+    _e("sw_sketch_circular_pattern", "sketch",
+       "ISketchManager.CreateCircularSketchStepAndRepeat(9 参)",
+       "Ø6 圆绕半径 20mm 阵列 4 份：线段 1→**4**、总长 18.85→**75.40**（×4）",
+       "真实签名 9 参（TLB 只列 6）；三个 Dim 传 None 即可，须 comtypes"),
     _e("sw_analyze_draft", "feature",
        "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount",
        "分型线1（夹具 tests/fixtures/draft_parting_line.SLDPRT）：正拔模 **1**、负拔模 **1**、无拔模 **4**、跨面 **0**，合计 6 = 实体面数",
@@ -416,6 +426,11 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
+        "IFeatureManager.HoleWizard5(27 参)", "",
+        "按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），"
+        "选顶面或选基准面都返回 None、体积 48000→48000 不变 —— 孔向导对本机不可用；"
+        "等价能力走 sw_threaded_hole（底孔 FeatureCut4 + 倒角 + 真实螺纹，8/8 通过）")),
 
     ("sw_dimxpert_autodim", ToolEntry("sw_dimxpert_autodim", "meta", "unverified",
         "IDimXpertPart.AutoDimensionScheme(option)", "",
@@ -475,14 +490,10 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "IDrawingDoc.CreateDetailViewAt3(9 参)", "",
         "返回 None、视图数不变：详图需要父视图上已有详图圆（detail circle）")),
     # ── 特征族里没打通/不可验证的（2026-10-20 实测依据）──────────────
-    ("sw_revolve", ToolEntry("sw_revolve", "feature", "unverified",
-        "FeatureManager.FeatureRevolve2", "",
-        "TLB 显示 5 参、内核按 12 参调，两边都报 DISP_E_PARAMNOTOPTIONAL（真实参数列表未定）")),
 
 
-    ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
-        "HoleWizard5", "",
-        "该 API 需 **27 个参数**，内核只传 14 个 → DISP_E_PARAMNOTOPTIONAL")),
+
+
     ("sw_mirror", ToolEntry("sw_mirror", "feature", "unverified",
         "InsertMirrorFeature2(5 参)", "",
         "特征(选中 2 个对象)+基准面(mark 32)都选好后仍返回 None")),
@@ -493,9 +504,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "IModelDoc2.SaveAs(DXF)", "",
         "零件直接导 DXF 无输出（DXF 需工程图或展开图上下文）")),
 
-    ("sw_sketch_circular_pattern", ToolEntry("sw_sketch_circular_pattern", "sketch",
-        "unverified", "CreateCircularSketchStepAndRepeat", "",
-        "comtypes 要求 RadiusDim 等尺寸对象参数")),
+
 
 
     ("sw_flow_project",
@@ -562,7 +571,8 @@ _IMPLEMENTED = {
     # 图纸补充（verified/drawing_extra.py，2026-10-20 真机 3/5）
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
-    "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft", "sw_export_step", "sw_export_stl", "sw_export_file",
+    "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft",
+    "sw_revolve", "sw_mirror_feature", "sw_sketch_circular_pattern", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",
     # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
     "sw_create_assembly", "sw_insert_component", "sw_get_assembly_tree",

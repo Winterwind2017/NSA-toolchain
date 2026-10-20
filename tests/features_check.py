@@ -57,7 +57,7 @@ def main() -> int:
     S.create_sketch(doc, "前视基准面")
     S.centerline(doc, -20, -10, -20, 10)
     S.rectangle(doc, -10, -10, 10, 10)
-    known["revolve"] = F.revolve(doc, 360.0)
+    results["revolve"] = F.revolve(doc, 360.0)
 
     # 3) 圆角 / 倒角（在拉伸体上）
     doc = _new_part_with_rect()
@@ -94,7 +94,7 @@ def main() -> int:
             target.Select2(False, 0)
     except Exception:
         pass
-    known["mirror_feature"] = F.mirror_feature(doc, "前视基准面")
+    results["mirror_feature"] = F.mirror_feature(doc, "前视基准面")
 
     print()
     for name, res in known.items():

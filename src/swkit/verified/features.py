@@ -17,7 +17,7 @@ import math
 import os
 from typing import Any, Dict, List, Optional
 
-from ..core.com import pyw, val
+from ..core.com import none_dispatch, pyw, val
 from ._common import bodies, faces_of, iter_features, shape_counts, wrap
 
 __all__ = ["extrude", "revolve", "fillet", "chamfer", "hole_wizard", "mirror_feature",
@@ -127,19 +127,54 @@ def revolve(doc: Any, angle_deg: float = 360.0, is_cut: bool = False) -> Dict[st
     """旋转当前草图（需有中心线/轴）。判据：特征 +1 且体积 > 0。"""
     out = _result("sw_revolve", "IFeatureManager.FeatureRevolve2")
     before = shape_counts(doc)
+    # `FeatureRevolve2` 的 5 参版在 **IModelDoc** 上（不在 IModelDoc2）：
+    # (Angle, ReverseDir, Angle2, RevType, Options)。内核走 IModelDoc2 才报
+    # "非选择性的参数"。必须 comtypes QI 过去。
     try:
-        _kernel().revolve(angle=angle_deg, is_cut=is_cut)
+        from ._common import com_doc
+        sw, md = com_doc()
+        model = md.QueryInterface(sw.IModelDoc)
+        model.FeatureRevolve2(float(angle_deg) * math.pi / 180.0, False, 0.0, 0, 0)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
     after = shape_counts(doc)
     v1 = _volume_mm3(doc)
+    # 几何上界判据：旋转体体积必须 < 同外径实心圆柱。
+    # 轴不一定是 X —— 用"与另两维差异最大"的那一维当轴向（柱体另两维都≈直径）。
+    box, radius, height = None, None, None
+    for b in bodies(doc, 0):
+        try:
+            box = [float(x) * 1000 for x in (val(wrap(b), "GetBodyBox") or [])[:6]]
+        except Exception:                           # noqa: BLE001
+            box = None
+        if box and len(box) == 6:
+            ext = (box[3] - box[0], box[4] - box[1], box[5] - box[2])
+            best_axis, best_score = 0, -1.0
+            for i in range(3):
+                others = [ext[j] for j in range(3) if j != i]
+                score = abs(ext[i] - sum(others) / 2.0)
+                if score > best_score:
+                    best_axis, best_score = i, score
+            others = [ext[j] for j in range(3) if j != best_axis]
+            height = ext[best_axis]
+            radius = max(others) / 2.0
+            break
+    upper = None
+    if radius and height:
+        frac = min(1.0, float(angle_deg) / 360.0)
+        upper = math.pi * radius * radius * height * frac
     out["detail"].update({"angle_deg": angle_deg,
                           "features_before": before["features"],
                           "features_after": after["features"],
-                          "volume_mm3": round(v1, 3) if v1 is not None else None})
+                          "volume_mm3": round(v1, 3) if v1 is not None else None,
+                          "bbox_radius_mm": radius, "bbox_height_mm": height,
+                          "solid_cylinder_upper_mm3":
+                              None if upper is None else round(upper, 1)})
+    inside = (v1 is not None and upper is not None and 0 < v1 < upper * 1.02)
     out["checks"] = {"feature_added": after["features"] > before["features"],
-                     "volume_positive": bool(v1 and v1 > 0)}
+                     "volume_positive": bool(v1 and v1 > 0),
+                     "below_solid_cylinder": bool(inside)}
     out["ok"] = all(out["checks"].values())
     return out
 
@@ -266,13 +301,42 @@ def mirror_feature(doc: Any, plane: str = "前视基准面") -> Dict[str, Any]:
     out = _result("sw_mirror", "IFeatureManager.InsertMirrorFeature2")
     before = shape_counts(doc)
     out["detail"].update({"plane": plane, "features_before": before["features"]})
+    v0 = _volume_mm3(doc)
+    # 官方 Remarks 的选择标记：**特征 = 1**，**镜像面/基准面 = 2**
+    target = None
+    for f in iter_features(doc):
+        if str(val(f, "GetTypeName2")) in ("Extrusion", "Revolve", "RevolveThin",
+                                           "ExtrusionThin", "Cut", "CutThin"):
+            target = str(val(f, "Name"))
+    if target is None:
+        out["detail"]["error"] = "没有可镜像的特征"
+        return out
+    doc.ClearSelection2(True)
+    sel_feat = doc.Extension.SelectByID2(target, "BODYFEATURE", 0, 0, 0, False, 1,
+                                         none_dispatch(), 0)
+    sel_plane = doc.Extension.SelectByID2(plane, "PLANE", 0, 0, 0, True, 2,
+                                          none_dispatch(), 0)
+    out["detail"].update({"feature_to_mirror": target,
+                          "selected_feature": bool(sel_feat),
+                          "selected_plane": bool(sel_plane)})
+    if not (sel_feat and sel_plane):
+        out["detail"]["error"] = "选择失败（特征或基准面名不对）"
+        return out
     try:
-        _kernel().mirror_feature(mirror_plane=plane)
+        feat = doc.FeatureManager.InsertMirrorFeature2(False, False, False, False, 0)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
     after = shape_counts(doc)
-    out["detail"]["features_after"] = after["features"]
-    out["checks"] = {"feature_added": after["features"] > before["features"]}
-    out["ok"] = out["checks"]["feature_added"]
+    v1 = _volume_mm3(doc)
+    ratio = (v1 / v0) if (v0 and v1) else None
+    out["detail"].update({"features_after": after["features"],
+                          "solids_after": after["solids"],
+                          "volume_before_mm3": v0, "volume_after_mm3": v1,
+                          "volume_ratio": None if ratio is None else round(ratio, 3),
+                          "feature": None if feat is None else str(val(feat, "Name"))})
+    doubled = ratio is not None and abs(ratio - 2.0) < 0.02
+    out["checks"] = {"feature_added": after["features"] > before["features"],
+                     "volume_doubled": bool(doubled)}
+    out["ok"] = all(out["checks"].values())
     return out
