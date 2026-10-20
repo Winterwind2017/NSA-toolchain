@@ -456,6 +456,20 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_scale_body")
+def sw_scale_body(factor: float = 2.0) -> Dict[str, Any]:
+    """整体缩放（verified）：必须先选中实体，否则几何不变（假成功）。"""
+    from ..verified import bodies as B
+    return _with_doc(B.scale_body, factor)
+
+
+@mcp.tool(name="sw_delete_body")
+def sw_delete_body(body_index: int = 0) -> Dict[str, Any]:
+    """删除实体（verified）：判据实体数 -1。"""
+    from ..verified import bodies as B
+    return _with_doc(B.delete_body, body_index)
+
+
 @mcp.tool(name="sw_sketch_trim")
 def sw_sketch_trim(x: float = 60.0, y: float = 12.5) -> Dict[str, Any]:
     """草图裁剪（verified）：判据是线段总长/数量变化。"""

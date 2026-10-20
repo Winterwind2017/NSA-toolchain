@@ -22,7 +22,7 @@ ROOT = os.path.dirname(HERE)
 
 SUITES = ["selftest", "mcp_smoke", "live", "part", "sketch", "sketch_ops",
           "inspect", "asm_ops", "asm_state", "features", "io",
-          "doc_ops", "drawing_extra", "sheet_metal", "config_io", "view_measure", "equations", "sketch_edit",
+          "doc_ops", "drawing_extra", "sheet_metal", "config_io", "view_measure", "equations", "sketch_edit", "bodies",
           "drawing", "balloon"]
 
 

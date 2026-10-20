@@ -162,6 +162,15 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 实体级操作（2026-10-20 真机 2/2）────────────────────────────────
+_BODIES: List[Tuple[str, ToolEntry]] = [
+    _e("sw_scale_body", "body", "IModelDoc2.InsertScale(5 参)",
+       "选中实体后 40×25×20 → **80×50×40**（体积 20000→160000）",
+       "不选实体也能调用、不报错，但几何不变 —— 假成功；选实体要用 SOLIDBODY 中心点选"),
+    _e("sw_delete_body", "body", "IFeatureManager.InsertDeleteBody",
+       "实体数 2→1"),
+]
+
 # ── 草图编辑（2026-10-20 真机 4/4）──────────────────────────────────
 _SKETCH_EDIT: List[Tuple[str, ToolEntry]] = [
     _e("sw_sketch_trim", "sketch", "ISketchManager.SketchTrim(4 参)",
@@ -351,6 +360,15 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_move_body", ToolEntry("sw_move_body", "body", "unverified",
+        "IFeatureManager.InsertMoveCopyBody2(12 参)", "",
+        "选中实体后三种参数解释（方向+距离 / 纯平移 / 距离字段）都无位移，包围盒 dx=0")),
+    ("sw_combine_bodies", ToolEntry("sw_combine_bodies", "body", "unverified",
+        "IFeatureManager.InsertCombineFeature(3 参)", "",
+        "两次相交拉伸会被自动合并成 1 个体，当前夹具造不出两个可组合的体")),
+    ("sw_split_body", ToolEntry("sw_split_body", "body", "unverified",
+        "IFeatureManager.PreSplitBody/PostSplitBody2", "",
+        "需要先有分割线/基准面且 PostSplitBody2 是 5 参，未尝试")),
     ("sw_sketch_extend", ToolEntry("sw_sketch_extend", "sketch", "unverified",
         "ISketchManager.SketchExtend(3 参)", "",
         "选中线段后调用，长度 20→20 不变（未知是否需要选端点或标记）")),
@@ -427,7 +445,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -453,6 +471,8 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 实体级操作（verified/bodies.py，2026-10-20 真机 2/2）
+    "sw_scale_body", "sw_delete_body",
     # 草图编辑（verified/sketch_edit.py，2026-10-20 真机 4/4）
     "sw_sketch_trim", "sw_sketch_fillet", "sw_sketch_chamfer", "sw_start_3d_sketch",
     # 方程/全局变量/参考轴（verified/equations.py，2026-10-20 真机 4/4）

@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 105 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 107 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 19 | 已登记但没打通 |
-| 未复核 | 58 | **待办**：还没验证 |
+| 未达可用 | 22 | 已登记但没打通 |
+| 未复核 | 53 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -54,6 +54,7 @@
 | `sw_create_reference_plane` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2084 |
 | `sw_create_section_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3298 |
 | `sw_create_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 855 |
+| `sw_delete_body` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2369 |
 | `sw_delete_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1363 |
 | `sw_edit_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 872 |
 | `sw_exit_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 888 |
@@ -99,6 +100,7 @@
 | `sw_save_all` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3518 |
 | `sw_save_as_copy` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3538 |
 | `sw_save_document` | — | 已覆盖 | 本仓库有实现且有真机判据 | 683 |
+| `sw_scale_body` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2379 |
 | `sw_select_entity` | — | 已覆盖 | 本仓库有实现且有真机判据 | 801 |
 | `sw_set_custom_property` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1771 |
 | `sw_set_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1640 |
@@ -142,7 +144,6 @@
 | `sw_analyze_draft` | — | 未复核 | Perform draft analysis on the active part model. | 1731 |
 | `sw_boundary_boss` | — | 未复核 | Create a boundary boss/cut from two or more profile curves.""" | 3626 |
 | `sw_check_geometry` | — | 未复核 | Check the active part for geometry errors (invalid faces, edges, etc.) | 1714 |
-| `sw_combine_bodies` | — | 未复核 | Combine selected bodies via boolean operation (union/subtract/intersec | 2339 |
 | `sw_composite_curve` | — | 未复核 | Combine selected edges and sketch entities into a single composite cur | 2445 |
 | `sw_create_design_table` | — | 未复核 | Create a design table for driving multiple configurations from a sprea | 1898 |
 | `sw_create_drawing` | — | 未复核 | Create a new SolidWorks drawing document. | 732 |
@@ -151,7 +152,6 @@
 | `sw_create_reference_point` | — | 未复核 | Create a reference point at the specified XYZ coordinates (in mm). | 2127 |
 | `sw_create_simulation_study` | — | 未复核 | Create a new SOLIDWORKS Simulation study (requires Simulation add-in). | 3403 |
 | `sw_curve_driven_pattern` | — | 未复核 | Pattern a seed feature along a curve.""" | 3661 |
-| `sw_delete_body` | — | 未复核 | Delete the selected body.""" | 2369 |
 | `sw_dome` | — | 未复核 | Add a dome on a selected planar face.""" | 3596 |
 | `sw_draft` | — | 未复核 | Add draft (taper angle) to selected faces. | 1227 |
 | `sw_extend_surface` | — | 未复核 | Extend a surface by a distance, up to a point, or up to another surfac | 2634 |
@@ -167,7 +167,6 @@
 | `sw_link_dimension_to_equation` | — | 未复核 | Link a dimension to an expression via an equation (drives the dimensio | 3457 |
 | `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
 | `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
-| `sw_move_body` | — | 未复核 | Move or copy the selected body by translation (mm) and rotation (deg). | 2359 |
 | `sw_parting_line` | — | 未复核 | Create a parting line for mold design (used to separate core from cavi | 2874 |
 | `sw_planar_surface` | — | 未复核 | Create a planar surface from selected closed sketch profile or edges." | 2584 |
 | `sw_projected_curve` | — | 未复核 | Project a sketch onto a face to create a 3D curve.""" | 2435 |
@@ -176,13 +175,11 @@
 | `sw_run_macro` | — | 未复核 | Run a saved SolidWorks macro file (.swp or .swb). | 2001 |
 | `sw_run_simulation` | — | 未复核 | Run the active SOLIDWORKS Simulation study.""" | 3413 |
 | `sw_run_vba_code` | — | 未复核 | Execute arbitrary VBA code against SolidWorks. | 2021 |
-| `sw_scale_body` | — | 未复核 | Uniformly scale the selected body by a factor.""" | 2379 |
 | `sw_set_appearance_color` | — | 未复核 | Set RGB color and transparency on the active part's solid bodies.""" | 2280 |
 | `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
 | `sw_show_all_sketches` | — | 未复核 | Show all sketches in the viewport.""" | 3358 |
 | `sw_shut_off_surface` | — | 未复核 | Automatically create shut-off surfaces over holes for mold separation. | 2884 |
 | `sw_sketched_bend` | — | 未复核 | Add a sketched bend along an active sketch line on a flat sheet metal  | 2739 |
-| `sw_split_body` | — | 未复核 | Split the selected body using the selected trim tool (sketch/surface/p | 2349 |
 | `sw_sweep` | — | 未复核 | Create a sweep of a profile sketch along a path sketch. | 1345 |
 | `sw_tooling_split` | — | 未复核 | Split a mold block into core and cavity using the parting line/surface | 2894 |
 | `sw_trim_surface` | — | 未复核 | Trim a surface using selected trim tool.""" | 2624 |
@@ -192,6 +189,7 @@
 | `sw_add_equation` | — | 未达可用 | 已登记但没打通： | 1859 |
 | `sw_add_revision_table` | — | 未达可用 | 已登记但没打通： | 3112 |
 | `sw_chamfer` | — | 未达可用 | 已登记但没打通： | 1190 |
+| `sw_combine_bodies` | — | 未达可用 | 已登记但没打通： | 2339 |
 | `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
 | `sw_edge_flange` | — | 未达可用 | 已登记但没打通： | 2719 |
 | `sw_export_flat_pattern` | — | 未达可用 | 已登记但没打通： | 2218 |
@@ -200,12 +198,14 @@
 | `sw_hole_wizard` | — | 未达可用 | 已登记但没打通： | 1303 |
 | `sw_mirror` | — | 未达可用 | 已登记但没打通： | 1284 |
 | `sw_miter_flange` | — | 未达可用 | 已登记但没打通： | 2729 |
+| `sw_move_body` | — | 未达可用 | 已登记但没打通： | 2359 |
 | `sw_revolve` | — | 未达可用 | 已登记但没打通： | 1153 |
 | `sw_sketch_circular_pattern` | — | 未达可用 | 已登记但没打通： | 1069 |
 | `sw_sketch_convert_entities` | — | 未达可用 | 已登记但没打通： | 2483 |
 | `sw_sketch_extend` | — | 未达可用 | 已登记但没打通： | 2503 |
 | `sw_sketch_linear_pattern` | — | 未达可用 | 已登记但没打通： | 1053 |
 | `sw_sketch_offset` | — | 未达可用 | 已登记但没打通： | 1021 |
+| `sw_split_body` | — | 未达可用 | 已登记但没打通： | 2349 |
 | `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
 
 ## 本仓库超出上游的能力（20 条）
@@ -241,14 +241,14 @@
 
 | 类别 | 待验证数 |
 |---|---|
-| `other` | 11 |
+| `other` | 10 |
 | `surface` | 9 |
-| `feature` | 8 |
 | `drawing` | 7 |
 | `sketch` | 7 |
+| `feature` | 6 |
 | `inspect` | 4 |
-| `assembly` | 3 |
 | `macro_io` | 3 |
 | `weldment` | 3 |
-| `mold` | 2 |
+| `assembly` | 2 |
 | `sheet_metal` | 1 |
+| `mold` | 1 |

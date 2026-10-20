@@ -562,6 +562,19 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_body_op(args: argparse.Namespace) -> int:
+    from ..verified import bodies as B
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    if args.action == "scale":
+        res = B.scale_body(doc, args.factor)
+    else:
+        res = B.delete_body(doc, args.index)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_sketch_edit(args: argparse.Namespace) -> int:
     from ..verified import sketch_edit as SE
     doc = _doc_or_none()
@@ -1196,6 +1209,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("body", help="实体操作 scale/delete（verified）")
+    p.add_argument("action", choices=["scale", "delete"])
+    p.add_argument("--factor", type=float, default=2.0)
+    p.add_argument("--index", type=int, default=0)
+    p.set_defaults(func=cmd_body_op)
 
     p = sub.add_parser("sketch-edit", help="草图编辑 trim/fillet/chamfer/3d（verified）")
     p.add_argument("action", choices=["trim", "fillet", "chamfer", "3d"])

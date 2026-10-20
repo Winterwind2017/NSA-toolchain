@@ -53,6 +53,7 @@ def _suites() -> list[dict]:
         "view_measure": "view_measure_check.py",
         "equations": "equations_check.py",
         "sketch_edit": "sketch_edit_check.py",
+        "bodies": "bodies_check.py",
         "asm_ops": "asm_ops_check.py",
         "drawing": "drawing_check.py",
         "balloon": "balloon_check.py",
