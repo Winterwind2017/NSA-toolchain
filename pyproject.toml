@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swkit"
+version = "0.1.0"
+description = "自有 SolidWorks 自动化内核：库 + CLI + MCP + agent skill（只发布实测通过的能力）"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Winterwind2017" }]
+keywords = ["solidworks", "cad", "com", "automation", "mcp", "agent", "skill"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: Microsoft :: Windows",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Computer Aided Design",
+]
+dependencies = [
+  "pywin32>=306",
+  "comtypes>=1.2.0",
+  "mcp>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+swkit = "swkit.cli.main:main"
+swkit-mcp = "swkit.mcp.server:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+  "live: 需要本机 SolidWorks 的验收测试（默认不跑）",
+]
