@@ -562,6 +562,23 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_sketch_edit(args: argparse.Namespace) -> int:
+    from ..verified import sketch_edit as SE
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    if args.action == "trim":
+        res = SE.trim(doc, args.x, args.y)
+    elif args.action == "fillet":
+        res = SE.fillet(doc, args.radius)
+    elif args.action == "chamfer":
+        res = SE.chamfer(doc, args.radius)
+    else:
+        res = SE.start_3d_sketch(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_equations(args: argparse.Namespace) -> int:
     from ..verified import equations as EQ
     doc = _doc_or_none()
@@ -1179,6 +1196,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("sketch-edit", help="草图编辑 trim/fillet/chamfer/3d（verified）")
+    p.add_argument("action", choices=["trim", "fillet", "chamfer", "3d"])
+    p.add_argument("--x", type=float, default=60.0)
+    p.add_argument("--y", type=float, default=12.5)
+    p.add_argument("--radius", type=float, default=5.0)
+    p.set_defaults(func=cmd_sketch_edit)
 
     p = sub.add_parser("equations", help="列方程/全局变量（verified）")
     p.set_defaults(func=cmd_equations)

@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 101 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 105 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 17 | 已登记但没打通 |
-| 未复核 | 64 | **待办**：还没验证 |
+| 未达可用 | 19 | 已登记但没打通 |
+| 未复核 | 58 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -110,15 +110,19 @@
 | `sw_show_all_components` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1475 |
 | `sw_sketch_arc` | — | 已覆盖 | 本仓库有实现且有真机判据 | 954 |
 | `sw_sketch_centerline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1037 |
+| `sw_sketch_chamfer` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2533 |
 | `sw_sketch_circle` | — | 已覆盖 | 本仓库有实现且有真机判据 | 920 |
 | `sw_sketch_construction` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2513 |
 | `sw_sketch_ellipse` | — | 已覆盖 | 本仓库有实现且有真机判据 | 971 |
+| `sw_sketch_fillet` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2523 |
 | `sw_sketch_line` | — | 已覆盖 | 本仓库有实现且有真机判据 | 904 |
 | `sw_sketch_polygon` | — | 已覆盖 | 本仓库有实现且有真机判据 | 987 |
 | `sw_sketch_rectangle` | — | 已覆盖 | 本仓库有实现且有真机判据 | 936 |
 | `sw_sketch_spline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1004 |
 | `sw_sketch_text` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2543 |
+| `sw_sketch_trim` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2493 |
 | `sw_split_line` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2425 |
+| `sw_start_3d_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2415 |
 | `sw_suppress_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3228 |
 | `sw_suppress_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1380 |
 | `sw_take_photoview_screenshot` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3318 |
@@ -177,14 +181,8 @@
 | `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
 | `sw_show_all_sketches` | — | 未复核 | Show all sketches in the viewport.""" | 3358 |
 | `sw_shut_off_surface` | — | 未复核 | Automatically create shut-off surfaces over holes for mold separation. | 2884 |
-| `sw_sketch_chamfer` | — | 未复核 | Chamfer (bevel) the corner between two selected sketch lines.""" | 2533 |
-| `sw_sketch_convert_entities` | — | 未复核 | Convert selected face edges into sketch entities (in the active sketch | 2483 |
-| `sw_sketch_extend` | — | 未复核 | Extend selected sketch entity until next boundary.""" | 2503 |
-| `sw_sketch_fillet` | — | 未复核 | Fillet (round) the corner between two selected sketch lines.""" | 2523 |
-| `sw_sketch_trim` | — | 未复核 | Trim selected sketch entity (power trim mode).""" | 2493 |
 | `sw_sketched_bend` | — | 未复核 | Add a sketched bend along an active sketch line on a flat sheet metal  | 2739 |
 | `sw_split_body` | — | 未复核 | Split the selected body using the selected trim tool (sketch/surface/p | 2349 |
-| `sw_start_3d_sketch` | — | 未复核 | Start a 3D sketch (for routing pipes, wires, complex paths).""" | 2415 |
 | `sw_sweep` | — | 未复核 | Create a sweep of a profile sketch along a path sketch. | 1345 |
 | `sw_tooling_split` | — | 未复核 | Split a mold block into core and cavity using the parting line/surface | 2894 |
 | `sw_trim_surface` | — | 未复核 | Trim a surface using selected trim tool.""" | 2624 |
@@ -204,6 +202,8 @@
 | `sw_miter_flange` | — | 未达可用 | 已登记但没打通： | 2729 |
 | `sw_revolve` | — | 未达可用 | 已登记但没打通： | 1153 |
 | `sw_sketch_circular_pattern` | — | 未达可用 | 已登记但没打通： | 1069 |
+| `sw_sketch_convert_entities` | — | 未达可用 | 已登记但没打通： | 2483 |
+| `sw_sketch_extend` | — | 未达可用 | 已登记但没打通： | 2503 |
 | `sw_sketch_linear_pattern` | — | 未达可用 | 已登记但没打通： | 1053 |
 | `sw_sketch_offset` | — | 未达可用 | 已登记但没打通： | 1021 |
 | `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
@@ -241,11 +241,11 @@
 
 | 类别 | 待验证数 |
 |---|---|
-| `sketch` | 13 |
 | `other` | 11 |
 | `surface` | 9 |
 | `feature` | 8 |
 | `drawing` | 7 |
+| `sketch` | 7 |
 | `inspect` | 4 |
 | `assembly` | 3 |
 | `macro_io` | 3 |

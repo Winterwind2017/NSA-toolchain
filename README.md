@@ -98,6 +98,9 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_connect` / `sw_create_part` / `sw_create_reference_plane` | `NewDocument`/`InsertRefPlane` | 版本 33.4.1；`GetType==1`；RefPlane **3→4** |
 | `sw_select_entity` / `sw_clear_selection` | `SelectByID2`/`ClearSelection2` | 选择集 **1 → 0** |
 | `sw_capture_screenshot` / `sw_delete_feature` | `SaveAs(PNG)`/`DeleteSelection2` | PNG 魔数 **125 KB**；特征数 **-1** |
+| `sw_sketch_trim` | `SketchTrim`（4 参） | 矩形+伸出线：总长 **200→190 mm** |
+| `sw_sketch_fillet` / `sw_sketch_chamfer` | `CreateFillet`/`CreateChamfer` | 线段 **4→5**、总长 130→**127.854 / 127.071** |
+| `sw_start_3d_sketch` | `Insert3DSketch` | 活动草图存在且 **Is3D=True** |
 | `sw_get_equations` / `sw_list_global_variables` | `IEquationMgr.GetCount/Equation/Value` | 空件 0 条；写入后 1 条（`"myvar" = 5.0`） |
 | `sw_set_global_variable` | `IEquationMgr.Add` | 计数 **0→1**，`Value` 读回 **5.0** |
 | `sw_create_reference_axis` | `InsertAxis2` | 两基准面 → `RefAxis` **0→1** |
@@ -140,7 +143,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **121 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **125 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -192,11 +195,11 @@ src/swkit/
 
 | 归宿 | 数量 |
 |---|---|
-| 已覆盖（本仓库有实现 + 真机判据） | 101 |
+| 已覆盖（本仓库有实现 + 真机判据） | 105 |
 | 已判死（调用不存在/废弃 API，或实测不可用） | 4 |
 | 已知不稳（不进回归） | 2 |
-| 未达可用（已登记但没打通） | 17 |
-| **未复核（待办）** | 64 |
+| 未达可用（已登记但没打通） | 19 |
+| **未复核（待办）** | 58 |
 
 外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
 未复核的 149 条已按能力族分批（sketch 29 / inspect 23 / assembly 16 / drawing 16 /

@@ -162,6 +162,20 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 草图编辑（2026-10-20 真机 4/4）──────────────────────────────────
+_SKETCH_EDIT: List[Tuple[str, ToolEntry]] = [
+    _e("sw_sketch_trim", "sketch", "ISketchManager.SketchTrim(4 参)",
+       "矩形+伸出横线：总长 200→190 mm（正好切掉 10 mm 伸出段）"),
+    _e("sw_sketch_fillet", "sketch", "ISketchManager.CreateFillet(2 参)",
+       "选两条边 → 线段 4→5、总长 130→127.854",
+       "真名是 CreateFillet(Radius, ConstrainedCorners)，不是 SketchFillet；必须 comtypes"),
+    _e("sw_sketch_chamfer", "sketch", "ISketchManager.CreateChamfer(3 参)",
+       "选两条边 → 线段 4→5、总长 130→127.071",
+       "第一参是 int 类型（ChamferType），不是距离；角度要弧度"),
+    _e("sw_start_3d_sketch", "sketch", "ISketchManager.Insert3DSketch",
+       "活动草图存在且 Is3D=True"),
+]
+
 # ── 方程/全局变量/参考轴（2026-10-20 真机 4/4）──────────────────
 _EQUATIONS: List[Tuple[str, ToolEntry]] = [
     _e("sw_get_equations", "doc", "IEquationMgr.GetCount/Equation/Value",
@@ -337,6 +351,12 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_sketch_extend", ToolEntry("sw_sketch_extend", "sketch", "unverified",
+        "ISketchManager.SketchExtend(3 参)", "",
+        "选中线段后调用，长度 20→20 不变（未知是否需要选端点或标记）")),
+    ("sw_sketch_convert_entities", ToolEntry("sw_sketch_convert_entities", "sketch",
+        "unverified", "ISketchManager.SketchUseEdge/SketchUseEdge2", "",
+        "pywin32 报 DISP_E_PARAMNOTOPTIONAL；comtypes 下 SketchUseEdge() 无报错但线段数不变")),
     ("sw_unfold", ToolEntry("sw_unfold", "sheet_metal", "unverified",
         "IModelDoc2.InsertSheetMetalUnfold()", "",
         "平板无折弯时该动作无效果：特征 22→22、GetBendState 恒 1（需带折弯的钣金件才能验证）")),
@@ -407,7 +427,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -433,6 +453,8 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 草图编辑（verified/sketch_edit.py，2026-10-20 真机 4/4）
+    "sw_sketch_trim", "sw_sketch_fillet", "sw_sketch_chamfer", "sw_start_3d_sketch",
     # 方程/全局变量/参考轴（verified/equations.py，2026-10-20 真机 4/4）
     "sw_get_equations", "sw_list_global_variables", "sw_set_global_variable",
     "sw_create_reference_axis",

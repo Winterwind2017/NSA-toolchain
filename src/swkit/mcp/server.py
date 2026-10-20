@@ -456,6 +456,34 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_sketch_trim")
+def sw_sketch_trim(x: float = 60.0, y: float = 12.5) -> Dict[str, Any]:
+    """草图裁剪（verified）：判据是线段总长/数量变化。"""
+    from ..verified import sketch_edit as SE
+    return _with_doc(SE.trim, x, y)
+
+
+@mcp.tool(name="sw_sketch_fillet")
+def sw_sketch_fillet(radius: float = 5.0) -> Dict[str, Any]:
+    """草图圆角（verified）：需两条线段选中；判据线段数 +1。"""
+    from ..verified import sketch_edit as SE
+    return _with_doc(SE.fillet, radius)
+
+
+@mcp.tool(name="sw_sketch_chamfer")
+def sw_sketch_chamfer(distance: float = 5.0, angle_deg: float = 45.0) -> Dict[str, Any]:
+    """草图倒角（verified）：`CreateChamfer(type:int, dist, angle_rad)`。"""
+    from ..verified import sketch_edit as SE
+    return _with_doc(SE.chamfer, distance, angle_deg)
+
+
+@mcp.tool(name="sw_start_3d_sketch")
+def sw_start_3d_sketch() -> Dict[str, Any]:
+    """开 3D 草图（verified）：判据 Is3D=True。"""
+    from ..verified import sketch_edit as SE
+    return _with_doc(SE.start_3d_sketch)
+
+
 @mcp.tool(name="sw_get_equations")
 def sw_get_equations() -> Dict[str, Any]:
     """列方程（verified）：走 comtypes IEquationMgr。"""
