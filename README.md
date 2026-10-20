@@ -160,6 +160,21 @@ src/swkit/
 
 ---
 
+## 上游 188 个工具去哪了
+
+`docs/UPSTREAM_AUDIT.md` 是**逐条交代**（由 `tools/audit_upstream.py` 只读生成）：
+
+| 归宿 | 数量 |
+|---|---|
+| 已覆盖（本仓库有实现 + 真机判据） | 33 |
+| 已判死（调用不存在/废弃 API，或实测不可用） | 4 |
+| 已知不稳（不进回归） | 2 |
+| **未复核（待办）** | 149 |
+
+外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
+未复核的 149 条已按能力族分批（sketch 29 / inspect 23 / assembly 16 / drawing 16 /
+macro_io 13 / feature 10 / surface 9 / sheet_metal 7 / 其它 26）。
+
 ## 实测环境
 
 - SolidWorks 2025 SP4.1（`RevisionNumber 33.4.1`），Windows x64

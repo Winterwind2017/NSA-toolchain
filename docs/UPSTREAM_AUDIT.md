@@ -1,0 +1,254 @@
+# 上游 188 工具去向审计
+
+> 由 `tools/audit_upstream.py` 生成，**只读**上游 `server.py`，不执行。
+> 目的：让「上游工具去哪了」这件事可查，而不是「看起来整合过了」。
+
+## 汇总
+
+| 归宿 | 数量 | 含义 |
+|---|---|---|
+| 已覆盖 | 33 | 本仓库有实现、有真机判据 |
+| 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
+| 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
+| 未达可用 | 0 | 已登记但没打通 |
+| 未复核 | 149 | **待办**：还没验证 |
+
+上游共解析出 **188** 个工具。
+
+## 明细
+
+| 工具 | 判死 API | 归属 | 说明 | 上游行 |
+|---|---|---|---|---|
+| `sw_delete_face` | — | 已判死 | 本仓库实测不可用：option=0/1/2/4/8 × flag=T/F 共 10 组全 (False,False)，面数不变 | 2644 |
+| `sw_knit_surfaces` | — | 已判死 | 本仓库实测不可用：sldworks.tlb 无 InsertKnitSurface | 2165 |
+| `sw_start_macro_recording` | — | 已判死 | 本仓库实测不可用：类型库穷举无 StartRecording | 2049 |
+| `sw_stop_macro_recording` | — | 已判死 | 本仓库实测不可用：类型库穷举无 StopRecording | 2066 |
+| `sw_add_sketch_dimension` | — | 已知不稳 | 不进自动回归：round 17 成功 0.01→0.03；round 32 挂起并崩溃过一次 | 1085 |
+| `sw_show_all_planes` | — | 已知不稳 | 不进自动回归：API 存在且可调，但 IFeature.Visible 不反映图形可见性，无法构造 A/B | 3338 |
+| `sw_activate_display_state` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3484 |
+| `sw_add_annotation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1586 |
+| `sw_add_auxiliary_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3002 |
+| `sw_add_balloon` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3052 |
+| `sw_add_broken_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3022 |
+| `sw_add_center_mark` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3042 |
+| `sw_add_centerline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3032 |
+| `sw_add_datum_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3092 |
+| `sw_add_drawing_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1569 |
+| `sw_add_hole_table` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3102 |
+| `sw_add_sketch_constraint` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1108 |
+| `sw_add_surface_finish` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3062 |
+| `sw_add_weld_symbol` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3082 |
+| `sw_check_interference` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1493 |
+| `sw_circular_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1266 |
+| `sw_create_section_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3298 |
+| `sw_explode_assembly` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1515 |
+| `sw_fix_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1459 |
+| `sw_get_bounding_box` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1680 |
+| `sw_linear_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1246 |
+| `sw_list_materials` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2290 |
+| `sw_mirror_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3218 |
+| `sw_move_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3248 |
+| `sw_offset_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2614 |
+| `sw_pattern_component_circular` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3208 |
+| `sw_pattern_component_linear` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3198 |
+| `sw_shell` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1208 |
+| `sw_show_all_components` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1475 |
+| `sw_sketch_construction` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2513 |
+| `sw_sketch_text` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2543 |
+| `sw_split_line` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2425 |
+| `sw_take_photoview_screenshot` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3318 |
+| `sw_thicken_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2145 |
+| `sw_activate_configuration` | — | 未复核 | Activate (switch to) a configuration by name. | 1806 |
+| `sw_add_bom_table` | — | 未复核 | Add a Bill of Materials (BOM) table to the active drawing. | 1603 |
+| `sw_add_configuration` | — | 未复核 | Add a new configuration to the active document. | 1823 |
+| `sw_add_detail_view` | — | 未复核 | Add a detail view of a region at the given (x,y) with the given radius | 3012 |
+| `sw_add_drawing_view` | — | 未复核 | Add a model view to the active drawing document. | 1533 |
+| `sw_add_end_cap` | — | 未复核 | Add an end cap to a selected structural member end face.""" | 2841 |
+| `sw_add_equation` | — | 未复核 | Add an equation or global variable to the active document. | 1859 |
+| `sw_add_geometric_tolerance` | — | 未复核 | Add a geometric tolerance (GD&T) frame to the drawing.""" | 3072 |
+| `sw_add_gusset` | — | 未复核 | Add a triangular gusset between two selected structural member faces." | 2831 |
+| `sw_add_mate` | — | 未复核 | Add a mate constraint between two entities in an assembly. | 1433 |
+| `sw_add_projected_view` | — | 未复核 | Add a projected view derived from an existing drawing view.""" | 2992 |
+| `sw_add_revision_table` | — | 未复核 | Add a revision table to the drawing sheet.""" | 3112 |
+| `sw_add_section_view` | — | 未复核 | Add a section view to the drawing. | 1553 |
+| `sw_add_structural_member` | — | 未复核 | Add a structural member along selected sketch path(s) using a weldment | 2821 |
+| `sw_analyze_draft` | — | 未复核 | Perform draft analysis on the active part model. | 1731 |
+| `sw_base_flange` | — | 未复核 | Convert the active sketch into a sheet-metal base flange (starts a she | 2709 |
+| `sw_boundary_boss` | — | 未复核 | Create a boundary boss/cut from two or more profile curves.""" | 3626 |
+| `sw_capture_screenshot` | — | 未复核 | Capture a screenshot of the active SolidWorks model view. | 1917 |
+| `sw_chamfer` | — | 未复核 | Add a chamfer to selected edges. | 1190 |
+| `sw_check_geometry` | — | 未复核 | Check the active part for geometry errors (invalid faces, edges, etc.) | 1714 |
+| `sw_clear_selection` | — | 未复核 | Clear all current selections in the active document.""" | 824 |
+| `sw_close_all` | — | 未复核 | Close all open SolidWorks documents.""" | 3528 |
+| `sw_close_document` | — | 未复核 | Close a document. Closes the active document if no title is given. | 667 |
+| `sw_combine_bodies` | — | 未复核 | Combine selected bodies via boolean operation (union/subtract/intersec | 2339 |
+| `sw_composite_curve` | — | 未复核 | Combine selected edges and sketch entities into a single composite cur | 2445 |
+| `sw_connect` | — | 未复核 | Connect to a running SolidWorks instance or launch one. | 611 |
+| `sw_create_assembly` | — | 未复核 | Create a new SolidWorks assembly document. | 716 |
+| `sw_create_design_table` | — | 未复核 | Create a design table for driving multiple configurations from a sprea | 1898 |
+| `sw_create_drawing` | — | 未复核 | Create a new SolidWorks drawing document. | 732 |
+| `sw_create_helix` | — | 未复核 | Create a helix from a selected sketch circle (used as a sweep path for | 2405 |
+| `sw_create_motion_study` | — | 未复核 | Create a new motion study (requires SOLIDWORKS Motion add-in).""" | 3385 |
+| `sw_create_part` | — | 未复核 | Create a new SolidWorks part document. | 699 |
+| `sw_create_reference_axis` | — | 未复核 | Create a reference axis from selected geometry. | 2103 |
+| `sw_create_reference_plane` | — | 未复核 | Create a reference plane offset from an existing plane. | 2084 |
+| `sw_create_reference_point` | — | 未复核 | Create a reference point at the specified XYZ coordinates (in mm). | 2127 |
+| `sw_create_simulation_study` | — | 未复核 | Create a new SOLIDWORKS Simulation study (requires Simulation add-in). | 3403 |
+| `sw_create_sketch` | — | 未复核 | Create a new sketch on the specified plane or face. | 855 |
+| `sw_curve_driven_pattern` | — | 未复核 | Pattern a seed feature along a curve.""" | 3661 |
+| `sw_delete_body` | — | 未复核 | Delete the selected body.""" | 2369 |
+| `sw_delete_equation` | — | 未复核 | Delete an equation by its index (from sw_get_equations). | 1880 |
+| `sw_delete_feature` | — | 未复核 | Delete a feature from the FeatureManager tree by name. | 1363 |
+| `sw_dome` | — | 未复核 | Add a dome on a selected planar face.""" | 3596 |
+| `sw_draft` | — | 未复核 | Add draft (taper angle) to selected faces. | 1227 |
+| `sw_edge_flange` | — | 未复核 | Add an edge flange to a selected sheet-metal edge.""" | 2719 |
+| `sw_edit_sketch` | — | 未复核 | Open an existing sketch for editing. | 872 |
+| `sw_exit_sketch` | — | 未复核 | Exit the active sketch and return to the 3D model view. | 888 |
+| `sw_export_drawing_dwg` | — | 未复核 | Export the active drawing to DWG or DXF (output_path determines format | 3132 |
+| `sw_export_drawing_pdf` | — | 未复核 | Export the active drawing to PDF (output_path must end in .pdf).""" | 3122 |
+| `sw_export_file` | — | 未复核 | Export the active document to another format. | 764 |
+| `sw_export_flat_pattern` | — | 未复核 | Export the flat pattern of the active sheet metal part. | 2218 |
+| `sw_export_step` | — | 未复核 | Export the active model to STEP with explicit AP version.""" | 3686 |
+| `sw_export_stl` | — | 未复核 | Export the active part to STL with binary/ASCII and quality control."" | 3696 |
+| `sw_extend_surface` | — | 未复核 | Extend a surface by a distance, up to a point, or up to another surfac | 2634 |
+| `sw_extrude` | — | 未复核 | Extrude the active sketch profile into a 3D boss (adds material) or cu | 1133 |
+| `sw_extruded_surface` | — | 未复核 | Create an extruded surface from the active sketch.""" | 2594 |
+| `sw_fill_pattern` | — | 未复核 | Pattern a seed feature to fill a target face.""" | 3651 |
+| `sw_filled_surface` | — | 未复核 | Fill a closed boundary of edges with a new surface.""" | 2654 |
+| `sw_fillet` | — | 未复核 | Add a constant-radius fillet to selected edges. | 1172 |
+| `sw_flatten_sheet_metal` | — | 未复核 | Toggle the flat pattern view of the active sheet metal part. | 2184 |
+| `sw_fold` | — | 未复核 | Fold previously-unfolded bends back to formed state.""" | 2779 |
+| `sw_get_assembly_tree` | — | 未复核 | List all components in the active assembly with their state info.""" | 3258 |
+| `sw_get_custom_properties` | — | 未复核 | Get custom properties from the active document. | 1752 |
+| `sw_get_dimension` | — | 未复核 | Get the current value of a named dimension. | 1621 |
+| `sw_get_equations` | — | 未复核 | List all equations and global variables in the active document. | 1842 |
+| `sw_get_flat_pattern_info` | — | 未复核 | Get dimensions of the flat pattern for the active sheet metal part. | 2201 |
+| `sw_get_mass_properties` | — | 未复核 | Calculate mass properties of the active part or assembly. | 1661 |
+| `sw_get_material` | — | 未复核 | Read the current material assigned to the active part.""" | 2270 |
+| `sw_get_model_info` | — | 未复核 | Get comprehensive info about the active document: title, path, type, c | 783 |
+| `sw_get_referenced_documents` | — | 未复核 | List all documents (parts, subassemblies) referenced by the active ass | 3548 |
+| `sw_get_status` | — | 未复核 | Get SolidWorks connection status, active document info, and list of op | 630 |
+| `sw_hem` | — | 未复核 | Add a hem to a selected sheet-metal edge.""" | 2759 |
+| `sw_hide_all_planes` | — | 未复核 | Hide all reference planes in the viewport.""" | 3328 |
+| `sw_hide_all_sketches` | — | 未复核 | Hide all sketches in the viewport.""" | 3348 |
+| `sw_hide_component` | — | 未复核 | Hide or show a component in the assembly viewport.""" | 3238 |
+| `sw_hole_wizard` | — | 未复核 | Create a hole using the Hole Wizard (supports standard threaded/cleara | 1303 |
+| `sw_insert_component` | — | 未复核 | Insert a part or subassembly into the active assembly. | 1414 |
+| `sw_insert_weldment` | — | 未复核 | Insert the weldment feature into the active part (enables weldment too | 2811 |
+| `sw_intersect` | — | 未复核 | Create intersection regions from selected bodies/surfaces.""" | 3616 |
+| `sw_jog` | — | 未复核 | Add a jog bend at the active sketch line on a sheet metal face.""" | 2749 |
+| `sw_link_dimension_to_equation` | — | 未复核 | Link a dimension to an expression via an equation (drives the dimensio | 3457 |
+| `sw_list_bodies` | — | 未复核 | List solid or surface bodies in the active part.""" | 2329 |
+| `sw_list_configurations` | — | 未复核 | List all configurations in the active document and show which is activ | 1790 |
+| `sw_list_display_states` | — | 未复核 | List all display states in the active configuration.""" | 3474 |
+| `sw_list_features` | — | 未复核 | List all features in the active model's FeatureManager tree. | 837 |
+| `sw_list_global_variables` | — | 未复核 | List all global variables in the active model.""" | 3431 |
+| `sw_list_open_documents` | — | 未复核 | List all documents currently open in SolidWorks. | 748 |
+| `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
+| `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
+| `sw_measure_distance` | — | 未复核 | Measure the minimum distance between two entities (faces, edges, verti | 1697 |
+| `sw_mirror` | — | 未复核 | Mirror selected features across a plane. | 1284 |
+| `sw_miter_flange` | — | 未复核 | Add a miter flange following the active sketch profile around multiple | 2729 |
+| `sw_move_body` | — | 未复核 | Move or copy the selected body by translation (mm) and rotation (deg). | 2359 |
+| `sw_open_document` | — | 未复核 | Open a SolidWorks file (part, assembly, drawing, or imported format li | 649 |
+| `sw_parting_line` | — | 未复核 | Create a parting line for mold design (used to separate core from cavi | 2874 |
+| `sw_planar_surface` | — | 未复核 | Create a planar surface from selected closed sketch profile or edges." | 2584 |
+| `sw_projected_curve` | — | 未复核 | Project a sketch onto a face to create a 3D curve.""" | 2435 |
+| `sw_rebuild_model` | — | 未复核 | Force-rebuild the active model (Ctrl+B equivalent). | 1982 |
+| `sw_replace_component` | — | 未复核 | Replace a component in the active assembly with a different file.""" | 3188 |
+| `sw_revolve` | — | 未复核 | Revolve the active sketch profile around a centerline/axis. | 1153 |
+| `sw_revolved_surface` | — | 未复核 | Create a revolved surface from the active sketch profile + axis.""" | 2604 |
+| `sw_rib` | — | 未复核 | Add a rib feature from the active sketch (used to stiffen thin walls). | 3586 |
+| `sw_run_macro` | — | 未复核 | Run a saved SolidWorks macro file (.swp or .swb). | 2001 |
+| `sw_run_simulation` | — | 未复核 | Run the active SOLIDWORKS Simulation study.""" | 3413 |
+| `sw_run_vba_code` | — | 未复核 | Execute arbitrary VBA code against SolidWorks. | 2021 |
+| `sw_save_all` | — | 未复核 | Save all open SolidWorks documents that have unsaved changes.""" | 3518 |
+| `sw_save_as_copy` | — | 未复核 | Save the active document as a copy without changing the current open f | 3538 |
+| `sw_save_document` | — | 未复核 | Save the active document. Provide file_path to Save As, leave empty to | 683 |
+| `sw_scale_body` | — | 未复核 | Uniformly scale the selected body by a factor.""" | 2379 |
+| `sw_select_entity` | — | 未复核 | Select an entity in the active document by name and type. | 801 |
+| `sw_set_appearance_color` | — | 未复核 | Set RGB color and transparency on the active part's solid bodies.""" | 2280 |
+| `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
+| `sw_set_custom_property` | — | 未复核 | Set or create a custom property on the active document. | 1771 |
+| `sw_set_dimension` | — | 未复核 | Set a named dimension to a new value and rebuild the model. | 1640 |
+| `sw_set_display_mode` | — | 未复核 | Set the 3D display mode for the active document. | 1966 |
+| `sw_set_global_variable` | — | 未复核 | Set or create a global variable (used in equations like 'Diameter=2*\" | 3441 |
+| `sw_set_material` | — | 未复核 | Apply a material to the active part. Common names: 'AISI 1020', 'Alumi | 2260 |
+| `sw_set_view_orientation` | — | 未复核 | Set the 3D view orientation and zoom-to-fit. | 1936 |
+| `sw_show_all_sketches` | — | 未复核 | Show all sketches in the viewport.""" | 3358 |
+| `sw_shut_off_surface` | — | 未复核 | Automatically create shut-off surfaces over holes for mold separation. | 2884 |
+| `sw_sketch_arc` | — | 未复核 | Draw an arc in the active sketch defined by center, radius, and start/ | 954 |
+| `sw_sketch_centerline` | — | 未复核 | Draw a centerline in the active sketch. Used as axis for revolve featu | 1037 |
+| `sw_sketch_chamfer` | — | 未复核 | Chamfer (bevel) the corner between two selected sketch lines.""" | 2533 |
+| `sw_sketch_circle` | — | 未复核 | Draw a circle in the active sketch. Coordinates and radius are in mm. | 920 |
+| `sw_sketch_circular_pattern` | — | 未复核 | Create a circular pattern of selected sketch entities. | 1069 |
+| `sw_sketch_convert_entities` | — | 未复核 | Convert selected face edges into sketch entities (in the active sketch | 2483 |
+| `sw_sketch_ellipse` | — | 未复核 | Draw an ellipse in the active sketch. Coordinates in mm. | 971 |
+| `sw_sketch_extend` | — | 未复核 | Extend selected sketch entity until next boundary.""" | 2503 |
+| `sw_sketch_fillet` | — | 未复核 | Fillet (round) the corner between two selected sketch lines.""" | 2523 |
+| `sw_sketch_line` | — | 未复核 | Draw a line in the active sketch. Coordinates are in mm on the sketch  | 904 |
+| `sw_sketch_linear_pattern` | — | 未复核 | Create a linear step-and-repeat pattern of selected sketch entities. | 1053 |
+| `sw_sketch_offset` | — | 未复核 | Offset selected sketch entities by a given distance. | 1021 |
+| `sw_sketch_polygon` | — | 未复核 | Draw a regular polygon in the active sketch. Coordinates and radius in | 987 |
+| `sw_sketch_rectangle` | — | 未复核 | Draw a rectangle in the active sketch. | 936 |
+| `sw_sketch_spline` | — | 未复核 | Draw a spline through the given control points. Points are [x, y] in m | 1004 |
+| `sw_sketch_trim` | — | 未复核 | Trim selected sketch entity (power trim mode).""" | 2493 |
+| `sw_sketched_bend` | — | 未复核 | Add a sketched bend along an active sketch line on a flat sheet metal  | 2739 |
+| `sw_split_body` | — | 未复核 | Split the selected body using the selected trim tool (sketch/surface/p | 2349 |
+| `sw_start_3d_sketch` | — | 未复核 | Start a 3D sketch (for routing pipes, wires, complex paths).""" | 2415 |
+| `sw_suppress_component` | — | 未复核 | Suppress or unsuppress a component in the assembly.""" | 3228 |
+| `sw_suppress_feature` | — | 未复核 | Suppress a feature (temporarily disable it without deleting). | 1380 |
+| `sw_sweep` | — | 未复核 | Create a sweep of a profile sketch along a path sketch. | 1345 |
+| `sw_tooling_split` | — | 未复核 | Split a mold block into core and cavity using the parting line/surface | 2894 |
+| `sw_trim_surface` | — | 未复核 | Trim a surface using selected trim tool.""" | 2624 |
+| `sw_trim_weldment` | — | 未复核 | Trim selected weldment members to a planar or solid trim tool.""" | 2851 |
+| `sw_unfold` | — | 未复核 | Unfold sheet-metal bends to flatten (use with subsequent features then | 2769 |
+| `sw_unsuppress_feature` | — | 未复核 | Unsuppress (re-enable) a previously suppressed feature. | 1396 |
+| `sw_view_rotate` | — | 未复核 | Rotate the current view by Euler angles (degrees).""" | 3368 |
+| `sw_wrap` | — | 未复核 | Wrap a sketch around a selected curved face (emboss/deboss/scribe).""" | 3606 |
+| `sw_zoom_to_fit` | — | 未复核 | Zoom the view to fit the entire model on screen (Ctrl+Shift+F equivale | 1953 |
+
+## 本仓库超出上游的能力（20 条）
+
+这些来自第 ③ 类资产（`sw-extra` 的仿真/运动/元数据）与 ④ 的修复层，上游 `server.py` 里没有对应工具，所以**不算覆盖上游**：
+
+| 工具 | 分组 |
+|---|---|
+| `sw_add_gtol` | drawing |
+| `sw_motion_list` | study |
+| `sw_motion_read` | study |
+| `sw_note` | drawing |
+| `sw_ovba_dump` | meta |
+| `sw_ovba_selftest` | meta |
+| `sw_props` | meta |
+| `sw_scan` | meta |
+| `sw_sim_addin_check` | study |
+| `sw_sim_faces` | study |
+| `sw_sim_mesh` | study |
+| `sw_sim_read` | study |
+| `sw_sim_run` | study |
+| `sw_sim_setup` | study |
+| `sw_sim_solve` | study |
+| `sw_sim_status` | study |
+| `swdm_bom` | meta |
+| `swdm_query` | meta |
+| `swdm_stats` | meta |
+| `swdm_tables` | meta |
+
+## 未复核的 149 条怎么分批
+
+按能力族归类（只统计未复核条目），便于分批验证：
+
+| 类别 | 待验证数 |
+|---|---|
+| `sketch` | 29 |
+| `inspect` | 23 |
+| `other` | 21 |
+| `assembly` | 16 |
+| `drawing` | 16 |
+| `macro_io` | 13 |
+| `feature` | 10 |
+| `surface` | 9 |
+| `sheet_metal` | 7 |
+| `weldment` | 3 |
+| `mold` | 2 |
