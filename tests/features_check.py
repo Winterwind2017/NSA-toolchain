@@ -66,7 +66,7 @@ def main() -> int:
 
     doc = _new_part_with_rect()
     F.extrude(doc, depth_mm=20.0)
-    known["chamfer"] = F.chamfer(doc, 2.0)
+    results["chamfer"] = F.chamfer(doc, 5.0, 45.0, 4)
 
     # 4) 异型孔（先选顶面）
     doc = _new_part_with_rect()

@@ -154,16 +154,30 @@ def fillet(doc: Any, radius_mm: float = 2.0, max_edges: int = 4) -> Dict[str, An
     if selected == 0:
         out["detail"]["error"] = "没选中任何边"
         return out
+    v0 = _volume_mm3(doc)
     try:
-        _kernel().fillet(radius=radius_mm)
+        # 内核的 FeatureFillet(radius, True, ...) 参数顺序是错的（首参是 Options:int）。
+        # 正确：FeatureFillet3(R1, Propagate, Ftyp, VarRadTyp, OverflowType,
+        #                      NRadii, Radii, UseHelpPoint, UseTangentHoldLine)
+        feat = doc.FeatureManager.FeatureFillet3(
+            float(radius_mm) / 1000.0, True, 0, 0, 0, 0, None, False, False)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
     after = shape_counts(doc)
+    v1 = _volume_mm3(doc)
     out["detail"].update({"features_after": after["features"],
-                          "faces_after": after["faces"]})
+                          "faces_after": after["faces"],
+                          "edges_before": before.get("edges"),
+                          "edges_after": after.get("edges"),
+                          "volume_before_mm3": v0, "volume_after_mm3": v1,
+                          "feature": val(feat, "Name") if feat is not None else None})
+    dropped = (v0 is not None and v1 is not None and v1 < v0 - 1e-6)
+    if v0 and v1:
+        out["detail"]["volume_delta_mm3"] = round(v1 - v0, 3)
     out["checks"] = {"feature_added": after["features"] > before["features"],
-                     "faces_increased": after["faces"] > before["faces"]}
+                     "faces_increased": after["faces"] > before["faces"],
+                     "volume_dropped": bool(dropped)}
     out["ok"] = all(out["checks"].values())
     return out
 
@@ -179,16 +193,31 @@ def chamfer(doc: Any, distance_mm: float = 2.0, angle_deg: float = 45.0,
     if selected == 0:
         out["detail"]["error"] = "没选中任何边"
         return out
+    v0 = _volume_mm3(doc)
     try:
-        _kernel().chamfer(distance=distance_mm, angle=angle_deg)
+        # 内核把前两参写反了：InsertFeatureChamfer 真正是
+        # (Options:int, ChamferType:int, Width, Angle, OtherDist,
+        #  VertexChamDist1, VertexChamDist2, VertexChamDist3)
+        # 内核传的是 (1, 0, ...) → Options=1、ChamferType=0（非法）→ 建出空特征
+        feat = doc.FeatureManager.InsertFeatureChamfer(
+            0, 1, float(distance_mm) / 1000.0, float(angle_deg) * 3.141592653589793 / 180.0,
+            0.0, 0.0, 0.0, 0.0)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
     after = shape_counts(doc)
+    v1 = _volume_mm3(doc)
     out["detail"].update({"features_after": after["features"],
-                          "faces_after": after["faces"]})
+                          "faces_after": after["faces"],
+                          "edges_before": before.get("edges"),
+                          "edges_after": after.get("edges"),
+                          "volume_before_mm3": v0, "volume_after_mm3": v1})
+    dropped = (v0 is not None and v1 is not None and v1 < v0 - 1e-6)
+    if v0 and v1:
+        out["detail"]["volume_delta_mm3"] = round(v1 - v0, 3)
     out["checks"] = {"feature_added": after["features"] > before["features"],
-                     "faces_increased": after["faces"] > before["faces"]}
+                     "faces_increased": after["faces"] > before["faces"],
+                     "volume_dropped": bool(dropped)}
     out["ok"] = all(out["checks"].values())
     return out
 

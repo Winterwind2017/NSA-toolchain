@@ -540,6 +540,17 @@ def sw_sketch_trim(x: float = 60.0, y: float = 12.5) -> Dict[str, Any]:
     return _with_doc(SE.trim, x, y)
 
 
+@mcp.tool(name="sw_chamfer")
+def sw_chamfer(distance: float = 5.0, angle_deg: float = 45.0) -> Dict[str, Any]:
+    """边倒角（verified）：先选中若干条边；判据 体积必须下降（面数+边数同增）。
+
+    坑：`InsertFeatureChamfer` 前两参是 Options、ChamferType；写反会建出**空特征**
+    （特征数+1、几何不变）。
+    """
+    from ..verified import features as FE
+    return _with_doc(FE.chamfer, distance, angle_deg, 4)
+
+
 @mcp.tool(name="sw_sketch_fillet")
 def sw_sketch_fillet(radius: float = 5.0) -> Dict[str, Any]:
     """草图圆角（verified）：需两条线段选中；判据线段数 +1。"""

@@ -147,7 +147,12 @@ def shape_counts(doc_w: Any) -> Dict[str, int]:
     solid = bodies(doc_w, 0)
     surf = bodies(doc_w, 1)
     faces = 0
+    edges = 0
     for b in solid + surf:
         faces += len(faces_of(b))
+        try:
+            edges += int(val(b, "GetEdgeCount") or 0)
+        except Exception:
+            pass
     return {"features": count_features(doc_w), "solids": len(solid),
-            "surfaces": len(surf), "faces": faces}
+            "surfaces": len(surf), "faces": faces, "edges": edges}

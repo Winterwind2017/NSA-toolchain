@@ -191,6 +191,9 @@ _SURFACES: List[Tuple[str, ToolEntry]] = [
 
 # ── 切除（2026-10-20 真机 3/3，修 P0）────────────────────────────────
 _CUTS: List[Tuple[str, ToolEntry]] = [
+    _e("sw_chamfer", "feature", "IFeatureManager.InsertFeatureChamfer(8 参)",
+       "80×50×12 板 4 条边倒角 5mm：体积 48000→**46616.667**（Δ=-1383.33）、面 6→**10**、边 12→**20**",
+       "内核把前两参写反（Options/ChamferType）→ 建出空特征；改正后几何真变"),
     _e("sw_cut_extrude", "feature", "IFeatureManager.FeatureCut4(27 参)",
        "80×50×12 板顶面两处 Ø10 通孔：体积 48000→**46115.044**（每孔 −942.478，理论 −942.48）",
        "UseAutoSelect 必须 True（False 时只选草图会静默失败）；Dir=False 才是朝材料里切"),
@@ -403,6 +406,9 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_fillet", ToolEntry("sw_fillet", "feature", "unverified",
+        "FeatureFillet3", "",
+        "pywin32 对第 7 参 Radii 报类型不匹配；comtypes 看到另一种重载（首参 Options，还要 Rho/RhoArr）")),
     ("sw_dimxpert_autodim", ToolEntry("sw_dimxpert_autodim", "meta", "unverified",
         "IDimXpertPart.AutoDimensionScheme(option)", "",
         "实测返回 False、GetAnnotationCount 仍 0；需预设 PartType/ToleranceType 或先选要素")),
@@ -466,12 +472,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_revolve", ToolEntry("sw_revolve", "feature", "unverified",
         "FeatureManager.FeatureRevolve2", "",
         "TLB 显示 5 参、内核按 12 参调，两边都报 DISP_E_PARAMNOTOPTIONAL（真实参数列表未定）")),
-    ("sw_fillet", ToolEntry("sw_fillet", "feature", "unverified",
-        "FeatureFillet", "",
-        "4 条边分别用 mark 0/1/2/4 选中后仍返回 None；5 参与 7 参形式都试过")),
-    ("sw_chamfer", ToolEntry("sw_chamfer", "feature", "unverified",
-        "InsertFeatureChamfer(8 参)", "",
-        "特征数 +1 但面数 6→6 不变 —— 典型的假成功，不能算通过")),
+
+
     ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
         "HoleWizard5", "",
         "该 API 需 **27 个参数**，内核只传 14 个 → DISP_E_PARAMNOTOPTIONAL")),
@@ -554,7 +556,7 @@ _IMPLEMENTED = {
     # 图纸补充（verified/drawing_extra.py，2026-10-20 真机 3/5）
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
-    "sw_extrude", "sw_export_step", "sw_export_stl", "sw_export_file",
+    "sw_extrude", "sw_chamfer", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",
     # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
     "sw_create_assembly", "sw_insert_component", "sw_get_assembly_tree",
