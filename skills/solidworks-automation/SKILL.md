@@ -61,6 +61,23 @@ sw_api("extrude", {"depth": 0.02})     # 透传 SolidWorksApp；响应带 status
 
 必须自己补一个判据（特征数/面数/体积），不能只看返回值。
 
+### 零件 / 特征（verified）
+
+```python
+from swkit.verified import part
+part.bounding_box(doc)                      # 100×60×10 mm，X[-50,50] Y[-30,30] Z[0,10]
+part.screenshot(doc, r"...\shot.bmp")       # 2.88 MB @1200×800
+part.shell(doc, thickness=0.002)            # 判据：面 7→14
+part.split_line(doc)                        # 判据：特征 22→23（先零参 InsertSplitLineSil）
+part.thicken_surface(doc, 0.002)            # 需要曲面件；判据：出现 Thicken 特征
+part.offset_surface(doc, 0.002)             # 判据：曲面 1→2
+part.pattern_feature(doc, kind="linear", count=3, spacing=0.02)   # 特征 22→23
+```
+
+要点：**特征阵列与组件阵列的标记相反**——特征 mark=4、方向 mark=1；
+抽壳的可靠判据是"面数翻倍"而不是返回值（`InsertFeatureShell` 返回 0 也算成功）；
+选面用 `IFace2.Select2`，别按坐标 `SelectByID2("", "FACE", …)`。
+
 ### 仿真（静力）
 
 ```python

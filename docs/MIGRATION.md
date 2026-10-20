@@ -23,6 +23,9 @@
 | `src/swkit/core/com.py` | 新增 | ✅ 双栈桥接 / VARIANT 辅助 / `val()` |
 | `src/swkit/core/marks.py` | 新增（来自官方 Remarks 表的实测） | ✅ |
 | `src/swkit/verified/assembly.py` | ④ `sw_fixpack.py` 的 round-40 配方 | ✅ 组件线性/圆形阵列 + 镜像 |
+| `src/swkit/verified/_common.py` | ④ `_counts`/`_faces`/`_pick_face`/`_wrap`/`_exit_sketch` | ✅ 封装为公共层 |
+| `src/swkit/verified/part.py` | ④ 零件/特征 7 条 | ✅ bbox/screenshot/shell/split_line/thicken/offset/特征阵列（真机 8/8） |
+| `tests/part_check.py` | 新增 | ✅ 零件侧真机验收（8 项） |
 | `src/swkit/registry.py` | ⑤ 台账（35 verified / 2 unstable / 4 broken） | ✅ |
 | `src/swkit/mcp/server.py` | ①的形态 + 新增分层 | ✅ Tier A + Tier B |
 | `src/swkit/cli/main.py` | ④的 46 命令收敛为子命令（起步） | ✅ 6 个子命令 |
@@ -52,8 +55,8 @@ DocumentMgr 的索引结构）。重写成库内函数就必须**重新验证一
 根本没有这个参数（只有 `--prop/--dir/--ext`）→ 带 text 调用必失败。本仓库适配层用真实参数。
 
 ## 待搬迁（按优先级）
-2. **④ 其余已验证命令**（`sw_fixpack.py` 46 条里尚未进 `verified/` 的部分）
-   → 逐条搬成函数 + 在 `registry.py` 登记证据；优先出图类与特征类。
+2. **④ 其余已验证命令**：零件/特征 7 条已搬（见上）；**下一批是出图类**（中心线、中心标记、
+   注释、孔表、基准/形位公差/焊接/粗糙度、辅助视图、剖视、断裂视图、尺寸）。
 3. **④ 回归脚本** `_sw_probe/regress.py`（28 项）
    → `tests/regress.py`，加 `@pytest.mark.live`，跑前强制 `CloseAllDocuments`。
 4. **⑤ 精简探针**：`tlb_explore.py`（TLB 反射）、`chmread.py`（官方帮助检索）

@@ -103,12 +103,14 @@ def val(obj: Any, name: str, default: Any = None) -> Any:
         v = getattr(obj, name)
     except Exception:
         return default
-    try:
-        return v() if callable(v) else v
-    except TypeError:
+    if not callable(v):
         return v
+    try:
+        return v()
     except Exception:
-        return default
+        # 关键：pywin32 下 `FirstFeature` / `GetNextFeature` 是**属性**，
+        # 属性被当成"可调用"再一调用就抛 COM 错——此时应返回属性本身。
+        return v
 
 
 def safe_call(fn, *args, **kwargs):

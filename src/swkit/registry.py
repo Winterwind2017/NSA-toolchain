@@ -184,6 +184,10 @@ _IMPLEMENTED = {
     "sw_sim_status", "sw_sim_faces", "sw_sim_setup", "sw_sim_mesh", "sw_sim_run",
     "sw_sim_read", "sw_sim_solve", "sw_sim_addin_check",
     "sw_motion_list", "sw_motion_read",
+    # 零件 / 特征（verified/part.py，2026-10-20 真机 8/8）
+    "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_shell",
+    "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
+    "sw_thicken_surface", "sw_offset_surface",
     # 元数据（meta/*）
     "sw_props", "sw_scan", "swdm_stats", "swdm_query", "swdm_bom", "swdm_tables",
     "sw_ovba_selftest", "sw_ovba_dump",

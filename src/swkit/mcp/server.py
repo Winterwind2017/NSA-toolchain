@@ -207,6 +207,86 @@ def sw_api(op: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_bounding_box")
+def sw_bounding_box() -> Dict[str, Any]:
+    """实体包围盒（verified）：每个实体输出 min/max/尺寸（mm）。"""
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else part.bounding_box(doc)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_screenshot")
+def sw_screenshot(out_path: str, width: int = 1200, height: int = 800) -> Dict[str, Any]:
+    """存 BMP 位图（verified）。PhotoView 无 COM 接口，`SaveBMP` 是等价物。"""
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else part.screenshot(doc, out_path, width, height))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_shell")
+def sw_shell(thickness: float = 0.002, face_index: int = -1) -> Dict[str, Any]:
+    """抽壳（verified）：`face_index=-1` 自动选最大面；判据是面数翻倍（实测 7→14）。"""
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else part.shell(doc, thickness, face_index))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_split_line")
+def sw_split_line() -> Dict[str, Any]:
+    """分割线（verified）：先试零参 `InsertSplitLineSil`，再试 `InsertSplitLineProject`。"""
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else part.split_line(doc)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_thicken_surface")
+def sw_thicken_surface(thickness: float = 0.002) -> Dict[str, Any]:
+    """曲面加厚（verified）：判据是出现 `Thicken` 特征。"""
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else part.thicken_surface(doc, thickness))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_offset_surface")
+def sw_offset_surface(distance: float = 0.002) -> Dict[str, Any]:
+    """曲面偏移（verified）：判据是曲面实体数 +1。"""
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else part.offset_surface(doc, distance))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_pattern_feature")
+def sw_pattern_feature(kind: str = "linear", count: int = 3,
+                       spacing: float = 0.02, angle_deg: float = 120.0) -> Dict[str, Any]:
+    """**特征**阵列（verified）。注意：组件阵列请用 `sw_pattern_component`。
+
+    标记与组件阵列相反：特征 mark=4、方向 mark=1。
+    """
+    from ..verified import part
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else part.pattern_feature(doc, kind=kind, count=count,
+                                          spacing=spacing, angle_deg=angle_deg))
+    return _com(_do)
+
+
 @mcp.tool(name="sw_sim_status")
 def sw_sim_status(open_path: str = "") -> Dict[str, Any]:
     """Simulation 诊断（verified）：当前文档、材质、加载项、研究列表。"""

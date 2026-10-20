@@ -176,6 +176,89 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     return 0 if all(c.get("ok") for c in checks.values()) else 1
 
 
+def _active_doc():
+    app = _app()
+    return _doc(app)
+
+
+def cmd_bbox(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.bounding_box(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_screenshot(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.screenshot(doc, args.out, args.width, args.height)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_shell(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.shell(doc, args.thickness, args.face)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_split_line(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.split_line(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_thicken(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.thicken_surface(doc, args.thickness)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_offset_surface(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.offset_surface(doc, args.distance)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_pattern_feature(args: argparse.Namespace) -> int:
+    from ..verified import part
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = part.pattern_feature(doc, kind=args.kind, count=args.count,
+                               spacing=args.spacing, angle_deg=args.angle_deg)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_sim(args: argparse.Namespace) -> int:
     from ..study import sim
     if args.action == "status":
@@ -274,6 +357,38 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_mirror)
 
     sub.add_parser("selftest", help="import/注册表/COM 三层自检").set_defaults(func=cmd_selftest)
+
+    p = sub.add_parser("bbox", help="实体包围盒（verified）")
+    p.set_defaults(func=cmd_bbox)
+
+    p = sub.add_parser("screenshot", help="存 BMP 位图（verified）")
+    p.add_argument("--out", required=True)
+    p.add_argument("--width", type=int, default=1200)
+    p.add_argument("--height", type=int, default=800)
+    p.set_defaults(func=cmd_screenshot)
+
+    p = sub.add_parser("shell", help="抽壳（verified）")
+    p.add_argument("--thickness", type=float, default=0.002, help="米")
+    p.add_argument("--face", type=int, default=-1, help="-1=自动选最大面")
+    p.set_defaults(func=cmd_shell)
+
+    p = sub.add_parser("split-line", help="分割线（verified）")
+    p.set_defaults(func=cmd_split_line)
+
+    p = sub.add_parser("thicken", help="曲面加厚（verified）")
+    p.add_argument("--thickness", type=float, default=0.002, help="米")
+    p.set_defaults(func=cmd_thicken)
+
+    p = sub.add_parser("offset-surface", help="曲面偏移（verified）")
+    p.add_argument("--distance", type=float, default=0.002, help="米")
+    p.set_defaults(func=cmd_offset_surface)
+
+    p = sub.add_parser("pattern-feature", help="特征阵列（verified；组件阵列请用 pattern-component）")
+    p.add_argument("--kind", default="linear", choices=["linear", "circular"])
+    p.add_argument("--count", type=int, default=3)
+    p.add_argument("--spacing", type=float, default=0.02, help="米")
+    p.add_argument("--angle-deg", type=float, default=120.0)
+    p.set_defaults(func=cmd_pattern_feature)
 
     p = sub.add_parser("sim", help="Simulation：status/faces/list/read/solve")
     p.add_argument("action", choices=["status", "faces", "list", "read", "solve"])

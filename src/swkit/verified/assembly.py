@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from ..core.com import none_dispatch, pyw, val, var_dispatch_array, var_i4_array
+from ._common import iter_features
 from ..core.marks import (
     COMPONENT_DIR1, COMPONENT_TO_PATTERN, NULL_DIMENSION_NAME,
 )
@@ -157,13 +158,8 @@ def _count_components(asm_doc_w: Any) -> int:
 
 
 def _count_features(doc_w: Any) -> int:
-    """特征数。`FirstFeature` 在不同绑定下可能是属性也可能是方法 → 用 `val`。"""
-    n = 0
-    feat = val(doc_w, "FirstFeature")
-    while feat is not None and n < 500:
-        n += 1
-        feat = val(_wrap(feat), "GetNextFeature")
-    return n
+    """特征数（`FirstFeature` 在 pywin32 下是属性、comtypes 下是方法，交给 iter_features）。"""
+    return sum(1 for _ in iter_features(doc_w))
 
 
 def _flag_count(asm_doc_w: Any, flag: str) -> int:
