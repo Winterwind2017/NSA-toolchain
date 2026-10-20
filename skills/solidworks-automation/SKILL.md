@@ -45,6 +45,19 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 特征建模与导出（verified）
+
+```python
+from swkit.verified import features as ft, io_export as IO
+ft.new_part(); so.create_sketch(doc, "前视基准面"); so.rectangle(doc, 0, 0, 40, 25)
+ft.extrude(doc, depth_mm=20)          # 40×25×20 → 体积 20000 mm³（可手算对照）
+IO.export_step(path); IO.export_stl(path); IO.export_pdf(path)
+IO.save_document(doc, path)
+```
+
+要点：导出族**必须校验文件签名**（`ISO-10303-21` / `stlbn` / `%PDF`）——只判"存在"会
+把 0 字节当成功；保存后文件**变小是正常的**（重压缩），判据要用 mtime 变化。
+
 ### 装配结构与状态（verified）
 
 ```python

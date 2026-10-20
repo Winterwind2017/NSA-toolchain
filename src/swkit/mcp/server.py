@@ -452,6 +452,45 @@ def _with_doc(fn, *args, **kwargs):
     return _com(_do)
 
 
+@mcp.tool(name="sw_extrude")
+def sw_extrude(depth_mm: float = 20.0, draft_deg: float = 0.0,
+               is_cut: bool = False) -> Dict[str, Any]:
+    """拉伸当前草图（verified）。判据：特征 +1 且体积变化。
+
+    实测：40×25 草图 ×20 mm → 体积 **20000.0 mm³**（手算一致）。
+    """
+    from ..verified import features as ft
+    return _with_doc(ft.extrude, depth_mm, draft_deg, is_cut)
+
+
+@mcp.tool(name="sw_export_step")
+def sw_export_step(path: str) -> Dict[str, Any]:
+    """导出 STEP（verified）：判据是文件头 `ISO-10303-21`。"""
+    from ..verified import io_export as IO
+    return _com(lambda: IO.export_step(path))
+
+
+@mcp.tool(name="sw_export_stl")
+def sw_export_stl(path: str) -> Dict[str, Any]:
+    """导出 STL（verified）：判据是二进制头/ASCII `solid`。"""
+    from ..verified import io_export as IO
+    return _com(lambda: IO.export_stl(path))
+
+
+@mcp.tool(name="sw_export_file")
+def sw_export_file(path: str) -> Dict[str, Any]:
+    """导出 PDF（verified）：判据是文件头 `%PDF`。"""
+    from ..verified import io_export as IO
+    return _com(lambda: IO.export_pdf(path))
+
+
+@mcp.tool(name="sw_save_document")
+def sw_save_document(path: str = "") -> Dict[str, Any]:
+    """保存/另存（verified）：判据是文件存在且未变小。"""
+    from ..verified import io_export as IO
+    return _with_doc(IO.save_document, path)
+
+
 @mcp.tool(name="sw_create_assembly")
 def sw_create_assembly(template: str = "") -> Dict[str, Any]:
     """新建装配（verified）：判据 `GetType==2`。"""

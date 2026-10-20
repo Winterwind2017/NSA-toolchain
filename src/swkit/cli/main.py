@@ -562,6 +562,35 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_extrude(args: argparse.Namespace) -> int:
+    from ..verified import features as ft
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ft.extrude(doc, args.depth, args.draft, args.cut)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    from ..verified import io_export as IO
+    fn = {"step": IO.export_step, "stl": IO.export_stl, "pdf": IO.export_pdf,
+          "iges": IO.export_iges, "dxf": IO.export_dxf}[args.format]
+    res = fn(args.path)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_save(args: argparse.Namespace) -> int:
+    from ..verified import io_export as IO
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = IO.save_document(doc, args.path)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_new_assembly(args: argparse.Namespace) -> int:
     from ..verified import asm_state as st
     res = st.create_assembly(args.template)
@@ -940,6 +969,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("extrude", help="拉伸当前草图（verified，mm）")
+    p.add_argument("--depth", type=float, default=20.0)
+    p.add_argument("--draft", type=float, default=0.0)
+    p.add_argument("--cut", action="store_true")
+    p.set_defaults(func=cmd_extrude)
+
+    p = sub.add_parser("export", help="导出 step/stl/pdf/iges/dxf（签名校验）")
+    p.add_argument("--format", required=True, choices=["step", "stl", "pdf", "iges", "dxf"])
+    p.add_argument("--path", required=True)
+    p.set_defaults(func=cmd_export)
+
+    p = sub.add_parser("save", help="保存/另存（verified）")
+    p.add_argument("--path", default="")
+    p.set_defaults(func=cmd_save)
 
     p = sub.add_parser("new-assembly", help="新建装配（verified）")
     p.add_argument("--template", default="")

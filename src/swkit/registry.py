@@ -162,6 +162,20 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 上游特征/导出族（2026-10-20 真机：拉伸 20000mm³ 精确；导出 4/6）────
+_FEATURE_UPSTREAM: List[Tuple[str, ToolEntry]] = [
+    _e("sw_extrude", "feature", "FeatureManager.FeatureExtrusion3",
+       "40×25 草图 ×20mm → 体积 **20000.0 mm³**（手算一致，误差 0），实体 0→1"),
+    _e("sw_export_step", "feature", "IModelDoc2.SaveAs(STEP)",
+       "15,767 B，文件头 `ISO-10303-21`"),
+    _e("sw_export_stl", "feature", "IModelDoc2.SaveAs(STL)",
+       "684 B，二进制头 `stlbn`（80 字节头 + 三角面）"),
+    _e("sw_export_file", "feature", "IModelDoc2.SaveAs(PDF)",
+       "172,217 B，文件头 `%PDF-1.4`"),
+    _e("sw_save_document", "feature", "IModelDoc2.SaveAs3/Save3",
+       "原生 .SLDPRT 65,156 B 落盘"),
+]
+
 # ── 上游装配结构/状态族（2026-10-20 真机 11/11）────────────────────
 _ASM_STATE: List[Tuple[str, ToolEntry]] = [
     _e("sw_create_assembly", "assembly", "Application.NewDocument(.asmdot)", "GetType==2"),
@@ -238,6 +252,28 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    # ── 特征族里没打通/不可验证的（2026-10-20 实测依据）──────────────
+    ("sw_revolve", ToolEntry("sw_revolve", "feature", "unverified",
+        "FeatureManager.FeatureRevolve2", "",
+        "TLB 显示 5 参、内核按 12 参调，两边都报 DISP_E_PARAMNOTOPTIONAL（真实参数列表未定）")),
+    ("sw_fillet", ToolEntry("sw_fillet", "feature", "unverified",
+        "FeatureFillet", "",
+        "4 条边分别用 mark 0/1/2/4 选中后仍返回 None；5 参与 7 参形式都试过")),
+    ("sw_chamfer", ToolEntry("sw_chamfer", "feature", "unverified",
+        "InsertFeatureChamfer(8 参)", "",
+        "特征数 +1 但面数 6→6 不变 —— 典型的假成功，不能算通过")),
+    ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
+        "HoleWizard5", "",
+        "该 API 需 **27 个参数**，内核只传 14 个 → DISP_E_PARAMNOTOPTIONAL")),
+    ("sw_mirror", ToolEntry("sw_mirror", "feature", "unverified",
+        "InsertMirrorFeature2(5 参)", "",
+        "特征(选中 2 个对象)+基准面(mark 32)都选好后仍返回 None")),
+    ("sw_export_iges", ToolEntry("sw_export_iges", "feature", "unverified",
+        "IModelDoc2.SaveAs(IGES)", "",
+        "调用不报错但文件根本没生成（0 字节/不存在）")),
+    ("sw_export_dxf", ToolEntry("sw_export_dxf", "feature", "unverified",
+        "IModelDoc2.SaveAs(DXF)", "",
+        "零件直接导 DXF 无输出（DXF 需工程图或展开图上下文）")),
     ("sw_sketch_offset", ToolEntry("sw_sketch_offset", "sketch", "unverified",
         "SketchManager.SketchOffset2", "",
         "pywin32 迟绑定报 DISP_E_PARAMNOTOPTIONAL；comtypes 要求 CapEnds 等必填维")),
@@ -261,7 +297,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 # 注意：上表刻意保留重复键时的"后写覆盖"语义，避免手抖写重时静默丢条目。
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
-                     + _INSPECT_UPSTREAM + _ASM_STATE + _UNSTABLE
+                     + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
+                     + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
 
@@ -286,6 +323,9 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
+    "sw_extrude", "sw_export_step", "sw_export_stl", "sw_export_file",
+    "sw_save_document",
     # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
     "sw_create_assembly", "sw_insert_component", "sw_get_assembly_tree",
     "sw_suppress_component", "sw_hide_component", "sw_replace_component",

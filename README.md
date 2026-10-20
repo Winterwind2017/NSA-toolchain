@@ -94,6 +94,8 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` | 零参插入 | `GetDatumTagCount` / `GetGTolCount` / `GetWeldSymbolCount` **各 +1** |
 | `sw_note` / `sw_add_annotation` | `InsertNote` + `SetPosition2` | 文本读回 + 位置 (0.05, 0.05) 读回 |
 | `sw_move_component` | `Transform2`（变换拷贝法） | Δ=[**0.05**, 0, 0]，临时件已删、组件数不变 |
+| `sw_extrude` | `FeatureExtrusion3` | 40×25×20 → 体积 **20000.0 mm³**（手算一致） |
+| `sw_export_step` / `sw_export_stl` / `sw_export_file`(PDF) / `sw_save_document` | `SaveAs` | 签名 **ISO-10303-21** / `stlbn` / **%PDF-1.4** / 65 KB 落盘 |
 | `sw_create_assembly` | `NewDocument(.asmdot)` | `GetType==2` |
 | `sw_insert_component` | `AddComponent5`（8 参） | 组件 **0→1→2**（零件需先打开，插入前切回装配） |
 | `sw_get_assembly_tree` | `GetComponents` + 状态位 | 2 个组件，固定/抑制/隐藏全部可读 |
@@ -121,7 +123,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **87 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **92 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -173,11 +175,11 @@ src/swkit/
 
 | 归宿 | 数量 |
 |---|---|
-| 已覆盖（本仓库有实现 + 真机判据） | 67 |
+| 已覆盖（本仓库有实现 + 真机判据） | 72 |
 | 已判死（调用不存在/废弃 API，或实测不可用） | 4 |
 | 已知不稳（不进回归） | 2 |
 | 已判不可调（可选参数必须补齐） | 3 |
-| **未复核（待办）** | 112 |
+| **未复核（待办）** | 107 |
 
 外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
 未复核的 149 条已按能力族分批（sketch 29 / inspect 23 / assembly 16 / drawing 16 /
