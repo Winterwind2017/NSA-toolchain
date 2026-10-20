@@ -213,6 +213,16 @@ python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks）
 > `serverInfo.version` 显示的是底层 `mcp` 库版本（FastMCP 构造函数没有 version 参数）；
 > 本包版本看 `swkit status` 的 `swkit_version`。
 
+### 本机开发注意（踩过的）
+
+* **`git push` 走 HTTPS 会卡住**：`git-credential-manager` 在没有交互终端时会一直等凭据，
+  表现为推送"无输出挂死"。本仓库远端因此改用 **SSH**（`git@github.com:...`），
+  或一次性用 `git -c credential.helper="!gh auth git-credential" push`。
+* 提交消息里**不要**用英文双引号包中文（`"...返回 True..."`）——PowerShell 会把字符串
+  截断，git 把碎片当 pathspec 报 `pathspec ... did not match`。改用 `git commit -F 文件`。
+* 本机 `pytest` 只装在系统 Python（3.12），项目 venv 里没有；跑离线契约测试时用
+  `python -m pytest`（系统解释器）+ `PYTHONPATH` 指向 `src` 与该 venv 的 `site-packages`。
+
 ### 环境变量（都可选）
 
 | 变量 | 作用 | 默认 |
