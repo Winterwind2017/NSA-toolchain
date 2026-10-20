@@ -40,12 +40,12 @@ DEFAULT_TPL = (r"C:\ProgramData\SolidWorks\SOLIDWORKS 2025\templates"
 
 def build_assembly(p1: str, p2: str, template: str, dx: float = 0.12):
     """建一个两组件装配，返回 pywin32 的装配文档对象。"""
-    from comtypes.client import CreateObject, GetModule
+    from swkit.core.com import comtypes_bundle
 
     tlb = os.environ.get("SW_TLB") or \
         r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb"
-    sw = GetModule(tlb)
-    app_ct = CreateObject(sw.SldWorks)
+    sw, app_ct = comtypes_bundle(tlb)
+
     app_w = pyw().Dispatch("SldWorks.Application")
 
     app_w.CloseAllDocuments(True)

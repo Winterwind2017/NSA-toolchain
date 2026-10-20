@@ -45,6 +45,22 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 只读检查 / 轻量设置（verified）
+
+```python
+from swkit.verified import inspect as ins
+ins.status(); ins.open_documents(); ins.model_info(doc)
+ins.features(doc); ins.mass_properties(doc); ins.bodies(doc)
+ins.custom_properties(doc); ins.set_custom_property(doc, "swkit_tag", "x")
+ins.material(doc); ins.set_material(doc, "AISI 304")
+ins.rebuild(doc); ins.display_mode(doc, "shaded")
+ins.get_dimension(doc, name); ins.set_dimension(doc, name, 21.0)
+```
+
+要点：`CreateMassProperty` 的成员**只能**通过 comtypes 读（pywin32 报"找不到成员"）；
+`DisplayMode` 是**可写属性**（没有 `SetDisplayMode` 方法）；尺寸写入单位是**米**，
+本模块对外用 mm。
+
 ### 草图实体（verified，输入 mm）
 
 ```python

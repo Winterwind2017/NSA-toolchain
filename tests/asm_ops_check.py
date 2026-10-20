@@ -32,11 +32,11 @@ TPL = (r"C:\ProgramData\SolidWorks\SOLIDWORKS 2025\templates"
 
 
 def build(dx: float):
-    from comtypes.client import CreateObject, GetModule
+    from swkit.core.com import comtypes_bundle
     tlb = os.environ.get("SW_TLB") or \
         r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb"
-    sw = GetModule(tlb)
-    app_ct = CreateObject(sw.SldWorks)
+    sw, app_ct = comtypes_bundle(tlb)
+
     app_w = pyw().Dispatch("SldWorks.Application")
     app_w.CloseAllDocuments(True)
     for part in (P1, P2):

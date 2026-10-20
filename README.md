@@ -114,7 +114,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **64 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **79 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -166,11 +166,11 @@ src/swkit/
 
 | 归宿 | 数量 |
 |---|---|
-| 已覆盖（本仓库有实现 + 真机判据） | 44 |
+| 已覆盖（本仓库有实现 + 真机判据） | 59 |
 | 已判死（调用不存在/废弃 API，或实测不可用） | 4 |
 | 已知不稳（不进回归） | 2 |
 | 已判不可调（可选参数必须补齐） | 3 |
-| **未复核（待办）** | 135 |
+| **未复核（待办）** | 120 |
 
 外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
 未复核的 149 条已按能力族分批（sketch 29 / inspect 23 / assembly 16 / drawing 16 /
@@ -222,13 +222,17 @@ python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks）
   截断，git 把碎片当 pathspec 报 `pathspec ... did not match`。改用 `git commit -F 文件`。
 * 本机 `pytest` 只装在系统 Python（3.12），项目 venv 里没有；跑离线契约测试时用
   `python -m pytest`（系统解释器）+ `PYTHONPATH` 指向 `src` 与该 venv 的 `site-packages`。
+* `comtypes` 不在项目 venv 里时：`swkit.core.com.comtypes_bundle()` 会按
+  `SWKIT_VENDOR` → `~/.swkit/vendor` → `<repo>/vendor` 顺序自动找。
+  本机用目录联接把它挂到 `~/.swkit/vendor`，所以**不需要任何环境变量**即可跑全部真机套件
+  （以前漏设 `SWKIT_VENDOR` 会让 7 个套件一起挂在 `No module named comtypes`）。
 
 ### 环境变量（都可选）
 
 | 变量 | 作用 | 默认 |
 |---|---|---|
 | `SW_TLB` / `SWCONST_TLB` | 类型库路径 | `D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\*.tlb` |
-| `SWKIT_VENDOR` | 额外的 `sys.path`（例如 vendored `comtypes`） | 空 |
+| `SWKIT_VENDOR` | 自带 `comtypes` 的目录（找不到时会自动试 `~/.swkit/vendor` 与 `<repo>/vendor`） | 自动查找 |
 | `SWKIT_HOME` | 缓存 / 临时输出目录 | `~/.swkit` |
 | `SWKIT_DM_DB` | DocumentMgr 索引库 | 有旧索引则沿用，否则 `~/.swkit/swdm_lite.db` |
 | `SWKIT_OUT` | 扫描输出目录 | `~/swkit_out` |

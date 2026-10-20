@@ -162,6 +162,36 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 上游 inspect 族（2026-10-20 真机 18/18）──────────────────────────
+_INSPECT_UPSTREAM: List[Tuple[str, ToolEntry]] = [
+    _e("sw_get_status", "inspect", "Application.RevisionNumber", "版本 33.4.1 + 文档数可读"),
+    _e("sw_list_open_documents", "inspect", "Application.GetDocuments",
+       "列表长度 == GetDocumentCount"),
+    _e("sw_get_model_info", "inspect", "IModelDoc2.GetTitle/GetType",
+       "标题=check_inspect、type=1、特征 22、实体 1"),
+    _e("sw_list_features", "inspect", "IFeature.GetTypeName2", "22 个特征，名称全部非空"),
+    _e("sw_get_mass_properties", "inspect", "IModelDocExtension.CreateMassProperty",
+       "体积 5.921e-5 m³ = 59,215 mm³、质量 0.4737 kg、密度 8000",
+       "pywin32 取不到 IMassProperty 成员（报找不到成员）→ 必须 comtypes"),
+    _e("sw_list_bodies", "inspect", "IModelDoc2.GetBodies2", "实体 1 / 曲面 0"),
+    _e("sw_get_custom_properties", "inspect", "GetCustomInfoNames2/CustomInfo2",
+       "28 条属性名值成对可读（含中文名，如 零件号/单重）"),
+    _e("sw_set_custom_property", "inspect", "IModelDoc2.AddCustomInfo3",
+       "写 swkit_tag=r8-check 后 CustomInfo2 读回相等；属性数 28→29"),
+    _e("sw_get_material", "inspect", "IModelDoc2.MaterialUserName/MaterialIdName", "可读"),
+    _e("sw_set_material", "inspect", "IPartDoc.SetMaterialPropertyName2",
+       "设 AISI 304 后 MaterialIdName 读回含 304"),
+    _e("sw_rebuild_model", "inspect", "IModelDoc2.ForceRebuild3", "特征数 22→22 不变"),
+    _e("sw_set_display_mode", "inspect", "IModelView.DisplayMode（可写属性）",
+       "读回等于目标值",
+       "没有 SetDisplayMode 方法（报 <unknown>.SetDisplayMode）——它是属性，赋值即可"),
+    _e("sw_list_display_states", "inspect", "IConfiguration.GetDisplayStates",
+       "列出 <默认>_显示状态 1"),
+    _e("sw_get_dimension", "inspect", "IModelDoc2.Parameter → SystemValue", "读到 20.0 mm"),
+    _e("sw_set_dimension", "inspect", "IDimension.SystemValue",
+       "20→21 mm 读回一致，再恢复 20"),
+]
+
 # ── 上游 sketch 族（2026-10-20 真机转正：草图线段数判据）──────────────
 _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
     _e("sw_create_sketch", "sketch", "SketchManager.InsertSketch",
@@ -207,7 +237,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 
 # 注意：上表刻意保留重复键时的"后写覆盖"语义，避免手抖写重时静默丢条目。
 REGISTRY: Dict[str, ToolEntry] = {}
-for _name, _entry in _VERIFIED + _STUDY_META + _SKETCH_UPSTREAM + _UNSTABLE + _UNVERIFIED + _BROKEN:
+for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
+                     + _INSPECT_UPSTREAM + _UNSTABLE + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
 
 
@@ -231,6 +262,11 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 上游 inspect 族（verified/inspect.py，2026-10-20 真机 18/18）
+    "sw_get_status", "sw_list_open_documents", "sw_get_model_info", "sw_list_features",
+    "sw_get_mass_properties", "sw_list_bodies", "sw_get_custom_properties",
+    "sw_set_custom_property", "sw_get_material", "sw_set_material", "sw_rebuild_model",
+    "sw_set_display_mode", "sw_list_display_states", "sw_get_dimension", "sw_set_dimension",
     # 上游 sketch 族（verified/sketch_ops.py，2026-10-20 真机 11/11）
     "sw_create_sketch", "sw_edit_sketch", "sw_exit_sketch", "sw_sketch_line",
     "sw_sketch_circle", "sw_sketch_rectangle", "sw_sketch_arc", "sw_sketch_ellipse",

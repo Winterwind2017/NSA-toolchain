@@ -442,6 +442,124 @@ def sw_explode_assembly() -> Dict[str, Any]:
     return _com(_do)
 
 
+def _with_doc(fn, *args, **kwargs):
+    """把一个 `fn(doc, ...)` 包成"取活动文档 → 调用 → 串行化"的 MCP 工具体。"""
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档"}
+        return fn(doc, *args, **kwargs)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_get_status")
+def sw_get_status() -> Dict[str, Any]:
+    """连接状态（verified）：版本号 + 文档数。"""
+    from ..verified import inspect as ins
+    return _com(ins.status)
+
+
+@mcp.tool(name="sw_list_open_documents")
+def sw_list_open_documents() -> Dict[str, Any]:
+    """已打开文档列表（verified）：列表长度与 GetDocumentCount 一致。"""
+    from ..verified import inspect as ins
+    return _com(ins.open_documents)
+
+
+@mcp.tool(name="sw_get_model_info")
+def sw_get_model_info() -> Dict[str, Any]:
+    """当前文档信息（verified）：标题/路径/类型/特征数/实体数。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.model_info)
+
+
+@mcp.tool(name="sw_list_features")
+def sw_list_features() -> Dict[str, Any]:
+    """特征树（verified）：名称 + 类型名。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.features)
+
+
+@mcp.tool(name="sw_get_mass_properties")
+def sw_get_mass_properties() -> Dict[str, Any]:
+    """质量属性（verified）：质量/体积/表面积/重心。
+
+    注意：pywin32 取不到 `IMassProperty` 成员，内部走 comtypes。
+    """
+    from ..verified import inspect as ins
+    return _with_doc(ins.mass_properties)
+
+
+@mcp.tool(name="sw_list_bodies")
+def sw_list_bodies() -> Dict[str, Any]:
+    """实体/曲面计数（verified）。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.bodies)
+
+
+@mcp.tool(name="sw_get_custom_properties")
+def sw_get_custom_properties(config: str = "") -> Dict[str, Any]:
+    """自定义属性（verified）：名 → 值。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.custom_properties, config=config)
+
+
+@mcp.tool(name="sw_set_custom_property")
+def sw_set_custom_property(name: str, value: str, config: str = "") -> Dict[str, Any]:
+    """写自定义属性（verified）：**读回等于写入值**才算成功。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.set_custom_property, name=name, value=value, config=config)
+
+
+@mcp.tool(name="sw_get_material")
+def sw_get_material() -> Dict[str, Any]:
+    """读材料（verified）。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.material)
+
+
+@mcp.tool(name="sw_set_material")
+def sw_set_material(name: str = "AISI 304", config: str = "") -> Dict[str, Any]:
+    """赋材料（verified）：`IPartDoc.SetMaterialPropertyName2`，读回校验。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.set_material, name=name, config=config)
+
+
+@mcp.tool(name="sw_rebuild_model")
+def sw_rebuild_model() -> Dict[str, Any]:
+    """强制重建（verified）：判据是特征数不变。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.rebuild)
+
+
+@mcp.tool(name="sw_set_display_mode")
+def sw_set_display_mode(mode: str = "shaded") -> Dict[str, Any]:
+    """显示模式（verified）：`DisplayMode` 是**可写属性**，读回校验。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.display_mode, mode=mode)
+
+
+@mcp.tool(name="sw_list_display_states")
+def sw_list_display_states() -> Dict[str, Any]:
+    """列显示状态（verified）。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.display_states)
+
+
+@mcp.tool(name="sw_get_dimension")
+def sw_get_dimension(name: str) -> Dict[str, Any]:
+    """读尺寸（verified，输出 mm）。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.get_dimension, name=name)
+
+
+@mcp.tool(name="sw_set_dimension")
+def sw_set_dimension(name: str, value_mm: float) -> Dict[str, Any]:
+    """改尺寸（verified，输入 mm，读回校验）。"""
+    from ..verified import inspect as ins
+    return _with_doc(ins.set_dimension, name=name, value_mm=value_mm)
+
+
 @mcp.tool(name="sw_create_sketch")
 def sw_create_sketch(plane: str = "前视基准面") -> Dict[str, Any]:
     """新建草图（verified）。中文版必须用本地化面名（`前视基准面`）。"""

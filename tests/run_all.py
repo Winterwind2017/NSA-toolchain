@@ -42,6 +42,7 @@ def _suites() -> list[dict]:
         "part": "part_check.py",
         "sketch": "sketch_check.py",
         "sketch_ops": "sketch_ops_check.py",
+        "inspect": "inspect_check.py",
         "asm_ops": "asm_ops_check.py",
         "drawing": "drawing_check.py",
         "balloon": "balloon_check.py",

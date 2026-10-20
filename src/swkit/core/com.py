@@ -77,15 +77,29 @@ def comtypes_bundle(tlb_path: Optional[str] = None):
     try:
         from comtypes.client import CreateObject, GetModule
     except ModuleNotFoundError:
-        # 允许用 SWKIT_VENDOR 指定一个自带 comtypes 的目录（本机开发常用）
+        # comtypes 可能只存在于"自带目录"里（本机开发常见）。按顺序找候选：
+        #   1) SWKIT_VENDOR
+        #   2) ~/.swkit/vendor        ← 推荐的机器级位置（与代码解耦）
+        #   3) <仓库>/vendor
         import os as _os
         import sys as _sys
-        _vendor = _os.environ.get("SWKIT_VENDOR")
-        if not _vendor or not _os.path.isdir(_vendor):
+        _here = _os.path.dirname(_os.path.dirname(_os.path.dirname(
+            _os.path.abspath(__file__))))
+        _cands = [
+            _os.environ.get("SWKIT_VENDOR") or "",
+            _os.path.join(_os.path.expanduser("~"), ".swkit", "vendor"),
+            _os.path.join(_here, "vendor"),
+        ]
+        for _cand in _cands:
+            if _cand and _os.path.isdir(_cand) and _cand not in _sys.path:
+                _sys.path.insert(0, _cand)
+                try:
+                    from comtypes.client import CreateObject, GetModule
+                    break
+                except ModuleNotFoundError:
+                    _sys.path.remove(_cand)
+        else:
             raise
-        if _vendor not in _sys.path:
-            _sys.path.insert(0, _vendor)
-        from comtypes.client import CreateObject, GetModule
 
     path = tlb_path or os.environ.get("SW_TLB") or \
         r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb"

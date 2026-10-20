@@ -444,6 +444,124 @@ def cmd_explode(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def _doc_or_none():
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+    return doc
+
+
+def cmd_open_docs(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    res = ins.open_documents()
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_model_info(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.model_info(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_features(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.features(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_mass(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.mass_properties(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_bodies(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.bodies(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_custom_props(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    if args.set_value is None:
+        res = ins.custom_properties(doc, args.config)
+    else:
+        res = ins.set_custom_property(doc, args.name, args.set_value, args.config)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_material(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.set_material(doc, args.name) if args.name else ins.material(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_rebuild(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.rebuild(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_display_mode(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.display_mode(doc, args.mode)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_list_display_states(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = ins.display_states(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_dimension(args: argparse.Namespace) -> int:
+    from ..verified import inspect as ins
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = (ins.set_dimension(doc, args.name, args.set_value) if args.set_value is not None
+           else ins.get_dimension(doc, args.name))
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_sketch(args: argparse.Namespace) -> int:
     from ..verified import sketch_ops as so
     doc = _active_doc()
@@ -712,6 +830,48 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("explode", help="自动爆炸（verified）")
     p.set_defaults(func=cmd_explode)
+
+    p = sub.add_parser("open-docs", help="列出已打开文档（verified）")
+    p.set_defaults(func=cmd_open_docs)
+
+    p = sub.add_parser("model-info", help="当前文档信息（verified）")
+    p.set_defaults(func=cmd_model_info)
+
+    p = sub.add_parser("features", help="特征表（verified）")
+    p.set_defaults(func=cmd_features)
+
+    p = sub.add_parser("mass", help="质量属性（verified）")
+    p.set_defaults(func=cmd_mass)
+
+    p = sub.add_parser("bodies", help="实体/曲面计数（verified）")
+    p.set_defaults(func=cmd_bodies)
+
+    p = sub.add_parser("custom-props", help="自定义属性 读/写（verified）")
+    p.add_argument("--config", default="")
+    p.add_argument("--name", default="")
+    p.add_argument("--set-value", default=None)
+    p.set_defaults(func=cmd_custom_props)
+
+    p = sub.add_parser("material", help="材料 读/写（verified）")
+    p.add_argument("--name", default="", help="给名字则设置材料")
+    p.set_defaults(func=cmd_material)
+
+    p = sub.add_parser("rebuild", help="强制重建（verified）")
+    p.set_defaults(func=cmd_rebuild)
+
+    p = sub.add_parser("display-mode", help="显示模式（verified）")
+    p.add_argument("mode", nargs="?", default="shaded",
+                   choices=["wireframe", "hidden_lines_visible",
+                            "hidden_lines_removed", "shaded"])
+    p.set_defaults(func=cmd_display_mode)
+
+    p = sub.add_parser("list-display-states", help="列显示状态（verified）")
+    p.set_defaults(func=cmd_list_display_states)
+
+    p = sub.add_parser("dimension", help="尺寸 读/改（verified，mm）")
+    p.add_argument("--name", required=True)
+    p.add_argument("--set-value", type=float, default=None)
+    p.set_defaults(func=cmd_dimension)
 
     p = sub.add_parser("sketch", help="草图实体（verified）：create/edit/exit/line/circle/…")
     p.add_argument("action", choices=["create", "edit", "exit", "line", "circle", "rect",
