@@ -92,3 +92,22 @@ def test_drawing_view_names_are_localized() -> None:
 
     assert VIEW_MAP["front"] == "*前视"
     assert all(v.startswith("*") for v in VIEW_MAP.values())
+
+
+def test_doctor_script_declares_all_checks() -> None:
+    """换机器自检脚本必须存在，且覆盖 5 项关键检查（远端协议/SSH key 等）。
+
+    `scripts/doctor.py` 是**跟代码走**的提醒：换机器 clone 下来就能跑，
+    不依赖任何本地记忆。这里只做静态契约（不真的跑 ssh/git）。
+    """
+    import pathlib
+
+    p = pathlib.Path(__file__).resolve().parent.parent / "scripts" / "doctor.py"
+    assert p.is_file(), "缺少 scripts/doctor.py"
+    text = p.read_text(encoding="utf-8")
+    for fn in ("check_python", "check_remote", "check_ssh", "check_comtypes",
+               "check_solidworks"):
+        assert fn in text, "doctor 缺少 %s" % fn
+    # 必须给出 SSH 与 HTTPS 的修法，否则提醒不可执行
+    assert "ssh-keygen" in text
+    assert "set-url origin" in text
