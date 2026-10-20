@@ -456,6 +456,69 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_open_document")
+def sw_open_document(path: str) -> Dict[str, Any]:
+    """打开文档（verified）：判据文档数 +1。"""
+    from ..verified import config_io as CI
+    return _com(lambda: CI.open_document(path))
+
+
+@mcp.tool(name="sw_close_document")
+def sw_close_document(title: str = "") -> Dict[str, Any]:
+    """关闭文档（verified）：判据文档数 -1。"""
+    from ..verified import config_io as CI
+    return _com(lambda: CI.close_document(title, True))
+
+
+@mcp.tool(name="sw_close_all")
+def sw_close_all(save: bool = True) -> Dict[str, Any]:
+    """关闭全部（verified）：`save=False` 会被未保存提示卡住，默认 True。"""
+    from ..verified import config_io as CI
+    return _com(lambda: CI.close_all(save))
+
+
+@mcp.tool(name="sw_save_all")
+def sw_save_all() -> Dict[str, Any]:
+    """保存全部（verified）。"""
+    from ..verified import config_io as CI
+    return _com(CI.save_all)
+
+
+@mcp.tool(name="sw_save_as_copy")
+def sw_save_as_copy(path: str) -> Dict[str, Any]:
+    """另存副本（verified）：判据副本存在 + 原路径不变。"""
+    from ..verified import config_io as CI
+    return _with_doc(CI.save_as_copy, path)
+
+
+@mcp.tool(name="sw_list_configurations")
+def sw_list_configurations() -> Dict[str, Any]:
+    """列配置（verified）：激活配置走 ConfigurationManager。"""
+    from ..verified import config_io as CI
+    return _with_doc(CI.list_configurations)
+
+
+@mcp.tool(name="sw_add_configuration")
+def sw_add_configuration(name: str = "CFG_SWKIT") -> Dict[str, Any]:
+    """新增配置（verified）：判据配置数 +1。"""
+    from ..verified import config_io as CI
+    return _with_doc(CI.add_configuration, name)
+
+
+@mcp.tool(name="sw_activate_configuration")
+def sw_activate_configuration(name: str) -> Dict[str, Any]:
+    """切换配置（verified）：判据激活名读回（返回值不可靠）。"""
+    from ..verified import config_io as CI
+    return _with_doc(CI.activate_configuration, name)
+
+
+@mcp.tool(name="sw_get_referenced_documents")
+def sw_get_referenced_documents() -> Dict[str, Any]:
+    """引用文档（verified）：判据依赖数 > 0。"""
+    from ..verified import config_io as CI
+    return _with_doc(CI.get_referenced_documents)
+
+
 @mcp.tool(name="sw_base_flange")
 def sw_base_flange(thickness_mm: float = 2.0, radius_mm: float = 2.0,
                    depth_mm: float = 30.0) -> Dict[str, Any]:

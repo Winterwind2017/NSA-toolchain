@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 85 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 94 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
 | 未达可用 | 17 | 已登记但没打通 |
-| 未复核 | 80 | **待办**：还没验证 |
+| 未复核 | 71 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -25,6 +25,7 @@
 | `sw_stop_macro_recording` | — | 已判死 | 本仓库实测不可用：类型库穷举无 StopRecording | 2066 |
 | `sw_add_sketch_dimension` | — | 已知不稳 | 不进自动回归：round 17 成功 0.01→0.03；round 32 挂起并崩溃过一次 | 1085 |
 | `sw_show_all_planes` | — | 已知不稳 | 不进自动回归：API 存在且可调，但 IFeature.Visible 不反映图形可见性，无法构造 A/B | 3338 |
+| `sw_activate_configuration` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1806 |
 | `sw_activate_display_state` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3484 |
 | `sw_add_annotation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1586 |
 | `sw_add_auxiliary_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3002 |
@@ -32,6 +33,7 @@
 | `sw_add_broken_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3022 |
 | `sw_add_center_mark` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3042 |
 | `sw_add_centerline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3032 |
+| `sw_add_configuration` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1823 |
 | `sw_add_datum_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3092 |
 | `sw_add_drawing_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1569 |
 | `sw_add_hole_table` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3102 |
@@ -43,6 +45,8 @@
 | `sw_check_interference` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1493 |
 | `sw_circular_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1266 |
 | `sw_clear_selection` | — | 已覆盖 | 本仓库有实现且有真机判据 | 824 |
+| `sw_close_all` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3528 |
+| `sw_close_document` | — | 已覆盖 | 本仓库有实现且有真机判据 | 667 |
 | `sw_connect` | — | 已覆盖 | 本仓库有实现且有真机判据 | 611 |
 | `sw_create_assembly` | — | 已覆盖 | 本仓库有实现且有真机判据 | 716 |
 | `sw_create_part` | — | 已覆盖 | 本仓库有实现且有真机判据 | 699 |
@@ -68,12 +72,14 @@
 | `sw_get_mass_properties` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1661 |
 | `sw_get_material` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2270 |
 | `sw_get_model_info` | — | 已覆盖 | 本仓库有实现且有真机判据 | 783 |
+| `sw_get_referenced_documents` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3548 |
 | `sw_get_status` | — | 已覆盖 | 本仓库有实现且有真机判据 | 630 |
 | `sw_hem` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2759 |
 | `sw_hide_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3238 |
 | `sw_insert_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1414 |
 | `sw_linear_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1246 |
 | `sw_list_bodies` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2329 |
+| `sw_list_configurations` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1790 |
 | `sw_list_display_states` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3474 |
 | `sw_list_features` | — | 已覆盖 | 本仓库有实现且有真机判据 | 837 |
 | `sw_list_materials` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2290 |
@@ -81,10 +87,13 @@
 | `sw_mirror_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3218 |
 | `sw_move_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3248 |
 | `sw_offset_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2614 |
+| `sw_open_document` | — | 已覆盖 | 本仓库有实现且有真机判据 | 649 |
 | `sw_pattern_component_circular` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3208 |
 | `sw_pattern_component_linear` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3198 |
 | `sw_rebuild_model` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1982 |
 | `sw_replace_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3188 |
+| `sw_save_all` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3518 |
+| `sw_save_as_copy` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3538 |
 | `sw_save_document` | — | 已覆盖 | 本仓库有实现且有真机判据 | 683 |
 | `sw_select_entity` | — | 已覆盖 | 本仓库有实现且有真机判据 | 801 |
 | `sw_set_custom_property` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1771 |
@@ -110,9 +119,7 @@
 | `sw_thicken_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2145 |
 | `sw_unsuppress_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1396 |
 | `sw_view_rotate` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3368 |
-| `sw_activate_configuration` | — | 未复核 | Activate (switch to) a configuration by name. | 1806 |
 | `sw_add_bom_table` | — | 未复核 | Add a Bill of Materials (BOM) table to the active drawing. | 1603 |
-| `sw_add_configuration` | — | 未复核 | Add a new configuration to the active document. | 1823 |
 | `sw_add_drawing_view` | — | 未复核 | Add a model view to the active drawing document. | 1533 |
 | `sw_add_end_cap` | — | 未复核 | Add an end cap to a selected structural member end face.""" | 2841 |
 | `sw_add_geometric_tolerance` | — | 未复核 | Add a geometric tolerance (GD&T) frame to the drawing.""" | 3072 |
@@ -124,8 +131,6 @@
 | `sw_analyze_draft` | — | 未复核 | Perform draft analysis on the active part model. | 1731 |
 | `sw_boundary_boss` | — | 未复核 | Create a boundary boss/cut from two or more profile curves.""" | 3626 |
 | `sw_check_geometry` | — | 未复核 | Check the active part for geometry errors (invalid faces, edges, etc.) | 1714 |
-| `sw_close_all` | — | 未复核 | Close all open SolidWorks documents.""" | 3528 |
-| `sw_close_document` | — | 未复核 | Close a document. Closes the active document if no title is given. | 667 |
 | `sw_combine_bodies` | — | 未复核 | Combine selected bodies via boolean operation (union/subtract/intersec | 2339 |
 | `sw_composite_curve` | — | 未复核 | Combine selected edges and sketch entities into a single composite cur | 2445 |
 | `sw_create_design_table` | — | 未复核 | Create a design table for driving multiple configurations from a sprea | 1898 |
@@ -145,20 +150,17 @@
 | `sw_filled_surface` | — | 未复核 | Fill a closed boundary of edges with a new surface.""" | 2654 |
 | `sw_flatten_sheet_metal` | — | 未复核 | Toggle the flat pattern view of the active sheet metal part. | 2184 |
 | `sw_get_equations` | — | 未复核 | List all equations and global variables in the active document. | 1842 |
-| `sw_get_referenced_documents` | — | 未复核 | List all documents (parts, subassemblies) referenced by the active ass | 3548 |
 | `sw_hide_all_planes` | — | 未复核 | Hide all reference planes in the viewport.""" | 3328 |
 | `sw_hide_all_sketches` | — | 未复核 | Hide all sketches in the viewport.""" | 3348 |
 | `sw_insert_weldment` | — | 未复核 | Insert the weldment feature into the active part (enables weldment too | 2811 |
 | `sw_intersect` | — | 未复核 | Create intersection regions from selected bodies/surfaces.""" | 3616 |
 | `sw_jog` | — | 未复核 | Add a jog bend at the active sketch line on a sheet metal face.""" | 2749 |
 | `sw_link_dimension_to_equation` | — | 未复核 | Link a dimension to an expression via an equation (drives the dimensio | 3457 |
-| `sw_list_configurations` | — | 未复核 | List all configurations in the active document and show which is activ | 1790 |
 | `sw_list_global_variables` | — | 未复核 | List all global variables in the active model.""" | 3431 |
 | `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
 | `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
 | `sw_measure_distance` | — | 未复核 | Measure the minimum distance between two entities (faces, edges, verti | 1697 |
 | `sw_move_body` | — | 未复核 | Move or copy the selected body by translation (mm) and rotation (deg). | 2359 |
-| `sw_open_document` | — | 未复核 | Open a SolidWorks file (part, assembly, drawing, or imported format li | 649 |
 | `sw_parting_line` | — | 未复核 | Create a parting line for mold design (used to separate core from cavi | 2874 |
 | `sw_planar_surface` | — | 未复核 | Create a planar surface from selected closed sketch profile or edges." | 2584 |
 | `sw_projected_curve` | — | 未复核 | Project a sketch onto a face to create a 3D curve.""" | 2435 |
@@ -167,8 +169,6 @@
 | `sw_run_macro` | — | 未复核 | Run a saved SolidWorks macro file (.swp or .swb). | 2001 |
 | `sw_run_simulation` | — | 未复核 | Run the active SOLIDWORKS Simulation study.""" | 3413 |
 | `sw_run_vba_code` | — | 未复核 | Execute arbitrary VBA code against SolidWorks. | 2021 |
-| `sw_save_all` | — | 未复核 | Save all open SolidWorks documents that have unsaved changes.""" | 3518 |
-| `sw_save_as_copy` | — | 未复核 | Save the active document as a copy without changing the current open f | 3538 |
 | `sw_scale_body` | — | 未复核 | Uniformly scale the selected body by a factor.""" | 2379 |
 | `sw_set_appearance_color` | — | 未复核 | Set RGB color and transparency on the active part's solid bodies.""" | 2280 |
 | `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
@@ -241,14 +241,14 @@
 
 | 类别 | 待验证数 |
 |---|---|
-| `inspect` | 13 |
 | `sketch` | 13 |
 | `other` | 12 |
+| `inspect` | 9 |
 | `surface` | 9 |
-| `macro_io` | 8 |
 | `drawing` | 8 |
 | `feature` | 8 |
 | `assembly` | 3 |
+| `macro_io` | 3 |
 | `weldment` | 3 |
 | `mold` | 2 |
 | `sheet_metal` | 1 |

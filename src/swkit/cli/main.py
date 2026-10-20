@@ -562,6 +562,55 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_open_doc(args: argparse.Namespace) -> int:
+    from ..verified import config_io as CI
+    res = CI.open_document(args.path)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_close_doc(args: argparse.Namespace) -> int:
+    from ..verified import config_io as CI
+    res = CI.close_all(True) if args.all else CI.close_document(args.title, True)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_configs(args: argparse.Namespace) -> int:
+    from ..verified import config_io as CI
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    if args.add:
+        res = CI.add_configuration(doc, args.add)
+    elif args.activate:
+        res = CI.activate_configuration(doc, args.activate)
+    else:
+        res = CI.list_configurations(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_save_copy(args: argparse.Namespace) -> int:
+    from ..verified import config_io as CI
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = CI.save_as_copy(doc, args.path)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_refs(args: argparse.Namespace) -> int:
+    from ..verified import config_io as CI
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = CI.get_referenced_documents(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_base_flange(args: argparse.Namespace) -> int:
     from ..verified import sheet_metal as SM
     doc = _doc_or_none()
@@ -1068,6 +1117,27 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("open-doc", help="打开文档（verified）")
+    p.add_argument("--path", required=True)
+    p.set_defaults(func=cmd_open_doc)
+
+    p = sub.add_parser("close-doc", help="关文档/全部（verified）")
+    p.add_argument("--title", default="")
+    p.add_argument("--all", action="store_true")
+    p.set_defaults(func=cmd_close_doc)
+
+    p = sub.add_parser("configs", help="配置 列/加/切换（verified）")
+    p.add_argument("--add", default="")
+    p.add_argument("--activate", default="")
+    p.set_defaults(func=cmd_configs)
+
+    p = sub.add_parser("save-copy", help="另存副本（verified）")
+    p.add_argument("--path", required=True)
+    p.set_defaults(func=cmd_save_copy)
+
+    p = sub.add_parser("refs", help="引用文档（verified）")
+    p.set_defaults(func=cmd_refs)
 
     p = sub.add_parser("base-flange", help="钣金基体法兰（verified，mm）")
     p.add_argument("--thickness", type=float, default=2.0)

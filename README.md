@@ -98,6 +98,10 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_connect` / `sw_create_part` / `sw_create_reference_plane` | `NewDocument`/`InsertRefPlane` | 版本 33.4.1；`GetType==1`；RefPlane **3→4** |
 | `sw_select_entity` / `sw_clear_selection` | `SelectByID2`/`ClearSelection2` | 选择集 **1 → 0** |
 | `sw_capture_screenshot` / `sw_delete_feature` | `SaveAs(PNG)`/`DeleteSelection2` | PNG 魔数 **125 KB**；特征数 **-1** |
+| `sw_open_document` / `sw_close_document` / `sw_close_all` | `OpenDoc`/`CloseDoc`/`CloseAllDocuments` | 文档数 **0→1、2→1、→0** |
+| `sw_save_as_copy` | `SaveAs2`（4 参） | 副本存在且**原路径不变** |
+| `sw_list_configurations` / `add_configuration` / `activate_configuration` | `AddConfiguration3`/`ShowConfiguration2` | 配置 **1→2**，激活名读回一致 |
+| `sw_get_referenced_documents` | `GetDependencies`（2 参） | 图纸依赖 **2** 项（含 box_hole.SLDPRT） |
 | `sw_base_flange` | `InsertSheetMetalBaseFlange`（9 参） | 特征 19→22，出现 **SheetMetal + SMBaseFlange + FlatPattern** |
 | `sw_get_flat_pattern_info` | `IFeature(FlatPattern)` | FlatPattern 存在，`GetBendState=1` |
 | `sw_hem` | `InsertSheetMetalHem`（8 参） | 特征 22→23 |
@@ -131,7 +135,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **105 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **114 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -183,11 +187,11 @@ src/swkit/
 
 | 归宿 | 数量 |
 |---|---|
-| 已覆盖（本仓库有实现 + 真机判据） | 85 |
+| 已覆盖（本仓库有实现 + 真机判据） | 94 |
 | 已判死（调用不存在/废弃 API，或实测不可用） | 4 |
 | 已知不稳（不进回归） | 2 |
 | 未达可用（已登记但没打通） | 17 |
-| **未复核（待办）** | 80 |
+| **未复核（待办）** | 71 |
 
 外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
 未复核的 149 条已按能力族分批（sketch 29 / inspect 23 / assembly 16 / drawing 16 /

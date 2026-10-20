@@ -162,6 +162,27 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 文档开关 / 配置（2026-10-20 真机 9/9）────────────────────────────
+_CONFIG_IO: List[Tuple[str, ToolEntry]] = [
+    _e("sw_open_document", "io", "ISldWorks.OpenDoc6", "文档数 0→1，标题 box_hole"),
+    _e("sw_close_document", "io", "ISldWorks.CloseDoc", "文档数 2→1"),
+    _e("sw_close_all", "io", "ISldWorks.CloseAllDocuments", "文档数 →0",
+       "传 False 会被未保存提示卡住，实测要传 True"),
+    _e("sw_save_all", "io", "ISldWorks.SaveAllDocuments", "无异常、文档数不变"),
+    _e("sw_save_as_copy", "io", "IModelDoc2.SaveAs2(4 参)",
+       "副本存在且**原文档路径不变**",
+       "SaveAs4 有 5 参且 Errors/Warnings 是 byref，pywin32 报无效的参数数目"),
+    _e("sw_list_configurations", "io", "IModelDoc2.GetConfigurationNames",
+       "配置数 1（默认）+ 激活配置可读",
+       "激活配置要走 ConfigurationManager.ActiveConfiguration.Name"),
+    _e("sw_add_configuration", "io", "IModelDoc2.AddConfiguration3(4 参)", "配置数 1→2"),
+    _e("sw_activate_configuration", "io", "IModelDoc2.ShowConfiguration2",
+       "激活配置读回 == 目标",
+       "返回值不可靠（切到已激活配置也返回 False），必须以读回为准"),
+    _e("sw_get_referenced_documents", "io", "IModelDoc2.GetDependencies(2 参)",
+       "图纸依赖 2 项（含 box_hole.SLDPRT）"),
+]
+
 # ── 钣金（2026-10-20 真机 3/4）──────────────────────────────────────
 _SHEET_METAL: List[Tuple[str, ToolEntry]] = [
     _e("sw_base_flange", "sheet_metal", "IModelDoc2.InsertSheetMetalBaseFlange(9 参)",
@@ -360,7 +381,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _UNSTABLE
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO
+                     + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
 
@@ -385,6 +407,10 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 文档开关 / 配置（verified/config_io.py，2026-10-20 真机 9/9）
+    "sw_open_document", "sw_close_document", "sw_close_all", "sw_save_all",
+    "sw_save_as_copy", "sw_list_configurations", "sw_add_configuration",
+    "sw_activate_configuration", "sw_get_referenced_documents",
     # 钣金（verified/sheet_metal.py，2026-10-20 真机 3/4）
     "sw_base_flange", "sw_get_flat_pattern_info", "sw_hem",
     # 文档级基础操作（verified/doc_ops.py，2026-10-20 真机 7/8）
