@@ -749,6 +749,16 @@ def cmd_refs(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_dxp(args: argparse.Namespace) -> int:
+    from ..verified import dimxpert as DX
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = DX.info(doc, args.config, args.create)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_bends(args: argparse.Namespace) -> int:
     from ..verified import sheet_metal as SM
     doc = _doc_or_none()
@@ -1347,6 +1357,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("refs", help="引用文档（verified）")
     p.set_defaults(func=cmd_refs)
+
+    p = sub.add_parser("dxp", help="DimXpert 读取（verified）")
+    p.add_argument("--config", default="")
+    p.add_argument("--create", action="store_true", help="没有 schema 时创建")
+    p.set_defaults(func=cmd_dxp)
 
     p = sub.add_parser("bends", help="实体转钣金（verified，先选中一个固定面）")
     p.add_argument("--radius", type=float, default=5.0)

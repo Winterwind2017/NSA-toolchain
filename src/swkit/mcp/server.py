@@ -676,6 +676,17 @@ def sw_get_referenced_documents() -> Dict[str, Any]:
     return _with_doc(CI.get_referenced_documents)
 
 
+@mcp.tool(name="sw_dxp")
+def sw_dxp(config: str = "", create: bool = False) -> Dict[str, Any]:
+    """DimXpert 读取（verified）：schema 名 + 要素数 + 标注数。
+
+    接口在独立的 swdimxpert.tlb（不在 sldworks.tlb）。
+    `create=False` 且未建 schema 时 DimXpertPart 为 None —— 这是正常结果，不算失败。
+    """
+    from ..verified import dimxpert as DX
+    return _with_doc(DX.info, config, create)
+
+
 @mcp.tool(name="sw_insert_bends")
 def sw_insert_bends(radius: float = 5.0) -> Dict[str, Any]:
     """实体转钣金（verified）：先选中一个固定面；判据出现 SheetMetal+ProcessBends+FlatPattern。"""

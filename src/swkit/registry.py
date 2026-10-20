@@ -42,6 +42,9 @@ _VERIFIED: List[Tuple[str, ToolEntry]] = [
     _e("sw_get_bounding_box", "meta", "IBody2.GetBodyBox",
        "X[-50,50] Y[-30,30] Z[0,10] mm"),
     _e("sw_list_materials", "meta", "解析 .sldmat", "3 库 / 29 分类 / 474 材料"),
+    _e("sw_dxp", "meta", "swdimxpert.tlb: IDimXpertManager/IDimXpertPart",
+       "create=False → 无 schema（DimXpertPart=None）；create=True → schema **模式2**、要素 0、标注 0",
+       "DimXpert 接口在独立 swdimxpert.tlb（123 接口），不在 sldworks.tlb；入口 Extension.DimXpertManager(config, create)"),
     _e("sw_shell", "feature", "InsertFeatureShell + IFace2.Select2", "面 7→14"),
     _e("sw_thicken_surface", "feature", "FeatureBossThicken", "加厚特征=1，面 7→14"),
     _e("sw_offset_surface", "feature", "InsertOffsetSurface", "曲面 1→2"),
@@ -400,6 +403,9 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_dimxpert_autodim", ToolEntry("sw_dimxpert_autodim", "meta", "unverified",
+        "IDimXpertPart.AutoDimensionScheme(option)", "",
+        "实测返回 False、GetAnnotationCount 仍 0；需预设 PartType/ToleranceType 或先选要素")),
     ("sw_analyze_draft", ToolEntry("sw_analyze_draft", "feature", "unverified",
         "IModelDoc2.MoldDraftAnalysis(4 参)", "",
         "该 API 是 Sub(void)，只给面着色；TLB 无 GetDraftAnalysisFaces 之类读回方法，拿不到计数")),
@@ -483,10 +489,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "unverified", "CreateCircularSketchStepAndRepeat", "",
         "comtypes 要求 RadiusDim 等尺寸对象参数")),
 
-    ("sw_dxp",
-     ToolEntry("sw_dxp", "meta", "unverified", "sw_adv.dxp",
-               "方案名与标注数量可读（DimXpert）",
-               "autodim=True 会运行自动尺寸并保存文件——破坏性，默认关闭")),
+
     ("sw_flow_check",
      ToolEntry("sw_flow_check", "meta", "unverified", "sw_adv.flow",
                "加载项自检与建工程可调",
@@ -568,7 +571,7 @@ _IMPLEMENTED = {
     "sw_sketch_polygon", "sw_sketch_spline", "sw_sketch_centerline",
     # 草图 / 文档级（verified/sketch.py、verified/model.py，2026-10-20 真机 5/5）
     "sw_sketch_construction", "sw_sketch_text", "sw_add_sketch_constraint",
-    "sw_activate_display_state", "sw_list_materials",
+    "sw_activate_display_state", "sw_list_materials", "sw_dxp",
     # 元数据（meta/*）
     "sw_props", "sw_scan", "swdm_stats", "swdm_query", "swdm_bom", "swdm_tables",
     "sw_ovba_selftest", "sw_ovba_dump",
