@@ -420,7 +420,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount", "",
         "判据存在但入口堵：GetFacesByTypeCount(0正/1负/2无/3跨) 是硬判据，"
         "可 CreateDefinition 的 swFm(132)/swFeatureNameID(8) 都没有分型线类型；"
-        "InsertMoldPartingLine 恒 None；MoldDraftAnalysis 恒 False 且面颜色无变化（tests/draft_check.py 固化）")),
+        "InsertMoldPartingLine 恒 None；MoldDraftAnalysis 恒 False 且面颜色无变化（tests/draft_check.py 固化）。读取侧已实现 verified/draft.py，只缺分型线夹具")),
     ("sw_check_geometry", ToolEntry("sw_check_geometry", "feature", "broken",
         "(无公开 API)", "",
         "sldworks.tlb 只有 IModelDoc2.DebugCheckBody/DebugCheckIgesGeom，没有 CheckGeometry")),
