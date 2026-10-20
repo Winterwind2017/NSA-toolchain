@@ -69,27 +69,72 @@
 
 ## 还没复核的工具
 
-上游另有约 80 个工具（`sw_*`）本仓库**尚未逐个复核**。它们通过
+上游另有约 44 个工具（`sw_*`）本仓库**尚未逐个复核**。它们通过
 `sw_api(op, params)` 透传可用，但响应恒带 `"status": "unverified"`。
 迁移计划见 [`MIGRATION.md`](MIGRATION.md)。
 
 ---
 
-## unverified（2 条，能调但没打通）
+## unverified（31 条，已登记但没打通）
 
-### `sw_dxp`（DimXpert）
+> 全部都有**实测依据**，按"卡在哪里"归类。每条的原始证据在
+> `swkit.registry` 的 `note` 字段里，可用 `swkit registry` 查看。
 
-- 能读方案名与标注数量（`action=info`）
-- 但 `autodim=True` 会**运行自动尺寸方案并保存文件** —— 破坏性，本仓库默认关闭
-- 未做"自动尺寸后几何是否满足标注"的判据，故不标 verified
+### A. 参数列表未定（`DISP_E_PARAMNOTOPTIONAL` / 必填维）
 
-### `sw_flow_check`（Flow Simulation）
+| 工具 | 卡点 |
+|---|---|
+| `sw_revolve` | TLB 说 5 参、内核按 12 参调，**两边都报** `DISP_E_PARAMNOTOPTIONAL` |
+| `sw_hole_wizard` | `HoleWizard5` 需 **27 个参数**，内核只传 14 个 |
+| `sw_sketch_offset` | comtypes 要求 `CapEnds` 等必填维 |
+| `sw_sketch_linear_pattern` / `sw_sketch_circular_pattern` | 要求 `XSpacingDim`/`RadiusDim` 等**尺寸对象**，不能只传数值 |
+| `sw_sketch_convert_entities` | comtypes 下 `SketchUseEdge()` 不报错但**线段数不变** |
+| `sw_sketch_extend` | 选中线段后调用，长度 **20→20 不变**（未知是否要选端点或标记） |
 
-- 加载项自检与建工程可调用
-- **未跑通求解**，所以不能算打通
+### B. 返回 `None` 或"假成功"（判据拦住了）
+
+| 工具 | 卡点 |
+|---|---|
+| `sw_chamfer` | 特征数 +1 但**面数 6→6 不变** —— 典型假成功 |
+| `sw_fillet` | 4 条边用 mark **0/1/2/4** 分别选中后仍返回 `None`（5 参/7 参都试过） |
+| `sw_mirror` | 特征(2 个对象)+基准面(mark 32)都选好后仍返回 `None` |
+| `sw_add_revision_table` | 空模板与真实 `.sldrevtbt` 都返回 `None`，`RevisionTable` 仍为 `None` |
+| `sw_add_detail_view` | 返回 `None`、视图数不变：详图需父视图上**已有详图圆** |
+| `sw_add_section_view` | 图纸里没有"前视基准面"（剖视要在视图上**画剖切线**，不是选基准面） |
+| `sw_extruded_surface` | `FeatureExtruRefSurface(15 参)` 返回 `None`、曲面数 0；`IFeatureManager` 版 21 参语义未定 |
+
+### C. 夹具/上下文造不出来（要更强的前置条件）
+
+| 工具 | 卡点 |
+|---|---|
+| `sw_move_body` | 三种参数解释都无位移（包围盒 `dx=0`） |
+| `sw_combine_bodies` | 两次相交拉伸被**自动合并**成 1 体，造不出"两个可组合的体" |
+| `sw_split_body` | 需先有分割线/基准面，`PostSplitBody2` 5 参未尝试 |
+| `sw_unfold` / `sw_fold` | 平板无折弯：特征 22→22、`GetBendState` 恒 1（需带折弯的钣金件） |
+| `sw_edge_flange` / `sw_miter_flange` | 选边 + `SketchFeat=None` 仍返回 `None`；疑需法兰轮廓草图 |
+| `sw_export_dxf` / `sw_export_iges` / `sw_export_flat_pattern` | 零件直接导无输出（DXF/IGES 需工程图或展开图上下文；IGES 调用不报错但**文件没生成**） |
+
+### D. 枚举/接口在本机不存在
+
+| 工具 | 卡点 |
+|---|---|
+| `sw_hide_all_planes` / `sw_hide_all_sketches` / `sw_show_all_sketches` | `swUserPreferenceToggle_e` 实测**只有 10 项**（`DisplayAxes`/`EntityPoints`/…），无基准面/草图开关 |
+
+### E. 方程接口
+
+| 工具 | 卡点 |
+|---|---|
+| `sw_add_equation` / `sw_delete_equation` | `IModelDoc2` **没有** `AddEquation`；`IEquationMgr` 需 comtypes（`sw_set_global_variable` 已用这条路打通，但**带尺寸名**的方程还没试成） |
+
+### F. 破坏性/未跑通（本仓库主动不做）
+
+| 工具 | 卡点 |
+|---|---|
+| `sw_dxp` | `autodim=True` 会**运行自动尺寸并保存文件** —— 破坏性，默认关闭 |
+| `sw_flow_check` | 加载项自检与建工程可调，但**未跑通求解** |
+
 ---
 
----
 
 ## 勘误：`sw_add_surface_finish` 曾被误降级（已恢复 verified）
 
