@@ -100,6 +100,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_capture_screenshot` / `sw_delete_feature` | `SaveAs(PNG)`/`DeleteSelection2` | PNG 魔数 **125 KB**；特征数 **-1** |
 | `sw_planar_surface` | `InsertPlanarRefSurface`（属性） | 闭合草图 → 曲面 **0→1** |
 | `sw_revolved_surface` | `InsertRevolvedRefSurface`（4 参） | 矩形+中心线 → 曲面 **0→1** |
+| `sw_cut_extrude` | `FeatureCut4`（27 参） | 两处 Ø10 通孔：48000→**46115.044**（每孔 −942.478） |
 | `sw_scale_body` | `InsertScale`（5 参） | 选中实体后 40×25×20 → **80×50×40** |
 | `sw_delete_body` | `InsertDeleteBody` | 实体数 **2→1** |
 | `sw_sketch_trim` | `SketchTrim`（4 参） | 矩形+伸出线：总长 **200→190 mm** |
@@ -147,7 +148,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **131 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **132 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -205,11 +206,11 @@ src/swkit/
 | 未达可用（已登记但没打通） | 27 |
 | **未复核（待办）** | 44 |
 
-外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
+外加本仓库**超出上游**的 21 条（仿真/运动/元数据、以及上游根本没有的 `sw_cut_extrude`）。
 
 > **两层数字别混淆**：
 > * **上游 188 条** → 已覆盖 **111** / 未达可用 **27** / 未复核 **44**（其余判死 4、不稳 2）
-> * **registry 的 verified 131** = 上游同名 **111** + 本仓库自有 **20**
+> * **registry 的 verified 132** = 上游同名 **111** + 本仓库自有 **21**
 >
 > 逐条"卡在哪里"见 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) 的 unverified 分类表
 > （参数未定 / 假成功 / 夹具造不出 / 枚举不存在 / 方程接口 / 破坏性不主动做）。

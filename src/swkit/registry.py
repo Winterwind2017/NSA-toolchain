@@ -181,6 +181,13 @@ _SURFACES: List[Tuple[str, ToolEntry]] = [
        "矩形+中心线 → 曲面 0→1；API 在 IModelDoc 上，不在 IModelDoc2"),
 ]
 
+# ── 切除（2026-10-20 真机 3/3，修 P0）────────────────────────────────
+_CUTS: List[Tuple[str, ToolEntry]] = [
+    _e("sw_cut_extrude", "feature", "IFeatureManager.FeatureCut4(27 参)",
+       "80×50×12 板顶面两处 Ø10 通孔：体积 48000→**46115.044**（每孔 −942.478，理论 −942.48）",
+       "UseAutoSelect 必须 True（False 时只选草图会静默失败）；Dir=False 才是朝材料里切"),
+]
+
 # ── 实体级操作（2026-10-20 真机 2/2）────────────────────────────────
 _BODIES: List[Tuple[str, ToolEntry]] = [
     _e("sw_scale_body", "body", "IModelDoc2.InsertScale(5 参)",
@@ -477,7 +484,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES + _SURFACES + _DRAWING_VIEWS
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES + _CUTS + _SURFACES + _DRAWING_VIEWS
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -507,6 +514,8 @@ _IMPLEMENTED = {
     "sw_add_drawing_view", "sw_add_bom_table",
     # 曲面（verified/surfaces.py，2026-10-20 真机 2/3）
     "sw_planar_surface", "sw_revolved_surface",
+    # 切除（verified/cuts.py，2026-10-20 真机 3/3）
+    "sw_cut_extrude",
     # 实体级操作（verified/bodies.py，2026-10-20 真机 2/2）
     "sw_scale_body", "sw_delete_body",
     # 草图编辑（verified/sketch_edit.py，2026-10-20 真机 4/4）

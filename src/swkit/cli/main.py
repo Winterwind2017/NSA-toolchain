@@ -577,6 +577,16 @@ def cmd_drawing_views(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_cut(args: argparse.Namespace) -> int:
+    from ..verified import cuts as C
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = C.cut_extrude(doc, args.depth, args.through, args.flip)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_surface(args: argparse.Namespace) -> int:
     from ..verified import surfaces as SUR
     doc = _doc_or_none()
@@ -1245,6 +1255,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", default="")
     p.add_argument("--name", default="top")
     p.set_defaults(func=cmd_drawing_views)
+
+    p = sub.add_parser("cut", help="切除拉伸（verified，选草图纸张后调用）")
+    p.add_argument("--depth", type=float, default=12.0)
+    p.add_argument("--through", action="store_true", help="完全贯穿")
+    p.add_argument("--flip", action="store_true", help="反向侧切除")
+    p.set_defaults(func=cmd_cut)
 
     p = sub.add_parser("surface", help="曲面 planar/revolve/extrude（verified）")
     p.add_argument("action", choices=["planar", "revolve", "extrude"])

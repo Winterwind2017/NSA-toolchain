@@ -91,6 +91,16 @@ def extrude(doc: Any, depth_mm: float = 20.0, draft_deg: float = 0.0,
     before = shape_counts(doc)
     v0 = _volume_mm3(doc)
     try:
+        if is_cut:
+            # FeatureExtrusion3 **没有**切除开关（它的第 2 参是 Flip），
+            # 传 is_cut=True 只会把料加到外面 → 切除必须走 cuts.cut_extrude。
+            from .cuts import cut_extrude
+            res = cut_extrude(doc, depth_mm)
+            out["detail"].update({"delegated_to": "sw_cut_extrude",
+                                  "cut": res.get("detail"), "cut_ok": res.get("ok")})
+            out["checks"] = {"cut_ok": bool(res.get("ok"))}
+            out["ok"] = bool(res.get("ok"))
+            return out
         _kernel().extrude(depth=depth_mm, draft_angle=draft_deg, is_cut=is_cut)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)

@@ -208,13 +208,14 @@
 | `sw_split_body` | — | 未达可用 | 已登记但没打通： | 2349 |
 | `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
 
-## 本仓库超出上游的能力（20 条）
+## 本仓库超出上游的能力（21 条）
 
 这些来自第 ③ 类资产（`sw-extra` 的仿真/运动/元数据）与 ④ 的修复层，上游 `server.py` 里没有对应工具，所以**不算覆盖上游**：
 
 | 工具 | 分组 |
 |---|---|
 | `sw_add_gtol` | drawing |
+| `sw_cut_extrude` | feature |
 | `sw_motion_list` | study |
 | `sw_motion_read` | study |
 | `sw_note` | drawing |

@@ -471,6 +471,18 @@ def sw_add_bom_table(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
     return _with_doc(DX.add_bom_table, x, y)
 
 
+@mcp.tool(name="sw_cut_extrude")
+def sw_cut_extrude(depth: float = 12.0, through_all: bool = False,
+                   flip_side: bool = False) -> Dict[str, Any]:
+    """切除拉伸（verified）：先选中草图；判据体积必须下降。
+
+    坑：`UseAutoSelect` 必须 True（否则只选草图会静默失败）；
+    `FeatureExtrusion3` 没有切除开关，其第 2 参是 Flip。
+    """
+    from ..verified import cuts as C
+    return _with_doc(C.cut_extrude, depth, through_all, flip_side)
+
+
 @mcp.tool(name="sw_planar_surface")
 def sw_planar_surface() -> Dict[str, Any]:
     """平面区域曲面（verified）：需闭合草图；判据曲面数 +1。"""
