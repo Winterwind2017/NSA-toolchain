@@ -20,10 +20,10 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from ..core.com import val
-from ._common import sw_module, wrap
+from ._common import com_doc, sw_module, wrap
 
 __all__ = ["check_interference", "fix_component", "show_all_components",
-           "explode_assembly"]
+           "explode_assembly", "move_component"]
 
 
 def _result(tool: str, api: str) -> Dict[str, Any]:
@@ -188,4 +188,115 @@ def explode_assembly(asm_doc_w: Any) -> Dict[str, Any]:
                           "returned": str(result)})
     out["checks"] = {"exploded_view_created": (after or 0) > (before or 0)}
     out["ok"] = out["checks"]["exploded_view_created"]
+    return out
+
+def _insert_temp(asm_ct: Any, path: str, xyz: List[float]):
+    """插临时件，返回 `(组件, 实际平移)`。"""
+    tmp = asm_ct.AddComponent5(path, 0, "", False, "",
+                               float(xyz[0]), float(xyz[1]), float(xyz[2]))
+    if tmp is None:
+        return None, None
+    got = list(tmp.GetTotalTransform(False).ArrayData)[9:12]
+    return tmp, [float(v) for v in got]
+
+
+def _delete_temp(md: Any, asm_ct: Any, tmp: Any) -> bool:
+    """删临时件。三条路径都试（`EditDelete2` 在 comtypes 下会失败，实测）：
+
+    1. `IModelDocExtension.DeleteSelection2(bool)`
+    2. `IAssemblyDoc.DeleteSelections(1 参)`
+    3. `IModelDoc2.EditDelete2(bool)`
+    """
+    for attempt in ("extension", "assembly", "edit"):
+        try:
+            md.ClearSelection2(True)
+            tmp.Select2(False, 0)
+            if attempt == "extension":
+                md.Extension.DeleteSelection2(True)
+            elif attempt == "assembly":
+                asm_ct.DeleteSelections(0)
+            else:
+                md.EditDelete2(True)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def move_component(asm_doc_w: Any, delta_x: float = 0.05,
+                   part_path: str = "") -> Dict[str, Any]:
+    """平移组件（三轴都校验）。**变换拷贝法**：
+
+    `IMathUtility` 在本机 comtypes 下拿不到可用变换（向量读成垃圾），所以改走：
+
+    1. 在目标位置插一个临时件；
+    2. **量出临时件的实际平移**——`AddComponent5` 的落点带固定偏置（实测 Z 差半个件高），
+       所以按 `desired - actual` 校正后重插一次；
+    3. 把临时件的 `Transform2` 赋给目标件；
+    4. 读回三轴平移，删掉临时件。
+
+    判据：Δx 与目标差 < 1e-4 m **且** Δy/Δz 都 < 1e-4 m（不允许"只对 X"）。
+    """
+    out = _result("sw_move_component", "IComponent2.Transform2（拷贝临时件变换）")
+    sw, md = com_doc()
+    asm_ct = md.QueryInterface(sw.IAssemblyDoc)
+    comps = _components(asm_doc_w)
+    n_components_before = len(comps)
+    if not comps:
+        out["detail"]["error"] = "装配里没有组件"
+        return out
+    first = wrap(comps[0])
+    name = val(first, "Name2") or val(first, "Name")
+    try:
+        target = asm_ct.GetComponentByName(name)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "GetComponentByName(%s): %s" % (name, str(exc)[:80])
+        return out
+    base = [float(v) for v in list(target.GetTotalTransform(False).ArrayData)[9:12]]
+    desired = [base[0] + float(delta_x), base[1], base[2]]
+    out["detail"].update({"component": name, "before": [round(v, 6) for v in base],
+                          "delta_x": float(delta_x)})
+    path = part_path
+    if not path:
+        for c in comps:
+            got = val(wrap(c), "GetPathName")
+            if isinstance(got, str) and got.lower().endswith(".sldprt"):
+                path = got
+                break
+    if not path:
+        out["detail"]["error"] = "找不到可用的零件路径（请显式传 part_path）"
+        return out
+
+    tmp, actual = _insert_temp(asm_ct, path, desired)
+    if tmp is None:
+        out["detail"]["error"] = "临时件未插入"
+        return out
+    correction = [d - a for d, a in zip(desired, actual)]
+    if any(abs(c) > 1e-6 for c in correction):
+        out["detail"]["bias"] = [round(c, 6) for c in correction]
+        _delete_temp(md, asm_ct, tmp)
+        tmp, actual = _insert_temp(asm_ct, path,
+                                   [d + c for d, c in zip(desired, correction)])
+        if tmp is None:
+            out["detail"]["error"] = "校正后重插失败"
+            return out
+    out["detail"]["temp_actual"] = [round(v, 6) for v in actual]
+    try:
+        target.Transform2 = tmp.Transform2
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "赋变换: %s" % str(exc)[:90]
+        return out
+    after = [float(v) for v in list(target.GetTotalTransform(False).ArrayData)[9:12]]
+    deltas = [after[i] - base[i] for i in range(3)]
+    out["detail"].update({"after": [round(v, 6) for v in after],
+                          "deltas": [round(d, 6) for d in deltas]})
+    out["detail"]["temp_removed"] = _delete_temp(md, asm_ct, tmp)
+    out["detail"]["components_after"] = len(_components(asm_doc_w))
+    out["checks"] = {
+        "dx_matches": abs(deltas[0] - float(delta_x)) < 1e-4,
+        "dy_zero": abs(deltas[1]) < 1e-4,
+        "dz_zero": abs(deltas[2]) < 1e-4,
+        "components_unchanged": len(_components(asm_doc_w)) == n_components_before,
+    }
+    out["ok"] = all(out["checks"].values())
     return out

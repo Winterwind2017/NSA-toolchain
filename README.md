@@ -86,6 +86,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_add_centerline` | `InsertCenterLine()` | `GetCenterLines` **0→6** |
 | `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` | 零参插入 | `GetDatumTagCount` / `GetGTolCount` / `GetWeldSymbolCount` **各 +1** |
 | `sw_note` / `sw_add_annotation` | `InsertNote` + `SetPosition2` | 文本读回 + 位置 (0.05, 0.05) 读回 |
+| `sw_move_component` | `Transform2`（变换拷贝法） | Δ=[**0.05**, 0, 0]，临时件已删、组件数不变 |
 | `sw_check_interference` | `InterferenceDetectionManager` | **A/B：重叠=1 处 / 分开=0 处** |
 | `sw_fix_component` | `FixComponent()` + `IsFixed` | `IsFixed=True` |
 | `sw_show_all_components` | `ShowComponent()` | 全部组件 `IsHidden(False)=False` |

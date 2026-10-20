@@ -198,7 +198,7 @@ _IMPLEMENTED = {
     "sw_add_weld_symbol", "sw_note", "sw_add_annotation",
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
-    "sw_explode_assembly",
+    "sw_explode_assembly", "sw_move_component",
     # 草图 / 文档级（verified/sketch.py、verified/model.py，2026-10-20 真机 5/5）
     "sw_sketch_construction", "sw_sketch_text", "sw_add_sketch_constraint",
     "sw_activate_display_state", "sw_list_materials",

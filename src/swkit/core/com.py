@@ -74,7 +74,18 @@ def comtypes_bundle(tlb_path: Optional[str] = None):
     `tlb_path` 默认取 `SW_TLB` 环境变量，再退到 SolidWorks 2025 的安装路径。
     """
     import os
-    from comtypes.client import CreateObject, GetModule
+    try:
+        from comtypes.client import CreateObject, GetModule
+    except ModuleNotFoundError:
+        # 允许用 SWKIT_VENDOR 指定一个自带 comtypes 的目录（本机开发常用）
+        import os as _os
+        import sys as _sys
+        _vendor = _os.environ.get("SWKIT_VENDOR")
+        if not _vendor or not _os.path.isdir(_vendor):
+            raise
+        if _vendor not in _sys.path:
+            _sys.path.insert(0, _vendor)
+        from comtypes.client import CreateObject, GetModule
 
     path = tlb_path or os.environ.get("SW_TLB") or \
         r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb"

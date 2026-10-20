@@ -355,6 +355,17 @@ def cmd_show_components(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_move_component(args: argparse.Namespace) -> int:
+    from ..verified import asm_ops
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = asm_ops.move_component(doc, delta_x=args.delta_x, part_path=args.part or "")
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_explode(args: argparse.Namespace) -> int:
     from ..verified import asm_ops
     doc = _active_doc()
@@ -563,6 +574,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("show-components", help="显示全部组件（verified）")
     p.set_defaults(func=cmd_show_components)
+
+    p = sub.add_parser("move-component", help="平移组件（verified，三轴校验）")
+    p.add_argument("--delta-x", type=float, default=0.05, help="米")
+    p.add_argument("--part", default="", help="临时件用的零件路径（省略则取目标件）")
+    p.set_defaults(func=cmd_move_component)
 
     p = sub.add_parser("explode", help="自动爆炸（verified）")
     p.set_defaults(func=cmd_explode)

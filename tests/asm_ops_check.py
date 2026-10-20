@@ -68,6 +68,9 @@ def main() -> int:
     doc = build(0.12)
     results["explode_assembly"] = A.explode_assembly(doc)
 
+    doc = build(0.12)
+    results["move_component"] = A.move_component(doc, delta_x=0.05, part_path=P1)
+
     for name, res in results.items():
         print("== %-26s ok=%-5s checks=%s" % (name, res.get("ok"), res.get("checks")))
         keep = {k: v for k, v in (res.get("detail") or {}).items()

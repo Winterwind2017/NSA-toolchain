@@ -340,6 +340,21 @@ def sw_show_all_components() -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_move_component")
+def sw_move_component(delta_x: float = 0.05, part_path: str = "") -> Dict[str, Any]:
+    """平移组件（verified，三轴校验 + 临时件清理）。
+
+    用"变换拷贝法"绕开 IMathUtility；`AddComponent5` 的落点有固定偏置，
+    所以先量出偏置再校正重插。
+    """
+    from ..verified import asm_ops
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else asm_ops.move_component(doc, delta_x=delta_x, part_path=part_path))
+    return _com(_do)
+
+
 @mcp.tool(name="sw_explode_assembly")
 def sw_explode_assembly() -> Dict[str, Any]:
     """自动爆炸（verified）：判据是爆炸视图数 +1。
