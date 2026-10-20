@@ -94,6 +94,13 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` | 零参插入 | `GetDatumTagCount` / `GetGTolCount` / `GetWeldSymbolCount` **各 +1** |
 | `sw_note` / `sw_add_annotation` | `InsertNote` + `SetPosition2` | 文本读回 + 位置 (0.05, 0.05) 读回 |
 | `sw_move_component` | `Transform2`（变换拷贝法） | Δ=[**0.05**, 0, 0]，临时件已删、组件数不变 |
+| `sw_create_assembly` | `NewDocument(.asmdot)` | `GetType==2` |
+| `sw_insert_component` | `AddComponent5`（8 参） | 组件 **0→1→2**（零件需先打开，插入前切回装配） |
+| `sw_get_assembly_tree` | `GetComponents` + 状态位 | 2 个组件，固定/抑制/隐藏全部可读 |
+| `sw_suppress_component` | `SetComponentSuppression` | `IsSuppressed` **False→True→False** |
+| `sw_hide_component` | `HideComponent/ShowComponent` | `IsHidden` **False→True→False** |
+| `sw_replace_component` | `ReplaceComponents2`（5 参） | 路径 **box_hole → box_off** |
+| `sw_suppress_feature` / `sw_unsuppress_feature` | `EditSuppress2/EditUnsuppress2` | `IsSuppressed` False→True→False |
 | `sw_check_interference` | `InterferenceDetectionManager` | **A/B：重叠=1 处 / 分开=0 处** |
 | `sw_fix_component` | `FixComponent()` + `IsFixed` | `IsFixed=True` |
 | `sw_show_all_components` | `ShowComponent()` | 全部组件 `IsHidden(False)=False` |
@@ -114,7 +121,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **79 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **87 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -166,11 +173,11 @@ src/swkit/
 
 | 归宿 | 数量 |
 |---|---|
-| 已覆盖（本仓库有实现 + 真机判据） | 59 |
+| 已覆盖（本仓库有实现 + 真机判据） | 67 |
 | 已判死（调用不存在/废弃 API，或实测不可用） | 4 |
 | 已知不稳（不进回归） | 2 |
 | 已判不可调（可选参数必须补齐） | 3 |
-| **未复核（待办）** | 120 |
+| **未复核（待办）** | 112 |
 
 外加本仓库**超出上游**的 20 条（仿真/运动/元数据等第 ③ 类资产）。
 未复核的 149 条已按能力族分批（sketch 29 / inspect 23 / assembly 16 / drawing 16 /
@@ -207,6 +214,7 @@ python tests/sketch_check.py   # 构造线/草图文字/约束/显示状态/材�
 python tests/asm_ops_check.py  # 干涉 A/B + 固定/显示/平移/爆炸（4 项）
 python tests/drawing_check.py  # 剖视/建图/中心标记/中心线/符号×3/粗糙度/注释/尺寸/孔表/断裂/辅助（13 项）
 python tests/balloon_check.py  # 装配图 BOM + 自动球标（2 气球）
+python tests/asm_state_check.py # 建装配/插组件/树/抑制/隐藏/替换/特征抑制（11 项）
 python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks）
 ```
 

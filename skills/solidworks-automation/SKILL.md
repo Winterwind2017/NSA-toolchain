@@ -45,6 +45,23 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 装配结构与状态（verified）
+
+```python
+from swkit.verified import asm_state as st
+st.create_assembly()                       # GetType==2
+st.insert_component(asm, part, 0, 0, 0)    # 组件数 +1（零件要先打开）
+st.assembly_tree(asm)                      # 名称/路径/固定/抑制/隐藏
+st.suppress_component(asm, "box_hole-1", True)   # IsSuppressed 读回
+st.hide_component(asm, "box_hole-1", True)       # HideComponent，不是 Visible
+st.replace_component(asm, "box_hole-1", other_part)
+st.suppress_feature(part, "切除-拉伸1")
+```
+
+要点：抑制枚举 **0=Suppressed / 2=Resolved**（写反效果相反）；
+隐藏必须用 `HideComponent/ShowComponent`（写 `Visible` 不改 `IsHidden`）；
+`ActivateDoc3` 报类型不匹配，用 `ActivateDoc(title)` 单参版。
+
 ### 只读检查 / 轻量设置（verified）
 
 ```python

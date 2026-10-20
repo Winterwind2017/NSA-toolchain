@@ -452,6 +452,66 @@ def _with_doc(fn, *args, **kwargs):
     return _com(_do)
 
 
+@mcp.tool(name="sw_create_assembly")
+def sw_create_assembly(template: str = "") -> Dict[str, Any]:
+    """新建装配（verified）：判据 `GetType==2`。"""
+    from ..verified import asm_state as st
+    return _com(lambda: st.create_assembly(template))
+
+
+@mcp.tool(name="sw_insert_component")
+def sw_insert_component(part: str, x: float = 0.0, y: float = 0.0,
+                        z: float = 0.0, fixed: bool = False) -> Dict[str, Any]:
+    """插入组件（verified，mm）：判据组件数 +1。零件需先打开；内部会切回装配。"""
+    from ..verified import asm_state as st
+    return _with_doc(st.insert_component, part, x, y, z, fixed)
+
+
+@mcp.tool(name="sw_get_assembly_tree")
+def sw_get_assembly_tree() -> Dict[str, Any]:
+    """装配树（verified）：名称/路径/固定/抑制/隐藏。"""
+    from ..verified import asm_state as st
+    return _with_doc(st.assembly_tree)
+
+
+@mcp.tool(name="sw_suppress_component")
+def sw_suppress_component(name: str, suppress: bool = True) -> Dict[str, Any]:
+    """抑制/解除组件（verified）：判据 `IsSuppressed` 读回。
+
+    注意枚举：0=Suppressed、2=Resolved（写反会得到相反效果）。
+    """
+    from ..verified import asm_state as st
+    return _with_doc(st.suppress_component, name, suppress)
+
+
+@mcp.tool(name="sw_hide_component")
+def sw_hide_component(name: str, hide: bool = True) -> Dict[str, Any]:
+    """隐藏/显示组件（verified）：要用 `HideComponent/ShowComponent`，不是 `Visible`。"""
+    from ..verified import asm_state as st
+    return _with_doc(st.hide_component, name, hide)
+
+
+@mcp.tool(name="sw_replace_component")
+def sw_replace_component(name: str, new_file: str) -> Dict[str, Any]:
+    """替换组件（verified）：`ReplaceComponents2` 5 参，判据是路径读回。"""
+    from ..verified import asm_state as st
+    return _with_doc(st.replace_component, name, new_file)
+
+
+@mcp.tool(name="sw_suppress_feature")
+def sw_suppress_feature(name: str) -> Dict[str, Any]:
+    """抑制特征（verified）：判据 `IsSuppressed`。"""
+    from ..verified import asm_state as st
+    return _with_doc(st.suppress_feature, name)
+
+
+@mcp.tool(name="sw_unsuppress_feature")
+def sw_unsuppress_feature(name: str) -> Dict[str, Any]:
+    """解除抑制（verified）：判据 `IsSuppressed`。"""
+    from ..verified import asm_state as st
+    return _with_doc(st.unsuppress_feature, name)
+
+
 @mcp.tool(name="sw_get_status")
 def sw_get_status() -> Dict[str, Any]:
     """连接状态（verified）：版本号 + 文档数。"""

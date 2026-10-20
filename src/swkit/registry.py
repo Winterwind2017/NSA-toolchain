@@ -162,6 +162,29 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 上游装配结构/状态族（2026-10-20 真机 11/11）────────────────────
+_ASM_STATE: List[Tuple[str, ToolEntry]] = [
+    _e("sw_create_assembly", "assembly", "Application.NewDocument(.asmdot)", "GetType==2"),
+    _e("sw_insert_component", "assembly", "IAssemblyDoc.AddComponent5(8 参)",
+       "组件 0→1→2；零件必须先打开，插入前要靠 ActivateDoc 切回装配",
+       "ActivateDoc3 报类型不匹配，ActivateDoc(title) 单参版可用"),
+    _e("sw_get_assembly_tree", "assembly", "GetComponents + IsFixed/IsSuppressed/IsHidden",
+       "2 个组件，三个状态位全部可读"),
+    _e("sw_suppress_component", "assembly", "IAssemblyDoc.SetComponentSuppression",
+       "IsSuppressed False→True→False",
+       "枚举反转：0=Suppressed、2=Resolved；不生效时退回 EditSuppress2"),
+    _e("sw_hide_component", "assembly", "IAssemblyDoc.HideComponent/ShowComponent",
+       "IsHidden False→True→False",
+       "写 IComponent2.Visible 不改 IsHidden，必须用 Hide/ShowComponent"),
+    _e("sw_replace_component", "assembly", "IAssemblyDoc.ReplaceComponents2(5 参)",
+       "组件路径 box_hole.SLDPRT → box_off.SLDPRT"),
+    _e("sw_suppress_feature", "feature", "IModelDoc2.EditSuppress2",
+       "IsSuppressed False→True",
+       "IsSuppressed2(0,None) 读回 None，不能当判据；EditSuppress2 是属性（读取即生效）"),
+    _e("sw_unsuppress_feature", "feature", "IModelDoc2.EditUnsuppress2",
+       "IsSuppressed True→False"),
+]
+
 # ── 上游 inspect 族（2026-10-20 真机 18/18）──────────────────────────
 _INSPECT_UPSTREAM: List[Tuple[str, ToolEntry]] = [
     _e("sw_get_status", "inspect", "Application.RevisionNumber", "版本 33.4.1 + 文档数可读"),
@@ -238,7 +261,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 # 注意：上表刻意保留重复键时的"后写覆盖"语义，避免手抖写重时静默丢条目。
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
-                     + _INSPECT_UPSTREAM + _UNSTABLE + _UNVERIFIED + _BROKEN):
+                     + _INSPECT_UPSTREAM + _ASM_STATE + _UNSTABLE
+                     + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
 
 
@@ -262,6 +286,10 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
+    "sw_create_assembly", "sw_insert_component", "sw_get_assembly_tree",
+    "sw_suppress_component", "sw_hide_component", "sw_replace_component",
+    "sw_suppress_feature", "sw_unsuppress_feature",
     # 上游 inspect 族（verified/inspect.py，2026-10-20 真机 18/18）
     "sw_get_status", "sw_list_open_documents", "sw_get_model_info", "sw_list_features",
     "sw_get_mass_properties", "sw_list_bodies", "sw_get_custom_properties",

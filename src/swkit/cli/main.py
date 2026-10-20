@@ -562,6 +562,74 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_new_assembly(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    res = st.create_assembly(args.template)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_insert_component(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = st.insert_component(doc, args.part, args.x, args.y, args.z, args.fixed)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_asm_tree(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = st.assembly_tree(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_suppress_component(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = st.suppress_component(doc, args.name, not args.off)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_hide_component(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = st.hide_component(doc, args.name, not args.show)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_replace_component(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = st.replace_component(doc, args.name, args.new_file)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_suppress_feature(args: argparse.Namespace) -> int:
+    from ..verified import asm_state as st
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = (st.unsuppress_feature(doc, args.name) if args.off
+           else st.suppress_feature(doc, args.name))
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_sketch(args: argparse.Namespace) -> int:
     from ..verified import sketch_ops as so
     doc = _active_doc()
@@ -872,6 +940,41 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("new-assembly", help="新建装配（verified）")
+    p.add_argument("--template", default="")
+    p.set_defaults(func=cmd_new_assembly)
+
+    p = sub.add_parser("insert-component", help="插入组件（verified，mm）")
+    p.add_argument("--part", required=True)
+    p.add_argument("--x", type=float, default=0.0)
+    p.add_argument("--y", type=float, default=0.0)
+    p.add_argument("--z", type=float, default=0.0)
+    p.add_argument("--fixed", action="store_true")
+    p.set_defaults(func=cmd_insert_component)
+
+    p = sub.add_parser("asm-tree", help="装配树 + 状态位（verified）")
+    p.set_defaults(func=cmd_asm_tree)
+
+    p = sub.add_parser("suppress-component", help="抑制/解除组件（verified）")
+    p.add_argument("--name", required=True)
+    p.add_argument("--off", action="store_true", help="解除抑制")
+    p.set_defaults(func=cmd_suppress_component)
+
+    p = sub.add_parser("hide-component", help="隐藏/显示组件（verified）")
+    p.add_argument("--name", required=True)
+    p.add_argument("--show", action="store_true", help="改为显示")
+    p.set_defaults(func=cmd_hide_component)
+
+    p = sub.add_parser("replace-component", help="替换组件（verified）")
+    p.add_argument("--name", required=True)
+    p.add_argument("--new-file", required=True)
+    p.set_defaults(func=cmd_replace_component)
+
+    p = sub.add_parser("suppress-feature", help="抑制/解除特征（verified）")
+    p.add_argument("--name", required=True)
+    p.add_argument("--off", action="store_true", help="解除抑制")
+    p.set_defaults(func=cmd_suppress_feature)
 
     p = sub.add_parser("sketch", help="草图实体（verified）：create/edit/exit/line/circle/…")
     p.add_argument("action", choices=["create", "edit", "exit", "line", "circle", "rect",
