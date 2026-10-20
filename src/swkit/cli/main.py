@@ -562,6 +562,36 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_base_flange(args: argparse.Namespace) -> int:
+    from ..verified import sheet_metal as SM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = SM.base_flange(doc, args.thickness, args.radius, args.depth)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_flat_info(args: argparse.Namespace) -> int:
+    from ..verified import sheet_metal as SM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = SM.flat_pattern_info(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_hem(args: argparse.Namespace) -> int:
+    from ..verified import sheet_metal as SM
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    res = SM.hem(doc, args.type, 0, args.length, args.radius)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_new_part(args: argparse.Namespace) -> int:
     from ..verified import doc_ops as DO
     res = DO.create_part(args.template)
@@ -1038,6 +1068,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("base-flange", help="钣金基体法兰（verified，mm）")
+    p.add_argument("--thickness", type=float, default=2.0)
+    p.add_argument("--radius", type=float, default=2.0)
+    p.add_argument("--depth", type=float, default=30.0)
+    p.set_defaults(func=cmd_base_flange)
+
+    p = sub.add_parser("flat-info", help="展开图信息（verified）")
+    p.set_defaults(func=cmd_flat_info)
+
+    p = sub.add_parser("hem", help="钣金卷边（verified）")
+    p.add_argument("--type", type=int, default=0)
+    p.add_argument("--length", type=float, default=5.0)
+    p.add_argument("--radius", type=float, default=0.5)
+    p.set_defaults(func=cmd_hem)
 
     p = sub.add_parser("new-part", help="新建零件（verified）")
     p.add_argument("--template", default="")

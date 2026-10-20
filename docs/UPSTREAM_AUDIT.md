@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 82 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 85 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 12 | 已登记但没打通 |
-| 未复核 | 88 | **待办**：还没验证 |
+| 未达可用 | 17 | 已登记但没打通 |
+| 未复核 | 80 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -38,6 +38,7 @@
 | `sw_add_sketch_constraint` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1108 |
 | `sw_add_surface_finish` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3062 |
 | `sw_add_weld_symbol` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3082 |
+| `sw_base_flange` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2709 |
 | `sw_capture_screenshot` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1917 |
 | `sw_check_interference` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1493 |
 | `sw_circular_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1266 |
@@ -63,10 +64,12 @@
 | `sw_get_bounding_box` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1680 |
 | `sw_get_custom_properties` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1752 |
 | `sw_get_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1621 |
+| `sw_get_flat_pattern_info` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2201 |
 | `sw_get_mass_properties` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1661 |
 | `sw_get_material` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2270 |
 | `sw_get_model_info` | — | 已覆盖 | 本仓库有实现且有真机判据 | 783 |
 | `sw_get_status` | — | 已覆盖 | 本仓库有实现且有真机判据 | 630 |
+| `sw_hem` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2759 |
 | `sw_hide_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3238 |
 | `sw_insert_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1414 |
 | `sw_linear_pattern` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1246 |
@@ -119,7 +122,6 @@
 | `sw_add_section_view` | — | 未复核 | Add a section view to the drawing. | 1553 |
 | `sw_add_structural_member` | — | 未复核 | Add a structural member along selected sketch path(s) using a weldment | 2821 |
 | `sw_analyze_draft` | — | 未复核 | Perform draft analysis on the active part model. | 1731 |
-| `sw_base_flange` | — | 未复核 | Convert the active sketch into a sheet-metal base flange (starts a she | 2709 |
 | `sw_boundary_boss` | — | 未复核 | Create a boundary boss/cut from two or more profile curves.""" | 3626 |
 | `sw_check_geometry` | — | 未复核 | Check the active part for geometry errors (invalid faces, edges, etc.) | 1714 |
 | `sw_close_all` | — | 未复核 | Close all open SolidWorks documents.""" | 3528 |
@@ -137,18 +139,13 @@
 | `sw_delete_body` | — | 未复核 | Delete the selected body.""" | 2369 |
 | `sw_dome` | — | 未复核 | Add a dome on a selected planar face.""" | 3596 |
 | `sw_draft` | — | 未复核 | Add draft (taper angle) to selected faces. | 1227 |
-| `sw_edge_flange` | — | 未复核 | Add an edge flange to a selected sheet-metal edge.""" | 2719 |
-| `sw_export_flat_pattern` | — | 未复核 | Export the flat pattern of the active sheet metal part. | 2218 |
 | `sw_extend_surface` | — | 未复核 | Extend a surface by a distance, up to a point, or up to another surfac | 2634 |
 | `sw_extruded_surface` | — | 未复核 | Create an extruded surface from the active sketch.""" | 2594 |
 | `sw_fill_pattern` | — | 未复核 | Pattern a seed feature to fill a target face.""" | 3651 |
 | `sw_filled_surface` | — | 未复核 | Fill a closed boundary of edges with a new surface.""" | 2654 |
 | `sw_flatten_sheet_metal` | — | 未复核 | Toggle the flat pattern view of the active sheet metal part. | 2184 |
-| `sw_fold` | — | 未复核 | Fold previously-unfolded bends back to formed state.""" | 2779 |
 | `sw_get_equations` | — | 未复核 | List all equations and global variables in the active document. | 1842 |
-| `sw_get_flat_pattern_info` | — | 未复核 | Get dimensions of the flat pattern for the active sheet metal part. | 2201 |
 | `sw_get_referenced_documents` | — | 未复核 | List all documents (parts, subassemblies) referenced by the active ass | 3548 |
-| `sw_hem` | — | 未复核 | Add a hem to a selected sheet-metal edge.""" | 2759 |
 | `sw_hide_all_planes` | — | 未复核 | Hide all reference planes in the viewport.""" | 3328 |
 | `sw_hide_all_sketches` | — | 未复核 | Hide all sketches in the viewport.""" | 3348 |
 | `sw_insert_weldment` | — | 未复核 | Insert the weldment feature into the active part (enables weldment too | 2811 |
@@ -160,7 +157,6 @@
 | `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
 | `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
 | `sw_measure_distance` | — | 未复核 | Measure the minimum distance between two entities (faces, edges, verti | 1697 |
-| `sw_miter_flange` | — | 未复核 | Add a miter flange following the active sketch profile around multiple | 2729 |
 | `sw_move_body` | — | 未复核 | Move or copy the selected body by translation (mm) and rotation (deg). | 2359 |
 | `sw_open_document` | — | 未复核 | Open a SolidWorks file (part, assembly, drawing, or imported format li | 649 |
 | `sw_parting_line` | — | 未复核 | Create a parting line for mold design (used to separate core from cavi | 2874 |
@@ -192,7 +188,6 @@
 | `sw_tooling_split` | — | 未复核 | Split a mold block into core and cavity using the parting line/surface | 2894 |
 | `sw_trim_surface` | — | 未复核 | Trim a surface using selected trim tool.""" | 2624 |
 | `sw_trim_weldment` | — | 未复核 | Trim selected weldment members to a planar or solid trim tool.""" | 2851 |
-| `sw_unfold` | — | 未复核 | Unfold sheet-metal bends to flatten (use with subsequent features then | 2769 |
 | `sw_wrap` | — | 未复核 | Wrap a sketch around a selected curved face (emboss/deboss/scribe).""" | 3606 |
 | `sw_zoom_to_fit` | — | 未复核 | Zoom the view to fit the entire model on screen (Ctrl+Shift+F equivale | 1953 |
 | `sw_add_detail_view` | — | 未达可用 | 已登记但没打通： | 3012 |
@@ -200,13 +195,18 @@
 | `sw_add_revision_table` | — | 未达可用 | 已登记但没打通： | 3112 |
 | `sw_chamfer` | — | 未达可用 | 已登记但没打通： | 1190 |
 | `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
+| `sw_edge_flange` | — | 未达可用 | 已登记但没打通： | 2719 |
+| `sw_export_flat_pattern` | — | 未达可用 | 已登记但没打通： | 2218 |
 | `sw_fillet` | — | 未达可用 | 已登记但没打通： | 1172 |
+| `sw_fold` | — | 未达可用 | 已登记但没打通： | 2779 |
 | `sw_hole_wizard` | — | 未达可用 | 已登记但没打通： | 1303 |
 | `sw_mirror` | — | 未达可用 | 已登记但没打通： | 1284 |
+| `sw_miter_flange` | — | 未达可用 | 已登记但没打通： | 2729 |
 | `sw_revolve` | — | 未达可用 | 已登记但没打通： | 1153 |
 | `sw_sketch_circular_pattern` | — | 未达可用 | 已登记但没打通： | 1069 |
 | `sw_sketch_linear_pattern` | — | 未达可用 | 已登记但没打通： | 1053 |
 | `sw_sketch_offset` | — | 未达可用 | 已登记但没打通： | 1021 |
+| `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
 
 ## 本仓库超出上游的能力（20 条）
 
@@ -248,7 +248,7 @@
 | `macro_io` | 8 |
 | `drawing` | 8 |
 | `feature` | 8 |
-| `sheet_metal` | 7 |
-| `assembly` | 5 |
+| `assembly` | 3 |
 | `weldment` | 3 |
 | `mold` | 2 |
+| `sheet_metal` | 1 |

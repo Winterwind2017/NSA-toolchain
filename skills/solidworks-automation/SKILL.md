@@ -45,6 +45,20 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 钣金（verified）
+
+```python
+from swkit.verified import sheet_metal as SM
+so.create_sketch(doc, "前视基准面"); so.rectangle(doc, 0, 0, 60, 40)
+SM.base_flange(doc, thickness_mm=2, radius_mm=2, depth_mm=30)  # 特征 19→22
+SM.flat_pattern_info(doc)     # 判据：特征树里有 FlatPattern
+SM.hem(doc, hem_type=0, length_mm=5)   # 特征 22→23
+```
+
+要点：`InsertSheetMetalBaseFlange` **返回 None 但特征确实建出来了** —— 判据必须看特征树
+（`SheetMetal`/`SMBaseFlange`/`FlatPattern`），不能看返回值。平板没有折弯，所以
+`InsertSheetMetalUnfold/Fold` 在纯基体法兰上**无动作**（`GetBendState` 恒 1）。
+
 ### 文档级基础操作（verified）
 
 ```python

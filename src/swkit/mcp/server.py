@@ -456,6 +456,32 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_base_flange")
+def sw_base_flange(thickness_mm: float = 2.0, radius_mm: float = 2.0,
+                   depth_mm: float = 30.0) -> Dict[str, Any]:
+    """钣金基体法兰（verified）：判据是特征树出现 SheetMetal/SMBaseFlange。
+
+    注意：`InsertSheetMetalBaseFlange` 返回 **None** 但特征确实建出来了。
+    """
+    from ..verified import sheet_metal as SM
+    return _with_doc(SM.base_flange, thickness_mm, radius_mm, depth_mm)
+
+
+@mcp.tool(name="sw_get_flat_pattern_info")
+def sw_get_flat_pattern_info() -> Dict[str, Any]:
+    """展开图信息（verified）：判据 FlatPattern 特征存在。"""
+    from ..verified import sheet_metal as SM
+    return _with_doc(SM.flat_pattern_info)
+
+
+@mcp.tool(name="sw_hem")
+def sw_hem(hem_type: int = 0, length_mm: float = 5.0,
+           radius_mm: float = 0.5) -> Dict[str, Any]:
+    """钣金卷边（verified）：判据特征数 +1。"""
+    from ..verified import sheet_metal as SM
+    return _with_doc(SM.hem, hem_type, 0, length_mm, radius_mm)
+
+
 @mcp.tool(name="sw_connect")
 def sw_connect() -> Dict[str, Any]:
     """连接检查（verified）：版本 + 文档数。"""

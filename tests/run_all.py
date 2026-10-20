@@ -48,6 +48,7 @@ def _suites() -> list[dict]:
         "io": "io_check.py",
         "doc_ops": "doc_ops_check.py",
         "drawing_extra": "drawing_extra_check.py",
+        "sheet_metal": "sheet_metal_check.py",
         "asm_ops": "asm_ops_check.py",
         "drawing": "drawing_check.py",
         "balloon": "balloon_check.py",
@@ -81,7 +82,27 @@ def _child_env() -> dict:
     return env
 
 
-def run_suite(suite: dict, timeout: float) -> dict:
+_RPC_HINTS = ("RPC 服务器不可用", "RPC server is unavailable", "-2147023174")
+
+
+def run_suite(suite: dict, timeout: float, retries: int = 1) -> dict:
+    """跑一个套件；遇到 **RPC 掉线**（SolidWorks 长跑后被拖挂）自动重试。
+
+    实测：15 套件连跑时 `live` 曾整段失败于
+    `com_error (-2147023174, 'RPC 服务器不可用')`，复跑即 PASS——是 SW 累倒，
+    不是代码回归。这里对它做一次重试，避免把环境抖动当成回归失败。
+    """
+    result = _run_once(suite, timeout)
+    for _ in range(retries):
+        blob = (result.get("output") or "") + (result.get("stderr") or "")
+        if result.get("ok") or not any(h in blob for h in _RPC_HINTS):
+            break
+        result = _run_once(suite, timeout)
+        result["retried_rpc"] = True
+    return result
+
+
+def _run_once(suite: dict, timeout: float) -> dict:
     started = time.time()
     try:
         proc = subprocess.run(

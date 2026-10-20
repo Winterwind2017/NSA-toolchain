@@ -162,6 +162,17 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 钣金（2026-10-20 真机 3/4）──────────────────────────────────────
+_SHEET_METAL: List[Tuple[str, ToolEntry]] = [
+    _e("sw_base_flange", "sheet_metal", "IModelDoc2.InsertSheetMetalBaseFlange(9 参)",
+       "特征 19→22，出现 SheetMetal + SMBaseFlange + FlatPattern",
+       "BaseFlange 返回 None 但特征确实建出来了 —— 判据必须看特征树，不能看返回值"),
+    _e("sw_get_flat_pattern_info", "sheet_metal", "IFeature(FlatPattern) + GetBodyBox",
+       "FlatPattern 特征存在；GetBendState=1"),
+    _e("sw_hem", "sheet_metal", "IModelDoc2.InsertSheetMetalHem(8 参)",
+       "特征 22→23，特征树出现 Hem"),
+]
+
 # ── 文档级基础操作（2026-10-20 真机 7/8）────────────────────────────
 _DOC_OPS: List[Tuple[str, ToolEntry]] = [
     _e("sw_connect", "doc", "Application.RevisionNumber", "版本 33.4.1 + 文档数可读"),
@@ -279,6 +290,19 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_unfold", ToolEntry("sw_unfold", "sheet_metal", "unverified",
+        "IModelDoc2.InsertSheetMetalUnfold()", "",
+        "平板无折弯时该动作无效果：特征 22→22、GetBendState 恒 1（需带折弯的钣金件才能验证）")),
+    ("sw_fold", ToolEntry("sw_fold", "sheet_metal", "unverified",
+        "IModelDoc2.InsertSheetMetalFold()", "", "同上：先要有展开态才谈折叠")),
+    ("sw_edge_flange", ToolEntry("sw_edge_flange", "sheet_metal", "unverified",
+        "InsertSheetMetalEdgeFlange(11 参)", "",
+        "选 1 条边 + SketchFeat 传 None/none_dispatch 都返回 None；疑需法兰轮廓草图")),
+    ("sw_miter_flange", ToolEntry("sw_miter_flange", "sheet_metal", "unverified",
+        "InsertSheetMetalMiterFlange(11 参)", "", "同 edge_flange，需先有可选边集与轮廓")),
+    ("sw_export_flat_pattern", ToolEntry("sw_export_flat_pattern", "sheet_metal",
+        "unverified", "IModelDoc2.SaveAs(DXF)", "",
+        "零件直接导 DXF 无输出（与 sw_export_dxf 同因：需工程图/展开图上下文）")),
     ("sw_add_equation", ToolEntry("sw_add_equation", "doc", "unverified",
         "IEquationMgr.Add", "",
         "IModelDoc2 没有 AddEquation；IEquationMgr 需 comtypes 强类型，pywin32 下 GetEquationMgr 报找不到成员")),
@@ -336,7 +360,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _UNSTABLE
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
 
@@ -361,6 +385,8 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 钣金（verified/sheet_metal.py，2026-10-20 真机 3/4）
+    "sw_base_flange", "sw_get_flat_pattern_info", "sw_hem",
     # 文档级基础操作（verified/doc_ops.py，2026-10-20 真机 7/8）
     "sw_connect", "sw_create_part", "sw_create_reference_plane", "sw_select_entity",
     "sw_clear_selection", "sw_capture_screenshot", "sw_delete_feature",
