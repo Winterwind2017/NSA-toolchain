@@ -31,6 +31,8 @@ try:                                    # pragma: no cover - 依赖可选
 except Exception as exc:                # pragma: no cover
     raise SystemExit("需要 mcp 包：pip install 'mcp>=1.0'\n%s" % exc)
 
+# 注意：FastMCP 的 constructor 没有 version 参数，serverInfo.version 会显示底层 mcp 库版本；
+# 本包版本请从 `sw_status` 的 swkit_version 或 `swkit --version` 看。
 mcp = FastMCP("swkit")
 
 # SolidWorks 的 COM 不是线程安全的：所有调用串行化，且每个调用自己 CoInitialize。

@@ -138,8 +138,12 @@ src/swkit/
 - 验收脚本：[`tests/live_check.py`](tests/live_check.py)（真机，非单测）
 
 ```powershell
-python tests/live_check.py     # 建测试装配 → 线性阵列 → 镜像 → 打印证据字典
+python tests/live_check.py     # 真机：建测试装配 → 线性阵列 → 镜像 → 打印证据字典
+python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
 ```
+
+> `serverInfo.version` 显示的是底层 `mcp` 库版本（FastMCP 构造函数没有 version 参数）；
+> 本包版本看 `swkit status` 的 `swkit_version`。
 
 ### 环境变量（都可选）
 
