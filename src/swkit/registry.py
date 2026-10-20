@@ -433,7 +433,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "IModelDoc2.InsertSheetMetalEdgeFlange(11 参)", "",
         "能**建出空特征**：InsertSketchForEdgeFlange 先造草图8（第 2 参必须传**草图特征对象**，"
         "传名字报类型不匹配），再 InsertSheetMetalEdgeFlange 得到 EdgeFlange 特征，"
-        "但体积 4800→4800、面 6→6 不变；EdgeFlange2 的 VARIANT 数组版在 pywin32 下第 13 参类型不匹配")),
+        "但体积 4800→4800、面 6→6 不变。根因：InsertSketchForEdgeFlange 造的轮廓草图是空的（0 段 0 点），而 IEdgeFlangeFeatureData 没有 Length、长度只来自该草图 → 零几何；SetBendState 0/1/2/3 与重建都无效；改 OffsetType 报 RPC_E_SERVERFAULT。详见 docs/SHEET_METAL_NOTES.md")),
     ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
         "IFeatureManager.HoleWizard5(27 参)", "",
         "按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），"
