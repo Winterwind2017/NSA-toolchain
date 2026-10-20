@@ -45,6 +45,19 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 装配检查与整理（verified）
+
+```python
+from swkit.verified import asm_ops
+asm_ops.check_interference(doc)      # A/B：重叠=1 处 / 分开=0 处；count=0 也算成功
+asm_ops.fix_component(doc)           # IsFixed=True
+asm_ops.show_all_components(doc)     # 全部 IsHidden(False)=False
+asm_ops.explode_assembly(doc)        # 爆炸视图数 +1（AutoExplode 是属性，读取即触发）
+```
+
+要点：干涉数为 0 是**正常结果**，不是失败；`IInterference` 要用 comtypes QI 才拿得到成员；
+`IBody2.GetMassProperties` **必须传密度**。
+
 ### 镜像组件
 
 ```python

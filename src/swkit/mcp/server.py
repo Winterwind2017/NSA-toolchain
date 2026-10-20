@@ -207,6 +207,56 @@ def sw_api(op: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_check_interference")
+def sw_check_interference() -> Dict[str, Any]:
+    """干涉检查（verified）。**count=0 也算成功**——判据是"能读到计数"。
+
+    A/B 实测：两件重叠 → 1 处；分开 → 0 处。
+    """
+    from ..verified import asm_ops
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else asm_ops.check_interference(doc))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_fix_component")
+def sw_fix_component(component_index: int = 0) -> Dict[str, Any]:
+    """固定组件（verified）：判据 `IsFixed=True`。"""
+    from ..verified import asm_ops
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else asm_ops.fix_component(doc, component_index=component_index))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_show_all_components")
+def sw_show_all_components() -> Dict[str, Any]:
+    """显示全部组件（verified）：判据是所有组件 `IsHidden(False)=False`。"""
+    from ..verified import asm_ops
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else asm_ops.show_all_components(doc))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_explode_assembly")
+def sw_explode_assembly() -> Dict[str, Any]:
+    """自动爆炸（verified）：判据是爆炸视图数 +1。
+
+    注意 `AutoExplode` 在 pywin32 下是**属性**，读取即触发。
+    """
+    from ..verified import asm_ops
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else asm_ops.explode_assembly(doc))
+    return _com(_do)
+
+
 @mcp.tool(name="sw_sketch_construction")
 def sw_sketch_construction(plane: str = "前视基准面", length: float = 0.02) -> Dict[str, Any]:
     """草图构造线（verified）：判据是 ConstructionGeometry 开关 True→False 往返成功。"""

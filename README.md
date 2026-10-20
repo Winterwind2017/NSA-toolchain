@@ -81,6 +81,10 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_thicken_surface` | `FeatureBossThicken` | 特征 24→25、`Thicken` 特征=1、曲面 1→0 |
 | `sw_offset_surface` | `InsertOffsetSurface` | 曲面 1→2 |
 | `sw_screenshot` | `IModelDoc2.SaveBMP` | 2,880,054 B（1200×800） |
+| `sw_check_interference` | `InterferenceDetectionManager` | **A/B：重叠=1 处 / 分开=0 处** |
+| `sw_fix_component` | `FixComponent()` + `IsFixed` | `IsFixed=True` |
+| `sw_show_all_components` | `ShowComponent()` | 全部组件 `IsHidden(False)=False` |
+| `sw_explode_assembly` | `AutoExplode`（**属性**，读取即触发） | 爆炸视图数 +1 |
 | `sw_sketch_construction` | `ConstructionGeometry` 属性 | True→False 往返成功 |
 | `sw_sketch_text` | `InsertSketchText(9 参)` | 字形轮廓线段 0→1 |
 | `sw_add_sketch_constraint` | `SketchAddConstraints` | 约束 0→1 **且**端点 Y 0.002→0.000 |
@@ -153,6 +157,7 @@ src/swkit/
 python tests/live_check.py     # 真机：建测试装配 → 组件线性阵列 → 镜像 → 证据字典
 python tests/part_check.py     # 真机：包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
 python tests/sketch_check.py   # 真机：构造线/草图文字/约束/显示状态/材料库（5 项）
+python tests/asm_ops_check.py  # 真机：干涉 A/B + 固定/显示/爆炸（4 项）
 python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
 ```
 

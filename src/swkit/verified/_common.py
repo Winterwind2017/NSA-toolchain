@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.com import comtypes_bundle, none_dispatch, pyw, val
 
-__all__ = ["wrap", "com_doc", "count_features", "bodies", "faces_of", "pick_face",
+__all__ = ["wrap", "sw_module", "com_doc", "count_features", "bodies", "faces_of", "pick_face",
            "exit_sketch", "body_box", "shape_counts"]
 
 _CT_CACHE: Dict[str, Any] = {}
@@ -27,6 +27,14 @@ def wrap(obj: Any) -> Any:
         return pyw().Dispatch(obj)
     except Exception:
         return obj
+
+
+def sw_module(tlb_path: Optional[str] = None) -> Any:
+    """返回 comtypes 生成的 sldworks 模块（缓存的），用于 QI 到具体接口。"""
+    key = tlb_path or "default"
+    if key not in _CT_CACHE:
+        _CT_CACHE[key] = comtypes_bundle(tlb_path)
+    return _CT_CACHE[key][0]
 
 
 def com_doc(tlb_path: Optional[str] = None) -> Tuple[Any, Any]:

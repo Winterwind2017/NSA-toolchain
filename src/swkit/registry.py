@@ -188,6 +188,9 @@ _IMPLEMENTED = {
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_shell",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
+    # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
+    "sw_check_interference", "sw_fix_component", "sw_show_all_components",
+    "sw_explode_assembly",
     # 草图 / 文档级（verified/sketch.py、verified/model.py，2026-10-20 真机 5/5）
     "sw_sketch_construction", "sw_sketch_text", "sw_add_sketch_constraint",
     "sw_activate_display_state", "sw_list_materials",

@@ -259,6 +259,50 @@ def cmd_pattern_feature(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_interf(args: argparse.Namespace) -> int:
+    from ..verified import asm_ops
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = asm_ops.check_interference(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_fix_component(args: argparse.Namespace) -> int:
+    from ..verified import asm_ops
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = asm_ops.fix_component(doc, component_index=args.component_index)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_show_components(args: argparse.Namespace) -> int:
+    from ..verified import asm_ops
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = asm_ops.show_all_components(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_explode(args: argparse.Namespace) -> int:
+    from ..verified import asm_ops
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = asm_ops.explode_assembly(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_construction(args: argparse.Namespace) -> int:
     from ..verified import sketch
     doc = _active_doc()
@@ -416,6 +460,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_mirror)
 
     sub.add_parser("selftest", help="import/注册表/COM 三层自检").set_defaults(func=cmd_selftest)
+
+    p = sub.add_parser("interf", help="干涉检查（verified，count=0 也算成功）")
+    p.set_defaults(func=cmd_interf)
+
+    p = sub.add_parser("fix-component", help="固定组件（verified）")
+    p.add_argument("--component-index", type=int, default=0)
+    p.set_defaults(func=cmd_fix_component)
+
+    p = sub.add_parser("show-components", help="显示全部组件（verified）")
+    p.set_defaults(func=cmd_show_components)
+
+    p = sub.add_parser("explode", help="自动爆炸（verified）")
+    p.set_defaults(func=cmd_explode)
 
     p = sub.add_parser("construction", help="草图构造线（verified）")
     p.add_argument("--plane", default="前视基准面")
