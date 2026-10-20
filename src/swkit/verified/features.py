@@ -156,11 +156,22 @@ def fillet(doc: Any, radius_mm: float = 2.0, max_edges: int = 4) -> Dict[str, An
         return out
     v0 = _volume_mm3(doc)
     try:
-        # 内核的 FeatureFillet(radius, True, ...) 参数顺序是错的（首参是 Options:int）。
-        # 正确：FeatureFillet3(R1, Propagate, Ftyp, VarRadTyp, OverflowType,
-        #                      NRadii, Radii, UseHelpPoint, UseTangentHoldLine)
-        feat = doc.FeatureManager.FeatureFillet3(
-            float(radius_mm) / 1000.0, True, 0, 0, 0, 0, None, False, False)
+        # **同名两套签名**（实测）：
+        #  · 底层 IFeatureManager（9 参）：FeatureFillet3(R1, Propagate, Ftyp, VarRadTyp,
+        #      OverflowType, NRadii, Radii, UseHelpPoint, UseTangentHoldLine)
+        #    → pywin32 在第 7 参 Radii 上永远报类型不匹配
+        #  · 高层包装（14 参，Options 开头）：FeatureFillet3(Options, R1, R2, Rho, Ftyp,
+        #      OverflowType, ConicRhoType, Radii, Dist2Arr, RhoArr, SetBackDistances,
+        #      PointRadiusArray, PointDist2Array, PointRhoArray)
+        #    → 必须走 comtypes 强类型，实测能建出真圆角
+        from ._common import com_doc
+        _sw, md = com_doc()
+        feat = md.FeatureManager.FeatureFillet3(
+            2,                                    # Options = swFeatureFilletUniformRadius
+            float(radius_mm) / 1000.0,            # R1
+            0.0, 0.0,                             # R2, Rho
+            0, 0, 0,                              # Ftyp(Simple), OverflowType, ConicRhoType
+            None, None, None, None, None, None, None)
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out

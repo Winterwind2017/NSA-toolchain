@@ -62,7 +62,7 @@ def main() -> int:
     # 3) 圆角 / 倒角（在拉伸体上）
     doc = _new_part_with_rect()
     F.extrude(doc, depth_mm=20.0)
-    known["fillet"] = F.fillet(doc, 2.0)
+    results["fillet"] = F.fillet(doc, 5.0, 4)
 
     doc = _new_part_with_rect()
     F.extrude(doc, depth_mm=20.0)

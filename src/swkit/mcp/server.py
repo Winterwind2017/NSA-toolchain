@@ -540,6 +540,17 @@ def sw_sketch_trim(x: float = 60.0, y: float = 12.5) -> Dict[str, Any]:
     return _with_doc(SE.trim, x, y)
 
 
+@mcp.tool(name="sw_fillet")
+def sw_fillet(radius: float = 5.0) -> Dict[str, Any]:
+    """边圆角（verified）：先选中若干条边；判据 体积必须下降。
+
+    坑：`FeatureFillet3` 有**两套同名签名**——底层 9 参在 pywin32 下第 7 参恒报
+    类型不匹配；必须用 comtypes 调高层 14 参版（Options 开头）。
+    """
+    from ..verified import features as FE
+    return _with_doc(FE.fillet, radius, 4)
+
+
 @mcp.tool(name="sw_chamfer")
 def sw_chamfer(distance: float = 5.0, angle_deg: float = 45.0) -> Dict[str, Any]:
     """边倒角（verified）：先选中若干条边；判据 体积必须下降（面数+边数同增）。
