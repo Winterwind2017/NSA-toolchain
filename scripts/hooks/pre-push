@@ -1,68 +1,55 @@
-#!/usr/bin/env python3
+#!/bin/sh
 # managed by swkit scripts/install_hooks.py
-"""pre-push hook —— 远端不是 SSH、或 SSH key 不可用时，直接拒绝推送。
+#
+# pre-push hook —— 远端不是 SSH、或 SSH key 不可用时拒绝推送。
+# Git 调用：pre-push <remote-name> <remote-url>，stdin 是待推 ref 列表。
+#
+# 为什么用纯 sh：Windows 的 git 用 sh 执行 hook，而 `#!/usr/bin/env python3`
+# 在没装 python3 别名的机器上会直接失败（本项目踩过：hook 把正常推送也挡了）。
+# 纯 sh 在 Windows(git-bash)/macOS/Linux 都能跑。
 
-Git 调用约定：`pre-push <remote-name> <remote-url>`，stdin 是待推的 ref 列表。
-退出码非 0 会中止推送（这里要的就是这个效果）。
+remote_name="${1:-origin}"
+remote_url="${2:-}"
 
-安装：`python scripts/install_hooks.py`（其它机器 clone 后跑一次即可）。
-"""
+case "$remote_url" in
+  git@*|ssh://*)
+    ;;
+  *)
+    echo "" >&2
+    echo "[swkit pre-push] 拒绝推送：远端 '$remote_name' 不是 SSH。" >&2
+    echo "远端 = ${remote_url:-(空)}" >&2
+    echo "" >&2
+    echo "为什么：HTTPS 远端 + 无凭据助手时，git-credential-manager 会等一个看不见的弹窗，" >&2
+    echo "表现为 push 无输出挂死（本项目实测挂过 11 分钟）。" >&2
+    echo "" >&2
+    echo "修法：git remote set-url $remote_name git@github.com:<owner>/<repo>.git" >&2
+    echo "或临时：git -c credential.helper=\"!gh auth git-credential\" push" >&2
+    echo "" >&2
+    exit 1
+    ;;
+esac
 
-from __future__ import annotations
+if ! command -v ssh >/dev/null 2>&1; then
+  echo "[swkit pre-push] 拒绝推送：没有 ssh 客户端。" >&2
+  exit 1
+fi
 
-import subprocess
-import sys
+probe=$(ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=8 \
+          -T git@github.com 2>&1)
+if ! printf '%s' "$probe" | grep -q "successfully authenticated"; then
+  echo "" >&2
+  echo "[swkit pre-push] 拒绝推送：SSH 到 GitHub 不通。" >&2
+  echo "探测结果：$probe" >&2
+  echo "" >&2
+  echo "生成并登记 key：" >&2
+  echo "    ssh-keygen -t ed25519 -C \"you@machine\"" >&2
+  echo "    把 ~/.ssh/id_ed25519.pub 贴到 GitHub → Settings → SSH keys" >&2
+  echo "然后验证：" >&2
+  echo "    ssh -T git@github.com        # 期望看到 Hi <user>!" >&2
+  echo "" >&2
+  echo "（确属临时绕过：git push --no-verify）" >&2
+  echo "" >&2
+  exit 1
+fi
 
-SSH_HINT = """\
-生成并登记 key：
-    ssh-keygen -t ed25519 -C "you@machine"
-    把 ~/.ssh/id_ed25519.pub 贴到 GitHub → Settings → SSH keys
-然后验证：
-    ssh -T git@github.com        # 期望看到 Hi <user>!
-"""
-
-
-def _ssh_ok() -> tuple[bool, str]:
-    try:
-        p = subprocess.run(
-            ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "BatchMode=yes",
-             "-o", "ConnectTimeout=8", "-T", "git@github.com"],
-            capture_output=True, text=True, timeout=20, stdin=subprocess.DEVNULL,
-        )
-    except FileNotFoundError:
-        return False, "没有 ssh 客户端"
-    except subprocess.TimeoutExpired:
-        return False, "ssh 连接超时（8s）"
-    text = (p.stdout or "") + (p.stderr or "")
-    return ("successfully authenticated" in text), text.strip()[:200]
-
-
-def main() -> int:
-    remote_name = sys.argv[1] if len(sys.argv) > 1 else "origin"
-    remote_url = sys.argv[2] if len(sys.argv) > 2 else ""
-
-    if not (remote_url.startswith("git@") or remote_url.startswith("ssh://")):
-        print("\n[swkit pre-push] 拒绝推送：远端 %r 不是 SSH。" % remote_name, file=sys.stderr)
-        print("远端 = %s" % (remote_url or "(空)"), file=sys.stderr)
-        print("\n为什么：HTTPS 远端 + 无凭据助手时，git-credential-manager 会等一个"
-              "看不见的弹窗，表现为 push 无输出挂死（本项目实测挂过 11 分钟）。\n",
-              file=sys.stderr)
-        print("修法：git remote set-url %s git@github.com:<owner>/<repo>.git"
-              % remote_name, file=sys.stderr)
-        print("或临时：git -c credential.helper=\"!gh auth git-credential\" push\n",
-              file=sys.stderr)
-        return 1
-
-    ok, detail = _ssh_ok()
-    if not ok:
-        print("\n[swkit pre-push] 拒绝推送：SSH 到 GitHub 不通。", file=sys.stderr)
-        print("探测结果：%s\n" % detail, file=sys.stderr)
-        print(SSH_HINT, file=sys.stderr)
-        print("（确认只是想先推上去？临时禁用：git push --no-verify）\n", file=sys.stderr)
-        return 1
-
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+exit 0

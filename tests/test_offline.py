@@ -129,6 +129,6 @@ def test_repo_carries_cross_machine_reminder() -> None:
     a = agents.read_text(encoding="utf-8")
     h = hook.read_text(encoding="utf-8")
     assert "scripts/doctor.py" in a and "ssh-keygen" in a
-    assert "ssh-keygen" in h and "set-url" in h
+    assert "ssh-keygen" in h and "remote set-url" in h
     # hook 必须能被 install_hooks.py 识别为"自己装的"（幂等）
     assert "managed by swkit scripts/install_hooks.py" in h
