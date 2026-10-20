@@ -749,6 +749,13 @@ def cmd_refs(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_flow(args: argparse.Namespace) -> int:
+    from ..verified import flow as FL
+    res = FL.status() if args.action == "status" else FL.create_project()
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_dxp(args: argparse.Namespace) -> int:
     from ..verified import dimxpert as DX
     doc = _doc_or_none()
@@ -1357,6 +1364,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("refs", help="引用文档（verified）")
     p.set_defaults(func=cmd_refs)
+
+    p = sub.add_parser("flow", help="Flow Simulation 自检/建工程（需已装 Flow Simulation）")
+    p.add_argument("--action", choices=["status", "project"], default="status")
+    p.set_defaults(func=cmd_flow)
 
     p = sub.add_parser("dxp", help="DimXpert 读取（verified）")
     p.add_argument("--config", default="")

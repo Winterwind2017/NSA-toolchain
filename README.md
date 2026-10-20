@@ -106,6 +106,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_dxp` | `swdimxpert.tlb`（独立 TLB） | `create=False`→无 schema；`create=True`→schema**模式2**、要素 0、标注 0 |
 | `sw_chamfer` | `InsertFeatureChamfer(8 参)` | 4 边倒角 5mm：体积 48000→**46616.667**、面 6→**10**、边 12→**20** |
 | `sw_fillet` | `FeatureFillet3`（高层 14 参） | 4 边圆角 r5：体积 48000→**47382.87**、面 6→**10**、边 12→**20** |
+| `sw_flow_check` | `EFDApiSrv` + `EFDApi.tlb` | 版本 **Flow Simulation 2025 SP3.0 Build 6784**、静默 True、工程数 0、CAD 文档对象可取 |
 | `sw_extruded_surface` | `FeatureExtruRefSurface3`（22 参） | 闭合草图 → 曲面 **0→1** |
 | `sw_sketch_offset` / `sw_sketch_linear_pattern` | `SketchOffset2`(6 参) / `CreateLinearSketchStepAndRepeat`(12 参) | 偏移 4→**8** 段；阵列 1→**3** 份（长度 ×3） |
 | `sw_scale_body` | `InsertScale`（5 参） | 选中实体后 40×25×20 → **80×50×40** |
@@ -155,7 +156,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **139 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **140 已编码 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -217,7 +218,7 @@ src/swkit/
 
 > **两层数字别混淆**：
 > * **上游 188 条** → 已覆盖 **111** / 未达可用 **27** / 未复核 **44**（其余判死 4、不稳 2）
-> * **registry 的 verified 139** = 上游同名 **116** + 本仓库自有 **23**
+> * **registry 的 verified 140** = 上游同名 **116** + 本仓库自有 **24**
 >
 > 逐条"卡在哪里"见 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) 的 unverified 分类表
 > （参数未定 / 假成功 / 夹具造不出 / 枚举不存在 / 方程接口 / 破坏性不主动做）。

@@ -58,6 +58,7 @@ def _suites() -> list[dict]:
         "cut": "cut_check.py",
         "analysis": "analysis_check.py",
         "dimxpert": "dimxpert_check.py",
+        "flow": "flow_check.py",
         "drawing_views": "drawing_views_check.py",
         "asm_ops": "asm_ops_check.py",
         "drawing": "drawing_check.py",

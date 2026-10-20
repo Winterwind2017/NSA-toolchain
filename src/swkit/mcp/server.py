@@ -698,6 +698,18 @@ def sw_get_referenced_documents() -> Dict[str, Any]:
     return _with_doc(CI.get_referenced_documents)
 
 
+@mcp.tool(name="sw_flow_check")
+def sw_flow_check() -> Dict[str, Any]:
+    r"""Flow Simulation 自检（verified）：版本、静默模式、Flow 文档、工程数。
+
+    真 API 在 `<安装>\SOLIDWORKS Flow Simulation\binCFW\EFDApiSrv.tlb` +
+    `EFDApi.tlb`；`FloWorks.App`（FloXpress）只有 `TB_on_*` 按钮回调，不是脚本 API。
+    需先在本机 SolidWorks 里打开一个零件/装配。
+    """
+    from ..verified import flow as FL
+    return FL.status()
+
+
 @mcp.tool(name="sw_dxp")
 def sw_dxp(config: str = "", create: bool = False) -> Dict[str, Any]:
     """DimXpert 读取（verified）：schema 名 + 要素数 + 标注数。
