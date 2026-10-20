@@ -162,6 +162,16 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 图纸视图/BOM（2026-10-20 真机 2/3）──────────────────────────────
+_DRAWING_VIEWS: List[Tuple[str, ToolEntry]] = [
+    _e("sw_add_drawing_view", "drawing", "IDrawingDoc.CreateDrawViewFromModelView3",
+       "零件图再加 top 视图：视图数 2→3",
+       "API 在 IDrawingDoc（不在 Extension）；中文版只认本地化视图名（*上视）"),
+    _e("sw_add_bom_table", "drawing", "IView.InsertBomTable2(7 参)",
+       "装配图 BOM 建成（BomType=1，返回 CDispatch）",
+       "BomType=0 是无效值；需装配图，零件图没有 BOM 项"),
+]
+
 # ── 曲面（2026-10-20 真机 2/3）──────────────────────────────────────
 _SURFACES: List[Tuple[str, ToolEntry]] = [
     _e("sw_planar_surface", "surface", "IModelDoc.InsertPlanarRefSurface（属性）",
@@ -369,6 +379,9 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_add_section_view", ToolEntry("sw_add_section_view", "drawing", "unverified",
+        "IDrawingDoc.CreateSectionViewAt", "",
+        "图纸里没有\"前视基准面\"（剖视需在视图上画剖切线，不是选基准面）→ 找不到基准面")),
     ("sw_extruded_surface", ToolEntry("sw_extruded_surface", "surface", "unverified",
         "IModelDoc.FeatureExtruRefSurface(15 参)", "",
         "选中草图后仍返回 None、曲面数 0；IFeatureManager 版是 21 参，语义未定")),
@@ -464,7 +477,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES + _SURFACES
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES + _SURFACES + _DRAWING_VIEWS
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -490,6 +503,8 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 图纸视图/BOM（verified/drawing_extra.py，2026-10-20 真机 2/3）
+    "sw_add_drawing_view", "sw_add_bom_table",
     # 曲面（verified/surfaces.py，2026-10-20 真机 2/3）
     "sw_planar_surface", "sw_revolved_surface",
     # 实体级操作（verified/bodies.py，2026-10-20 真机 2/2）

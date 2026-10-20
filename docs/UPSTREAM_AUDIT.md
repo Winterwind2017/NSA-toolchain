@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 109 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 111 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 26 | 已登记但没打通 |
-| 未复核 | 47 | **待办**：还没验证 |
+| 未达可用 | 27 | 已登记但没打通 |
+| 未复核 | 44 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -30,12 +30,14 @@
 | `sw_add_annotation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1586 |
 | `sw_add_auxiliary_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3002 |
 | `sw_add_balloon` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3052 |
+| `sw_add_bom_table` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1603 |
 | `sw_add_broken_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3022 |
 | `sw_add_center_mark` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3042 |
 | `sw_add_centerline` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3032 |
 | `sw_add_configuration` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1823 |
 | `sw_add_datum_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3092 |
 | `sw_add_drawing_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1569 |
+| `sw_add_drawing_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1533 |
 | `sw_add_hole_table` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3102 |
 | `sw_add_sketch_constraint` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1108 |
 | `sw_add_surface_finish` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3062 |
@@ -134,14 +136,11 @@
 | `sw_unsuppress_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1396 |
 | `sw_view_rotate` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3368 |
 | `sw_zoom_to_fit` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1953 |
-| `sw_add_bom_table` | — | 未复核 | Add a Bill of Materials (BOM) table to the active drawing. | 1603 |
-| `sw_add_drawing_view` | — | 未复核 | Add a model view to the active drawing document. | 1533 |
 | `sw_add_end_cap` | — | 未复核 | Add an end cap to a selected structural member end face.""" | 2841 |
 | `sw_add_geometric_tolerance` | — | 未复核 | Add a geometric tolerance (GD&T) frame to the drawing.""" | 3072 |
 | `sw_add_gusset` | — | 未复核 | Add a triangular gusset between two selected structural member faces." | 2831 |
 | `sw_add_mate` | — | 未复核 | Add a mate constraint between two entities in an assembly. | 1433 |
 | `sw_add_projected_view` | — | 未复核 | Add a projected view derived from an existing drawing view.""" | 2992 |
-| `sw_add_section_view` | — | 未复核 | Add a section view to the drawing. | 1553 |
 | `sw_add_structural_member` | — | 未复核 | Add a structural member along selected sketch path(s) using a weldment | 2821 |
 | `sw_analyze_draft` | — | 未复核 | Perform draft analysis on the active part model. | 1731 |
 | `sw_boundary_boss` | — | 未复核 | Create a boundary boss/cut from two or more profile curves.""" | 3626 |
@@ -184,6 +183,7 @@
 | `sw_add_detail_view` | — | 未达可用 | 已登记但没打通： | 3012 |
 | `sw_add_equation` | — | 未达可用 | 已登记但没打通： | 1859 |
 | `sw_add_revision_table` | — | 未达可用 | 已登记但没打通： | 3112 |
+| `sw_add_section_view` | — | 未达可用 | 已登记但没打通： | 1553 |
 | `sw_chamfer` | — | 未达可用 | 已登记但没打通： | 1190 |
 | `sw_combine_bodies` | — | 未达可用 | 已登记但没打通： | 2339 |
 | `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
@@ -242,10 +242,10 @@
 | 类别 | 待验证数 |
 |---|---|
 | `other` | 9 |
-| `drawing` | 7 |
 | `feature` | 6 |
 | `surface` | 6 |
 | `sketch` | 5 |
+| `drawing` | 4 |
 | `inspect` | 4 |
 | `macro_io` | 3 |
 | `weldment` | 3 |

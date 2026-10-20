@@ -562,6 +562,21 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_drawing_views(args: argparse.Namespace) -> int:
+    from ..verified import drawing_extra as DX
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    if args.action == "view":
+        res = DX.add_drawing_view(doc, args.model, args.name)
+    elif args.action == "bom":
+        res = DX.add_bom_table(doc)
+    else:
+        res = DX.add_section_view(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_surface(args: argparse.Namespace) -> int:
     from ..verified import surfaces as SUR
     doc = _doc_or_none()
@@ -1224,6 +1239,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("drawing-views", help="图纸加视图/BOM（verified）")
+    p.add_argument("action", choices=["view", "bom", "section"])
+    p.add_argument("--model", default="")
+    p.add_argument("--name", default="top")
+    p.set_defaults(func=cmd_drawing_views)
 
     p = sub.add_parser("surface", help="曲面 planar/revolve/extrude（verified）")
     p.add_argument("action", choices=["planar", "revolve", "extrude"])

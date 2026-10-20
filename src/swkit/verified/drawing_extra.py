@@ -25,7 +25,8 @@ from typing import Any, Dict, List, Optional
 from ..core.com import none_dispatch, pyw, val
 
 __all__ = ["add_revision_table", "add_detail_view", "view_rotate",
-           "export_pdf", "export_dwg", "table_count", "view_count"]
+           "export_pdf", "export_dwg", "table_count", "view_count",
+           "add_drawing_view", "add_section_view", "add_bom_table"]
 
 
 def _result(tool: str, api: str) -> Dict[str, Any]:
@@ -200,3 +201,94 @@ def export_pdf(doc: Any, path: str) -> Dict[str, Any]:
 def export_dwg(doc: Any, path: str) -> Dict[str, Any]:
     """图纸导出 DWG/DXF。判据：`AC10` 或 `SECTION`。"""
     return _export("sw_export_drawing_dwg", "IModelDoc2.SaveAs(DWG)", path)
+
+def add_drawing_view(doc: Any, model_path: str, view_name: str = "top",
+                     x: float = 0.25, y: float = 0.15) -> Dict[str, Any]:
+    """从模型再加一个视图。判据：视图数 +1。"""
+    out = _result("sw_add_drawing_view",
+                  "IModelDocExtension.CreateDrawViewFromModelView3")
+    before = view_count(doc)
+    out["detail"].update({"view_name": view_name, "views_before": before,
+                          "model": model_path})
+    try:
+        # 该 API 在 **IDrawingDoc** 上（不在 Extension 上，两处都试过才定位到），
+        # 且中文版只认本地化视图名（*前视 / *上视 …）。
+        from ._common import com_doc
+        from .drawing import VIEW_MAP
+        _sw, md = com_doc()
+        dd = md.QueryInterface(_sw.IDrawingDoc)
+        localized = VIEW_MAP.get(str(view_name).lower(), view_name)
+        view = dd.CreateDrawViewFromModelView3(
+            model_path, localized, float(x), float(y), 0.0)
+        out["detail"]["localized_view"] = localized
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = view_count(doc)
+    out["detail"].update({"views_after": after,
+                          "view": val(view, "GetName2") if view is not None else None})
+    out["checks"] = {"view_added": after > before}
+    out["ok"] = out["checks"]["view_added"]
+    return out
+
+
+def add_section_view(doc: Any) -> Dict[str, Any]:
+    """剖视图（复用已验证的 drawing.section_view）。判据：视图数 +1。"""
+    out = _result("sw_add_section_view", "IDrawingDoc.CreateSectionViewAt")
+    before = view_count(doc)
+    out["detail"]["views_before"] = before
+    try:
+        from .drawing import section_view
+        res = section_view(doc)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = view_count(doc)
+    out["detail"].update({"views_after": after, "inner_ok": res.get("ok"),
+                          "inner_error": (res.get("detail") or {}).get("error")})
+    out["checks"] = {"view_added": after > before}
+    out["ok"] = out["checks"]["view_added"]
+    return out
+
+
+def add_bom_table(doc: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """插 BOM 表（需装配图）。判据：`GetBomTable` 非空。
+
+    BomType=0 是无效值（实测直接返回 None），必须 1/2/3。
+    """
+    out = _result("sw_add_bom_table", "IView.InsertBomTable2(7 参)")
+    view = None
+    try:
+        from .drawing import first_model_view
+        view = first_model_view(doc)
+    except Exception:
+        view = None
+    if view is None:
+        out["detail"]["error"] = "图纸上没有模型视图"
+        return out
+    bom = None
+    attempts = []
+    try:
+        bom = view.GetBomTable()
+        if callable(bom):
+            bom = bom()
+    except Exception:
+        bom = None
+    if bom is None:
+        for bom_type in (1, 2, 3):
+            try:
+                bom = view.InsertBomTable2(True, float(x), float(y), 1,
+                                           bom_type, "", "")
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"bom_type": bom_type, "error": str(exc)[:60]})
+                continue
+            attempts.append({"bom_type": bom_type,
+                             "returned": type(bom).__name__ if bom is not None else None})
+            if bom is not None:
+                break
+    out["detail"].update({"attempts": attempts, "bom_present": bom is not None})
+    out["checks"] = {"bom_table_created": bom is not None}
+    out["ok"] = out["checks"]["bom_table_created"]
+    if not out["ok"]:
+        out["detail"]["error"] = "InsertBomTable2 未能建表（需装配图）"
+    return out

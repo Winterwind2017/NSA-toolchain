@@ -456,6 +456,21 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_add_drawing_view")
+def sw_add_drawing_view(model_path: str, view_name: str = "top",
+                        x: float = 0.25, y: float = 0.15) -> Dict[str, Any]:
+    """图纸加视图（verified）：API 在 IDrawingDoc，中文版只认本地化视图名。"""
+    from ..verified import drawing_extra as DX
+    return _with_doc(DX.add_drawing_view, model_path, view_name, x, y)
+
+
+@mcp.tool(name="sw_add_bom_table")
+def sw_add_bom_table(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """插 BOM 表（verified）：需装配图；BomType=0 无效，用 1/2/3。"""
+    from ..verified import drawing_extra as DX
+    return _with_doc(DX.add_bom_table, x, y)
+
+
 @mcp.tool(name="sw_planar_surface")
 def sw_planar_surface() -> Dict[str, Any]:
     """平面区域曲面（verified）：需闭合草图；判据曲面数 +1。"""
