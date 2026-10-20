@@ -87,3 +87,18 @@
 
 - 加载项自检与建工程可调用
 - **未跑通求解**，所以不能算打通
+---
+
+## 降级（原 verified → unverified）：`sw_add_surface_finish`
+
+2026-10-20 复核时发现**判据不可得**，已从 verified 降级：
+
+- `IModelDoc2.InsertSurfaceFinishSymbol2(...)` **调用成功但只返回 `True`**（不是 annotation 对象）；
+- 类型库里 `IDrawingDoc` 只有 `InsertSurfaceFinishSymbol` / `ModifySurfaceFinishSymbol`；
+  `IModelDocExtension` 只有 `InsertSurfaceFinishSymbol3`；
+- `IView` 上**没有任何**粗糙度 getter（对比：中心标记有 `GetCenterMarkCount`，
+  基准有 `GetDatumTagCount`，形位公差有 `GetGTolCount`，焊接有 `GetWeldSymbolCount`）；
+- 试过 `GetSurfaceFinishSymbols`（不存在）、`GetSFSymbols` / `GetAnnotations`（都返回 `None`）。
+
+⇒ **无法证明符号真的生成**，所以不列为可用能力。若将来找到计数句柄（或在文档里数
+annotation 总数），可以重新验。

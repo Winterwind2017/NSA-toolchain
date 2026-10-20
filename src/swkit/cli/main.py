@@ -259,6 +259,69 @@ def cmd_pattern_feature(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_new_drawing(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    res = drawing.new_drawing(args.model, template=args.template or "",
+                              view=args.view, x=args.x, y=args.y)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_center_mark(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.center_mark(doc, x=args.x)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_centerline(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.centerline(doc)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_symbol(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.symbol(doc, args.kind)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_surface_finish(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.surface_finish(doc, x=args.x, y=args.y)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_note(args: argparse.Namespace) -> int:
+    from ..verified import drawing
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = drawing.note(doc, text=args.text, x=args.x, y=args.y)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_interf(args: argparse.Namespace) -> int:
     from ..verified import asm_ops
     doc = _active_doc()
@@ -460,6 +523,36 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_mirror)
 
     sub.add_parser("selftest", help="import/注册表/COM 三层自检").set_defaults(func=cmd_selftest)
+
+    p = sub.add_parser("new-drawing", help="从零件建图 + 主视图（出图夹具）")
+    p.add_argument("--model", required=True)
+    p.add_argument("--template", default="")
+    p.add_argument("--view", default="front")
+    p.add_argument("--x", type=float, default=0.15)
+    p.add_argument("--y", type=float, default=0.15)
+    p.set_defaults(func=cmd_new_drawing)
+
+    p = sub.add_parser("center-mark", help="中心标记（verified）")
+    p.add_argument("--x", type=float, default=0.05)
+    p.set_defaults(func=cmd_center_mark)
+
+    p = sub.add_parser("centerline", help="中心线（verified）")
+    p.set_defaults(func=cmd_centerline)
+
+    p = sub.add_parser("symbol", help="基准/形位公差/焊接符号（verified）")
+    p.add_argument("kind", choices=["datum", "gtol", "weld"])
+    p.set_defaults(func=cmd_symbol)
+
+    p = sub.add_parser("surface-finish", help="表面粗糙度（unverified：判据不可得）")
+    p.add_argument("--x", type=float, default=0.05)
+    p.add_argument("--y", type=float, default=0.05)
+    p.set_defaults(func=cmd_surface_finish)
+
+    p = sub.add_parser("note", help="注释（verified；图纸与零件通用）")
+    p.add_argument("--text", required=True)
+    p.add_argument("--x", type=float, default=0.05)
+    p.add_argument("--y", type=float, default=0.05)
+    p.set_defaults(func=cmd_note)
 
     p = sub.add_parser("interf", help="干涉检查（verified，count=0 也算成功）")
     p.set_defaults(func=cmd_interf)

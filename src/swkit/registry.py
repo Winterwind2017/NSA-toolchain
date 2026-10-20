@@ -59,7 +59,7 @@ _VERIFIED: List[Tuple[str, ToolEntry]] = [
     _e("sw_add_datum_feature", "drawing", "InsertDatumTag2（零参）", "计数 0→1"),
     _e("sw_add_gtol", "drawing", "InsertGtol（零参）", "计数 0→1"),
     _e("sw_add_weld_symbol", "drawing", "InsertWeldSymbol3（零参）", "计数 0→1"),
-    _e("sw_add_surface_finish", "drawing", "InsertSurfaceFinishSymbol2", "计数 0→1"),
+
     _e("sw_add_drawing_dimension", "drawing", "AddDimension2，两边 mark=1", "尺寸 0→1"),
     _e("sw_add_hole_table", "drawing", "InsertHoleTable2 + 选中圆边 + 激活视图",
        "孔表 0→1"),
@@ -160,6 +160,11 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_add_surface_finish",
+     ToolEntry("sw_add_surface_finish", "drawing", "unverified",
+               "InsertSurfaceFinishSymbol2(14 参)",
+               "插入只返回 True；TLB 里 IDrawingDoc 只有 Insert/Modify，IView 无任何粗糙度 getter",
+               "已从 verified 降级：拿不到计数就无法证明符号真的生成（2026-10-20 复核）")),
     ("sw_dxp",
      ToolEntry("sw_dxp", "meta", "unverified", "sw_adv.dxp",
                "方案名与标注数量可读（DimXpert）",
@@ -188,6 +193,9 @@ _IMPLEMENTED = {
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_shell",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
+    # 出图（verified/drawing.py，2026-10-20 真机 7/8；surface_finish 判据不可得，见下）
+    "sw_add_center_mark", "sw_add_centerline", "sw_add_datum_feature", "sw_add_gtol",
+    "sw_add_weld_symbol", "sw_note", "sw_add_annotation",
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly",

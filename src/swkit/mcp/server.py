@@ -207,6 +207,103 @@ def sw_api(op: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_new_drawing")
+def sw_new_drawing(model: str, template: str = "", view: str = "front",
+                   x: float = 0.15, y: float = 0.15) -> Dict[str, Any]:
+    """从零件建图并插主视图（出图夹具）。中文模板只认本地化视图名（`*前视`）。"""
+    from ..verified import drawing
+    return _com(lambda: drawing.new_drawing(model, template=template, view=view,
+                                            x=x, y=y))
+
+
+@mcp.tool(name="sw_add_center_mark")
+def sw_add_center_mark(x: float = 0.05) -> Dict[str, Any]:
+    """中心标记（verified）：判据 `IView.GetCenterMarks` 计数 +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.center_mark(doc, x=x))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_centerline")
+def sw_add_centerline() -> Dict[str, Any]:
+    """中心线（verified）：判据 `IView.GetCenterLines` 计数 +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.centerline(doc))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_datum_feature")
+def sw_add_datum_feature() -> Dict[str, Any]:
+    """基准符号（verified）：判据 `IView.GetDatumTagCount` +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.symbol(doc, "datum"))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_gtol")
+def sw_add_gtol() -> Dict[str, Any]:
+    """形位公差（verified）：判据 `IView.GetGTolCount` +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.symbol(doc, "gtol"))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_weld_symbol")
+def sw_add_weld_symbol() -> Dict[str, Any]:
+    """焊接符号（verified）：判据 `IView.GetWeldSymbolCount` +1。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.symbol(doc, "weld"))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_surface_finish")
+def sw_add_surface_finish(x: float = 0.05, y: float = 0.05) -> Dict[str, Any]:
+    """表面粗糙度（**unverified**）：调用会执行，但本机没有可读计数，无法证明符号生成。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.surface_finish(doc, x=x, y=y))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_note")
+def sw_note(text: str, x: float = 0.05, y: float = 0.05) -> Dict[str, Any]:
+    """注释（verified）：判据 文本读回 + 位置读回。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.note(doc, text=text, x=x, y=y))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_annotation")
+def sw_add_annotation(text: str, x: float = 0.05, y: float = 0.05) -> Dict[str, Any]:
+    """图纸注释（verified，与 sw_note 同一实现）。"""
+    from ..verified import drawing
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else drawing.note(doc, text=text, x=x, y=y))
+    return _com(_do)
+
+
 @mcp.tool(name="sw_check_interference")
 def sw_check_interference() -> Dict[str, Any]:
     """干涉检查（verified）。**count=0 也算成功**——判据是"能读到计数"。

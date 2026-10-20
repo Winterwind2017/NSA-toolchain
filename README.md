@@ -81,6 +81,11 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_thicken_surface` | `FeatureBossThicken` | 特征 24→25、`Thicken` 特征=1、曲面 1→0 |
 | `sw_offset_surface` | `InsertOffsetSurface` | 曲面 1→2 |
 | `sw_screenshot` | `IModelDoc2.SaveBMP` | 2,880,054 B（1200×800） |
+| `sw_new_drawing` | `CreateDrawViewFromModelView3` | 视图数 2（中文模板只认 `*前视`） |
+| `sw_add_center_mark` | `AddCenterMark(x,False)` | `GetCenterMarks` **0→6** |
+| `sw_add_centerline` | `InsertCenterLine()` | `GetCenterLines` **0→6** |
+| `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` | 零参插入 | `GetDatumTagCount` / `GetGTolCount` / `GetWeldSymbolCount` **各 +1** |
+| `sw_note` / `sw_add_annotation` | `InsertNote` + `SetPosition2` | 文本读回 + 位置 (0.05, 0.05) 读回 |
 | `sw_check_interference` | `InterferenceDetectionManager` | **A/B：重叠=1 处 / 分开=0 处** |
 | `sw_fix_component` | `FixComponent()` + `IsFixed` | `IsFixed=True` |
 | `sw_show_all_components` | `ShowComponent()` | 全部组件 `IsHidden(False)=False` |
@@ -158,6 +163,7 @@ python tests/live_check.py     # 真机：建测试装配 → 组件线性阵列
 python tests/part_check.py     # 真机：包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
 python tests/sketch_check.py   # 真机：构造线/草图文字/约束/显示状态/材料库（5 项）
 python tests/asm_ops_check.py  # 真机：干涉 A/B + 固定/显示/爆炸（4 项）
+python tests/drawing_check.py  # 真机：建图/中心标记/中心线/符号×3/注释（7/8，粗糙度判据不可得）
 python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
 ```
 

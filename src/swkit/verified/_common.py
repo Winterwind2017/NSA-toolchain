@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.com import comtypes_bundle, none_dispatch, pyw, val
 
-__all__ = ["wrap", "sw_module", "com_doc", "count_features", "bodies", "faces_of", "pick_face",
+__all__ = ["wrap", "sw_module", "com_app", "com_doc", "count_features", "bodies", "faces_of", "pick_face",
            "exit_sketch", "body_box", "shape_counts"]
 
 _CT_CACHE: Dict[str, Any] = {}
@@ -37,12 +37,17 @@ def sw_module(tlb_path: Optional[str] = None) -> Any:
     return _CT_CACHE[key][0]
 
 
-def com_doc(tlb_path: Optional[str] = None) -> Tuple[Any, Any]:
-    """返回 `(sw_module, IModelDoc2)`；comtypes 模块只加载一次。"""
+def com_app(tlb_path: Optional[str] = None) -> Tuple[Any, Any]:
+    """返回 `(sw_module, Application)`；comtypes 模块与 Application 只建一次。"""
     key = tlb_path or "default"
     if key not in _CT_CACHE:
         _CT_CACHE[key] = comtypes_bundle(tlb_path)
-    sw, app = _CT_CACHE[key]
+    return _CT_CACHE[key]
+
+
+def com_doc(tlb_path: Optional[str] = None) -> Tuple[Any, Any]:
+    """返回 `(sw_module, IModelDoc2)`。"""
+    sw, app = com_app(tlb_path)
     md = app.ActiveDoc.QueryInterface(sw.IModelDoc2)
     return sw, md
 
