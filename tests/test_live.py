@@ -20,8 +20,8 @@ import pytest
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-SUITES = ["selftest", "mcp_smoke", "live", "part", "sketch", "asm_ops",
-          "drawing", "balloon"]
+SUITES = ["selftest", "mcp_smoke", "live", "part", "sketch", "sketch_ops",
+          "asm_ops", "drawing", "balloon"]
 
 
 def _run(only: str, timeout: float) -> subprocess.CompletedProcess:

@@ -162,7 +162,38 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 上游 sketch 族（2026-10-20 真机转正：草图线段数判据）──────────────
+_SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
+    _e("sw_create_sketch", "sketch", "SketchManager.InsertSketch",
+       "12/12 次建草图成功，活动草图存在且线段 0"),
+    _e("sw_edit_sketch", "sketch", "IModelDoc2.EditSketch",
+       "选中草图后 EditSketch()，重入后 Name 匹配",
+       "内核原用 MenuCommand(2026)，在本机报 <unknown>.MenuCommand —— 已改 API"),
+    _e("sw_exit_sketch", "sketch", "SketchManager.InsertSketch(True)",
+       "退出后 ActiveSketch 为 None（segments=-1）"),
+    _e("sw_sketch_line", "sketch", "SketchManager.CreateLine", "线段 0→1"),
+    _e("sw_sketch_circle", "sketch", "CreateCircleByRadius", "线段 0→1"),
+    _e("sw_sketch_rectangle", "sketch", "CreateCornerRectangle", "线段 0→**4**"),
+    _e("sw_sketch_arc", "sketch", "CreateArc", "线段 0→1"),
+    _e("sw_sketch_ellipse", "sketch", "CreateEllipse", "线段 0→1"),
+    _e("sw_sketch_polygon", "sketch", "CreatePolygon", "6 边形 → 线段 0→**7**"),
+    _e("sw_sketch_spline", "sketch", "CreateSpline2（VT_ARRAY|VT_R8）",
+       "4 个拟合点 → 线段 0→1",
+       "内核 CreateSpline(list) 在 pywin32 下拿到空成员，必须传 COM 数组"),
+    _e("sw_sketch_centerline", "sketch", "CreateLine + ConstructionGeometry",
+       "线段 0→1（构造线）"),
+]
+
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_sketch_offset", ToolEntry("sw_sketch_offset", "sketch", "unverified",
+        "SketchManager.SketchOffset2", "",
+        "pywin32 迟绑定报 DISP_E_PARAMNOTOPTIONAL；comtypes 要求 CapEnds 等必填维")),
+    ("sw_sketch_linear_pattern", ToolEntry("sw_sketch_linear_pattern", "sketch",
+        "unverified", "CreateLinearSketchStepAndRepeat", "",
+        "comtypes 要求 XSpacingDim/YSpacingDim 等尺寸对象参数，无法只传数值")),
+    ("sw_sketch_circular_pattern", ToolEntry("sw_sketch_circular_pattern", "sketch",
+        "unverified", "CreateCircularSketchStepAndRepeat", "",
+        "comtypes 要求 RadiusDim 等尺寸对象参数")),
 
     ("sw_dxp",
      ToolEntry("sw_dxp", "meta", "unverified", "sw_adv.dxp",
@@ -176,7 +207,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 
 # 注意：上表刻意保留重复键时的"后写覆盖"语义，避免手抖写重时静默丢条目。
 REGISTRY: Dict[str, ToolEntry] = {}
-for _name, _entry in _VERIFIED + _STUDY_META + _UNSTABLE + _UNVERIFIED + _BROKEN:
+for _name, _entry in _VERIFIED + _STUDY_META + _SKETCH_UPSTREAM + _UNSTABLE + _UNVERIFIED + _BROKEN:
     REGISTRY[_name] = _entry
 
 
@@ -200,6 +231,10 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 上游 sketch 族（verified/sketch_ops.py，2026-10-20 真机 11/11）
+    "sw_create_sketch", "sw_edit_sketch", "sw_exit_sketch", "sw_sketch_line",
+    "sw_sketch_circle", "sw_sketch_rectangle", "sw_sketch_arc", "sw_sketch_ellipse",
+    "sw_sketch_polygon", "sw_sketch_spline", "sw_sketch_centerline",
     # 草图 / 文档级（verified/sketch.py、verified/model.py，2026-10-20 真机 5/5）
     "sw_sketch_construction", "sw_sketch_text", "sw_add_sketch_constraint",
     "sw_activate_display_state", "sw_list_materials",

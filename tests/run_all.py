@@ -41,6 +41,7 @@ def _suites() -> list[dict]:
         "live": "live_check.py",
         "part": "part_check.py",
         "sketch": "sketch_check.py",
+        "sketch_ops": "sketch_ops_check.py",
         "asm_ops": "asm_ops_check.py",
         "drawing": "drawing_check.py",
         "balloon": "balloon_check.py",
@@ -59,13 +60,28 @@ def _needs_fixtures(suite: dict) -> bool:
     return suite["script"] not in (None, "mcp_smoke.py")
 
 
+def _child_env() -> dict:
+    """子进程环境：**显式**把 src 加进 PYTHONPATH。
+
+    踩过：以前靠父 shell 里手工设 PYTHONPATH 才跑通；一旦不带环境变量直接调，
+    `selftest` 就报 `No module named 'swkit'`。
+    """
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    src = os.path.join(ROOT, "src")
+    parts = [p for p in env.get("PYTHONPATH", "").split(os.pathsep) if p]
+    if src not in parts:
+        parts.insert(0, src)
+    env["PYTHONPATH"] = os.pathsep.join(parts)
+    return env
+
+
 def run_suite(suite: dict, timeout: float) -> dict:
     started = time.time()
     try:
         proc = subprocess.run(
             _cmd(suite), capture_output=True, text=True, encoding="utf-8",
             errors="replace", timeout=timeout, stdin=subprocess.DEVNULL,
-            cwd=ROOT, env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+            cwd=ROOT, env=_child_env(),
         )
         out, err, rc = proc.stdout or "", proc.stderr or "", proc.returncode
     except subprocess.TimeoutExpired:

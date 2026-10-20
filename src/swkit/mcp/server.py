@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, List, Optional
 
 from .. import __version__
 from ..core.com import dispatch, pyw, val
@@ -439,6 +439,124 @@ def sw_explode_assembly() -> Dict[str, Any]:
         doc = _doc(_app())
         return ({"ok": False, "error": "没有打开的文档"} if doc is None
                 else asm_ops.explode_assembly(doc))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_create_sketch")
+def sw_create_sketch(plane: str = "前视基准面") -> Dict[str, Any]:
+    """新建草图（verified）。中文版必须用本地化面名（`前视基准面`）。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.create_sketch(doc, plane)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_edit_sketch")
+def sw_edit_sketch(sketch_name: str) -> Dict[str, Any]:
+    """重入草图（verified）：选中后 `EditSketch()`（`MenuCommand` 在本机不可用）。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.edit_sketch(doc, sketch_name)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_exit_sketch")
+def sw_exit_sketch() -> Dict[str, Any]:
+    """退出草图（verified）。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.exit_sketch(doc)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_line")
+def sw_sketch_line(x1: float, y1: float, x2: float, y2: float) -> Dict[str, Any]:
+    """草图直线（verified，输入 mm）。判据：线段 0→1。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.line(doc, x1, y1, x2, y2)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_circle")
+def sw_sketch_circle(cx: float, cy: float, radius: float) -> Dict[str, Any]:
+    """草图圆（verified，mm）。判据：线段 0→1。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.circle(doc, cx, cy, radius)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_rectangle")
+def sw_sketch_rectangle(x1: float, y1: float, x2: float, y2: float,
+                        rect_type: str = "corner") -> Dict[str, Any]:
+    """草图矩形（verified，mm）。判据：线段 0→4。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else so.rectangle(doc, x1, y1, x2, y2, rect_type))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_arc")
+def sw_sketch_arc(cx: float, cy: float, radius: float, start_angle_deg: float,
+                  end_angle_deg: float, clockwise: bool = False) -> Dict[str, Any]:
+    """草图圆弧（verified，角度按度、逆时针为正）。判据：线段 0→1。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else so.arc(doc, cx, cy, radius, start_angle_deg, end_angle_deg, clockwise))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_ellipse")
+def sw_sketch_ellipse(cx: float, cy: float, semi_major: float, semi_minor: float,
+                      rotation_deg: float = 0.0) -> Dict[str, Any]:
+    """草图椭圆（verified，mm）。判据：线段 0→1。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else so.ellipse(doc, cx, cy, semi_major, semi_minor, rotation_deg))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_polygon")
+def sw_sketch_polygon(cx: float, cy: float, num_sides: int,
+                      circumscribed_radius: float, rotation_deg: float = 0.0) -> Dict[str, Any]:
+    """草图正多边形（verified）。判据：6 边形 → 线段 0→7。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else so.polygon(doc, cx, cy, num_sides, circumscribed_radius, rotation_deg))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_spline")
+def sw_sketch_spline(points: List[List[float]]) -> Dict[str, Any]:
+    """草图样条（verified）：需要 COM 数组，`CreateSpline(list)` 在 pywin32 下会失败。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.spline(doc, points)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_centerline")
+def sw_sketch_centerline(x1: float, y1: float, x2: float, y2: float) -> Dict[str, Any]:
+    """草图中心线（verified，构造线）。判据：线段 0→1。"""
+    from ..verified import sketch_ops as so
+    def _do():
+        doc = _doc(_app())
+        return {"ok": False, "error": "没有打开的文档"} if doc is None else so.centerline(doc, x1, y1, x2, y2)
     return _com(_do)
 
 

@@ -45,6 +45,23 @@ res = pattern_component(asm_doc, kind="linear", count=3, spacing=0.05)   # spaci
 要点：方向边必须用 `IComponent2.GetBox(False,False)` 拿**装配坐标**包围盒再取棱中点；
 组件全名是 `组件名@装配标题(去扩展名)`；`DName` 传字符串 `"NULL"`。
 
+### 草图实体（verified，输入 mm）
+
+```python
+from swkit.verified import sketch_ops as so
+so.create_sketch(doc, "前视基准面")     # 中文版必须用本地化面名
+so.line(doc, 0, 0, 50, 0)              # 判据：草图线段 0→1
+so.rectangle(doc, 0, 0, 40, 25)        # 0→4
+so.circle(doc, 10, 10, 8); so.arc(doc, 0, 0, 15, 0, 90)
+so.polygon(doc, 0, 0, 6, 15)          # 6 边形 → 0→7
+so.spline(doc, [[0,0],[15,20],[35,10]]) # 必须传 COM 数组
+so.exit_sketch(doc)
+```
+
+要点：**判据统一是活动草图的线段数**；`CreateSpline(list)` 在 pywin32 下会拿到空成员，
+要用 `CreateSpline2` + `VT_ARRAY|VT_R8`；`edit_sketch` 用 `EditSketch()`，
+`MenuCommand(2026)` 在本机不可用。
+
 ### 出图（verified）
 
 ```python

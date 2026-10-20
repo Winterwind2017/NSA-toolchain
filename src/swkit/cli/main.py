@@ -444,6 +444,40 @@ def cmd_explode(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_sketch(args: argparse.Namespace) -> int:
+    from ..verified import sketch_ops as so
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    a = args.action
+    if a == "create":
+        res = so.create_sketch(doc, args.plane)
+    elif a == "edit":
+        res = so.edit_sketch(doc, args.name)
+    elif a == "exit":
+        res = so.exit_sketch(doc)
+    elif a == "line":
+        res = so.line(doc, args.x1, args.y1, args.x2, args.y2)
+    elif a == "circle":
+        res = so.circle(doc, args.x1, args.y1, args.r)
+    elif a == "rect":
+        res = so.rectangle(doc, args.x1, args.y1, args.x2, args.y2)
+    elif a == "arc":
+        res = so.arc(doc, args.x1, args.y1, args.r, args.start, args.end)
+    elif a == "ellipse":
+        res = so.ellipse(doc, args.x1, args.y1, args.r, args.r2)
+    elif a == "polygon":
+        res = so.polygon(doc, args.x1, args.y1, args.sides, args.r)
+    elif a == "spline":
+        pts = [tuple(float(v) for v in p.split(",")) for p in args.points.split(";")]
+        res = so.spline(doc, pts)
+    else:
+        res = so.centerline(doc, args.x1, args.y1, args.x2, args.y2)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_construction(args: argparse.Namespace) -> int:
     from ..verified import sketch
     doc = _active_doc()
@@ -678,6 +712,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("explode", help="自动爆炸（verified）")
     p.set_defaults(func=cmd_explode)
+
+    p = sub.add_parser("sketch", help="草图实体（verified）：create/edit/exit/line/circle/…")
+    p.add_argument("action", choices=["create", "edit", "exit", "line", "circle", "rect",
+                                      "arc", "ellipse", "polygon", "spline", "centerline"])
+    p.add_argument("--plane", default="前视基准面")
+    p.add_argument("--name", default="", help="edit 用的草图名")
+    p.add_argument("--x1", type=float, default=0.0)
+    p.add_argument("--y1", type=float, default=0.0)
+    p.add_argument("--x2", type=float, default=40.0)
+    p.add_argument("--y2", type=float, default=25.0)
+    p.add_argument("--r", type=float, default=10.0, help="半径 / 长半轴（mm）")
+    p.add_argument("--r2", type=float, default=5.0, help="椭圆的短半轴（mm）")
+    p.add_argument("--sides", type=int, default=6)
+    p.add_argument("--start", type=float, default=0.0, help="圆弧起始角（度）")
+    p.add_argument("--end", type=float, default=90.0, help="圆弧终止角（度）")
+    p.add_argument("--points", default="0,0;15,20;35,10;50,0", help="样条点 用 ; 分隔")
+    p.set_defaults(func=cmd_sketch)
 
     p = sub.add_parser("construction", help="草图构造线（verified）")
     p.add_argument("--plane", default="前视基准面")
