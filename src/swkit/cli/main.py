@@ -170,6 +170,70 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     return 0 if all(c.get("ok") for c in checks.values()) else 1
 
 
+def cmd_sim(args: argparse.Namespace) -> int:
+    from ..study import sim
+    if args.action == "status":
+        res = sim.status(args.open)
+    elif args.action == "faces":
+        res = sim.faces(args.open, args.limit)
+    elif args.action == "list":
+        res = sim.list_studies(args.open)
+    elif args.action == "read":
+        res = sim.read(args.open, args.study, out=args.out)
+    else:
+        res = sim.solve(args.open, restraint_face=args.restraint_face,
+                        force_face=args.force_face, force_n=args.force,
+                        material=args.material, out=args.out)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_motion(args: argparse.Namespace) -> int:
+    from ..study import motion
+    if args.action == "list":
+        res = motion.list_studies(args.open)
+    elif args.action == "status":
+        res = motion.status(args.open)
+    else:
+        res = motion.read(args.open, study=args.study, component=args.component,
+                          samples=args.samples, out=args.out, csv=args.csv)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_docs(args: argparse.Namespace) -> int:
+    from ..meta import docs
+    if args.action == "stats":
+        res = docs.stats()
+    elif args.action == "sync":
+        res = docs.sync(args.dir, refresh=args.refresh)
+    elif args.action == "bom":
+        res = docs.bom(args.file, limit=args.limit or 200)
+    elif args.action == "tables":
+        res = docs.tables(args.file, limit=args.limit or 5)
+    elif args.action == "show":
+        res = docs.show(args.file)
+    else:
+        res = docs.query(prop=args.prop, folder=args.dir, ext=args.ext,
+                         limit=args.limit)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_props(args: argparse.Namespace) -> int:
+    from ..meta import props as props_mod
+    res = props_mod.props(args.file) if args.file else props_mod.sim_status()
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_vba(args: argparse.Namespace) -> int:
+    from ..meta import vba
+    res = vba.dump(args.swp) if args.action == "dump" else vba.selftest(args.swp or "")
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="swkit", description="SolidWorks 自动化工具内核")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -203,6 +267,47 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_mirror)
 
     sub.add_parser("selftest", help="import/注册表/COM 三层自检").set_defaults(func=cmd_selftest)
+
+    p = sub.add_parser("sim", help="Simulation：status/faces/list/read/solve")
+    p.add_argument("action", choices=["status", "faces", "list", "read", "solve"])
+    p.add_argument("--open", default="")
+    p.add_argument("--study", default="")
+    p.add_argument("--limit", type=int, default=20)
+    p.add_argument("--restraint-face", type=int, default=0)
+    p.add_argument("--force-face", type=int, default=1)
+    p.add_argument("--force", type=float, default=100.0, help="牛顿")
+    p.add_argument("--material", default="")
+    p.add_argument("--out", default="")
+    p.set_defaults(func=cmd_sim)
+
+    p = sub.add_parser("motion", help="Motion：list/status/read")
+    p.add_argument("action", choices=["list", "status", "read"])
+    p.add_argument("--open", default="")
+    p.add_argument("--study", default="")
+    p.add_argument("--component", default="")
+    p.add_argument("--samples", type=int, default=11)
+    p.add_argument("--out", default="")
+    p.add_argument("--csv", default="")
+    p.set_defaults(func=cmd_motion)
+
+    p = sub.add_parser("docs", help="DocumentMgr：stats/query/bom/tables/show/sync")
+    p.add_argument("action", choices=["stats", "query", "bom", "tables", "show", "sync"])
+    p.add_argument("--prop", default="", help="属性名 或 属性名=值")
+    p.add_argument("--dir", default="")
+    p.add_argument("--ext", default="")
+    p.add_argument("--limit", type=int, default=0)
+    p.add_argument("--file", default="")
+    p.add_argument("--refresh", action="store_true")
+    p.set_defaults(func=cmd_docs)
+
+    p = sub.add_parser("props", help="单文件属性；不给 --file 则做 Simulation 加载项自检")
+    p.add_argument("--file", default="")
+    p.set_defaults(func=cmd_props)
+
+    p = sub.add_parser("vba", help="内嵌 VBA 工程：selftest/dump")
+    p.add_argument("action", choices=["selftest", "dump"])
+    p.add_argument("--swp", default="")
+    p.set_defaults(func=cmd_vba)
     return ap
 
 

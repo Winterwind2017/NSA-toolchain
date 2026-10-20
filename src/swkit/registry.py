@@ -123,9 +123,54 @@ _BROKEN: List[Tuple[str, ToolEntry]] = [
                "同上")),
 ]
 
+_STUDY_META: List[Tuple[str, ToolEntry]] = [
+    # ── Simulation（2026-10-19 实测；40×40 角码 / AISI 304）───────────
+    _e("sw_sim_status", "study", "sw_sim.status",
+       "文档/材质/加载项/研究列表可读"),
+    _e("sw_sim_faces", "study", "sw_sim.faces", "列出 52 个面（索引+中心+尺寸）"),
+    _e("sw_sim_setup", "study", "sw_sim.setup", "约束面=0 成功（1→码2, 2→4, 3/4/5→7）",
+       "安全网格 size=0.02 / tol=0.002 / type=1，更低会吃满 16 GB"),
+    _e("sw_sim_mesh", "study", "sw_sim.mesh", "网格生成成功（安全档）"),
+    _e("sw_sim_run", "study", "sw_sim.run", "40 mm 级零件 11–13 分钟，star.exe 峰值 ~15 GB"),
+    _e("sw_sim_read", "study", "sw_sim.read",
+       "位移 max 0.698424 mm @100 N；1 N→0.006984 mm（恰好 1/100，线性自洽）",
+       "应力读数会话相关：求解后同会话 1.497e9，重开文档恒 code 1；固定端锐边是应力奇异（伪值）"),
+    _e("sw_sim_solve", "study", "sw_sim.solve", "一条龙 13–15 分钟，结果与手工一致"),
+    _e("sw_sim_addin_check", "study", "sw_adv.sim", "加载项对象存在但无可用成员（本机实测定论）"),
+    # ── Motion（2026-10-19 实测：循环线打包 8 号机）──────────────────
+    _e("sw_motion_list", "study", "sw_motion.list",
+       "算例/要素/时长可读（装配体2 → 运动算例 1）"),
+    _e("sw_motion_read", "study", "sw_motion.read",
+       "速度 0.1 m/s、IsOutOfDate=False",
+       "结果集索引必须=4；1/2 是空壳；位移不能用 GetCMPosition；组件须 comtypes IComponent2"),
+    # ── 元数据 / 只读审计 ────────────────────────────────────────
+    _e("sw_props", "meta", "sw_adv.props", "单文件自定义属性+配置（含中文属性名）"),
+    _e("sw_scan", "meta", "sw_adv.scan", "一会话扫目录，275 文件一轮完成"),
+    _e("swdm_stats", "meta", "swdm_lite.stats",
+       "275 文件(168 prt / 79 drw / 28 asm)、属性 136、组件行 2684、视图行 351、表格 5"),
+    _e("swdm_query", "meta", "swdm_lite.query", "按 属性/目录/扩展名 过滤命中",
+       "没有全文检索（只有 --prop/--dir/--ext）"),
+    _e("swdm_bom", "meta", "swdm_lite.bom", "装配组件行 2684（来自 28 个装配）"),
+    _e("swdm_tables", "meta", "swdm_lite.tables", "工程图表格 5 张，视图行 351"),
+    _e("sw_ovba_selftest", "meta", "sw_ovba.selftest",
+       "enable.swp：dir 737B→1106B、PROJECTCODEPAGE=1252、2 模块、304B 源码"),
+    _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
+]
+
+_UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_dxp",
+     ToolEntry("sw_dxp", "meta", "unverified", "sw_adv.dxp",
+               "方案名与标注数量可读（DimXpert）",
+               "autodim=True 会运行自动尺寸并保存文件——破坏性，默认关闭")),
+    ("sw_flow_check",
+     ToolEntry("sw_flow_check", "meta", "unverified", "sw_adv.flow",
+               "加载项自检与建工程可调",
+               "未跑通求解，不能算打通")),
+]
+
 # 注意：上表刻意保留重复键时的"后写覆盖"语义，避免手抖写重时静默丢条目。
 REGISTRY: Dict[str, ToolEntry] = {}
-for _name, _entry in _VERIFIED + _UNSTABLE + _BROKEN:
+for _name, _entry in _VERIFIED + _STUDY_META + _UNSTABLE + _UNVERIFIED + _BROKEN:
     REGISTRY[_name] = _entry
 
 

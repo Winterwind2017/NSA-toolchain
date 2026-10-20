@@ -94,3 +94,22 @@ def val(o, n):
 
 本项目被坑过三次（`inspect`/`math` 漏 import、`None` 参与算术）。
 写探测循环时至少把异常**记进计数器或日志**，否则"找不到边"可能只是自己代码炸了。
+
+## 14. 调旧脚本要"受管子进程"，不要就地 import
+
+这些脚本是 CLI（`argparse` + `print` + `SystemExit`），就地 import 会把输出吞进当前进程、
+还会污染 `sys.argv`。用 `subprocess` 才能拿到**超时**与干净输出。
+但两条必须显式设置：
+
+```python
+subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+               errors="replace", timeout=900,
+               stdin=subprocess.DEVNULL,      # ← 不设这行，MCP 调用会挂满超时
+               cwd=cache_dir())               # ← 别让脚本往安装目录写文件
+```
+
+## 15. `swdm_lite.query` 没有全文检索
+
+它的参数只有 `--prop`（`名` 或 `名=值`）、`--dir`、`--ext`。
+上游 `sw_extra_mcp.swdm_query(text)` 传 `--text` —— **该参数不存在，带 text 必失败**。
+要"按内容找文件"只能先 `sync` 建索引，再用属性过滤；或者自己读 `files.props` 做 LIKE。

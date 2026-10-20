@@ -203,6 +203,78 @@ def sw_api(op: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_sim_status")
+def sw_sim_status(open_path: str = "") -> Dict[str, Any]:
+    """Simulation 诊断（verified）：当前文档、材质、加载项、研究列表。"""
+    from ..study import sim
+    return _com(lambda: sim.status(open_path))
+
+
+@mcp.tool(name="sw_sim_solve")
+def sw_sim_solve(open_path: str = "", restraint_face: int = 0,
+                 force_face: int = 1, force_n: float = 100.0,
+                 material: str = "") -> Dict[str, Any]:
+    """一条龙静力分析（verified，**约 13–15 分钟**，star.exe 峰值 ~15 GB）。
+
+    位移可靠；应力注意：固定端锐边是应力奇异（伪值），且重开文档后常读不到（code 1）。
+    """
+    from ..study import sim
+    return _com(lambda: sim.solve(open_path, restraint_face=restraint_face,
+                                  force_face=force_face, force_n=force_n,
+                                  material=material))
+
+
+@mcp.tool(name="sw_sim_read")
+def sw_sim_read(open_path: str = "", study: str = "") -> Dict[str, Any]:
+    """读已有静力结果（verified）。应力不可用时会返回 stress_available=False。"""
+    from ..study import sim
+    return _com(lambda: sim.read(open_path, study))
+
+
+@mcp.tool(name="sw_motion_read")
+def sw_motion_read(open_path: str = "", study: str = "",
+                   component: str = "", samples: int = 11) -> Dict[str, Any]:
+    """读 Motion 结果（verified）：位移/速度/加速度采样。
+
+    底层用 `GetResults(4)`——索引 1/2 是空壳（IsOutOfDate=True、值恒 0）。
+    """
+    from ..study import motion
+    return _com(lambda: motion.read(open_path, study=study, component=component,
+                                    samples=samples))
+
+
+@mcp.tool(name="sw_docs_stats")
+def sw_docs_stats() -> Dict[str, Any]:
+    """DocumentMgr 索引统计（verified）：文件数、属性条目、组件行、视图行、表格数。"""
+    from ..meta import docs
+    return _com(lambda: docs.stats())
+
+
+@mcp.tool(name="sw_docs_query")
+def sw_docs_query(prop: str = "", folder: str = "", ext: str = "",
+                  limit: int = 0) -> Dict[str, Any]:
+    """按属性/目录/扩展名查索引（verified）。`prop` 支持 `名=值`。
+
+    注意：**没有全文检索**（底层只有 --prop/--dir/--ext）。
+    """
+    from ..meta import docs
+    return _com(lambda: docs.query(prop=prop, folder=folder, ext=ext, limit=limit))
+
+
+@mcp.tool(name="sw_props")
+def sw_props(file: str = "") -> Dict[str, Any]:
+    """单文件自定义属性（verified）；不给 file 则做 Simulation 加载项自检。"""
+    from ..meta import props as props_mod
+    return _com(lambda: props_mod.props(file) if file else props_mod.sim_status())
+
+
+@mcp.tool(name="sw_vba_dump")
+def sw_vba_dump(swp: str) -> Dict[str, Any]:
+    """导出 `.swp` 内嵌 VBA 源码（verified）。只读。"""
+    from ..meta import vba
+    return _com(lambda: vba.dump(swp))
+
+
 def main() -> None:
     mcp.run()
 

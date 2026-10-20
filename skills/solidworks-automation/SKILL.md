@@ -60,6 +60,42 @@ sw_api("extrude", {"depth": 0.02})     # 透传 SolidWorksApp；响应带 status
 
 必须自己补一个判据（特征数/面数/体积），不能只看返回值。
 
+### 仿真（静力）
+
+```python
+from swkit.study import sim
+sim.status(open_path=r"...\part.SLDPRT")          # 先看文档/材质/加载项/研究
+sim.faces(open_path=..., limit=20)                 # 挑约束面与受力面（索引+坐标）
+res = sim.solve(restraint_face=0, force_face=1, force_n=100, material="AISI 304")
+# 约 13–15 分钟；位移可信，应力要求同会话读到，否则 stress_available=False
+```
+
+要点：100 N 的位移应是 1 N 的 100 倍（线性自洽）；**固定端锐边是应力奇异**，读到
+1497 MPa 那是伪值；网格别低于 `size=0.02 / tol=0.002`（会吃满 16 GB）。
+
+### 运动
+
+```python
+from swkit.study import motion
+motion.list_studies(open_path=asm)
+res = motion.read(open_path=asm, samples=11)       # 位移/速度/加速度
+```
+
+要点：结果集索引必须 **4**（1/2 是空壳，值恒 0）；位移**不能**用 `GetCMPosition`。
+
+### 元数据（不打开 SolidWorks 也能查索引）
+
+```python
+from swkit.meta import docs, props, vba
+docs.stats()                       # 275 文件 / 2684 组件行 / 351 视图行
+docs.query(prop="外形尺寸", ext="sldprt")
+props.props(r"...\part.SLDPRT")    # 单文件自定义属性（含中文名）
+vba.dump(r"...\macro.swp")         # 读内嵌 VBA 源码（审计用）
+```
+
+要点：`docs.query` **没有全文检索**（只有 `--prop/--dir/--ext`）；
+`vba.build()` 会覆盖目标 `.swp`，只能指向副本。
+
 ## 需要细节时读这些
 
 - `docs/RECIPES.md` —— 五条完整配方（组件阵列、镜像、螺纹孔、截图、插组件），带等价代码

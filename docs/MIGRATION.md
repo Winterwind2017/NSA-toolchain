@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | ① | 第三方 MCP（fork） | `D:\bililive\Solidworks-MCP-Server` | 188 工具 / 316 KB | 只继承**工具名与分组**；实现按实测重写，错误清单见 `docs/UNSUPPORTED.md` |
 | ② | 自有对象框架 | `D:\bililive\DeepCode\cad_framework` | `sw_app.py` 50 KB 等 | `api/app.py`、`core/base.py`、`core/errors.py`、`api/advanced.py` **整体移植**（本人作品，MIT） |
-| ③ | 仿真/运动/元数据 MCP | `D:\bililive\mcp-patches`（`sw_sim`/`sw_motion`/`swdm_lite`/`sw_ovba`/`sw_adv`） | 15 工具 | **待合并**为 `swkit.study` / `swkit.meta`（见下） |
+| ③ | 仿真/运动/元数据 MCP | `D:\bililive\mcp-patches`（`sw_sim`/`sw_motion`/`swdm_lite`/`sw_ovba`/`sw_adv`） | 15 工具 | **已合并**：`swkit/study` + `swkit/meta` + `_legacy`（见"③ 的落地方式"） |
 | ④ | 实测修复层 | `D:\bililive\mcp-patches\sw_fixpack.py` | 46 命令 / 153 KB | 已验证条目进 `verified/` + `registry.py`；其余命令逐条迁移 |
 | ⑤ | 知识资产 | `_sw_probe`（310 探针）+ 11 份 `SW_*.md`（台账 109 KB） | ~1000 文件 | 结论进 `docs/`（RECIPES / PITFALLS / UNSUPPORTED）；只留**精简探针**在 `diagnostics/` |
 
@@ -30,13 +30,28 @@
 | `docs/PITFALLS.md` | ⑤ 教训 | ✅ 13 条 |
 | `docs/UNSUPPORTED.md` | ⑤ 证伪依据 | ✅ |
 | `skills/solidworks-automation/` | 新增 | ✅ |
+| `src/swkit/study/{sim,motion}.py` | ③ `sw_sim.py` / `sw_motion.py` | ✅ 适配层（受管子进程） |
+| `src/swkit/meta/{docs,props,vba}.py` | ③ `swdm_lite.py` / `sw_adv.py` / `sw_ovba.py` | ✅ 适配层 |
+| `src/swkit/_legacy/*.py` | ③ 原脚本（只改硬编码路径） | ✅ 5 个，共 ~96 KB |
+
+## ③ 的落地方式（为什么是"适配层"而不是重写）
+
+这 5 个脚本的结论**是在当前形态下实测出来的**（Sim 的网格安全档、Motion 的 `GetResults(4)`、
+DocumentMgr 的索引结构）。重写成库内函数就必须**重新验证一遍**，风险与工时都大于收益。
+
+做法：
+1. 原样收进 `src/swkit/_legacy/`，**只**改三处本机硬编码：
+   `VENDOR` → `SWKIT_VENDOR`、`DEFAULT_OUT` → `SWKIT_OUT`、`DB` → `SWKIT_DM_DB`（并保留旧索引回退）。
+2. 用 `_legacy/runner.py` 以**受管子进程**调用：`stdin=DEVNULL`（否则 MCP 调用会挂满超时）、
+   显式超时、`utf-8/replace`、`cwd=~/.swkit`。
+3. `swkit.study` / `swkit.meta` 只做**参数翻译 + 输出解析 + 结构化返回**。
+
+副作用：包体多 ~96 KB。可接受；将来逐条内联时记得同步删掉 `_legacy`。
+
+**顺带修掉一个上游 bug**：`sw_extra_mcp.swdm_query(text)` 传的是 `--text`，而 `swdm_lite.query`
+根本没有这个参数（只有 `--prop/--dir/--ext`）→ 带 text 调用必失败。本仓库适配层用真实参数。
 
 ## 待搬迁（按优先级）
-
-1. **③ 仿真/运动/元数据**（`sw_sim` / `sw_motion` / `swdm_lite` / `sw_ovba` / `sw_adv`）
-   → 目标 `swkit/study/`（静力研究、网格、求解、读结果）与 `swkit/meta/`
-   （DocumentMgr 索引、属性、VBA/OVBA 读取、API 审计）。
-   **注意**：子进程调用必须 `stdin=subprocess.DEVNULL`（否则 MCP 调用会挂满超时）。
 2. **④ 其余已验证命令**（`sw_fixpack.py` 46 条里尚未进 `verified/` 的部分）
    → 逐条搬成函数 + 在 `registry.py` 登记证据；优先出图类与特征类。
 3. **④ 回归脚本** `_sw_probe/regress.py`（28 项）

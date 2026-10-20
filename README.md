@@ -74,9 +74,14 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_pattern_component_linear` | `IFeatureManager.FeatureLinearPattern5` | 组件 2→4 / 2→5；特征 +3/+4；`IsPatternInstance`×2/×3 |
 | `sw_pattern_component_circular` | `IFeatureManager.FeatureCircularPattern5` | 组件 2→4（120°）；`IsPatternInstance`×2 |
 | `sw_mirror_component` | `CreateDefinition(116)` + `IMirrorComponentFeatureData` + `CreateFeature` | 特征 `镜向零部件1`；组件 2→4；`IsMirrored`×2 |
+| `sw_sim_*`（7 个） | Simulation `cosworks` | 100 N → 位移 max **0.698424 mm**；1 N → 0.006984 mm（恰好 1/100，线性自洽） |
+| `sw_motion_list` / `sw_motion_read` | `IMotionStudyResults` | 速度 0.1 m/s、`IsOutOfDate=False`（结果集索引必须=4） |
+| `swdm_*`（4 个） | 私有 DocumentMgr（SQLite 索引） | 275 文件（168 prt / 79 drw / 28 asm）、组件行 2684、视图行 351 |
+| `sw_props` / `sw_scan` | 只读属性 + 批量扫描 | 275 文件一轮扫完 |
+| `sw_ovba_selftest` / `sw_vba_dump` | VBA 工程解压 | `enable.swp`：737 B→1106 B、2 模块、304 B 源码 |
 | `sw_document_info` / `sw_status` / `sw_registry` | — | 元信息，无需判据 |
 
-外加 registry 里 **35 条 verified** 记录（特征 / 草图 / 出图 / 装配 / 元数据），
+外加 registry 里 **53 条 verified** 记录（特征 / 草图 / 出图 / 装配 / 仿真 / 元数据），
 每条都带 API 名与"用什么数字证明它成了"。
 
 ### Tier B · api（透传，**unverified**）
@@ -131,6 +136,17 @@ src/swkit/
 ```powershell
 python tests/live_check.py     # 建测试装配 → 线性阵列 → 镜像 → 打印证据字典
 ```
+
+### 环境变量（都可选）
+
+| 变量 | 作用 | 默认 |
+|---|---|---|
+| `SW_TLB` / `SWCONST_TLB` | 类型库路径 | `D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\*.tlb` |
+| `SWKIT_VENDOR` | 额外的 `sys.path`（例如 vendored `comtypes`） | 空 |
+| `SWKIT_HOME` | 缓存 / 临时输出目录 | `~/.swkit` |
+| `SWKIT_DM_DB` | DocumentMgr 索引库 | 有旧索引则沿用，否则 `~/.swkit/swdm_lite.db` |
+| `SWKIT_OUT` | 扫描输出目录 | `~/swkit_out` |
+| `SWKIT_CHM` / `SWKIT_CHM_DIR` | 官方帮助 `.chm` 与解包目录 | 安装目录 / `%LOCALAPPDATA%\swkit\chm` |
 
 ---
 

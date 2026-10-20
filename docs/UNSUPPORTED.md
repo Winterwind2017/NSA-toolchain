@@ -72,3 +72,18 @@
 上游另有约 80 个工具（`sw_*`）本仓库**尚未逐个复核**。它们通过
 `sw_api(op, params)` 透传可用，但响应恒带 `"status": "unverified"`。
 迁移计划见 [`MIGRATION.md`](MIGRATION.md)。
+
+---
+
+## unverified（2 条，能调但没打通）
+
+### `sw_dxp`（DimXpert）
+
+- 能读方案名与标注数量（`action=info`）
+- 但 `autodim=True` 会**运行自动尺寸方案并保存文件** —— 破坏性，本仓库默认关闭
+- 未做"自动尺寸后几何是否满足标注"的判据，故不标 verified
+
+### `sw_flow_check`（Flow Simulation）
+
+- 加载项自检与建工程可调用
+- **未跑通求解**，所以不能算打通
