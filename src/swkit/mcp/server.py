@@ -207,6 +207,63 @@ def sw_api(op: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return _com(_do)
 
 
+@mcp.tool(name="sw_sketch_construction")
+def sw_sketch_construction(plane: str = "前视基准面", length: float = 0.02) -> Dict[str, Any]:
+    """草图构造线（verified）：判据是 ConstructionGeometry 开关 True→False 往返成功。"""
+    from ..verified import sketch
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else sketch.construction(doc, plane=plane, length=length))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sketch_text")
+def sw_sketch_text(text: str, x: float = 0.0, y: float = 0.0,
+                   plane: str = "前视基准面") -> Dict[str, Any]:
+    """草图文字（verified）：判据是字形轮廓线段增加，或能读回文字。"""
+    from ..verified import sketch
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else sketch.sketch_text(doc, text=text, x=x, y=y, plane=plane))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_add_sketch_constraint")
+def sw_add_sketch_constraint(constraint: str = "sgHORIZONTAL",
+                             plane: str = "前视基准面") -> Dict[str, Any]:
+    """草图约束（verified）：判据是约束数 +1 **或**端点被真正拉平（几何证据）。"""
+    from ..verified import sketch
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else sketch.sketch_constraint(doc, constraint=constraint, plane=plane))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_activate_display_state")
+def sw_activate_display_state(name: str = "") -> Dict[str, Any]:
+    """激活显示状态（verified）。文档没有显示状态时返回 note 而不是假装成功。"""
+    from ..verified import model
+    def _do():
+        doc = _doc(_app())
+        return ({"ok": False, "error": "没有打开的文档"} if doc is None
+                else model.activate_display_state(doc, name=name))
+    return _com(_do)
+
+
+@mcp.tool(name="sw_list_materials")
+def sw_list_materials(name_filter: str = "", limit: int = 20) -> Dict[str, Any]:
+    """列材料库（verified）：**不打开 SolidWorks**，直接解析 `.sldmat`。
+
+    本机实测 3 库 / 29 分类 / 474 材料。为什么走 XML：类型库里 202 个含 material 的方法
+    没有一个能枚举材料库。
+    """
+    from ..verified import model
+    return _com(lambda: model.list_materials(name_filter=name_filter, limit=limit))
+
+
 @mcp.tool(name="sw_bounding_box")
 def sw_bounding_box() -> Dict[str, Any]:
     """实体包围盒（verified）：每个实体输出 min/max/尺寸（mm）。"""

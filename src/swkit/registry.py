@@ -188,6 +188,9 @@ _IMPLEMENTED = {
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_shell",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
+    # 草图 / 文档级（verified/sketch.py、verified/model.py，2026-10-20 真机 5/5）
+    "sw_sketch_construction", "sw_sketch_text", "sw_add_sketch_constraint",
+    "sw_activate_display_state", "sw_list_materials",
     # 元数据（meta/*）
     "sw_props", "sw_scan", "swdm_stats", "swdm_query", "swdm_bom", "swdm_tables",
     "sw_ovba_selftest", "sw_ovba_dump",

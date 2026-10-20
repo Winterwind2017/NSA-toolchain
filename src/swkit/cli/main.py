@@ -259,6 +259,65 @@ def cmd_pattern_feature(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_construction(args: argparse.Namespace) -> int:
+    from ..verified import sketch
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = sketch.construction(doc, plane=args.plane, length=args.length)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_sketch_text(args: argparse.Namespace) -> int:
+    from ..verified import sketch
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = sketch.sketch_text(doc, text=args.text, x=args.x, y=args.y, plane=args.plane)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_sketch_constraint(args: argparse.Namespace) -> int:
+    from ..verified import sketch
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = sketch.sketch_constraint(doc, constraint=args.constraint, plane=args.plane)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_display_state(args: argparse.Namespace) -> int:
+    from ..verified import model
+    doc = _active_doc()
+    if doc is None:
+        _dump({"ok": False, "error": "没有打开的文档"})
+        return 2
+    res = model.activate_display_state(doc, name=args.name)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
+def cmd_materials(args: argparse.Namespace) -> int:
+    from ..verified import model
+    res = model.list_materials(directory=args.dir, name_filter=args.filter,
+                               limit=args.limit, verbose=args.verbose)
+    if args.json:
+        _dump(res)
+    else:
+        d = res.get("detail") or {}
+        print("  库 = %s" % (d.get("files") or []))
+        print("  类别 = %s | 材料 = %s" % (d.get("categories"), d.get("materials")))
+        for m in (d.get("matches") or []):
+            print("    %-40s (%s)" % (m["name"], m["file"]))
+    return 0 if res.get("ok") else 4
+
+
 def cmd_sim(args: argparse.Namespace) -> int:
     from ..study import sim
     if args.action == "status":
@@ -357,6 +416,35 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_mirror)
 
     sub.add_parser("selftest", help="import/注册表/COM 三层自检").set_defaults(func=cmd_selftest)
+
+    p = sub.add_parser("construction", help="草图构造线（verified）")
+    p.add_argument("--plane", default="前视基准面")
+    p.add_argument("--length", type=float, default=0.02, help="米")
+    p.set_defaults(func=cmd_construction)
+
+    p = sub.add_parser("sketch-text", help="草图文字（verified）")
+    p.add_argument("--text", required=True)
+    p.add_argument("--x", type=float, default=0.0)
+    p.add_argument("--y", type=float, default=0.0)
+    p.add_argument("--plane", default="前视基准面")
+    p.set_defaults(func=cmd_sketch_text)
+
+    p = sub.add_parser("sketch-constraint", help="草图约束（verified）")
+    p.add_argument("--constraint", default="sgHORIZONTAL")
+    p.add_argument("--plane", default="前视基准面")
+    p.set_defaults(func=cmd_sketch_constraint)
+
+    p = sub.add_parser("display-state", help="激活显示状态（verified）")
+    p.add_argument("--name", default="")
+    p.set_defaults(func=cmd_display_state)
+
+    p = sub.add_parser("materials", help="列材料库（verified，直接解析 .sldmat）")
+    p.add_argument("--dir", default="")
+    p.add_argument("--filter", default="")
+    p.add_argument("--limit", type=int, default=20)
+    p.add_argument("--verbose", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_materials)
 
     p = sub.add_parser("bbox", help="实体包围盒（verified）")
     p.set_defaults(func=cmd_bbox)

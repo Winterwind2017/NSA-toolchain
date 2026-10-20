@@ -81,6 +81,11 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_thicken_surface` | `FeatureBossThicken` | 特征 24→25、`Thicken` 特征=1、曲面 1→0 |
 | `sw_offset_surface` | `InsertOffsetSurface` | 曲面 1→2 |
 | `sw_screenshot` | `IModelDoc2.SaveBMP` | 2,880,054 B（1200×800） |
+| `sw_sketch_construction` | `ConstructionGeometry` 属性 | True→False 往返成功 |
+| `sw_sketch_text` | `InsertSketchText(9 参)` | 字形轮廓线段 0→1 |
+| `sw_add_sketch_constraint` | `SketchAddConstraints` | 约束 0→1 **且**端点 Y 0.002→0.000 |
+| `sw_activate_display_state` | `ApplyDisplayState` | `ApplyDisplayState("<默认>_显示状态 1")`=True |
+| `sw_list_materials` | 解析 `.sldmat`（XML） | 3 库 / 29 分类 / **474 材料**（`AISI 304` 可检索） |
 | `sw_sim_*`（7 个） | Simulation `cosworks` | 100 N → 位移 max **0.698424 mm**；1 N → 0.006984 mm（恰好 1/100，线性自洽） |
 | `sw_motion_list` / `sw_motion_read` | `IMotionStudyResults` | 速度 0.1 m/s、`IsOutOfDate=False`（结果集索引必须=4） |
 | `swdm_*`（4 个） | 私有 DocumentMgr（SQLite 索引） | 275 文件（168 prt / 79 drw / 28 asm）、组件行 2684、视图行 351 |
@@ -147,6 +152,7 @@ src/swkit/
 ```powershell
 python tests/live_check.py     # 真机：建测试装配 → 组件线性阵列 → 镜像 → 证据字典
 python tests/part_check.py     # 真机：包围盒/截图/抽壳/特征阵列/分割线/加厚/偏移（8 项）
+python tests/sketch_check.py   # 真机：构造线/草图文字/约束/显示状态/材料库（5 项）
 python tests/mcp_smoke.py      # MCP stdio 握手（不起 SolidWorks，验 server 真能起）
 ```
 
