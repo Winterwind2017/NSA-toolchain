@@ -7,11 +7,11 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 107 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 109 | 本仓库有实现、有真机判据 |
 | 已判死 | 4 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 22 | 已登记但没打通 |
-| 未复核 | 53 | **待办**：还没验证 |
+| 未达可用 | 26 | 已登记但没打通 |
+| 未复核 | 47 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
 
@@ -95,8 +95,10 @@
 | `sw_open_document` | — | 已覆盖 | 本仓库有实现且有真机判据 | 649 |
 | `sw_pattern_component_circular` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3208 |
 | `sw_pattern_component_linear` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3198 |
+| `sw_planar_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2584 |
 | `sw_rebuild_model` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1982 |
 | `sw_replace_component` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3188 |
+| `sw_revolved_surface` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2604 |
 | `sw_save_all` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3518 |
 | `sw_save_as_copy` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3538 |
 | `sw_save_document` | — | 已覆盖 | 本仓库有实现且有真机判据 | 683 |
@@ -155,12 +157,9 @@
 | `sw_dome` | — | 未复核 | Add a dome on a selected planar face.""" | 3596 |
 | `sw_draft` | — | 未复核 | Add draft (taper angle) to selected faces. | 1227 |
 | `sw_extend_surface` | — | 未复核 | Extend a surface by a distance, up to a point, or up to another surfac | 2634 |
-| `sw_extruded_surface` | — | 未复核 | Create an extruded surface from the active sketch.""" | 2594 |
 | `sw_fill_pattern` | — | 未复核 | Pattern a seed feature to fill a target face.""" | 3651 |
 | `sw_filled_surface` | — | 未复核 | Fill a closed boundary of edges with a new surface.""" | 2654 |
 | `sw_flatten_sheet_metal` | — | 未复核 | Toggle the flat pattern view of the active sheet metal part. | 2184 |
-| `sw_hide_all_planes` | — | 未复核 | Hide all reference planes in the viewport.""" | 3328 |
-| `sw_hide_all_sketches` | — | 未复核 | Hide all sketches in the viewport.""" | 3348 |
 | `sw_insert_weldment` | — | 未复核 | Insert the weldment feature into the active part (enables weldment too | 2811 |
 | `sw_intersect` | — | 未复核 | Create intersection regions from selected bodies/surfaces.""" | 3616 |
 | `sw_jog` | — | 未复核 | Add a jog bend at the active sketch line on a sheet metal face.""" | 2749 |
@@ -168,16 +167,13 @@
 | `sw_list_sensors` | — | 未复核 | List sensors on the active document with current values.""" | 3496 |
 | `sw_loft` | — | 未复核 | Create a loft between selected sketch profiles. | 1326 |
 | `sw_parting_line` | — | 未复核 | Create a parting line for mold design (used to separate core from cavi | 2874 |
-| `sw_planar_surface` | — | 未复核 | Create a planar surface from selected closed sketch profile or edges." | 2584 |
 | `sw_projected_curve` | — | 未复核 | Project a sketch onto a face to create a 3D curve.""" | 2435 |
-| `sw_revolved_surface` | — | 未复核 | Create a revolved surface from the active sketch profile + axis.""" | 2604 |
 | `sw_rib` | — | 未复核 | Add a rib feature from the active sketch (used to stiffen thin walls). | 3586 |
 | `sw_run_macro` | — | 未复核 | Run a saved SolidWorks macro file (.swp or .swb). | 2001 |
 | `sw_run_simulation` | — | 未复核 | Run the active SOLIDWORKS Simulation study.""" | 3413 |
 | `sw_run_vba_code` | — | 未复核 | Execute arbitrary VBA code against SolidWorks. | 2021 |
 | `sw_set_appearance_color` | — | 未复核 | Set RGB color and transparency on the active part's solid bodies.""" | 2280 |
 | `sw_set_background` | — | 未复核 | Set the viewport background style and color.""" | 3308 |
-| `sw_show_all_sketches` | — | 未复核 | Show all sketches in the viewport.""" | 3358 |
 | `sw_shut_off_surface` | — | 未复核 | Automatically create shut-off surfaces over holes for mold separation. | 2884 |
 | `sw_sketched_bend` | — | 未复核 | Add a sketched bend along an active sketch line on a flat sheet metal  | 2739 |
 | `sw_sweep` | — | 未复核 | Create a sweep of a profile sketch along a path sketch. | 1345 |
@@ -193,13 +189,17 @@
 | `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
 | `sw_edge_flange` | — | 未达可用 | 已登记但没打通： | 2719 |
 | `sw_export_flat_pattern` | — | 未达可用 | 已登记但没打通： | 2218 |
+| `sw_extruded_surface` | — | 未达可用 | 已登记但没打通： | 2594 |
 | `sw_fillet` | — | 未达可用 | 已登记但没打通： | 1172 |
 | `sw_fold` | — | 未达可用 | 已登记但没打通： | 2779 |
+| `sw_hide_all_planes` | — | 未达可用 | 已登记但没打通： | 3328 |
+| `sw_hide_all_sketches` | — | 未达可用 | 已登记但没打通： | 3348 |
 | `sw_hole_wizard` | — | 未达可用 | 已登记但没打通： | 1303 |
 | `sw_mirror` | — | 未达可用 | 已登记但没打通： | 1284 |
 | `sw_miter_flange` | — | 未达可用 | 已登记但没打通： | 2729 |
 | `sw_move_body` | — | 未达可用 | 已登记但没打通： | 2359 |
 | `sw_revolve` | — | 未达可用 | 已登记但没打通： | 1153 |
+| `sw_show_all_sketches` | — | 未达可用 | 已登记但没打通： | 3358 |
 | `sw_sketch_circular_pattern` | — | 未达可用 | 已登记但没打通： | 1069 |
 | `sw_sketch_convert_entities` | — | 未达可用 | 已登记但没打通： | 2483 |
 | `sw_sketch_extend` | — | 未达可用 | 已登记但没打通： | 2503 |
@@ -241,11 +241,11 @@
 
 | 类别 | 待验证数 |
 |---|---|
-| `other` | 10 |
-| `surface` | 9 |
+| `other` | 9 |
 | `drawing` | 7 |
-| `sketch` | 7 |
 | `feature` | 6 |
+| `surface` | 6 |
+| `sketch` | 5 |
 | `inspect` | 4 |
 | `macro_io` | 3 |
 | `weldment` | 3 |

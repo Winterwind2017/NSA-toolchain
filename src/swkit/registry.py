@@ -162,6 +162,15 @@ _STUDY_META: List[Tuple[str, ToolEntry]] = [
     _e("sw_ovba_dump", "meta", "sw_ovba.dump", "解出模块源码（Attribute VB_Name 等）"),
 ]
 
+# ── 曲面（2026-10-20 真机 2/3）──────────────────────────────────────
+_SURFACES: List[Tuple[str, ToolEntry]] = [
+    _e("sw_planar_surface", "surface", "IModelDoc.InsertPlanarRefSurface（属性）",
+       "闭合矩形草图 → 曲面 0→1",
+       "它在本机是**属性**：读取即执行，加括号报 'bool' object is not callable"),
+    _e("sw_revolved_surface", "surface", "IModelDoc.InsertRevolvedRefSurface(4 参)",
+       "矩形+中心线 → 曲面 0→1；API 在 IModelDoc 上，不在 IModelDoc2"),
+]
+
 # ── 实体级操作（2026-10-20 真机 2/2）────────────────────────────────
 _BODIES: List[Tuple[str, ToolEntry]] = [
     _e("sw_scale_body", "body", "IModelDoc2.InsertScale(5 参)",
@@ -360,6 +369,16 @@ _SKETCH_UPSTREAM: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
+    ("sw_extruded_surface", ToolEntry("sw_extruded_surface", "surface", "unverified",
+        "IModelDoc.FeatureExtruRefSurface(15 参)", "",
+        "选中草图后仍返回 None、曲面数 0；IFeatureManager 版是 21 参，语义未定")),
+    ("sw_hide_all_planes", ToolEntry("sw_hide_all_planes", "view", "unverified",
+        "IModelDoc2.SetUserPreferenceToggle", "",
+        "swUserPreferenceToggle_e 里没有基准面/草图开关（实测仅 10 项：DisplayAxes/EntityPoints/…）")),
+    ("sw_hide_all_sketches", ToolEntry("sw_hide_all_sketches", "view", "unverified",
+        "IModelDoc2.SetUserPreferenceToggle", "", "同上：无对应枚举常量")),
+    ("sw_show_all_sketches", ToolEntry("sw_show_all_sketches", "view", "unverified",
+        "IModelDoc2.SetUserPreferenceToggle", "", "同上：无对应枚举常量")),
     ("sw_move_body", ToolEntry("sw_move_body", "body", "unverified",
         "IFeatureManager.InsertMoveCopyBody2(12 参)", "",
         "选中实体后三种参数解释（方向+距离 / 纯平移 / 距离字段）都无位移，包围盒 dx=0")),
@@ -445,7 +464,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 REGISTRY: Dict[str, ToolEntry] = {}
 for _name, _entry in (_VERIFIED + _STUDY_META + _SKETCH_UPSTREAM
                      + _INSPECT_UPSTREAM + _ASM_STATE + _FEATURE_UPSTREAM
-                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES
+                     + _DOC_OPS + _DRAWING_EXTRA + _SHEET_METAL + _CONFIG_IO + _VIEW_MEASURE + _EQUATIONS + _SKETCH_EDIT + _BODIES + _SURFACES
                      + _UNSTABLE
                      + _UNVERIFIED + _BROKEN):
     REGISTRY[_name] = _entry
@@ -471,6 +490,8 @@ _IMPLEMENTED = {
     # 装配其余（verified/asm_ops.py，2026-10-20 真机 4/4，含干涉 A/B）
     "sw_check_interference", "sw_fix_component", "sw_show_all_components",
     "sw_explode_assembly", "sw_move_component",
+    # 曲面（verified/surfaces.py，2026-10-20 真机 2/3）
+    "sw_planar_surface", "sw_revolved_surface",
     # 实体级操作（verified/bodies.py，2026-10-20 真机 2/2）
     "sw_scale_body", "sw_delete_body",
     # 草图编辑（verified/sketch_edit.py，2026-10-20 真机 4/4）

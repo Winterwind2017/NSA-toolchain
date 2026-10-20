@@ -456,6 +456,20 @@ def _doc_ops_tools() -> None:
     """文档级基础操作（占位说明；实际工具在下方逐个注册）。"""
 
 
+@mcp.tool(name="sw_planar_surface")
+def sw_planar_surface() -> Dict[str, Any]:
+    """平面区域曲面（verified）：需闭合草图；判据曲面数 +1。"""
+    from ..verified import surfaces as SUR
+    return _with_doc(SUR.planar_surface)
+
+
+@mcp.tool(name="sw_revolved_surface")
+def sw_revolved_surface(angle_deg: float = 360.0) -> Dict[str, Any]:
+    """旋转曲面（verified）：需草图+中心线；判据曲面数 +1。"""
+    from ..verified import surfaces as SUR
+    return _with_doc(SUR.revolved_surface, angle_deg)
+
+
 @mcp.tool(name="sw_scale_body")
 def sw_scale_body(factor: float = 2.0) -> Dict[str, Any]:
     """整体缩放（verified）：必须先选中实体，否则几何不变（假成功）。"""

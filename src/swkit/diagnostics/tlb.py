@@ -123,8 +123,50 @@ def dump_method(method_name: str, path: Optional[str] = None) -> List[Dict[str, 
 
 
 def enum_values(prefix: str, path: Optional[str] = None) -> Dict[str, int]:
-    """从 `swconst.tlb` 读枚举常量（如 `swMirrorType`、`swFm`）。"""
-    from comtypes.client import GetModule
+    """从 `swconst.tlb` 读枚举常量（如 `swMirrorType`、`swFm`）。
+
+    comtypes 可能只存在于 vendor 目录里，所以这里按
+    `SWKIT_VENDOR` → `~/.swkit/vendor` → `<repo>/vendor` 先补 `sys.path`
+    再 `GetModule`（不用 `comtypes_bundle`：它末尾会 `CreateObject(SldWorks)`，
+    而 swconst 模块里没有 `SldWorks`，会抛 AttributeError——实测踩过）。
+    """
+    import os
+    import sys
+    try:
+        from comtypes.client import GetModule
+    except ModuleNotFoundError:
+        here = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))
+        for cand in (os.environ.get("SWKIT_VENDOR") or "",
+                     os.path.join(os.path.expanduser("~"), ".swkit", "vendor"),
+                     os.path.join(here, "vendor")):
+            if cand and os.path.isdir(cand) and cand not in sys.path:
+                sys.path.insert(0, cand)
+                try:
+                    from comtypes.client import GetModule
+                    break
+                except ModuleNotFoundError:
+                    sys.path.remove(cand)
+        else:
+            raise
     mod = GetModule(path or swconst_path())
     key = prefix.lower()
-    return {n: int(getattr(mod, n)) for n in dir(mod) if n.lower().startswith(key)}
+    out: Dict[str, int] = {}
+    for name in dir(mod):
+        if not name.lower().startswith(key):
+            continue
+        obj = getattr(mod, name)
+        if isinstance(obj, type):          # 枚举类型本身（如 swXxx_e），展开成员
+            for member in dir(obj):
+                if member.startswith("_"):
+                    continue
+                try:
+                    out[member] = int(getattr(obj, member))
+                except Exception:
+                    continue
+            continue
+        try:
+            out[name] = int(obj)
+        except Exception:
+            continue
+    return out

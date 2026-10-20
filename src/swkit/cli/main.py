@@ -562,6 +562,21 @@ def cmd_dimension(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 4
 
 
+def cmd_surface(args: argparse.Namespace) -> int:
+    from ..verified import surfaces as SUR
+    doc = _doc_or_none()
+    if doc is None:
+        return 2
+    if args.action == "planar":
+        res = SUR.planar_surface(doc)
+    elif args.action == "revolve":
+        res = SUR.revolved_surface(doc, args.angle)
+    else:
+        res = SUR.extruded_surface(doc, args.depth)
+    _dump(res)
+    return 0 if res.get("ok") else 4
+
+
 def cmd_body_op(args: argparse.Namespace) -> int:
     from ..verified import bodies as B
     doc = _doc_or_none()
@@ -1209,6 +1224,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", required=True)
     p.add_argument("--set-value", type=float, default=None)
     p.set_defaults(func=cmd_dimension)
+
+    p = sub.add_parser("surface", help="曲面 planar/revolve/extrude（verified）")
+    p.add_argument("action", choices=["planar", "revolve", "extrude"])
+    p.add_argument("--angle", type=float, default=360.0)
+    p.add_argument("--depth", type=float, default=20.0)
+    p.set_defaults(func=cmd_surface)
 
     p = sub.add_parser("body", help="实体操作 scale/delete（verified）")
     p.add_argument("action", choices=["scale", "delete"])

@@ -54,6 +54,7 @@ def _suites() -> list[dict]:
         "equations": "equations_check.py",
         "sketch_edit": "sketch_edit_check.py",
         "bodies": "bodies_check.py",
+        "surfaces": "surfaces_check.py",
         "asm_ops": "asm_ops_check.py",
         "drawing": "drawing_check.py",
         "balloon": "balloon_check.py",
