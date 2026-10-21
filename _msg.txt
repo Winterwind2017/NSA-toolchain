@@ -1,0 +1,8 @@
+feat: 打通 chamfer / edge_blend / pattern_linear / pocket / hole_cyl（27 条，真机 27/27）
+
+- 选择意图：自建 ScCollector + ScRuleFactory.CreateRuleEdgeDumb，再赋给
+  ChamferBuilder.SmartCollector；圆角走 AddChainset
+- 矩形阵列：FeatureList.Add + RectangularDefinition + XDirection +
+  XSpacing.NCopies / PitchDistance 表达式（NCopies 只读，必须 SetFormula）
+- 复合能力：pocket = 拉伸求差（84000）、hole_cyl = 圆柱求差（93716.815）
+- 判据支持 {min,max} 区间；selftest 与离线测试同步覆盖区间语义

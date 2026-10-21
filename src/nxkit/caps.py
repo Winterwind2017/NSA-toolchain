@@ -107,6 +107,26 @@ CAPS: tuple[Cap, ...] = (
         params={},
         expect={"sections": 1, "body_count": 1,
                 "volume_mm3": 42000.0, "faces": 10}, reopen=False),
+
+    Cap("feature.chamfer", "feature", "一条边倒角 5 mm", "chamfer_one", "L1–L3",
+        params={},
+        expect={"body_count": 1, "faces": 7,
+                "volume_mm3": {"min": 98000.0, "max": 100000.0}}, reopen=False),
+
+    Cap("feature.edge_blend", "feature", "一条边圆角 R5", "edge_blend_one", "L1–L3",
+        params={},
+        expect={"body_count": 1, "faces": 7,
+                "volume_mm3": {"min": 98000.0, "max": 100000.0}}, reopen=False),
+
+    Cap("feature.pattern_linear", "feature", "沿 X 阵列 3 个（间距 120）", "pattern_linear", "L1–L3",
+        params={},
+        expect={"body_count": 3, "volume_mm3": 300000.0}, reopen=False),
+
+    Cap("feature.pocket", "feature", "块上挖 40×20 通槽", "feature_pocket", "L1–L3",
+        params={}, expect={"body_count": 1, "volume_mm3": 84000.0}, reopen=False),
+    Cap("feature.hole_cyl", "feature", "块上钻 Ø20 通孔", "feature_hole_cyl", "L1–L3",
+        params={},
+        expect={"body_count": 1, "volume_mm3": 93716.81495770694}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

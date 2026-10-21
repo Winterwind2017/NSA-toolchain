@@ -24,7 +24,9 @@ def compare(reads: dict, expect: dict) -> list[dict]:
     checks = []
     for key, want in expect.items():
         got = reads.get(key)
-        if isinstance(want, (int, float)):
+        if isinstance(want, dict) and {"min", "max"} <= set(want):
+            ok = got is not None and want["min"] <= float(got) <= want["max"]
+        elif isinstance(want, (int, float)):
             ok = _close(got, want)
         else:
             ok = got == want

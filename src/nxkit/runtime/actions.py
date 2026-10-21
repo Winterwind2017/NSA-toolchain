@@ -622,6 +622,169 @@ def extrude_ring(params, workdir, rec):
     return reads
 
 
+def chamfer_one(params, workdir, rec):
+    """倒一个边（5 mm），判据看面数与体积区间。"""
+    part = new_part("cham")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    edges = body.GetEdges()
+    cb = part.Features.CreateChamferBuilder(NXOpen.Features.Feature.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleEdgeDumb([edges[0]])
+        sc = part.ScCollectors.CreateCollector()
+        sc.AddRules([rule])
+        cb.SmartCollector = sc
+        try:
+            cb.FirstOffsetExp.SetFormula("5")
+            cb.SecondOffsetExp.SetFormula("5")
+        except Exception:
+            pass
+        cf = cb.CommitFeature()
+        reads = {"feature": str(cf.GetFeatureName())}
+    finally:
+        try:
+            cb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    reads["faces"] = len(bodies[0].GetFaces()) if bodies else 0
+    reads["edges"] = len(bodies[0].GetEdges()) if bodies else 0
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def edge_blend_one(params, workdir, rec):
+    """一条边圆角 R5。"""
+    part = new_part("blend")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    edges = body.GetEdges()
+    eb = part.Features.CreateEdgeBlendBuilder(NXOpen.Features.Feature.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleEdgeDumb([edges[0]])
+        sc = part.ScCollectors.CreateCollector()
+        sc.AddRules([rule])
+        eb.AddChainset(sc, "5")
+        cf = eb.CommitFeature()
+        reads = {"feature": str(cf.GetFeatureName())}
+    finally:
+        try:
+            eb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    reads["faces"] = len(bodies[0].GetFaces()) if bodies else 0
+    reads["edges"] = len(bodies[0].GetEdges()) if bodies else 0
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def pattern_linear(params, workdir, rec):
+    """块沿 +X 阵列 3 个（间距 120），判据：实体 3、体积 300000。"""
+    part = new_part("pat")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    pb = part.Features.CreatePatternFeatureBuilder(NXOpen.Features.Feature.Null)
+    try:
+        pb.FeatureList.Add([feat])
+        svc = pb.PatternService
+        try:
+            svc.PatternType = svc.PatternEnum.Linear
+        except Exception:
+            pass
+        rd = svc.RectangularDefinition
+        rd.XDirection = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        spacing = rd.XSpacing
+        set_n = False
+        for expr, val in ((getattr(spacing, "NCopies", None), "3"),
+                          (getattr(spacing, "PitchDistance", None), "120")):
+            if expr is None:
+                continue
+            try:
+                expr.SetFormula(val)
+                set_n = True
+            except Exception:
+                pass
+        if not set_n:
+            raise RuntimeError("pattern spacing 表达式不可写")
+        cf = pb.CommitFeature()
+        reads = {"feature": str(cf.GetFeatureName())}
+    finally:
+        try:
+            pb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def _extrude_rect_body(part, x, y, w, h, depth):
+    p = NXOpen.Point3d
+    lines = [
+        part.Curves.CreateLine(p(x, y, 0.0), p(x + w, y, 0.0)),
+        part.Curves.CreateLine(p(x + w, y, 0.0), p(x + w, y + h, 0.0)),
+        part.Curves.CreateLine(p(x + w, y + h, 0.0), p(x, y + h, 0.0)),
+        part.Curves.CreateLine(p(x, y + h, 0.0), p(x, y, 0.0)),
+    ]
+    secs = part.Sections.CreateSectionsUsingCurves(
+        lines, NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    b = part.Features.CreateExtrudeBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.Section = secs[0]
+        b.Direction = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(float(depth))
+        except Exception:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula(str(depth))
+        return b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+
+
+def _volume_after_boolean(part, fa, fb, op):
+    _set_boolean(part, fa, fb, op)
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def feature_pocket(params, workdir, rec):
+    """块上挖 40×20 通槽（拉伸 + 布尔差）→ 92000。"""
+    part = new_part("pocket")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = _extrude_rect_body(part, 30.0, 15.0, 40.0, 20.0, 20.0)
+    return _volume_after_boolean(part, fa, fb, "Subtract")
+
+
+def feature_hole_cyl(params, workdir, rec):
+    """块上钻 Ø20 通孔（圆柱 + 布尔差）→ 93716.815。"""
+    part = new_part("hole")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_cylinder(part, 50.0, 25.0, 0.0, 20.0, 20.0)
+    return _volume_after_boolean(part, fa, fb, "Subtract")
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -645,6 +808,11 @@ ACTIONS = {
     "drawing_sheet": drawing_sheet,
     "drawing_base_view": drawing_base_view,
     "extrude_ring": extrude_ring,
+    "chamfer_one": chamfer_one,
+    "edge_blend_one": edge_blend_one,
+    "pattern_linear": pattern_linear,
+    "feature_pocket": feature_pocket,
+    "feature_hole_cyl": feature_hole_cyl,
 }
 
 

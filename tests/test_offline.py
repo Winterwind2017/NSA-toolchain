@@ -19,16 +19,30 @@ def test_caps_unique_and_named() -> None:
         assert c.level.startswith("L")
 
 
+def _sample(expect: dict) -> dict:
+    """把 {min,max} 区间换成中点，其余原样。"""
+    out = {}
+    for key, val in expect.items():
+        if isinstance(val, dict) and {"min", "max"} <= set(val):
+            out[key] = (val["min"] + val["max"]) / 2.0
+        else:
+            out[key] = val
+    return out
+
+
 def test_judge_accepts_expected() -> None:
     for c in caps.CAPS:
-        checks = judges.compare(dict(c.expect), c.expect)
+        checks = judges.compare(_sample(c.expect), c.expect)
         assert judges.verdict(checks), (c.id, [x for x in checks if not x["ok"]])
 
 
 def test_judge_rejects_wrong_number() -> None:
     for c in caps.CAPS:
-        bad = dict(c.expect)
-        for key, val in bad.items():
+        bad = _sample(c.expect)
+        for key, val in c.expect.items():
+            if isinstance(val, dict) and {"min", "max"} <= set(val):
+                bad[key] = val["max"] * 2 + 1
+                break
             if isinstance(val, (int, float)) and not isinstance(val, bool):
                 bad[key] = val * 2 + 1
                 break

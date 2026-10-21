@@ -78,3 +78,20 @@
 - `MeasureManager.MeasureType` 的成员是 `Minimum`/`Maximum`，**不是** `MinimumDistance`。
 - `part.CreateCamSetup("mill_planar")` 返回 `None` 且不建 setup（`CAMSetup` 报
   "Current part does not contain valid setup"）。
+
+## 十、选择意图：chamfer / edge blend / pattern（2026-10-21 打通）
+
+- **`SmartCollector` 是 None**：`CreateChamferBuilder(...)` 自带的 collector 读出来是 None，
+  必须先自己建一个再**赋值**回去：
+  ```python
+  sc = part.ScCollectors.CreateCollector()
+  rule = part.ScRuleFactory.CreateRuleEdgeDumb([edge])   # 不是 CreateRuleCurveDumb
+  sc.AddRules([rule])                                     # ScCollector 没有 Add
+  cb.SmartCollector = sc
+  ```
+- **圆角**：`CreateEdgeBlendBuilder(Feature.Null)` + `eb.AddChainset(sc, "5")` + `CommitFeature()`。
+- **矩形阵列**：`pb.FeatureList.Add([feat])`；`rd = pb.PatternService.RectangularDefinition`；
+  `rd.XDirection = part.Directions.CreateDirection(Point3d, Vector3d(1,0,0), UpdateOption.WithinModeling)`；
+  `rd.XSpacing.NCopies.SetFormula("3")`、`rd.XSpacing.PitchDistance.SetFormula("120")`。
+  `NCopies` 是 **Expression**（直接赋 int 报只读），默认 2 个实例。
+- 三条都只动一个/一组具体边，判据看 **面数**（+1）与 **体积区间**。

@@ -90,7 +90,12 @@ def cmd_selftest(args) -> int:
             problems.append("%s 的动作 %r 未实现" % (c.id, c.action))
         if ('"%s": %s,' % (c.action, c.action)) not in actions_text:
             problems.append("%s 的动作 %r 没登记进 ACTIONS" % (c.id, c.action))
-        fake = dict(c.expect)
+        fake = {}
+        for key, val in c.expect.items():
+            if isinstance(val, dict) and {"min", "max"} <= set(val):
+                fake[key] = (val["min"] + val["max"]) / 2.0
+            else:
+                fake[key] = val
         checks = judges.compare(fake, c.expect)
         if not judges.verdict(checks):
             problems.append("%s 的判据对自身期望值不通过" % c.id)

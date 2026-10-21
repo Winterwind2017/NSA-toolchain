@@ -37,7 +37,7 @@ nxkit run                           # 全部，一次 NX 会话
 `nxkit run` 输出：
 
 ```
-22/22 通过  (会话 13.8s, 退出码 1)
+27/27 通过  (会话 13.8s, 退出码 1)
   PASS block.create           0.19s
   PASS boolean.subtract       0.05s
   ...
@@ -55,7 +55,7 @@ nxkit run                           # 全部，一次 NX 会话
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（22 条，全部真机通过）
+## 能力（27 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
