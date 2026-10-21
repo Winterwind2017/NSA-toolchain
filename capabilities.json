@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 65
+    "verified": 66
   },
-  "generated_at": "2026-10-21T21:17:58",
+  "generated_at": "2026-10-21T21:19:54",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -53,6 +53,7 @@
     "feature.chamfer_multi": "L1–L3",
     "feature.edge_blend": "L1–L3",
     "feature.edge_blend_all": "L1–L3",
+    "feature.extrude_taper": "L1–L3",
     "feature.hole_array": "L1–L3",
     "feature.hole_blind": "L1–L3",
     "feature.hole_csk": "L1–L3",
@@ -143,7 +144,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "e747926",
+    "kernel_commit": "2c9da2b",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -189,6 +190,7 @@
     "feature.chamfer_multi": "feature",
     "feature.edge_blend": "feature",
     "feature.edge_blend_all": "feature",
+    "feature.extrude_taper": "feature",
     "feature.hole_array": "feature",
     "feature.hole_blind": "feature",
     "feature.hole_csk": "feature",

@@ -82,11 +82,11 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **65** 条 verified 能力（内核 `nxkit 0.1.0`，commit `e747926`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **66** 条 verified 能力（内核 `nxkit 0.1.0`，commit `2c9da2b`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **特征（拉伸）**（20） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.boss`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_edge`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.edge_blend_all`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_csk`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.revolve`（L1–L3） `feature.shell`（L1–L3） `feature.tube`（L1–L3） |
+| **特征（拉伸）**（21） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.boss`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_edge`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.edge_blend_all`（L1–L3） `feature.extrude_taper`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_csk`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.revolve`（L1–L3） `feature.shell`（L1–L3） `feature.tube`（L1–L3） |
 | **实体**（6） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.cone_frustum`（L1–L3） `solid.sphere`（L1–L3） |
 | **装配**（5） | `asm.add_component`（L1–L2） `asm.four_components`（L1–L2） `asm.nested`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
 | **布尔**（5） | `boolean.intersect`（L1–L4） `boolean.intersect_two`（L1–L3） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） |
@@ -154,6 +154,7 @@ nxkit cap feature.hole_array    # 四个 Ø20 通孔：74867.26
 nxkit cap feature.hole_blind    # 盲孔 Ø20 深 10：96858.41
 nxkit cap feature.hole_csk      # 沉头孔 Ø20 通 + Ø30 深 5：91753.32
 nxkit cap feature.boss          # 圆柱凸台 Ø20×10（并集）：103141.59
+nxkit cap feature.extrude_taper  # 拉伸 10 带 5° 拔模：48697.88
 nxkit cap feature.pocket_blind  # 盲槽 40×20 深 10：92000
 nxkit cap feature.shell         # 抽壳 2 mm：29344
 nxkit cap feature.revolve       # 矩形绕 Z 转 360°：37699.11
