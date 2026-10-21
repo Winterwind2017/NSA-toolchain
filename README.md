@@ -98,7 +98,7 @@ python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（100 条，全部真机通过）
+## 能力（102 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
@@ -111,7 +111,7 @@ python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 | feature | `extrude.rect` `extrude.ring` |
 | assembly | `asm.add_component` `asm.two_components` `asm.three_components` `asm.four_components` `asm.nested` `asm.five_components` `asm.component_names` |
 | drawing | `drawing.sheet` `drawing.sheet_a4` `drawing.base_view` `drawing.view_isometric` |
-| attr | `attr.string` `attr.int` `attr.double` `attr.logical` `attr.on_body` `attr.on_feature` `attr.delete` `attr.update` `attr.count` |
+| attr | `attr.string` `attr.int` `attr.double` `attr.logical` `attr.on_body` `attr.on_feature` `attr.on_face` `attr.delete` `attr.update` `attr.count` |
 | measure | `measure.mass` `measure.face_area` `measure.face_single` |
 | inspect | `body.topo` `body_type` |
 | export | `export.step` `export.step_ap203` `export.iges` `export.acis` `export.stl` |

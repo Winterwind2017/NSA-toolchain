@@ -401,6 +401,13 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 114500.0, "max": 115500.0}},
         reopen=True),
+    Cap("feature.shell_volume", "feature", "抽壳 2 mm 后体积 29344", "feature_shell_volume", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 29200.0, "max": 29500.0}},
+        reopen=False),
+    Cap("attr.on_face", "attr", "属性挂在面上", "attr_on_face", "L2",
+        params={}, expect={"face_attr": "x1", "body_attr_empty": True},
+        reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:

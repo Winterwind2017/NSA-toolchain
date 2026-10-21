@@ -2710,7 +2710,50 @@ def boolean_unite_three(params, workdir, rec):
     return reads
 
 
+def feature_shell_volume(params, workdir, rec):
+    """抽壳 2 mm 后复测体积：100000 − 96×46×16 = 29344。"""
+    part = new_part("shellv")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    sb = part.Features.CreateShellBuilder(NXOpen.Features.Feature.Null)
+    try:
+        sb.Body = body
+        sb.SetDefaultThickness("2")
+        sb.Tolerance = 0.01
+        sb.CommitFeature()
+    finally:
+        try:
+            sb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def attr_on_face(params, workdir, rec):
+    """属性挂在面上（不是体/特征上）。"""
+    part = new_part("attrface")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    face = list(body.GetFaces())[0]
+    face.SetAttribute("NXKIT_FACE", "x1")
+    try:
+        body_val = str(body.GetStringAttribute("NXKIT_FACE"))
+    except Exception:
+        body_val = ""
+    reads = {"face_attr": str(face.GetStringAttribute("NXKIT_FACE")),
+             "body_attr_empty": body_val == ""}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "feature_shell_volume": feature_shell_volume,
+    "attr_on_face": attr_on_face,
     "file_save_copy": file_save_copy,
     "attr_count": attr_count,
     "boolean_unite_three": boolean_unite_three,
