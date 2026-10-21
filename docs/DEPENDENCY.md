@@ -1,7 +1,7 @@
 # 依赖分析与攻击顺序（DEPENDENCY）
 
 > 说明：这份文档回答一个问题——**先攻哪个、后攻哪个，才不会白费一轮**。
-> 生成时间 2026-10-21；能力数 121（L4 54）。
+> 生成时间 2026-10-21；能力数 122（L4 54）。
 
 ## 0. 结论先说
 
@@ -131,3 +131,11 @@ graph TD
 | 内部服务对象 / 求值器 | ❌ | hole（公差三元组）、move_body（ModlMotion 不生效）、pattern_body（ReferencePoint 服务）、offset_surface（FaceSetOffset） |
 
 **筛选规则**：动手前先看 builder 需要的是不是"能自己造出来的值"；需要服务对象就先找它的工厂方法，找不到直接判 C 级。
+
+## 8. 基准特征能当输入吗？分三种情况
+
+| 目标位置 | 接受 Datum 吗 | 证据 |
+|---|---|---|
+| 镜像/切分的平面 | ✅ 面的形式可以（`ToolFaces.FaceCollector`） | split/mirror 已通 |
+| 旋转轴 | ❌ 只认 `NXOpen.Axis`（`DatumAxis` 被拒） | revolve 报类型错 |
+| 拉伸起面 | 未测 | — |

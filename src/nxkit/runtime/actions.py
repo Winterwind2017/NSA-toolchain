@@ -3703,7 +3703,55 @@ def curve_offset_line(params, workdir, rec):
     return reads
 
 
+def surface_ruled(params, workdir, rec):
+    """两条相距 50 的 100 mm 直线做直纹面（片体面积 5000）。"""
+    part = new_part("ruled")
+    p = NXOpen.Point3d
+    l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+    l2 = part.Curves.CreateLine(p(0.0, 50.0, 30.0), p(100.0, 50.0, 30.0))
+    rb = part.Features.CreateRuledBuilder(NXOpen.Features.Feature.Null)
+    diag = {}
+    try:
+        # 直接往 builder 自己的 Section 里喂曲线（tube/sweep 的成熟套路）
+        for name, curve, seed in (("FirstSection", l1, p(0.0, 0.0, 0.0)),
+                                  ("SecondSection", l2, p(0.0, 50.0, 30.0))):
+            sec = getattr(rb, name)
+            try:
+                sec.AddToSection([part.ScRuleFactory.CreateRuleCurveDumb([curve])],
+                                 curve, None, None, seed,
+                                 NXOpen.Section.Mode.Create)
+                diag[name] = "AddToSection"
+            except Exception as exc:
+                diag[name] = "err:%s" % str(exc)[:80]
+        try:
+            rb.PositionTolerance = 0.01
+            diag["tol"] = 0.01
+        except Exception:
+            pass
+        feat = rb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+        feat = None
+    finally:
+        try:
+            rb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    sheets = [b for b in bodies if b.IsSheetBody]
+    reads = {"body_count": len(bodies), "sheet_count": len(sheets), "diag": diag}
+    if sheets:
+        faces = list(sheets[0].GetFaces())
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, faces)
+        reads["sheet_area"] = round(float(mf.Area), 4)
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "surface_ruled": surface_ruled,
     "curve_offset_line": curve_offset_line,
     "datum_plane_at": datum_plane_at,
     "datum_axis_at": datum_axis_at,

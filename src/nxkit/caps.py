@@ -288,6 +288,10 @@ CAPS: tuple[Cap, ...] = (
         reopen=True),
 
 
+    Cap("surface.ruled", "surface", "两直线直纹面（片体面积 5831）", "surface_ruled",
+        "L1–L2", params={},
+        expect={"sheet_count": 1,
+                "sheet_area": {"min": 5800.0, "max": 5860.0}}, reopen=False),
     Cap("surface.bounded_plane", "surface", "4 条线建有界平面片体", "surface_bounded_plane", "L1–L2",
         params={}, expect={"body_count": 1, "faces": 1,
                            "sheet_count_reopened": 1}, reopen=True),
