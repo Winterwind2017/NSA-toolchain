@@ -43,6 +43,27 @@ nxkit run                           # 全部，一次 NX 会话
   ...
 ```
 
+## 许可证档位
+
+NX 的每个特征调用都会 `JAM_reserve_uf_license("<feature>")`（反编译
+`UF_MODL_create_block1` 证实），所以"能不能做"首先是"有没有这个 feature"。
+
+```bash
+nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族缺不缺
+```
+
+本机 `.dat`（`C:\ProgramData\Siemens\siemens_SSQ.dat`）实测 **4,420 个 feature**，
+覆盖本仓库用到的全部四类：
+
+| 能力族 | 需要的 feature | 本机 |
+|---|---|---|
+| 建模 / 布尔 / 曲线 / 特征 / 草图 / 曲面 | `solid_modeling` | 有 |
+| 制图（图纸页、视图） | `drafting` | 有 |
+| 装配 | `assemblies` | 有 |
+| 部件 / 属性 / 测量 / 检查 / 导出 / 文件 | `gateway` | 有 |
+
+`selftest` 会自动做这项预检（读不到 `.dat` 时跳过，不误报）。
+
 ## 判据怎么算
 
 | 级别 | 内容 | 例子 |

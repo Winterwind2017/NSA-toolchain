@@ -11,6 +11,7 @@ capabilities:
     family: part
     level: L1
     status: verified
+    license: gateway
     action: part_new
     params: {'name': 'nxkit_part'}
     expect: {'part_name_ok': True, 'body_count': 0, 'units_mm': True}
@@ -21,6 +22,7 @@ capabilities:
     family: solid
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: block_create
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 100000.0, 'area_mm2': 16000.0}
@@ -31,6 +33,7 @@ capabilities:
     family: solid
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: block_two
     params: {'offset_x': 50.0}
     expect: {'body_count': 2, 'volume_mm3': 108000.0}
@@ -41,6 +44,7 @@ capabilities:
     family: boolean
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: boolean_subtract
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 92000.0, 'body_count_reopened': 1}
@@ -51,6 +55,7 @@ capabilities:
     family: boolean
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: boolean_union
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 100000.0, 'body_count_reopened': 1}
@@ -61,6 +66,7 @@ capabilities:
     family: boolean
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: boolean_intersect
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 8000.0, 'body_count_reopened': 1}
@@ -71,6 +77,7 @@ capabilities:
     family: solid
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: cylinder_create
     params: {'diameter': 40.0, 'height': 30.0}
     expect: {'body_count': 1, 'faces': 3, 'volume_mm3': 37699.11184307752}
@@ -81,6 +88,7 @@ capabilities:
     family: measure
     level: L3
     status: verified
+    license: gateway
     action: measure_mass
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'volume_mm3': 100000.0, 'area_mm2': 16000.0}
@@ -91,6 +99,7 @@ capabilities:
     family: inspect
     level: L1–L3
     status: verified
+    license: gateway
     action: body_topo
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'faces': 6, 'edges': 12}
@@ -101,6 +110,7 @@ capabilities:
     family: file
     level: L4
     status: verified
+    license: gateway
     action: file_roundtrip
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'volume_mm3': 100000.0, 'volume_reopened': 100000.0}
@@ -111,6 +121,7 @@ capabilities:
     family: curve
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: curve_line
     params: {'dx': 100.0, 'dy': 0.0, 'dz': 0.0}
     expect: {'length': 100.0, 'start': [0.0, 0.0, 0.0], 'end': [100.0, 0.0, 0.0]}
@@ -121,6 +132,7 @@ capabilities:
     family: curve
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: curve_arc
     params: {'radius': 25.0}
     expect: {'radius': 25.0, 'circumference': 157.07963267948966}
@@ -131,6 +143,7 @@ capabilities:
     family: attr
     level: L2–L4
     status: verified
+    license: gateway
     action: attr_string
     params: {'title': 'NXKIT_STR', 'value': 'hello-nx'}
     expect: {'attr_str': 'hello-nx', 'attr_after_reopen': 'hello-nx'}
@@ -141,6 +154,7 @@ capabilities:
     family: attr
     level: L2
     status: verified
+    license: gateway
     action: attr_int
     params: {'title': 'NXKIT_INT', 'value': 42}
     expect: {'attr_int': 42}
@@ -151,6 +165,7 @@ capabilities:
     family: feature
     level: L1–L4
     status: verified
+    license: solid_modeling
     action: extrude_rect
     params: {'length': 100.0, 'width': 50.0, 'distance': 10.0}
     expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 50000.0, 'area_mm2': 13000.0}
@@ -161,6 +176,7 @@ capabilities:
     family: assembly
     level: L1–L2
     status: verified
+    license: assemblies
     action: asm_add_component
     params: {}
     expect: {'components': 1}
@@ -171,6 +187,7 @@ capabilities:
     family: assembly
     level: L1–L4
     status: verified
+    license: assemblies
     action: asm_two_components
     params: {}
     expect: {'components': 2}
@@ -181,6 +198,7 @@ capabilities:
     family: export
     level: L1–L3
     status: verified
+    license: gateway
     action: export_step
     params: {}
     expect: {'export_head': 'ISO-10303-21'}
@@ -191,6 +209,7 @@ capabilities:
     family: export
     level: L1–L3
     status: verified
+    license: gateway
     action: export_iges
     params: {}
     expect: {'igs': True}
@@ -201,6 +220,7 @@ capabilities:
     family: drawing
     level: L1–L2
     status: verified
+    license: drafting
     action: drawing_sheet
     params: {'name': 'S1'}
     expect: {'sheet_created': True, 'sheet_height': 297.0, 'sheet_width': 420.0}
@@ -211,6 +231,7 @@ capabilities:
     family: drawing
     level: L1–L3
     status: verified
+    license: drafting
     action: drawing_base_view
     params: {'model_view': 'Front'}
     expect: {'view_created': True, 'model_view_used': 'Front'}
@@ -221,6 +242,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: extrude_ring
     params: {}
     expect: {'sections': 1, 'body_count': 1, 'volume_mm3': 42000.0, 'faces': 10}
@@ -231,6 +253,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: chamfer_one
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
@@ -241,6 +264,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: edge_blend_one
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
@@ -251,6 +275,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: pattern_linear
     params: {}
     expect: {'body_count': 3, 'volume_mm3': 300000.0}
@@ -261,6 +286,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_pocket
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 84000.0}
@@ -271,6 +297,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_hole_cyl
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 93716.81495770694}
@@ -281,6 +308,7 @@ capabilities:
     family: export
     level: L1–L2
     status: verified
+    license: gateway
     action: export_acis
     params: {}
     expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
@@ -291,6 +319,7 @@ capabilities:
     family: curve
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: curve_ellipse
     params: {}
     expect: {'ellipse_major': 50.0, 'ellipse_minor': 25.0}
@@ -301,6 +330,7 @@ capabilities:
     family: attr
     level: L2
     status: verified
+    license: gateway
     action: attr_on_body
     params: {}
     expect: {'body_attr': 'v1', 'body_count': 1}
@@ -311,6 +341,7 @@ capabilities:
     family: measure
     level: L3
     status: verified
+    license: gateway
     action: measure_face_area
     params: {}
     expect: {'faces': 6, 'total_face_area': 16000.0}
@@ -321,6 +352,7 @@ capabilities:
     family: solid
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: solid_cone
     params: {'diameter': 40.0, 'height': 30.0}
     expect: {'body_count': 1, 'volume_mm3': 12566.370614359172}
@@ -331,6 +363,7 @@ capabilities:
     family: solid
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: solid_sphere
     params: {'diameter': 40.0}
     expect: {'body_count': 1, 'volume_mm3': 33510.32163829112}
@@ -341,6 +374,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: pattern_grid
     params: {}
     expect: {'body_count': 4, 'volume_mm3': 400000.0}
@@ -351,6 +385,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: pattern_circular
     params: {}
     expect: {'body_count': 4, 'volume_mm3': 400000.0}
@@ -361,6 +396,7 @@ capabilities:
     family: export
     level: L1–L2
     status: verified
+    license: gateway
     action: export_step_ap203
     params: {}
     expect: {'export_ok': True, 'export_head': 'ISO-10303-21'}
@@ -371,6 +407,7 @@ capabilities:
     family: attr
     level: L2
     status: verified
+    license: gateway
     action: attr_on_feature
     params: {}
     expect: {'feature_attr': 'f1', 'feature_name': 'Block(0)'}
@@ -381,6 +418,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: chamfer_multi
     params: {}
     expect: {'body_count': 1, 'faces': {'min': 10.0, 'max': 12.0}, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
@@ -391,6 +429,7 @@ capabilities:
     family: boolean
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: boolean_two_tools
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 84000.0}
@@ -401,6 +440,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: hole_array
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 74867.25849365017}
@@ -411,6 +451,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_shell
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 28000.0, 'max': 30000.0}}
@@ -421,6 +462,7 @@ capabilities:
     family: sketch
     level: L1–L2
     status: verified
+    license: solid_modeling
     action: sketch_rect
     params: {}
     expect: {'sketches': 1, 'activated': True, 'lines_added': 4, 'curves': {'min': 4.0, 'max': 8.0}}
@@ -431,6 +473,7 @@ capabilities:
     family: sketch
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: sketch_extrude
     params: {}
     expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 50000.0}
@@ -441,6 +484,7 @@ capabilities:
     family: sketch
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: sketch_circle_extrude
     params: {}
     expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 37699.11184307752}
@@ -451,6 +495,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_pocket_blind
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 92000.0}
@@ -461,6 +506,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_hole_blind
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 96858.40734641021}
@@ -471,6 +517,7 @@ capabilities:
     family: drawing
     level: L1–L2
     status: verified
+    license: drafting
     action: drawing_sheet_size
     params: {'size': 'A4'}
     expect: {'sheet_created': True, 'sheet_height': 210.0, 'sheet_width': 297.0}
@@ -481,6 +528,7 @@ capabilities:
     family: drawing
     level: L1–L2
     status: verified
+    license: drafting
     action: drawing_view_named
     params: {'model_view': 'Isometric'}
     expect: {'view_created': True, 'view_name': 'Isometric@1'}
@@ -491,6 +539,7 @@ capabilities:
     family: assembly
     level: L1–L2
     status: verified
+    license: assemblies
     action: asm_three_components
     params: {}
     expect: {'components': 3}
@@ -501,6 +550,7 @@ capabilities:
     family: export
     level: L1–L2
     status: verified
+    license: gateway
     action: export_stl
     params: {}
     expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
@@ -511,6 +561,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_revolve
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 37600.0, 'max': 37800.0}}
@@ -521,6 +572,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: edge_blend_all
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
@@ -531,6 +583,7 @@ capabilities:
     family: measure
     level: L3
     status: verified
+    license: gateway
     action: measure_face_single
     params: {}
     expect: {'face_area_max': 5000.0, 'face_perimeter_max': 300.0}
@@ -541,6 +594,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: chamfer_edge
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98500.0, 'max': 100000.0}}
@@ -551,6 +605,7 @@ capabilities:
     family: surface
     level: L1–L2
     status: verified
+    license: solid_modeling
     action: surface_bounded_plane
     params: {}
     expect: {'body_count': 1, 'faces': 1}
@@ -561,6 +616,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_tube
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 30000.0, 'max': 33000.0}}
@@ -571,6 +627,7 @@ capabilities:
     family: curve
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: curve_hyperbola
     params: {}
     expect: {'semi_transverse': 50.0, 'semi_conjugate': 25.0}
@@ -581,6 +638,7 @@ capabilities:
     family: curve
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: curve_parabola
     params: {}
     expect: {'focal_length': 20.0}
@@ -591,6 +649,7 @@ capabilities:
     family: boolean
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: boolean_intersect_two
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 12000.0}
@@ -601,6 +660,7 @@ capabilities:
     family: inspect
     level: L1–L2
     status: verified
+    license: gateway
     action: inspect_body_type
     params: {}
     expect: {'solid_is_solid': True, 'solid_is_sheet': False, 'sheet_is_sheet': True, 'sheet_is_solid': False}
@@ -611,6 +671,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_hole_csk
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 91700.0, 'max': 91800.0}}
@@ -621,6 +682,7 @@ capabilities:
     family: solid
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: solid_cone_frustum
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 21900.0, 'max': 22100.0}}
@@ -631,6 +693,7 @@ capabilities:
     family: assembly
     level: L1–L2
     status: verified
+    license: assemblies
     action: asm_four_components
     params: {}
     expect: {'components': 4}
@@ -641,6 +704,7 @@ capabilities:
     family: assembly
     level: L1–L2
     status: verified
+    license: assemblies
     action: asm_nested
     params: {}
     expect: {'components': 2}
@@ -651,6 +715,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_boss
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 103000.0, 'max': 103300.0}}
@@ -661,6 +726,7 @@ capabilities:
     family: feature
     level: L1–L3
     status: verified
+    license: solid_modeling
     action: feature_extrude_taper
     params: {}
     expect: {'body_count': 1, 'faces': 6, 'volume_mm3': {'min': 48600.0, 'max': 48800.0}}

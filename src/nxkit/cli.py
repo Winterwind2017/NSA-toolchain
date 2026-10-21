@@ -107,12 +107,40 @@ def cmd_selftest(args) -> int:
             bad[key] = (val * 2 + 1) if isinstance(val, (int, float)) else str(val) + "x"
             if judges.verdict(judges.compare(bad, c.expect)):
                 problems.append("%s 的判据对错误读数也通过（判据无效）" % c.id)
+    from . import license as lic
+
+    if lic.summary()["readable"]:
+        for cid, name in lic.missing(caps.licenses()):
+            problems.append("%s 需要许可 %r，本机 .dat 里没有" % (cid, name))
     if problems:
         print("自检失败：")
         for p in problems:
             print("  -", p)
         return 4
     print("自检通过：%d 条能力，动作与判据齐全，负例都能被拒绝" % len(caps.CAPS))
+    return 0
+
+
+def cmd_licenses(args):
+    from . import license as lic
+    from . import caps as caps_mod
+
+    info = lic.summary(args.dat)
+    print("许可证文件: %s" % info["dat"])
+    if not info["readable"]:
+        print("读不到（跳过预检）；用 SPLM_LICENSE_SERVER 或 --dat 指定")
+        return 0
+    print("feature 总数: %d" % info["count"])
+    needed = sorted({l for _, l in caps_mod.licenses()})
+    missing = lic.missing(caps_mod.licenses())
+    for name in needed:
+        print("  %-18s %s" % (name, "有" if lic.has(name, args.dat) else "缺"))
+    if missing:
+        print("缺许可的能力 %d 条:" % len(missing))
+        for cid, name in missing[:20]:
+            print("  - %s 需要 %s" % (cid, name))
+        return 4
+    print("本机许可覆盖全部已登记能力")
     return 0
 
 
@@ -143,6 +171,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--timeout", type=float, default=900.0)
     s.add_argument("--json", action="store_true")
     s.set_defaults(func=cmd_run)
+
+    s = sub.add_parser("licenses", help="读 .dat，检查能力所需许可")
+    s.add_argument("--dat", default=None, help="SPLM .dat 路径")
+    s.set_defaults(func=cmd_licenses)
 
     s = sub.add_parser("selftest", help="离线自检（不需要 NX）")
     s.set_defaults(func=cmd_selftest)

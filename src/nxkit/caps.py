@@ -11,6 +11,23 @@ from dataclasses import dataclass, field
 BLOCK = {"length": 100.0, "width": 50.0, "height": 20.0}
 
 
+FAMILY_LICENSE: dict[str, str] = {
+    "part": "gateway",
+    "solid": "solid_modeling",
+    "boolean": "solid_modeling",
+    "curve": "solid_modeling",
+    "feature": "solid_modeling",
+    "sketch": "solid_modeling",
+    "surface": "solid_modeling",
+    "drawing": "drafting",
+    "assembly": "assemblies",
+    "attr": "gateway",
+    "measure": "gateway",
+    "inspect": "gateway",
+    "export": "gateway",
+    "file": "gateway",
+}
+
 @dataclass(frozen=True)
 class Cap:
     id: str
@@ -21,6 +38,11 @@ class Cap:
     params: dict = field(default_factory=dict)
     expect: dict = field(default_factory=dict)
     reopen: bool = True
+
+    @property
+    def license(self) -> str | None:
+        """这条能力需要的 NX feature（按家族）。"""
+        return FAMILY_LICENSE.get(self.family)
 
 
 CAPS: tuple[Cap, ...] = (
@@ -285,6 +307,11 @@ CAPS: tuple[Cap, ...] = (
                            "volume_mm3": {"min": 48600.0, "max": 48800.0}},
         reopen=True),
 )
+
+def licenses() -> list[tuple[str, str]]:
+    """(cap_id, license) 列表，供许可证预检用。"""
+    return [(c.id, c.license) for c in CAPS if c.license]
+
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
 FAMILIES: tuple[str, ...] = tuple(sorted({c.family for c in CAPS}))

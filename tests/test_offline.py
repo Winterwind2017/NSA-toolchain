@@ -74,3 +74,23 @@ def test_actions_exist_for_every_cap() -> None:
         assert ("def %s(" % c.action) in text, c.action
         assert ('"%s": %s,' % (c.action, c.action)) in text, (
             "%s 没登记进 ACTIONS（会导致整会话 0 通过）" % c.action)
+
+
+def test_every_cap_declares_license() -> None:
+    for c in caps.CAPS:
+        assert c.license, c.id
+        assert c.license in {"gateway", "solid_modeling", "drafting", "assemblies"}
+
+
+def test_license_dat_parses() -> None:
+    """本机有 .dat 时必须能解析出 feature；没有则跳过（不误报）。"""
+    from nxkit import license as lic
+
+    info = lic.summary()
+    if not info["readable"]:
+        import pytest
+
+        pytest.skip("本机没有可读的 SPLM .dat")
+    assert info["count"] > 1000
+    for need in ("gateway", "solid_modeling", "drafting", "assemblies"):
+        assert lic.has(need), need
