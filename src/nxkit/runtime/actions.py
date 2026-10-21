@@ -905,7 +905,14 @@ def attr_on_body(params, workdir, rec):
     body.SetAttribute("NXKIT_BODY", "v1")
     reads = {"body_attr": str(body.GetStringAttribute("NXKIT_BODY")),
              "body_count": 1}
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "attrbody.prt"))
+    bodies2 = _bodies_of(part2)
+    try:
+        attr2 = str(bodies2[0].GetStringAttribute("NXKIT_BODY"))
+    except Exception:
+        attr2 = ""
+    reads["body_attr_reopened"] = attr2
+    _close_part(part2)
     return reads
 
 
@@ -920,7 +927,14 @@ def measure_face_area(params, workdir, rec):
     reads = {"faces": len(faces),
              "total_face_area": float(mf.Area),
              "perimeter": float(mf.Perimeter)}
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "facearea.prt"))
+    bodies2 = _bodies_of(part2)
+    if bodies2:
+        faces2 = list(bodies2[0].GetFaces())
+        mf2 = part2.MeasureManager.NewFaceProperties(
+            _unit(part2), _unit(part2), 0.99, faces2)
+        reads["total_face_area_reopened"] = float(mf2.Area)
+    _close_part(part2)
     return reads
 
 
@@ -1749,7 +1763,10 @@ def surface_bounded_plane(params, workdir, rec):
     bodies = _bodies_of(part)
     reads["body_count"] = len(bodies)
     reads["faces"] = len(bodies[0].GetFaces()) if bodies else 0
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "bplane.prt"))
+    sheets2 = [b for b in _bodies_of(part2) if b.IsSheetBody]
+    reads["sheet_count_reopened"] = len(sheets2)
+    _close_part(part2)
     return reads
 
 

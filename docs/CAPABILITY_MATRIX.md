@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **108** 条，全部真机通过；其中 **46** 条带 L4（存盘 → 重开 → 复测）。
+总计 **108** 条，全部真机通过；其中 **49** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -8,18 +8,18 @@
 |---|---:|---:|---|
 | feature | 27 | 27 | solid_modeling |
 | sketch | 17 | 2 | solid_modeling |
-| attr | 10 | 1 | gateway |
+| attr | 10 | 2 | gateway |
 | drawing | 10 | 0 | drafting |
 | assembly | 8 | 1 | assemblies |
 | export | 7 | 0 | gateway |
 | boolean | 6 | 6 | solid_modeling |
 | solid | 6 | 6 | solid_modeling |
 | curve | 5 | 0 | solid_modeling |
-| measure | 5 | 1 | gateway |
+| measure | 5 | 2 | gateway |
 | file | 2 | 1 | gateway |
 | inspect | 2 | 0 | gateway |
 | part | 2 | 1 | gateway |
-| surface | 1 | 0 | solid_modeling |
+| surface | 1 | 1 | solid_modeling |
 
 ## 按许可档位
 
@@ -63,8 +63,8 @@
 | `feature.hole_cyl` | feature | L1–L3 | 是 | solid_modeling |
 | `export.acis` | export | L1–L2 | — | gateway |
 | `curve.ellipse` | curve | L1–L3 | — | solid_modeling |
-| `attr.on_body` | attr | L2 | — | gateway |
-| `measure.face_area` | measure | L3 | — | gateway |
+| `attr.on_body` | attr | L2 | 是 | gateway |
+| `measure.face_area` | measure | L3 | 是 | gateway |
 | `solid.cone` | solid | L1–L3 | 是 | solid_modeling |
 | `solid.sphere` | solid | L1–L3 | 是 | solid_modeling |
 | `feature.pattern_grid` | feature | L1–L3 | 是 | solid_modeling |
@@ -88,7 +88,7 @@
 | `feature.edge_blend_all` | feature | L1–L3 | 是 | solid_modeling |
 | `measure.face_single` | measure | L3 | — | gateway |
 | `feature.chamfer_edge` | feature | L1–L3 | 是 | solid_modeling |
-| `surface.bounded_plane` | surface | L1–L2 | — | solid_modeling |
+| `surface.bounded_plane` | surface | L1–L2 | 是 | solid_modeling |
 | `feature.tube` | feature | L1–L3 | 是 | solid_modeling |
 | `curve.hyperbola` | curve | L1–L3 | — | solid_modeling |
 | `curve.parabola` | curve | L1–L3 | — | solid_modeling |

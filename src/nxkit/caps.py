@@ -159,11 +159,14 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"ellipse_major": 50.0, "ellipse_minor": 25.0},
         reopen=False),
     Cap("attr.on_body", "attr", "实体上写字符串属性", "attr_on_body", "L2",
-        params={}, expect={"body_attr": "v1", "body_count": 1}, reopen=False),
+        params={}, expect={"body_attr": "v1", "body_count": 1,
+                           "body_attr_reopened": "v1"}, reopen=True),
 
     Cap("measure.face_area", "measure", "六面面积和/周长", "measure_face_area", "L3",
         params={},
-        expect={"faces": 6, "total_face_area": 16000.0}, reopen=False),
+        expect={"faces": 6, "total_face_area": 16000.0,
+                           "total_face_area_reopened": {"min": 15990.0, "max": 16010.0}},
+        reopen=True),
     Cap("solid.cone", "solid", "Ø40×30 圆锥", "solid_cone", "L1–L3",
         params={"diameter": 40.0, "height": 30.0},
         expect={"body_count": 1, "volume_mm3": 12566.370614359172},
@@ -257,7 +260,8 @@ CAPS: tuple[Cap, ...] = (
 
 
     Cap("surface.bounded_plane", "surface", "4 条线建有界平面片体", "surface_bounded_plane", "L1–L2",
-        params={}, expect={"body_count": 1, "faces": 1}, reopen=False),
+        params={}, expect={"body_count": 1, "faces": 1,
+                           "sheet_count_reopened": 1}, reopen=True),
 
 
     Cap("feature.tube", "feature", "沿直线做 Ø20 管（实体）", "feature_tube", "L1–L3",
