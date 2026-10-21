@@ -27,7 +27,9 @@
   方向是 mark=2/4，刚好相反。结果就是"调用成功返回 None、选中数恒为 1"。
 
 这些不是"参数没调对"，所以这个仓库的做法是：**保留工具名以便迁移，实现全部按实测配方重写**，
-并把结论写进 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md)。上游署名见 [`NOTICE.md`](NOTICE.md)。
+并把结论写进 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md)。
+
+「调用返回成功、几何量却不动」这一类单独归到 [`docs/SILENT_FAILURES.md`](docs/SILENT_FAILURES.md)（逐项证据 + 共性教训 + 复核触发条件）。上游署名见 [`NOTICE.md`](NOTICE.md)。
 
 ---
 
