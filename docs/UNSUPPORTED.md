@@ -14,7 +14,7 @@
 | 能力 | 卡在哪（真机证据） | 依赖 |
 |---|---|---|
 | `feature.chamfer` | `CreateChamferBuilder(...).SmartCollector` 是 **None**，没有可写的边集合；直接 `CommitFeature()` 报 `Referenced edge does not exist` | 需要找到边选择的正确挂点（`SelectEdge`/selection intent） |
-| `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝**点/面/列表（`No overload matches`），`CommitFeature()` 报 `Hole position not found. Specify a position.` | 需要点位 Section 的正确喂法 |
+| `feature.hole` | 依赖分析的"Section 吃曲线"成立：`HolePosition.AddToSection` **接受短线段**（不再报 No overload）；`BooleanOperation.SetTargetBodies([body])` 也被接受。但 `CommitFeature()` 最后卡在 **`The Tolerance Specification requires three numbers`**——`hb.Tolerance` 是单个 float（赋值 0.01 也没用），要的是三元组规格 | 需要三元组公差规格的正确设置方式 |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 | 依赖基础视图（已通） |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints`（解算） | 约束对象 + 两个面参考已能建（见能力 `asm.constraint_refs`），但 `GetConstraintStatus()` 仍是 `NewlyCreated(0)`，`SolvePostponedConstraints()` 也不推成 Solved；另外 `CreateConstraintReference(geometry, movable_object, uses_axis, is_indirect)` 的**参数顺序与文档相反**（先几何后组件） | 需要正确的求解触发方式 |
@@ -31,7 +31,7 @@
 
 （暂无。）
 
-| `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝**点/面/列表（`No overload matches`），`CommitFeature()` 报 `Hole position not found. Specify a position.` | 需要点位 Section 的正确喂法 |
+| `feature.hole` | 依赖分析的"Section 吃曲线"成立：`HolePosition.AddToSection` **接受短线段**（不再报 No overload）；`BooleanOperation.SetTargetBodies([body])` 也被接受。但 `CommitFeature()` 最后卡在 **`The Tolerance Specification requires three numbers`**——`hb.Tolerance` 是单个 float（赋值 0.01 也没用），要的是三元组规格 | 需要三元组公差规格的正确设置方式 |
 
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing target body` | 需要正确的选择集初始化方式 |
 
