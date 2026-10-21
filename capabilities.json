@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 121
+    "verified": 122
   },
-  "generated_at": "2026-10-22T00:25:37",
+  "generated_at": "2026-10-22T00:30:40",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -134,7 +134,8 @@
     "solid.scale": "L1–L3",
     "solid.sphere": "L1–L3",
     "solid.split_body": "L1–L3",
-    "surface.bounded_plane": "L1–L2"
+    "surface.bounded_plane": "L1–L2",
+    "surface.ruled": "L1–L2"
   },
   "licenses": {
     "asm.add_component": "assemblies",
@@ -257,9 +258,14 @@
     "solid.scale": "solid_modeling",
     "solid.sphere": "solid_modeling",
     "solid.split_body": "solid_modeling",
-    "surface.bounded_plane": "solid_modeling"
+    "surface.bounded_plane": "solid_modeling",
+    "surface.ruled": "solid_modeling"
   },
   "pending": [
+    {
+      "id": "feature.revolve_datum",
+      "reason": "RevolveBuilder.Axis 只认 NXOpen.Axis，DatumAxis 被拒"
+    },
     {
       "id": "sketch.slope",
       "reason": "报 Unable to create sketch geometric constraint"
@@ -323,7 +329,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "f4cd4cc",
+    "kernel_commit": "92e71a1",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -449,6 +455,7 @@
     "solid.scale": "solid",
     "solid.sphere": "solid",
     "solid.split_body": "solid",
-    "surface.bounded_plane": "surface"
+    "surface.bounded_plane": "surface",
+    "surface.ruled": "surface"
   }
 }

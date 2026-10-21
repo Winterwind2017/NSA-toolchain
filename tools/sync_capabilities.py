@@ -35,6 +35,7 @@ GROUP_LABEL = {
 
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
+    ("feature.revolve_datum", "RevolveBuilder.Axis 只认 NXOpen.Axis，DatumAxis 被拒"),
     ("sketch.slope", "报 Unable to create sketch geometric constraint"),
     ("sketch.point_on_curve", "约束能建但几何不动（无 Solve 触发）"),
     ("pattern.body_linear", "ReferencePoint 是服务 builder，缺配置报 Incorrect object"),

@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **121** 条 verified 能力（内核 `nxkit 0.1.0`，commit `f4cd4cc`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **122** 条 verified 能力（内核 `nxkit 0.1.0`，commit `92e71a1`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -101,7 +101,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **部件**（4） | `datum.axis`（L1–L2） `datum.plane`（L1–L2） `part.inch`（L1–L3） `part.new`（L1） |
 | **文件**（2） | `file.roundtrip`（L4） `file.save_copy`（L1–L4） |
 | **拓扑检查**（2） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） |
-| **surface**（1） | `surface.bounded_plane`（L1–L2） |
+| **surface**（2） | `surface.bounded_plane`（L1–L2） `surface.ruled`（L1–L2） |
 <!-- gen:capabilities:END -->
 
 ## 还没打通（别重复试）
