@@ -1395,6 +1395,65 @@ def sketch_circle_extrude(params, workdir, rec):
     return reads
 
 
+def feature_pocket_blind(params, workdir, rec):
+    """盲槽：40×20 深 10 → 100000 - 8000 = 92000。"""
+    part = new_part("pockb")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = _extrude_rect_body(part, 30.0, 15.0, 40.0, 20.0, 10.0)
+    return _volume_after_boolean(part, fa, fb, "Subtract")
+
+
+def feature_hole_blind(params, workdir, rec):
+    """盲孔：Ø20 深 10 → 100000 - 3141.59 = 96858.41。"""
+    part = new_part("holeb")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_cylinder(part, 50.0, 25.0, 0.0, 20.0, 10.0)
+    return _volume_after_boolean(part, fa, fb, "Subtract")
+
+
+def drawing_sheet_size(params, workdir, rec):
+    """指定图幅（默认 A4）→ 297×210。"""
+    part = new_part("drw4")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    size = getattr(ss, str(params.get("size", "A4")))
+    sheet = part.DrawingSheets.InsertSheet("S1", size, 1.0, 1.0, pa.FirstAngle)
+    reads = {"sheet_created": sheet is not None,
+             "sheet_height": float(sheet.Height),
+             "sheet_width": float(sheet.Length)}
+    _close_part(part)
+    return reads
+
+
+def drawing_view_named(params, workdir, rec):
+    """指定模型方向的基准视图（默认 Isometric）。"""
+    part = new_part("bvw2")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+    name = str(params.get("model_view", "Isometric"))
+    model_view = None
+    for v in part.ModelingViews:
+        if str(v.Name) == name:
+            model_view = v
+            break
+    vb = part.DraftingViews.CreateBaseViewBuilder(NXOpen.Drawings.BaseView.Null)
+    try:
+        vb.SelectModelView.SelectedView = model_view
+        view = vb.Commit()
+    finally:
+        try:
+            vb.Destroy()
+        except Exception:
+            pass
+    reads = {"view_name": str(view.Name),
+             "view_created": view is not None}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1443,6 +1502,10 @@ ACTIONS = {
     "sketch_rect": sketch_rect,
     "sketch_extrude": sketch_extrude,
     "sketch_circle_extrude": sketch_circle_extrude,
+    "feature_pocket_blind": feature_pocket_blind,
+    "feature_hole_blind": feature_hole_blind,
+    "drawing_sheet_size": drawing_sheet_size,
+    "drawing_view_named": drawing_view_named,
 }
 
 

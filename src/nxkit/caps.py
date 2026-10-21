@@ -193,6 +193,20 @@ CAPS: tuple[Cap, ...] = (
     Cap("sketch.circle_extrude", "sketch", "草图整圆拉伸 30 → 37699.11", "sketch_circle_extrude", "L1–L3",
         params={}, expect={"sketches": 1, "body_count": 1,
                            "volume_mm3": 37699.11184307752}, reopen=False),
+
+    Cap("feature.pocket_blind", "feature", "盲槽 40×20 深 10", "feature_pocket_blind", "L1–L3",
+        params={}, expect={"body_count": 1, "volume_mm3": 92000.0}, reopen=False),
+    Cap("feature.hole_blind", "feature", "盲孔 Ø20 深 10", "feature_hole_blind", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": 96858.40734641021}, reopen=False),
+
+    Cap("drawing.sheet_a4", "drawing", "A4 图纸页（297×210）", "drawing_sheet_size", "L1–L2",
+        params={"size": "A4"},
+        expect={"sheet_created": True, "sheet_height": 210.0, "sheet_width": 297.0},
+        reopen=False),
+    Cap("drawing.view_isometric", "drawing", "等轴测基准视图", "drawing_view_named", "L1–L2",
+        params={"model_view": "Isometric"},
+        expect={"view_created": True, "view_name": "Isometric@1"}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

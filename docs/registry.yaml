@@ -4,7 +4,7 @@ kernel: nxkit 0.1.0
 engine: NX 2512 (DesigncenterNX2512)
 verified_at: 2026-10-21
 counts:
-  verified: 44
+  verified: 48
 capabilities:
   - id: part.new
     family: part
@@ -14,7 +14,7 @@ capabilities:
     params: {'name': 'nxkit_part'}
     expect: {'part_name_ok': True, 'body_count': 0, 'units_mm': True}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, part_name_ok, units_mm]
   - id: block.create
     family: solid
@@ -24,7 +24,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 100000.0, 'area_mm2': 16000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [area_mm2, body_count, edges, faces, volume_mm3]
   - id: block.two_bodies
     family: solid
@@ -34,7 +34,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 2, 'volume_mm3': 108000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: boolean.subtract
     family: boolean
@@ -44,7 +44,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 92000.0, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: boolean.union
     family: boolean
@@ -54,7 +54,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 100000.0, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: boolean.intersect
     family: boolean
@@ -64,7 +64,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 8000.0, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: cylinder.create
     family: solid
@@ -74,7 +74,7 @@ capabilities:
     params: {'diameter': 40.0, 'height': 30.0}
     expect: {'body_count': 1, 'faces': 3, 'volume_mm3': 37699.11184307752}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, faces, volume_mm3]
   - id: measure.mass
     family: measure
@@ -84,7 +84,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'volume_mm3': 100000.0, 'area_mm2': 16000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [area_mm2, volume_mm3]
   - id: body.topo
     family: inspect
@@ -94,7 +94,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'faces': 6, 'edges': 12}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [edges, faces]
   - id: file.roundtrip
     family: file
@@ -104,7 +104,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'volume_mm3': 100000.0, 'volume_reopened': 100000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [volume_mm3, volume_reopened]
   - id: curve.line
     family: curve
@@ -114,7 +114,7 @@ capabilities:
     params: {'dx': 100.0, 'dy': 0.0, 'dz': 0.0}
     expect: {'length': 100.0, 'start': [0.0, 0.0, 0.0], 'end': [100.0, 0.0, 0.0]}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [end, length, start]
   - id: curve.arc
     family: curve
@@ -124,7 +124,7 @@ capabilities:
     params: {'radius': 25.0}
     expect: {'radius': 25.0, 'circumference': 157.07963267948966}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [circumference, radius]
   - id: attr.string
     family: attr
@@ -134,7 +134,7 @@ capabilities:
     params: {'title': 'NXKIT_STR', 'value': 'hello-nx'}
     expect: {'attr_str': 'hello-nx', 'attr_after_reopen': 'hello-nx'}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [attr_after_reopen, attr_str]
   - id: attr.int
     family: attr
@@ -144,7 +144,7 @@ capabilities:
     params: {'title': 'NXKIT_INT', 'value': 42}
     expect: {'attr_int': 42}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [attr_int]
   - id: extrude.rect
     family: feature
@@ -154,7 +154,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'distance': 10.0}
     expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 50000.0, 'area_mm2': 13000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [area_mm2, body_count, edges, faces, volume_mm3]
   - id: asm.add_component
     family: assembly
@@ -164,7 +164,7 @@ capabilities:
     params: {}
     expect: {'components': 1}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [components]
   - id: asm.two_components
     family: assembly
@@ -174,7 +174,7 @@ capabilities:
     params: {}
     expect: {'components': 2}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [components]
   - id: export.step
     family: export
@@ -184,7 +184,7 @@ capabilities:
     params: {}
     expect: {'export_head': 'ISO-10303-21'}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [export_head]
   - id: export.iges
     family: export
@@ -194,7 +194,7 @@ capabilities:
     params: {}
     expect: {'igs': True}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [igs]
   - id: drawing.sheet
     family: drawing
@@ -204,7 +204,7 @@ capabilities:
     params: {'name': 'S1'}
     expect: {'sheet_created': True, 'sheet_height': 297.0, 'sheet_width': 420.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [sheet_created, sheet_height, sheet_width]
   - id: drawing.base_view
     family: drawing
@@ -214,7 +214,7 @@ capabilities:
     params: {'model_view': 'Front'}
     expect: {'view_created': True, 'model_view_used': 'Front'}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [model_view_used, view_created]
   - id: extrude.ring
     family: feature
@@ -224,7 +224,7 @@ capabilities:
     params: {}
     expect: {'sections': 1, 'body_count': 1, 'volume_mm3': 42000.0, 'faces': 10}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, faces, sections, volume_mm3]
   - id: feature.chamfer
     family: feature
@@ -234,7 +234,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, faces, volume_mm3]
   - id: feature.edge_blend
     family: feature
@@ -244,7 +244,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, faces, volume_mm3]
   - id: feature.pattern_linear
     family: feature
@@ -254,7 +254,7 @@ capabilities:
     params: {}
     expect: {'body_count': 3, 'volume_mm3': 300000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: feature.pocket
     family: feature
@@ -264,7 +264,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 84000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: feature.hole_cyl
     family: feature
@@ -274,7 +274,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 93716.81495770694}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: export.acis
     family: export
@@ -284,7 +284,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [export_bytes, export_ok]
   - id: curve.ellipse
     family: curve
@@ -294,7 +294,7 @@ capabilities:
     params: {}
     expect: {'ellipse_major': 50.0, 'ellipse_minor': 25.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [ellipse_major, ellipse_minor]
   - id: attr.on_body
     family: attr
@@ -304,7 +304,7 @@ capabilities:
     params: {}
     expect: {'body_attr': 'v1', 'body_count': 1}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_attr, body_count]
   - id: measure.face_area
     family: measure
@@ -314,7 +314,7 @@ capabilities:
     params: {}
     expect: {'faces': 6, 'total_face_area': 16000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [faces, total_face_area]
   - id: solid.cone
     family: solid
@@ -324,7 +324,7 @@ capabilities:
     params: {'diameter': 40.0, 'height': 30.0}
     expect: {'body_count': 1, 'volume_mm3': 12566.370614359172}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: solid.sphere
     family: solid
@@ -334,7 +334,7 @@ capabilities:
     params: {'diameter': 40.0}
     expect: {'body_count': 1, 'volume_mm3': 33510.32163829112}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: feature.pattern_grid
     family: feature
@@ -344,7 +344,7 @@ capabilities:
     params: {}
     expect: {'body_count': 4, 'volume_mm3': 400000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: feature.pattern_circular
     family: feature
@@ -354,7 +354,7 @@ capabilities:
     params: {}
     expect: {'body_count': 4, 'volume_mm3': 400000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: export.step_ap203
     family: export
@@ -364,7 +364,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'export_head': 'ISO-10303-21'}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [export_head, export_ok]
   - id: attr.on_feature
     family: attr
@@ -374,7 +374,7 @@ capabilities:
     params: {}
     expect: {'feature_attr': 'f1', 'feature_name': 'Block(0)'}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [feature_attr, feature_name]
   - id: feature.chamfer_multi
     family: feature
@@ -384,7 +384,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 10, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, faces, volume_mm3]
   - id: boolean.two_tools
     family: boolean
@@ -394,7 +394,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 84000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: feature.hole_array
     family: feature
@@ -404,7 +404,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 74867.25849365017}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: feature.shell
     family: feature
@@ -414,7 +414,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 28000.0, 'max': 30000.0}}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, volume_mm3]
   - id: sketch.rect
     family: sketch
@@ -424,7 +424,7 @@ capabilities:
     params: {}
     expect: {'sketches': 1, 'activated': True, 'lines_added': 4, 'curves': {'min': 4.0, 'max': 8.0}}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [activated, curves, lines_added, sketches]
   - id: sketch.extrude
     family: sketch
@@ -434,7 +434,7 @@ capabilities:
     params: {}
     expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 50000.0}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, sketches, volume_mm3]
   - id: sketch.circle_extrude
     family: sketch
@@ -444,5 +444,45 @@ capabilities:
     params: {}
     expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 37699.11184307752}
     evidence:
-      run: _runs/p10-full (44/44)
+      run: _runs/p11-full (48/48)
       checks: [body_count, sketches, volume_mm3]
+  - id: feature.pocket_blind
+    family: feature
+    level: L1–L3
+    status: verified
+    action: feature_pocket_blind
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 92000.0}
+    evidence:
+      run: _runs/p11-full (48/48)
+      checks: [body_count, volume_mm3]
+  - id: feature.hole_blind
+    family: feature
+    level: L1–L3
+    status: verified
+    action: feature_hole_blind
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 96858.40734641021}
+    evidence:
+      run: _runs/p11-full (48/48)
+      checks: [body_count, volume_mm3]
+  - id: drawing.sheet_a4
+    family: drawing
+    level: L1–L2
+    status: verified
+    action: drawing_sheet_size
+    params: {'size': 'A4'}
+    expect: {'sheet_created': True, 'sheet_height': 210.0, 'sheet_width': 297.0}
+    evidence:
+      run: _runs/p11-full (48/48)
+      checks: [sheet_created, sheet_height, sheet_width]
+  - id: drawing.view_isometric
+    family: drawing
+    level: L1–L2
+    status: verified
+    action: drawing_view_named
+    params: {'model_view': 'Isometric'}
+    expect: {'view_created': True, 'view_name': 'Isometric@1'}
+    evidence:
+      run: _runs/p11-full (48/48)
+      checks: [view_created, view_name]

@@ -18,7 +18,8 @@
 | `feature.revolve` | `CreateRevolveBuilder` + `Section` + `Axes.CreateAxis` 后 `CommitFeature()` 报 **内存访问违例** | 需要换截面/轴构造方式 |
 | `feature.mirror` | `MirrorFeatureBuilder.Plane` **只读**（只能 `PlaneOption` + `PlaneConstructor`），未找到可写入口 | 需要 PlaneConstructor 用法 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
-| `asm.constraints` | 装配约束 API 未挖 | 依赖组件（已通） |
+| `asm.constraints` | 只有 `ComponentAssembly.CreateConstraintGroupBuilder` / `Positioner`，约束对象没有创建入口 | 依赖组件（已通） |
+| `sketch.constraints` | `CreateCoincidentConstraint(geom1, geom2)` 要 `Sketch.ConstraintGeometry` 对象，stub 里没有创建入口 | 未通 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸/视图上下文 | 依赖出图（已通） |
 | `export.stl` | `CreateStlCreator().Commit()` 返回成功但 **0 字节**；需要 `ExportSelectionBlock` 选实体 | 依赖选择块 |
 | `export.parasolid` | `CreateParasolidExporter().Commit()` 报 `Part has no valid export objects`；同样需要选择块 | 依赖选择块 |
