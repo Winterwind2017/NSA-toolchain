@@ -207,6 +207,14 @@ CAPS: tuple[Cap, ...] = (
     Cap("drawing.view_isometric", "drawing", "等轴测基准视图", "drawing_view_named", "L1–L2",
         params={"model_view": "Isometric"},
         expect={"view_created": True, "view_name": "Isometric@1"}, reopen=False),
+
+    Cap("asm.three_components", "assembly", "装配插 3 个组件", "asm_three_components", "L1–L2",
+        params={}, expect={"components": 3}, reopen=False),
+
+    Cap("export.stl", "export", "导出 STL", "export_stl", "L1–L2",
+        params={}, expect={"export_ok": True,
+                           "export_bytes": {"min": 100.0, "max": 100000000.0}},
+        reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

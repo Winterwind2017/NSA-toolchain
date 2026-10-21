@@ -21,8 +21,7 @@
 | `asm.constraints` | 只有 `ComponentAssembly.CreateConstraintGroupBuilder` / `Positioner`，约束对象没有创建入口 | 依赖组件（已通） |
 | `sketch.constraints` | `CreateCoincidentConstraint(geom1, geom2)` 要 `Sketch.ConstraintGeometry` 对象，stub 里没有创建入口 | 未通 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸/视图上下文 | 依赖出图（已通） |
-| `export.stl` | `CreateStlCreator().Commit()` 返回成功但 **0 字节**；需要 `ExportSelectionBlock` 选实体 | 依赖选择块 |
-| `export.parasolid` | `CreateParasolidExporter().Commit()` 报 `Part has no valid export objects`；同样需要选择块 | 依赖选择块 |
+| `export.parasolid` | `ExportSelectionBlock.SetArray([body])` 后仍报 `Part has no valid export objects`（STL 用同样手法已通） | 需要 `ExportFrom`/`ObjectTypes` 的正确组合 |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 | 需要父视图的正确设入口 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） | 未开始 |
 

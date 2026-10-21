@@ -796,6 +796,21 @@ def _dex_export(kind, part, workdir):
                "acis": dm.CreateAcisExporter}[kind]()
     try:
         creator.OutputFile = path
+        try:
+            bodies = _bodies_of(part)
+            if bodies:
+                if kind == "parasolid":
+                    creator.ExportSelectionBlock.SetArray(bodies)
+                    for name in ("ExportFrom", "ExportFromOption", "ObjectTypes"):
+                        if hasattr(creator, name):
+                            try:
+                                setattr(creator, name, getattr(creator, name))
+                            except Exception:
+                                pass
+                else:
+                    creator.ExportSelectionBlock.Add(bodies)
+        except Exception:
+            pass
         creator.Commit()
     finally:
         try:
@@ -1454,6 +1469,23 @@ def drawing_view_named(params, workdir, rec):
     return reads
 
 
+def asm_three_components(params, workdir, rec):
+    """装配里插 3 个组件（A/B/C 分别偏移 0/150/300）。"""
+    a_path = _make_ref_part(os.path.join(workdir, "ref3_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "ref3_b.prt"), "cyl",
+                            (40.0, 30.0))
+    asm = new_part("asm3")
+    for name, path, x in (("A", a_path, 0.0), ("B", b_path, 150.0),
+                          ("C", a_path, 300.0)):
+        asm.ComponentAssembly.AddComponent(
+            path, "MODEL", name, NXOpen.Point3d(x, 0.0, 0.0), _identity(), -1)
+    children = asm.ComponentAssembly.RootComponent.GetChildren()
+    reads = {"components": len(children)}
+    _close_part(asm)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1506,6 +1538,7 @@ ACTIONS = {
     "feature_hole_blind": feature_hole_blind,
     "drawing_sheet_size": drawing_sheet_size,
     "drawing_view_named": drawing_view_named,
+    "asm_three_components": asm_three_components,
 }
 
 
