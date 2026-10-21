@@ -61,6 +61,7 @@ def _suites() -> list[dict]:
         "flow": "flow_check.py",
         "draft": "draft_check.py",
         "flange_probe": "flange_probe_check.py",
+        "split_extend": "split_extend_check.py",
         "draft_read": "draft_read_check.py",
         "drawing_views": "drawing_views_check.py",
         "asm_ops": "asm_ops_check.py",

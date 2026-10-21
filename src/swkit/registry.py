@@ -474,11 +474,13 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_show_all_sketches", ToolEntry("sw_show_all_sketches", "view", "unverified",
         "IModelDoc2.SetUserPreferenceToggle", "", "同上：无对应枚举常量")),
     ("sw_split_body", ToolEntry("sw_split_body", "body", "unverified",
-        "IFeatureManager.PreSplitBody/PostSplitBody2", "",
-        "需要先有分割线/基准面且 PostSplitBody2 是 5 参，未尝试")),
+        "IFeatureManager.PreSplitBody2（属性）/ PostSplitBody2(5 参)", "",
+        "PreSplitBody2 是**属性**且能算出 **2** 个分割体（刀具被识别），但 PostSplitBody2 在 6 种封装下全返回 None 且实体数恒为 1：ConsumeCut True/False、BodiesToMark 传 tuple/list/VARIANT/单个体、Origins+SavePaths 用长度匹配的空数组或真实存盘路径都无效；swFm(132) 里也没有 split 定义 id，无法走 CreateDefinition。见 tests/split_extend_check.py")),
+
     ("sw_sketch_extend", ToolEntry("sw_sketch_extend", "sketch", "unverified",
-        "ISketchManager.SketchExtend(3 参)", "",
-        "选中线段后调用，长度 20→20 不变（未知是否需要选端点或标记）")),
+        "ISketchManager.SketchExtend(X, Y, Z)", "",
+        "3 个参数是**目标点坐标**（不是选线段）；选线段或选端点都返回 **False**、线段长度 10→10 mm 不变。见 tests/split_extend_check.py")),
+
 
     ("sw_unfold", ToolEntry("sw_unfold", "sheet_metal", "unverified",
         "IModelDoc2.InsertSheetMetalUnfold()", "",
