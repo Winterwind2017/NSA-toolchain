@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 71
+    "verified": 72
   },
-  "generated_at": "2026-10-21T21:47:25",
+  "generated_at": "2026-10-21T21:50:24",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -79,6 +79,7 @@
     "measure.mass": "L3",
     "part.new": "L1",
     "sketch.circle_extrude": "L1–L3",
+    "sketch.constraint": "L1–L2",
     "sketch.extrude": "L1–L3",
     "sketch.rect": "L1–L2",
     "solid.cone": "L1–L3",
@@ -152,6 +153,7 @@
     "measure.mass": "gateway",
     "part.new": "gateway",
     "sketch.circle_extrude": "solid_modeling",
+    "sketch.constraint": "solid_modeling",
     "sketch.extrude": "solid_modeling",
     "sketch.rect": "solid_modeling",
     "solid.cone": "solid_modeling",
@@ -190,7 +192,7 @@
     },
     {
       "id": "sketch.constraints",
-      "reason": "Sketch.ConstraintGeometry 没有创建入口"
+      "reason": "重合已通；水平/竖直/相切/尺寸未逐个验证"
     },
     {
       "id": "feature.chamfer_angle",
@@ -227,7 +229,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "f276709",
+    "kernel_commit": "4124423",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -298,6 +300,7 @@
     "measure.mass": "measure",
     "part.new": "part",
     "sketch.circle_extrude": "sketch",
+    "sketch.constraint": "sketch",
     "sketch.extrude": "sketch",
     "sketch.rect": "sketch",
     "solid.cone": "solid",

@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **71** 条 verified 能力（内核 `nxkit 0.1.0`，commit `f276709`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **72** 条 verified 能力（内核 `nxkit 0.1.0`，commit `4124423`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -96,8 +96,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **曲线**（5） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.hyperbola`（L1–L3） `curve.line`（L1–L3） `curve.parabola`（L1–L3） |
 | **导出**（5） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.stl`（L1–L2） |
 | **制图**（4） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） `drawing.sheet_a4`（L1–L2） `drawing.view_isometric`（L1–L2） |
+| **sketch**（4） | `sketch.circle_extrude`（L1–L3） `sketch.constraint`（L1–L2） `sketch.extrude`（L1–L3） `sketch.rect`（L1–L2） |
 | **测量**（3） | `measure.face_area`（L3） `measure.face_single`（L3） `measure.mass`（L3） |
-| **sketch**（3） | `sketch.circle_extrude`（L1–L3） `sketch.extrude`（L1–L3） `sketch.rect`（L1–L2） |
 | **拓扑检查**（2） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） |
 | **文件**（1） | `file.roundtrip`（L4） |
 | **部件**（1） | `part.new`（L1） |
@@ -118,7 +118,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `feature.rib` | `part.Features` 上没有 `CreateRibBuilder` |
 | `feature.sweep` | `CommitFeature` 报 `Unable to approximate guide string` |
 | `feature.chamfer_angle` | `ChamferBuilder.Option`/`AngleExp` 赋值无效 |
-| `sketch.constraints` | `ConstraintGeometry` 没有创建入口 |
+| `sketch.constraints`（其余类型） | 重合已通，水平/竖直/相切/尺寸未逐个验证 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
 | `export.parasolid` | 四种方式全报 `no valid export objects` |
 | `feature.thicken` | 出 2 个片体或厚度变 3300 mm，语义不对 |
@@ -176,6 +176,7 @@ nxkit cap surface.bounded_plane  # 4 条线围成有界平面片体
 nxkit cap sketch.rect            # XY 平面草图 + 4 条线（自带 2 条参考线）
 nxkit cap sketch.extrude         # 草图 4 线拉伸 10 → 50000
 nxkit cap sketch.circle_extrude  # 草图整圆 R20 拉伸 30 → 37699.11
+nxkit cap sketch.constraint      # 两条线加重合约束
 ```
 
 ### 布尔

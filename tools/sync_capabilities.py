@@ -42,7 +42,7 @@ PENDING = [
     ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),
     ("asm.constraints", "ConstraintCollection.CreateConstraint 不存在"),
-    ("sketch.constraints", "Sketch.ConstraintGeometry 没有创建入口"),
+    ("sketch.constraints", "重合已通；水平/竖直/相切/尺寸未逐个验证"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),
     ("feature.sweep", "Commit 报 Unable to approximate guide string"),
     ("feature.rib", "part.Features 上没有 CreateRibBuilder"),
