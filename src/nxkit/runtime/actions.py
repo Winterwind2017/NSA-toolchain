@@ -3049,6 +3049,11 @@ def feature_mirror_face(params, workdir, rec):
         diag["plane"] = "face"
         mb.FeatureSet.Add([feat])
         diag["featureset"] = "ok"
+        try:
+            mb.Motion.Commit()
+            diag["motion_commit"] = "ok"
+        except Exception as exc:
+            diag["motion_commit"] = "err:%s" % str(exc)[:80]
         mb.CommitFeature()
         diag["commit"] = "ok"
     finally:
