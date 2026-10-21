@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 104
+    "verified": 105
   },
-  "generated_at": "2026-10-21T23:04:21",
+  "generated_at": "2026-10-21T23:08:28",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -91,6 +91,7 @@
     "file.roundtrip": "L4",
     "file.save_copy": "L1–L4",
     "inspect.body_type": "L1–L2",
+    "measure.distance": "L2–L3",
     "measure.face_area": "L3",
     "measure.face_single": "L3",
     "measure.faces_two": "L2–L3",
@@ -197,6 +198,7 @@
     "file.roundtrip": "gateway",
     "file.save_copy": "gateway",
     "inspect.body_type": "gateway",
+    "measure.distance": "gateway",
     "measure.face_area": "gateway",
     "measure.face_single": "gateway",
     "measure.faces_two": "gateway",
@@ -297,7 +299,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "cb89242",
+    "kernel_commit": "449a808",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -380,6 +382,7 @@
     "file.roundtrip": "file",
     "file.save_copy": "file",
     "inspect.body_type": "inspect",
+    "measure.distance": "measure",
     "measure.face_area": "measure",
     "measure.face_single": "measure",
     "measure.faces_two": "measure",

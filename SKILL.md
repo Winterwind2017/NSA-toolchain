@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **104** 条 verified 能力（内核 `nxkit 0.1.0`，commit `cb89242`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **105** 条 verified 能力（内核 `nxkit 0.1.0`，commit `449a808`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -97,7 +97,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **导出**（6） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.step_ap214`（L1–L2） `export.stl`（L1–L2） |
 | **实体**（6） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.cone_frustum`（L1–L3） `solid.sphere`（L1–L3） |
 | **曲线**（5） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.hyperbola`（L1–L3） `curve.line`（L1–L3） `curve.parabola`（L1–L3） |
-| **测量**（4） | `measure.face_area`（L3） `measure.face_single`（L3） `measure.faces_two`（L2–L3） `measure.mass`（L3） |
+| **测量**（5） | `measure.distance`（L2–L3） `measure.face_area`（L3） `measure.face_single`（L3） `measure.faces_two`（L2–L3） `measure.mass`（L3） |
 | **文件**（2） | `file.roundtrip`（L4） `file.save_copy`（L1–L4） |
 | **拓扑检查**（2） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） |
 | **部件**（2） | `part.inch`（L1–L3） `part.new`（L1） |
@@ -248,6 +248,7 @@ nxkit cap attr.string   # 写字符串属性 → 存盘重开仍在
 nxkit cap measure.mass  # 体积/面积/重心
 nxkit cap measure.face_area # 六面面积和 16000
 nxkit cap measure.faces_two  # 只量两个大面（10000）
+nxkit cap measure.distance   # 两面间距 20（MeasureDistance.Value）
 nxkit cap measure.face_single # 最大面 5000 / 周长 300
 nxkit cap body.topo     # 面 6 / 边 12
 nxkit cap inspect.body_type # 块=solid、有界平面=sheet
