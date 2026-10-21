@@ -48,7 +48,10 @@ python examples/e2e_demo.py --out D:/demo
 
 实测 **15/15 通过，143.8 s**；报告见 [`docs/regression/demo_report.json`](docs/regression/demo_report.json)。
 
-`docs/UNSUPPORTED.md` 的状态章节由 `tools/gen_unsupported.py` **从 registry 生成**，`tests/test_offline.py::test_unsupported_doc_matches_registry` 会校验两者一致（防文档漂移）。
+`docs/UNSUPPORTED.md` 的状态章节由 `tools/gen_unsupported.py` **从 registry 生成**，
+README 的数字块由 `tools/gen_readme_counts.py` 生成；两者都挂了 `pre-push` 钩子
+（`python scripts/install_hooks.py` 每台机器装一次）——**文档与代码不一致时推送会被拒绝**。
+`tests/test_offline.py::test_unsupported_doc_matches_registry` 会校验两者一致（防文档漂移）。
 
 「调用返回成功、几何量却不动」这一类单独归到 [`docs/SILENT_FAILURES.md`](docs/SILENT_FAILURES.md)（逐项证据 + 共性教训 + 复核触发条件）。上游署名见 [`NOTICE.md`](NOTICE.md)。
 

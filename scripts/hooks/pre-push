@@ -1,12 +1,17 @@
 #!/bin/sh
 # managed by swkit scripts/install_hooks.py
 #
-# pre-push hook —— 远端不是 SSH、或 SSH key 不可用时拒绝推送。
+# pre-push hook 做两件事：
+#   1) 远端必须是 SSH，且 SSH 到 GitHub 真的通（HTTPS 无凭据助手会挂死 11 分钟）
+#   2) 文档数字必须与代码一致（README / UNSUPPORTED 由生成器产出）
+#
 # Git 调用：pre-push <remote-name> <remote-url>，stdin 是待推 ref 列表。
 #
 # 为什么用纯 sh：Windows 的 git 用 sh 执行 hook，而 `#!/usr/bin/env python3`
 # 在没装 python3 别名的机器上会直接失败（本项目踩过：hook 把正常推送也挡了）。
 # 纯 sh 在 Windows(git-bash)/macOS/Linux 都能跑。
+#
+# 绕过：git push --no-verify，或 SWKIT_SKIP_DOC_CHECKS=1 git push
 
 remote_name="${1:-origin}"
 remote_url="${2:-}"
@@ -50,6 +55,52 @@ if ! printf '%s' "$probe" | grep -q "successfully authenticated"; then
   echo "（确属临时绕过：git push --no-verify）" >&2
   echo "" >&2
   exit 1
+fi
+
+# ── 文档一致性校验 ────────────────────────────────────────────────
+# README 的数字块与 UNSUPPORTED 的状态章节都是**生成**的；一旦改了代码却没
+# 重生成文档，推上去的文档就会撒谎（本项目真出现过：README 写着"53 条
+# verified 配方 / 2 条不稳"，而代码早已是 138 条与 3 条）。
+root=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$root" ] && [ -f "$root/tools/gen_readme_counts.py" ]; then
+  if [ "${SWKIT_SKIP_DOC_CHECKS:-0}" = "1" ]; then
+    echo "[swkit pre-push] 跳过文档一致性校验（SWKIT_SKIP_DOC_CHECKS=1）" >&2
+  else
+    PY="${SWKIT_PYTHON:-}"
+    if [ -z "$PY" ]; then
+      for cand in python python3; do
+        if command -v "$cand" >/dev/null 2>&1; then PY="$cand"; break; fi
+      done
+      if [ -z "$PY" ] && command -v py >/dev/null 2>&1; then PY="py -3"; fi
+    fi
+    if [ -z "$PY" ]; then
+      echo "[swkit pre-push] 警告：找不到 python，跳过文档一致性校验" >&2
+      echo "  可指定：SWKIT_PYTHON=/path/to/python git push" >&2
+    else
+      docfail=0
+      for gen in gen_unsupported gen_readme_counts; do
+        out=$(PYTHONIOENCODING=utf-8 PYTHONPATH="$root/src" $PY "$root/tools/$gen.py" --check 2>&1)
+        if [ $? -ne 0 ]; then
+          echo "" >&2
+          echo "[swkit pre-push] 文档与代码不一致：$gen.py --check 失败" >&2
+          printf '%s\n' "$out" | sed 's/^/    /' >&2
+          docfail=1
+        fi
+      done
+      if [ "$docfail" -ne 0 ]; then
+        echo "" >&2
+        echo "修法（重生成后并入本次提交）：" >&2
+        echo "    python tools/gen_unsupported.py" >&2
+        echo "    python tools/gen_readme_counts.py" >&2
+        echo "    git add -A && git commit --amend --no-edit" >&2
+        echo "" >&2
+        echo "（确属临时绕过：SWKIT_SKIP_DOC_CHECKS=1 git push，或 git push --no-verify）" >&2
+        echo "" >&2
+        exit 1
+      fi
+      echo "[swkit pre-push] 文档一致性 OK" >&2
+    fi
+  fi
 fi
 
 exit 0

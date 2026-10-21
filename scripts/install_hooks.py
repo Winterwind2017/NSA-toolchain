@@ -78,7 +78,11 @@ def main() -> int:
         shutil.copy2(src, dst)
         os.chmod(dst, os.stat(dst).st_mode | stat.S_IXUSR | stat.S_IXGRP)
         print("装好 %s" % dst)
-    print("\n完成。以后 git push 时：远端非 SSH 或 SSH key 不通 → 直接拒绝并给修法。")
+    print("\n完成。以后 git push 时："
+          "\n  - 远端非 SSH 或 SSH key 不通 → 直接拒绝并给修法；"
+          "\n  - README / UNSUPPORTED 的数字与代码不一致（生成器 --check 失败）→ 也拒绝，"
+          "\n    并提示跑 tools/gen_unsupported.py + tools/gen_readme_counts.py。"
+          "\n  临时绕过：SWKIT_SKIP_DOC_CHECKS=1 git push 或 git push --no-verify。")
     return 0
 
 
