@@ -2751,7 +2751,52 @@ def attr_on_face(params, workdir, rec):
     return reads
 
 
+def sketch_linear_dim(params, workdir, rec):
+    """两条平行线起点之间的竖直尺寸 40。"""
+    part = new_part("sklin")
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+    l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+    l2 = part.Curves.CreateLine(p(0.0, 40.0, 0.0), p(100.0, 40.0, 0.0))
+    for ln in (l1, l2):
+        sketch.AddGeometry(ln)
+
+    def dg(curve):
+        d = NXOpen.Sketch.DimensionGeometry()
+        d.Geometry = curve
+        d.HelpPoint = NXOpen.Point3d(0.0, 0.0, 0.0)
+        d.AssocType = NXOpen.Sketch.AssocType.StartPoint
+        return d
+
+    expr = part.Expressions.Create("nxkit_lin = 40")
+    diag = {}
+    try:
+        con = sketch.CreateDimension(NXOpen.Sketch.ConstraintType.VerticalDim,
+                                     dg(l1), dg(l2),
+                                     NXOpen.Point3d(-30.0, 20.0, 0.0), expr)
+        diag["dim"] = "ok"
+    except Exception as exc:
+        diag["dim"] = "err:%s" % str(exc)[:160]
+        con = None
+    reads = {"dim_ok": con is not None, "expr_value": float(expr.Value),
+             "diag": diag}
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_linear_dim": sketch_linear_dim,
     "feature_shell_volume": feature_shell_volume,
     "attr_on_face": attr_on_face,
     "file_save_copy": file_save_copy,

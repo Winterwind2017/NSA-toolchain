@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**102** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**103** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**42** 条
-- 未打通（有证据）：**17** 项（另有 1 行只记变体限制，基本形态已通）
+- 未打通（有证据）：**16** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -16,14 +16,14 @@
 | assemblies | 7 |
 | drafting | 10 |
 | gateway | 26 |
-| solid_modeling | 59 |
+| solid_modeling | 60 |
 
 ## 按族
 
 | family | 能力数 | L4 |
 |---|---:|---:|
 | feature | 25 | 24 |
-| sketch | 16 | 2 |
+| sketch | 17 | 2 |
 | attr | 10 | 1 |
 | drawing | 10 | 0 |
 | assembly | 7 | 1 |
@@ -42,7 +42,6 @@
 | 能力 | 卡在哪里 |
 |---|---|
 | `cam.setup` | `part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder |
-| `feature.chamfer` | `CreateChamferBuilder(...).SmartCollector` 是 **None**，没有可写的边集合；直接 `CommitFeature()` 报 `Referenced edge does not exist` |
 | `feature.hole` | `CreateHolePackageBuilder` 要 `HolePackage.Null` 哨兵，参数未摸清；**通孔已用「圆柱 + 布尔差」实现**（`feature.hole_cyl`） |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 |
 | `measure.distance` | `MeasureDistance` 没有 `Distance` 属性，`Information()` 返回 `None`；数值在 `CreateFeature()` 产出的 `Measure` 表达式里，未打通 |
@@ -52,7 +51,6 @@
 | `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 |
 | `feature.sweep` | `SweptBuilder.SectionList.Append`/`GuideList.Append` 都成功，`CommitFeature()` 报 `Unable to approximate guide string` |
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 |
-| `sketch.linear_dim` | `CreateDimension(HorizontalDim, dg1, dg2, origin, expr)` 报 `The first object associativity type is invalid`；`DimensionGeometry.AssocType` 的正确取值未找到 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
 | `export.parasolid` | 四种方式都失败：不选对象、`.Add(bodies)`、`.SetArray(bodies)`、`ExportFrom=DisplayedPart`，全部报 `Part has no valid export objects`（STL 用 `.Add` 已通） |
 | `feature.thicken` | `FaceCollector.AddRules` 能过、`FirstOffset.SetFormula("5")` 返回 ok，但结果为 **2 个片体**（体积 0）；加上 `Tolerance` 后又变成单实体 **16,500,000 mm³**（100×50×3300），厚度语义不对 |
@@ -62,10 +60,9 @@
 
 ## 为什么没到 200+
 
-1. 每条都必须真机验证（改内核 → 跑 NX → 判据通过 → 连跑稳定），38 轮约 2.7 条/轮。
-2. 可选 builder 家族大量不可脚本化：rib 无 CreateRibBuilder、CAM setup 全 None、剖视图拿不到 SectionLine、装配约束 CreateConstraint 缺失、DXF 导出死循环。
-3. 同类变体不计入（Ø20→Ø30 不产生新知识）。
-4. 判据质量优先（42/102 带 L4）。
+1. 每条都必须真机验证（改内核 → 跑 NX → 判据通过 → 连跑稳定）。
+2. 可选 builder 家族大量不可脚本化：rib 无 CreateRibBuilder、CAM setup 全 None、投影视图 Parent.View 只读、镜像车不通、装配约束 CreateConstraint 参考缺失、DXF 导出死循环。
+3. 同类变体不计入；判据质量优先（42/103 带 L4）。
 
 ## 怎么继续扩
 

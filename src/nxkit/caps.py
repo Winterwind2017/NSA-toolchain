@@ -408,6 +408,8 @@ CAPS: tuple[Cap, ...] = (
     Cap("attr.on_face", "attr", "属性挂在面上", "attr_on_face", "L2",
         params={}, expect={"face_attr": "x1", "body_attr_empty": True},
         reopen=False),
+    Cap("sketch.linear_dim", "sketch", "两线间竖直尺寸 40", "sketch_linear_dim", "L1–L2",
+        params={}, expect={"dim_ok": True, "expr_value": 40.0}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:

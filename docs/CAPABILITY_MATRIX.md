@@ -1,13 +1,13 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **102** 条，全部真机通过；其中 **42** 条带 L4（存盘 → 重开 → 复测）。
+总计 **103** 条，全部真机通过；其中 **42** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
 | family | 能力数 | 其中 L4 | 需要许可 |
 |---|---:|---:|---|
 | feature | 25 | 24 | solid_modeling |
-| sketch | 16 | 2 | solid_modeling |
+| sketch | 17 | 2 | solid_modeling |
 | attr | 10 | 1 | gateway |
 | drawing | 10 | 0 | drafting |
 | assembly | 7 | 1 | assemblies |
@@ -28,7 +28,7 @@
 | assemblies | 7 |
 | drafting | 10 |
 | gateway | 26 |
-| solid_modeling | 59 |
+| solid_modeling | 60 |
 
 ## 全部能力
 
@@ -136,3 +136,4 @@
 | `boolean.unite_three` | boolean | L1–L4 | 是 | solid_modeling |
 | `feature.shell_volume` | feature | L1–L3 | — | solid_modeling |
 | `attr.on_face` | attr | L2 | — | gateway |
+| `sketch.linear_dim` | sketch | L1–L2 | — | solid_modeling |
