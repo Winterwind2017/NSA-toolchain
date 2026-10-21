@@ -3871,7 +3871,74 @@ def surface_through_curves(params, workdir, rec):
     _close_part(part)
     return reads
 
+def surface_sew(params, workdir, rec):
+    """两块相邻片体缝合 → 1 个片体（面积 5000）。"""
+    part = new_part("sew")
+    p = NXOpen.Point3d
+
+    def sheet(pts):
+        lines = [part.Curves.CreateLine(pts[i], pts[(i + 1) % 4]) for i in range(4)]
+        bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+        try:
+            bp.BoundingCurves.AddToSection(
+                [part.ScRuleFactory.CreateRuleCurveDumb(lines)], lines[0],
+                None, None, pts[0], NXOpen.Section.Mode.Create)
+            bp.CommitFeature()
+        finally:
+            try:
+                bp.Destroy()
+            except Exception:
+                pass
+
+    sheet([p(0.0, 0.0, 0.0), p(50.0, 0.0, 0.0),
+           p(50.0, 50.0, 0.0), p(0.0, 50.0, 0.0)])
+    sheet([p(50.0, 0.0, 0.0), p(100.0, 0.0, 0.0),
+           p(100.0, 50.0, 0.0), p(50.0, 50.0, 0.0)])
+    sheets = [b for b in _bodies_of(part) if b.IsSheetBody]
+    diag = {"before": len(sheets)}
+    sb = part.Features.CreateSewBuilder(NXOpen.Features.Sew.Null)
+    try:
+        if len(sheets) >= 2:
+            sb.TargetBodies.Add([sheets[0]])
+            sb.ToolBodies.Add([sheets[1]])
+            diag["bodies"] = "target+tool"
+        for member in ("Sheet", "SheetToSheet", "Solid"):
+            cls = getattr(NXOpen.Features, "SewBuilderTypes", None)
+            if cls is None:
+                break
+            try:
+                sb.Type = getattr(cls, member)
+                diag["type"] = member
+                break
+            except Exception as exc:
+                diag["type:" + member] = str(exc)[:60]
+        try:
+            sb.Tolerance = 0.01
+            diag["tol"] = 0.01
+        except Exception:
+            pass
+        sb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            sb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    sheets2 = [b for b in bodies if b.IsSheetBody]
+    reads = {"sheet_count": len(sheets2), "body_count": len(bodies), "diag": diag}
+    if sheets2:
+        faces = list(sheets2[0].GetFaces())
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, faces)
+        reads["sheet_area"] = round(float(mf.Area), 4)
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "surface_sew": surface_sew,
     "surface_through_curves": surface_through_curves,
     "curve_project_to_plane": curve_project_to_plane,
     "surface_ruled": surface_ruled,

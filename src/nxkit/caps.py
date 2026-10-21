@@ -46,6 +46,10 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("surface.sew", "surface", "两块相邻片体缝合（1 片 / 5000）", "surface_sew",
+        "L1–L2", params={},
+        expect={"sheet_count": 1,
+                "sheet_area": {"min": 4990.0, "max": 5010.0}}, reopen=False),
     Cap("surface.through_curves", "surface", "三条平行线过曲线曲面（面积 5000）",
         "surface_through_curves", "L1–L2", params={},
         expect={"sheet_count": 1,

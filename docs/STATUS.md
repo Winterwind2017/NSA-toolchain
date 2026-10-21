@@ -4,7 +4,7 @@
 
 ## 数字
 
-- 真机通过能力：**124** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**125** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**54** 条
 - 未打通（有证据）：**16** 项
 
@@ -23,7 +23,7 @@
 | export | 7 | 0 |
 | measure | 5 | 2 |
 | part | 4 | 1 |
-| surface | 3 | 1 |
+| surface | 4 | 1 |
 | file | 2 | 1 |
 | inspect | 2 | 0 |
 
@@ -54,4 +54,4 @@
 
 ## 新增能力的正确姿势
 
-用 `python tools/add_cap.py spec.json`（锚点插入 + py_compile + selftest），不要手工删改 `ACTIONS` 附近区域——历史上 5 次把字典整段删掉。
+`python tools/add_cap.py spec.json`（锚点插入 + py_compile + selftest）。不要手工删改 `ACTIONS` 附近区域——历史上 5 次把字典整段删掉。
