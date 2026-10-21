@@ -36,7 +36,7 @@
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing target body` | 需要正确的选择集初始化方式 |
 
 
-| `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX/DeltaY/DeltaZ` 是 **float 属性**（不是表达式），设成 100/0/0 后 `CommitFeature()` 仍报 `Feature has zero parameters` | 需要正确的运动参数提交方式 |
+| `solid.move_body` | 拆到最里层：`BodyToMove.AddRules` 生效、`Motion.Option = ModlMotionOptions.DeltaXyz` 生效、`DeltaX/Y/Z` 是 float 且赋值成功（100/0/0）、`ManipulatorOrigin` 也能设；`Commit()` 与 `CommitFeature()` **都返回成功**，但**几何完全不动**（质心仍 50），早期还报过 `Feature has zero parameters`。判断：这条特征在 journal 下是空操作 | 需要 UI 上下文 |
 
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for this operation` | 需要正确的参考点服务配置 |
 

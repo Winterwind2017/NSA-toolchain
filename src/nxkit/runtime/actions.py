@@ -3051,8 +3051,15 @@ def feature_mirror_face(params, workdir, rec):
             diag["motion_commit"] = "ok"
         except Exception as exc:
             diag["motion_commit"] = "err:%s" % str(exc)[:80]
-        mb.CommitFeature()
-        diag["commit"] = "ok"
+        for how in ("Commit", "CommitFeature"):
+            try:
+                if how == "Commit":
+                    mb.Commit()
+                else:
+                    mb.CommitFeature()
+                diag["commit_" + how] = "ok"
+            except Exception as exc:
+                diag["commit_" + how] = "err:%s" % str(exc)[:90]
     finally:
         try:
             mb.Destroy()
