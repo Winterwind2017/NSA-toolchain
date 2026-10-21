@@ -164,3 +164,22 @@ def judge_circle(before, after) -> dict:
 * `ok` 只能是 `all(checks.values())`，**禁止**在别处手动置 `True`；
 * `detail` 里必须有**人能核对**的数字（半径/面积/体积/页数），不能只有布尔；
 * 判据失败时保留原始读回值，方便定位是"没做"还是"做错"。
+
+实现状态（P1 步骤 2，`src/acadkit/judges/`）：四族 14 条判据已落地，
+`base.verdict()` 是 `ok` 的唯一出口（`checks` 里出现 `None` 或空集**直接抛错**），
+失败时统一把原始读回值放在结果的 `raw` 字段里。
+
+## 六、实测补充（写判据时踩到的，2026-10-21 真机）
+
+这些是"按 spec 写判据"时**必须知道**的本机事实，不写下来下一个人会再踩一遍：
+
+| # | 事实 | 对判据的影响 |
+|---|---|---|
+| 1 | `ACDBTABLE` 的**第 0 行是合并的标题行**：往 (0,1)…(0,n-1) `SetText`，内存读得到，存盘重开变空串（ASCII 同样丢，不是编码问题） | 2.4 的 L4 必须逐格比；BOM 用"标题 + 表头 + 明细 + 合计"排法，合计行/明细行要能显式指定 |
+| 2 | `BACKGROUNDPLOT` 默认是 `2`：`PlotToFile` 立刻返回 True，文件要等文档关闭才落盘 | 2.7 必须临时置 0 并在**出图后读回校验已还原**，否则"文件存在"是时序赌博 |
+| 3 | 冷启动后 `Documents.Add` 返回的文档、`Documents.Open` 返回的文档，偶发 `AttributeError: Add.ModelSpace` / `<unknown>.Open` / `Open.Close` | 这不是"API 不存在"：要重新取 `ActiveDocument` 并做一次 `ModelSpace.Count` 自检；`Close` 失败按名字重找再试 |
+| 4 | `LWPOLYLINE` **没有** `NumberOfVertices`（只有 `POLYLINE` 有） | 2.1 的顶点数从 `Coordinates` 的对数算 |
+| 5 | 标注 `TextPosition` 会被自动偏移（传 (30,10) 读回 (30,11.875)） | 2.2 的"文字在预期侧"只判方向，不判相等 |
+| 6 | `AddDimLinear` 确实不存在（`AttributeError`）；`AddDimRotated`/`AddDimDiametric`/`AddDimRadial` 可用 | 2.2 的负例可以直接用；Measure=60.0 / 50.0 / 25.0（精确） |
+| 7 | 本机 DXF 在 MTEXT 空值处会写出空行，严格的"两行一对"会错位 | 2.7 的最小解析器必须容错重同步；优先用 ezdxf |
+| 8 | 属性定义入口是 `IAcadBlock.AddAttribute(Height, Mode, Prompt, InsertionPoint, Tag, Value)` | 2.5 的块定义只能走这条；`AddAttributeDefinition` 不存在 |

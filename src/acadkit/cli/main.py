@@ -6,6 +6,7 @@
     acadkit env-baseline       采一份环境基线（写 ~/.acadkit/env_baseline.json）
     acadkit env-check          与基线比对
     acadkit registry           能力清单（--status / --json）
+    acadkit judges             判据清单（四族 + registry 覆盖核对）
     acadkit selftest           离线自检（不需要 AutoCAD）
 
 退出码：0 通过 · 3 AutoCAD 未运行（只读命令的正常结果）· 4 环境不合规 · 5 漂移
@@ -106,8 +107,55 @@ def cmd_registry(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_judges(args: argparse.Namespace) -> int:
+    """判据清单：四族、级别、覆盖的 registry id。"""
+    from ..judges import FAMILIES, JUDGES
+
+    known = {c["id"] for c in registry.load()["capabilities"]}
+    rows: List[Dict[str, Any]] = []
+    problems: List[str] = []
+    for jid in sorted(JUDGES):
+        meta = JUDGES[jid]
+        missing = [r for r in (meta.get("registry") or []) if r not in known]
+        if missing:
+            problems.append("%s 指向 registry 里没有的 id: %s"
+                            % (jid, ", ".join(missing)))
+        if meta.get("family") not in FAMILIES:
+            problems.append("%s 的族 %r 不在 FAMILIES 里" % (jid, meta.get("family")))
+        rows.append({"judge": jid, "family": meta.get("family"),
+                     "level": meta.get("level"),
+                     "negative": bool(meta.get("negative")),
+                     "registry": meta.get("registry") or [],
+                     "about": meta.get("about", "")})
+    if args.family:
+        rows = [r for r in rows if r["family"] == args.family]
+    if args.json:
+        print(json.dumps({"families": sorted(FAMILIES), "judges": rows,
+                          "problems": problems}, ensure_ascii=False, indent=2))
+        return 0 if not problems else 4
+    print("判据 %d 条（四族：%s）" % (len(rows), " / ".join(sorted(FAMILIES))))
+    for fam in sorted(FAMILIES):
+        print("\n[%s]" % fam)
+        for r in rows:
+            if r["family"] != fam:
+                continue
+            print("  %-32s %-6s %s%s" % (r["judge"], r["level"],
+                                          "〔负例〕" if r["negative"] else "",
+                                          r["about"]))
+    if problems:
+        print("\n自检问题 %d 项：" % len(problems))
+        for p in problems:
+            print("  - " + p)
+        return 4
+    print("\nregistry 覆盖：%d 个能力 id，全部存在"
+          % len({x for r in rows for x in r["registry"]}))
+    return 0
+
+
 def cmd_selftest(args: argparse.Namespace) -> int:
     """离线自检：不需要 AutoCAD。"""
+    from ..judges import FAMILIES, JUDGES, by_family, registry_ids
+
     checks: Dict[str, Any] = {}
     data = registry.load()
     checks["registry_loads"] = len(data["capabilities"]) > 0
@@ -115,9 +163,17 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     c = registry.counts(data)
     checks["registry_has_verified"] = c["verified"] > 0
     checks["baseline_path_writable_dir"] = bool(env.baseline_path())
+
+    known = {x["id"] for x in data["capabilities"]}
+    checks["judges_registered"] = len(JUDGES) > 0
+    checks["judges_four_families"] = set(FAMILIES) == {"geom", "dim", "export",
+                                                       "block-table"}
+    checks["judges_have_registry_ids"] = not (set(registry_ids()) - known)
+    checks["judges_each_family_has_one"] = all(
+        by_family(f) for f in FAMILIES)
     ok = all(checks.values())
-    print(json.dumps({"ok": ok, "checks": checks, "counts": c},
-                     ensure_ascii=False, indent=2))
+    print(json.dumps({"ok": ok, "checks": checks, "counts": c,
+                      "judges": len(JUDGES)}, ensure_ascii=False, indent=2))
     return 0 if ok else 4
 
 
@@ -146,6 +202,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--status", choices=list(registry.VALID_STATUS))
     s.add_argument("--json", action="store_true")
     s.set_defaults(func=cmd_registry)
+
+    s = sub.add_parser("judges", help="判据清单（四族）")
+    s.add_argument("--family", choices=["geom", "dim", "export", "block-table"])
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(func=cmd_judges)
 
     s = sub.add_parser("selftest", help="离线自检（不需要 AutoCAD）")
     s.set_defaults(func=cmd_selftest)

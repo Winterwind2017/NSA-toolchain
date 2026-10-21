@@ -36,6 +36,11 @@ def _proc_count(name: str = "acad") -> int:
         return -1
 
 
+def proc_count() -> int:
+    """acad.exe 进程数（公开别名，供判据/用例护栏用）。"""
+    return _proc_count()
+
+
 def sv_dump_count(temp_dir: Optional[str] = None) -> int:
     """`%TEMP%` 里 `.sv$`（自动保存副本）的数量。
 
