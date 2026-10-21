@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **126** 条 verified 能力（内核 `nxkit 0.1.0`，commit `c51c280`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **127** 条 verified 能力（内核 `nxkit 0.1.0`，commit `e390597`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -100,8 +100,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **测量**（6） | `measure.distance`（L2–L3） `measure.face_area`（L3） `measure.face_single`（L3） `measure.faces_two`（L2–L3） `measure.mass`（L3） `measure.perimeter`（L1–L2） |
 | **部件**（4） | `datum.axis`（L1–L2） `datum.plane`（L1–L2） `part.inch`（L1–L3） `part.new`（L1） |
 | **surface**（4） | `surface.bounded_plane`（L1–L2） `surface.ruled`（L1–L2） `surface.sew`（L1–L2） `surface.through_curves`（L1–L2） |
+| **拓扑检查**（3） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） `inspect.face_types`（L1–L2） |
 | **文件**（2） | `file.roundtrip`（L4） `file.save_copy`（L1–L4） |
-| **拓扑检查**（2） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） |
 <!-- gen:capabilities:END -->
 
 ## 还没打通（别重复试）
