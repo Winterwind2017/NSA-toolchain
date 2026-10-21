@@ -35,6 +35,7 @@ GROUP_LABEL = {
 
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
+    ("solid.move_body", "ModlMotion DeltaX 设了仍报 Feature has zero parameters"),
     ("solid.split_body", "工具体要 datum plane，Plane 对象被拒"),
     ("solid.delete_body", "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"),
     ("feature.hole", "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"),

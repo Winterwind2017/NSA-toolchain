@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 109
   },
-  "generated_at": "2026-10-21T23:31:12",
+  "generated_at": "2026-10-21T23:35:55",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -237,6 +237,10 @@
   },
   "pending": [
     {
+      "id": "solid.move_body",
+      "reason": "ModlMotion DeltaX 设了仍报 Feature has zero parameters"
+    },
+    {
       "id": "solid.split_body",
       "reason": "工具体要 datum plane，Plane 对象被拒"
     },
@@ -299,7 +303,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "85a317f",
+    "kernel_commit": "1d3961c",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
