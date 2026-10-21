@@ -392,6 +392,15 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"components": 5}, reopen=False),
     Cap("asm.component_names", "assembly", "组件名保留（AAA/BBB/CCC）", "asm_component_names", "L1–L2",
         params={}, expect={"names": "AAA,BBB,CCC", "name_count": 3}, reopen=False),
+    Cap("file.save_copy", "file", "另存副本并重开验证", "file_save_copy", "L1–L4",
+        params={}, expect={"copy_exists": True, "copy_body_count": 1,
+                           "copy_volume": 100000.0}, reopen=False),
+    Cap("attr.count", "attr", "写 3 个属性后数标题", "attr_count", "L2",
+        params={}, expect={"title_count": 3}, reopen=False),
+    Cap("boolean.unite_three", "boolean", "三体并集（C 在 A 内）", "boolean_unite_three", "L1–L4",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 114500.0, "max": 115500.0}},
+        reopen=True),
 )
 
 def licenses() -> list[tuple[str, str]]:

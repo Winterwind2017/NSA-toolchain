@@ -2645,7 +2645,75 @@ def asm_component_names(params, workdir, rec):
     return reads
 
 
+def file_save_copy(params, workdir, rec):
+    """另存副本并重新打开副本验证。"""
+    part = new_part("copy_src")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    copy_path = os.path.join(workdir, "copy_dst.prt")
+    if os.path.exists(copy_path):
+        os.remove(copy_path)
+    part.SaveAs(copy_path)
+    _close_part(part)
+    res = session().Parts.OpenActiveDisplay(copy_path, NXOpen.DisplayPartOption.AllowAdditional)
+    part2 = res[0] if isinstance(res, (tuple, list)) else res
+    session().Parts.SetWork(part2)
+    bodies = _bodies_of(part2)
+    reads = {"copy_exists": os.path.exists(copy_path),
+             "copy_body_count": len(bodies)}
+    if bodies:
+        reads["copy_volume"] = float(mass(part2, bodies)["volume_mm3"])
+    _close_part(part2)
+    return reads
+
+
+def attr_count(params, workdir, rec):
+    """写 3 个字符串属性，读回标题数。"""
+    part = new_part("attrcnt")
+    for i in range(3):
+        part.SetAttribute("NXKIT_A%d" % i, "v%d" % i)
+    try:
+        titles = list(part.GetAttributeTitlesByType(NXOpen.NXObject.AttributeType.String))
+    except Exception:
+        titles = []
+    blob = " ".join(str(x) for x in titles)
+    reads = {"title_count": blob.count("Title=NXKIT_A"),
+             "titles_sample": blob.count("Title=")}
+    _close_part(part)
+    return reads
+
+
+def boolean_unite_three(params, workdir, rec):
+    """三体并集（A 100×50×20 + B 50×30×10，C 落在 A 内不增加体积）→ 115000。"""
+    part = new_part("uni3")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_block(part, 25.0, 10.0, 20.0, 50.0, 30.0, 10.0)
+    fc = make_block(part, 10.0, 10.0, 0.0, 20.0, 20.0, 10.0)
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Unite
+        bb.Target = fa.GetBodies()[0]
+        bb.Tools.Add([fb.GetBodies()[0], fc.GetBodies()[0]])
+        bb.CommitFeature()
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "uni3.prt"))
+    b2 = _bodies_of(part2)
+    reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"]) if b2 else None
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "file_save_copy": file_save_copy,
+    "attr_count": attr_count,
+    "boolean_unite_three": boolean_unite_three,
     "asm_five_components": asm_five_components,
     "asm_component_names": asm_component_names,
     "measure_faces_two": measure_faces_two,
