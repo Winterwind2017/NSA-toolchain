@@ -1088,6 +1088,101 @@ def chamfer_multi(params, workdir, rec):
     return reads
 
 
+def _drafting_part(name):
+    part = new_part(name)
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+    vb = part.DraftingViews.CreateBaseViewBuilder(NXOpen.Drawings.BaseView.Null)
+    for v in part.ModelingViews:
+        if str(v.Name) == "Front":
+            vb.SelectModelView.SelectedView = v
+    view = vb.Commit()
+    vb.Destroy()
+    return part, feat, view
+
+
+def drawing_dimension(params, workdir, rec):
+    part, feat, view = _drafting_part("dim")
+    body = feat.GetBodies()[0]
+    edges = list(body.GetEdges())
+    lb = part.Dimensions.CreateLinearDimensionBuilder(None)
+    try:
+        lb.FirstAssociativity.SetValue(edges[0], view, NXOpen.Point3d(0.0, 0.0, 0.0))
+        lb.SecondAssociativity.SetValue(edges[1], view, NXOpen.Point3d(100.0, 0.0, 0.0))
+        try:
+            lb.Origin.SetValue(NXOpen.Point3d(50.0, -20.0, 0.0))
+        except Exception:
+            pass
+        dim = lb.Commit()
+        reads = {"dimension_created": dim is not None}
+    finally:
+        try:
+            lb.Destroy()
+        except Exception:
+            pass
+    try:
+        reads["dimension_count"] = len(list(part.Dimensions))
+    except Exception:
+        reads["dimension_count"] = None
+    _close_part(part)
+    return reads
+
+
+def boolean_two_tools(params, workdir, rec):
+    """块减去两个小方块（各 8000）→ 84000。"""
+    part = new_part("bool2")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_block(part, 0, 0, 0, 20, 20, 20)
+    fc = make_block(part, 40.0, 0, 0, 20, 20, 20)
+    body_a = fa.GetBodies()[0]
+    bodies_tool = [fb.GetBodies()[0], fc.GetBodies()[0]]
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Subtract
+        bb.Target = body_a
+        bb.Tools.Add(bodies_tool)
+        bb.CommitFeature()
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def hole_array(params, workdir, rec):
+    """四个 Ø20 通孔（x = 15/40/65/90, y = 25，孔间留 5）→ 74867.26。"""
+    part = new_part("harray")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    tools = []
+    for x in (12.5, 37.5, 62.5, 87.5):
+        tools.append(make_cylinder(part, x, 25.0, -2.0, 20.0, 24.0).GetBodies()[0])
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Subtract
+        bb.Target = fa.GetBodies()[0]
+        bb.Tools.Add(tools)
+        bb.CommitFeature()
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1129,6 +1224,9 @@ ACTIONS = {
     "export_step_ap203": export_step_ap203,
     "attr_on_feature": attr_on_feature,
     "chamfer_multi": chamfer_multi,
+    "drawing_dimension": drawing_dimension,
+    "boolean_two_tools": boolean_two_tools,
+    "hole_array": hole_array,
 }
 
 
