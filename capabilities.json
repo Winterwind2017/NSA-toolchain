@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 71
   },
-  "generated_at": "2026-10-21T21:31:26",
+  "generated_at": "2026-10-21T21:47:25",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -206,7 +206,7 @@
     },
     {
       "id": "export.dxf",
-      "reason": "DxfdwgCreator 需要图纸上下文"
+      "reason": "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"
     },
     {
       "id": "export.parasolid",
@@ -227,7 +227,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "bd15fa3",
+    "kernel_commit": "f276709",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
