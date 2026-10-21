@@ -3937,7 +3937,27 @@ def surface_sew(params, workdir, rec):
     _close_part(part)
     return reads
 
+def measure_face_perimeter(params, workdir, rec):
+    """量顶面周长（100×50 → 300）。"""
+    part = new_part("mper")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    top = None
+    for f in body.GetFaces():
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, [f])
+        if abs(float(mf.Area) - 5000.0) < 1.0:
+            top = (f, float(mf.Area), float(mf.Perimeter))
+            break
+    if top is None:
+        raise RuntimeError("找不到顶面")
+    face, area, per = top
+    reads = {"perimeter_mm": round(per, 4), "area_mm2": round(area, 4)}
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "measure_face_perimeter": measure_face_perimeter,
     "surface_sew": surface_sew,
     "surface_through_curves": surface_through_curves,
     "curve_project_to_plane": curve_project_to_plane,
