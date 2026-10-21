@@ -33,7 +33,7 @@
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing target body` | 需要正确的选择集初始化方式 |
 
 
-| `solid.move_body` | 拆到最里层：`BodyToMove.AddRules` 生效、`Motion.Option = ModlMotionOptions.DeltaXyz` 生效、`DeltaX/Y/Z` 是 float 且赋值成功（100/0/0）、`ManipulatorOrigin` 也能设；`Commit()` 与 `CommitFeature()` **都返回成功**，但**几何完全不动**（质心仍 50），早期还报过 `Feature has zero parameters`。判断：这条特征在 journal 下是空操作 | 需要 UI 上下文 |
+| `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） | 需 UI 上下文 |
 
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for this operation` | 需要正确的参考点服务配置 |
 
@@ -43,7 +43,7 @@
 
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** | 用 `part.Axes.CreateAxis(point, dir)` 即可 |
 
-| `curve.intersection` | `IntersectionCurveBuilder` 的 `FirstFace/SecondFace` **不可写**；`FirstSet/SecondSet` 是 `SelectObjectList`，`.Add([face])` 与 `.Add([body])` 都接受，但 `CommitFeature()` 一律报 `No objects for intersection curve`（两个片体确实存在，sheets=2） | 需要正确的对象输入方式 |
+| `curve.intersection` | `FirstFace/SecondFace` 只读，`FirstSet/SecondSet` 收对象但 Commit 报 `No objects for intersection curve`；用**组合投影**替代已打通（`curve.combined_projection`） | 已被替代 |
 
 
 | `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） | 需要选择对象的正确入口 |

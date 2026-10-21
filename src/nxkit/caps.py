@@ -46,6 +46,11 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("curve.combined_projection", "curve", "两条曲线组合投影（空间直线 50 mm）",
+        "curve_combined_projection", "L1–L2", params={},
+        expect={"entity_count": 1, "start_x": 0.0, "start_y": 0.0,
+                "start_z": 0.0,
+                "end_z": {"min": 49.5, "max": 50.5}}, reopen=False),
     Cap("surface.offset", "surface", "片体法向偏置 5（2 片 / 间距 5）", "surface_offset",
         "L1–L2", params={},
         expect={"sheet_count": 2,

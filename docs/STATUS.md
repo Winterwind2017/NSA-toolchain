@@ -4,7 +4,7 @@
 
 ## 数字
 
-- 真机通过能力：**135** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**136** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**54** 条
 - 未打通（有证据）：**14** 项
 
@@ -16,9 +16,9 @@
 | sketch | 18 | 2 |
 | drawing | 12 | 0 |
 | attr | 10 | 2 |
+| curve | 9 | 0 |
 | solid | 9 | 8 |
 | assembly | 8 | 1 |
-| curve | 8 | 0 |
 | boolean | 7 | 7 |
 | export | 7 | 0 |
 | inspect | 6 | 0 |
@@ -39,11 +39,11 @@
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing t |
-| `solid.move_body` | 拆到最里层：`BodyToMove.AddRules` 生效、`Motion.Option = ModlMotionOptions.DeltaXyz` 生效、`DeltaX/Y/Z` 是 float 且赋值成功（100/0/0）、`ManipulatorOrigin` 也能设；`Commit()` 与 `CommitFeature()`  |
+| `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） |
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect ob |
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10 |
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** |
-| `curve.intersection` | `IntersectionCurveBuilder` 的 `FirstFace/SecondFace` **不可写**；`FirstSet/SecondSet` 是 `SelectObjectList`，`.Add([face])` 与 `.Add([body])` 都接受，但 `CommitFeature()` 一律报 `No obje |
+| `curve.intersection` | `FirstFace/SecondFace` 只读，`FirstSet/SecondSet` 收对象但 Commit 报 `No objects for intersection curve`；用**组合投影**替代已打通（`curve.combined_projection`） |
 | `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） |
 
 ## 新增能力的姿势

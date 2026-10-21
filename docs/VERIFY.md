@@ -1,6 +1,6 @@
 # 全量验证记录（VERIFY）
 
-> 目的：任何人在干净机器上，能按下面这几条命令复现"135 条真机通过"。
+> 目的：任何人在干净机器上，能按下面这几条命令复现"136 条真机通过"。
 > 最近复跑：2026-10-22（Asia/Shanghai），干净 clone @ `00f444a`。
 
 ## 0. 环境
@@ -30,7 +30,7 @@ python -m pytest -q tests
 # 9 passed in 0.09s
 
 python -m nxkit selftest
-# 自检通过：135 条能力，动作与判据齐全，负例都能被拒绝
+# 自检通过：136 条能力，动作与判据齐全，负例都能被拒绝
 
 python -m nxkit licenses
 # 本机许可覆盖全部已登记能力
@@ -40,7 +40,7 @@ python -m nxkit licenses
 
 ```powershell
 python -m nxkit run --workdir D:\bililive\_verify3\runs\full
-# 135/135 通过  (会话 18.8s, 退出码 1)
+# 136/136 通过  (会话 18.8s, 退出码 1)
 ```
 
 > 注意：`run_journal` 的**退出码是 1**（NX 特性），结果以 `result.json` 为准。
@@ -54,7 +54,7 @@ python tools/check_skill.py --check
 python -m pytest -q tests
 # 4 passed
 python tools/sync_capabilities.py
-# verified: 135 | pending: 17 | cli: 7
+# verified: 136 | pending: 17 | cli: 7
 ```
 
 ## 5. 数字一致性
@@ -73,10 +73,10 @@ python tools/check_consistency.py --skill D:\bililive\ww-nx-automation
 | 检查 | 结果 |
 |---|---|
 | 离线测试 | 9 passed |
-| 自检（动作/判据/负例） | 135 条，负例全部被拒 |
+| 自检（动作/判据/负例） | 136 条，负例全部被拒 |
 | 许可扫描 | 4,420 feature，四档齐全 |
-| 真机全量（工作副本） | **135/135**，连续 2 次全绿 |
-| 真机全量（干净 clone） | **135/135**（`00f444a`，18.8 s） |
+| 真机全量（工作副本） | **136/136**，连续 2 次全绿 |
+| 真机全量（干净 clone） | **136/136**（`00f444a`，18.8 s） |
 | 技能校验 + 测试 | 通过 / 4 passed |
 | 五处数字一致性 | 一致 |
 | L4（存盘→重开→复测） | **54 / 130** |
@@ -85,15 +85,15 @@ python tools/check_consistency.py --skill D:\bililive\ww-nx-automation
 
 | 来源 | 结果 | 会话时长 | 失败 |
 |---|---|---|---|
-| 工作副本 run1 | 135/135 | 18.8 s | 0 |
-| 工作副本 run2 | 135/135 | 18.7 s | 0 |
-| 干净 clone | 135/135 | 18.8 s | 0 |
+| 工作副本 run1 | 136/136 | 18.8 s | 0 |
+| 工作副本 run2 | 136/136 | 18.7 s | 0 |
+| 干净 clone | 136/136 | 18.8 s | 0 |
 
-会话时长随能力数增长；135 条时约 19 s（历史：114 条时 22 s 左右，
+会话时长随能力数增长；136 条时约 19 s（历史：114 条时 22 s 左右，
 差异主要来自每次会话的 NX 启动开销波动，不是能力耗时）。
 
 ## 7. 结论
 
-- 能力清单可复现：同一 commit、同一环境，冷启动 clone 跑出 135/135。
+- 能力清单可复现：同一 commit、同一环境，冷启动 clone 跑出 136/136。
 - 没有"只在工作副本里能过"的能力。
 - 没打通的能力全部登记在 `docs/UNSUPPORTED.md`，每条带 NX 返回的错误原文。

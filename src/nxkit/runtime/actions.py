@@ -4313,7 +4313,60 @@ def surface_offset(params, workdir, rec):
     _close_part(part)
     return reads
 
+def curve_combined_projection(params, workdir, rec):
+    """两条曲线组合投影：沿 X 的线（+Z 投影）× 沿 Z 的线（+Y 投影）→ 空间直线。"""
+    part = new_part("cproj2")
+    p = NXOpen.Point3d
+    c1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))     # 沿 X, z=0
+    c2 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(0.0, 0.0, 50.0))      # 沿 Z, y=0
+    cpb = part.Features.CreateCombinedProjectionBuilder(
+        NXOpen.Features.CombinedProjection.Null)
+    diag = {}
+    feat = None
+    try:
+        for nm, curve in (("Curve1", c1), ("Curve2", c2)):
+            sec = getattr(cpb, nm)
+            sec.AddToSection([part.ScRuleFactory.CreateRuleCurveDumb([curve])], curve,
+                             None, None, p(0.0, 0.0, 0.0),
+                             NXOpen.Section.Mode.Create)
+        # 方向必须垂直于各自的曲线，否则报 Unable to project
+        for nm, vec in (("Direction1", NXOpen.Vector3d(0.0, 0.0, 1.0)),
+                        ("Direction2", NXOpen.Vector3d(0.0, 1.0, 0.0))):
+            opt = getattr(cpb, nm)
+            d = part.Directions.CreateDirection(
+                p(0.0, 0.0, 0.0), vec,
+                NXOpen.SmartObject.UpdateOption.WithinModeling)
+            opt.ProjectVector = d
+        feat = cpb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            cpb.Destroy()
+        except Exception:
+            pass
+    ents = []
+    try:
+        ents = [e for e in feat.GetEntities()] if feat is not None else []
+    except Exception as exc:
+        diag["entities"] = str(exc)[:60]
+    reads = {"entity_count": len(ents), "diag": diag}
+    if ents:
+        try:
+            sp = ents[0].StartPoint
+            ep = ents[0].EndPoint
+            reads["start_x"] = round(float(sp.X), 3)
+            reads["start_y"] = round(float(sp.Y), 3)
+            reads["start_z"] = round(float(sp.Z), 3)
+            reads["end_z"] = round(float(ep.Z), 3)
+        except Exception as exc:
+            diag["pts"] = str(exc)[:60]
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "curve_combined_projection": curve_combined_projection,
     "surface_offset": surface_offset,
     "feature_hole": feature_hole,
     "solid_trim_body": solid_trim_body,
