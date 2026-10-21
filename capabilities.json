@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 140
+    "verified": 141
   },
-  "generated_at": "2026-10-22T02:54:45",
+  "generated_at": "2026-10-22T03:18:31",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -69,6 +69,7 @@
     "drawing.view_isometric": "L1–L2",
     "drawing.view_scale": "L1–L2",
     "export.acis": "L1–L2",
+    "export.dxf": "L1–L3",
     "export.iges": "L1–L3",
     "export.parasolid": "L1–L2",
     "export.step": "L1–L3",
@@ -211,6 +212,7 @@
     "drawing.view_isometric": "drafting",
     "drawing.view_scale": "drafting",
     "export.acis": "gateway",
+    "export.dxf": "gateway",
     "export.iges": "gateway",
     "export.parasolid": "gateway",
     "export.step": "gateway",
@@ -339,17 +341,13 @@
       "reason": "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"
     },
     {
-      "id": "export.dxf",
-      "reason": "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"
-    },
-    {
       "id": "drawing.section_view",
       "reason": "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"
     }
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "0c032a5",
+    "kernel_commit": "04d26be",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -410,6 +408,7 @@
     "drawing.view_isometric": "drawing",
     "drawing.view_scale": "drawing",
     "export.acis": "export",
+    "export.dxf": "export",
     "export.iges": "export",
     "export.parasolid": "export",
     "export.step": "export",
