@@ -666,6 +666,24 @@ def sw_start_3d_sketch() -> Dict[str, Any]:
     return _with_doc(SE.start_3d_sketch)
 
 
+@mcp.tool(name="sw_add_equation")
+def sw_add_equation(expression: str = '"W" = 40') -> Dict[str, Any]:
+    r"""加方程/全局变量（verified）：判据 计数 +1 且 Equation 读回一致。
+
+    坑：`IModelDoc2` 没有 AddEquation；必须走 `IEquationMgr`（comtypes），
+    且 `GetCount/Value/Equation` 是**方法**要带括号；`Add2` 成功返回下标、失败 -1。
+    """
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.add_equation, expression)
+
+
+@mcp.tool(name="sw_delete_equation")
+def sw_delete_equation(index: int = 0) -> Dict[str, Any]:
+    """删方程/全局变量（verified）：判据 计数 -1。"""
+    from ..verified import doc_ops as DO
+    return _with_doc(DO.delete_equation, index)
+
+
 @mcp.tool(name="sw_get_equations")
 def sw_get_equations() -> Dict[str, Any]:
     """列方程（verified）：走 comtypes IEquationMgr。"""

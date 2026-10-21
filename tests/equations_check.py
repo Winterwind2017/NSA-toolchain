@@ -22,6 +22,7 @@ if _vendor and os.path.isdir(_vendor):
 
 from swkit.verified import equations as EQ            # noqa: E402
 from swkit.verified import features as F              # noqa: E402
+from swkit.verified import sketch_ops as S            # noqa: E402
 
 
 def main() -> int:
@@ -31,6 +32,20 @@ def main() -> int:
     results["set_var"] = EQ.set_global_variable(doc, "myvar", 5.0)
     results["list_after"] = EQ.list_equations(doc)
     results["ref_axis"] = EQ.create_reference_axis(doc, "前视基准面", "上视基准面")
+
+    # 方程增删（P2 转正项）：comtypes 走 IEquationMgr
+    try:
+        from swkit.verified import doc_ops as DO
+        d2 = F.new_part()
+        S.create_sketch(d2, "前视基准面")
+        S.rectangle(d2, 0, 0, 40, 25)
+        F.extrude(d2, 10.0)
+        results["add_equation"] = DO.add_equation(d2, '"W" = 40')
+        results["add_equation2"] = DO.add_equation(d2, '"H" = 25')
+        results["delete_equation"] = DO.delete_equation(d2, 0)
+        results["delete_equation2"] = DO.delete_equation(d2, 0)
+    except Exception as _e:                          # noqa: BLE001
+        results["add_equation"] = {"ok": False, "error": str(_e)[:70]}
 
     for name, res in results.items():
         print("== %-12s ok=%-5s checks=%s" % (name, res.get("ok"), res.get("checks")))

@@ -7,10 +7,10 @@
 
 | 归宿 | 数量 | 含义 |
 |---|---|---|
-| 已覆盖 | 123 | 本仓库有实现、有真机判据 |
+| 已覆盖 | 125 | 本仓库有实现、有真机判据 |
 | 已判死 | 5 | 上游实现调用了不存在/已废弃 API，或本仓库实测不可用 |
 | 已知不稳 | 2 | 能跑但会崩/判据不立，不进自动回归 |
-| 未达可用 | 16 | 已登记但没打通 |
+| 未达可用 | 14 | 已登记但没打通 |
 | 未复核 | 42 | **待办**：还没验证 |
 
 上游共解析出 **188** 个工具。
@@ -39,6 +39,7 @@
 | `sw_add_datum_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3092 |
 | `sw_add_drawing_dimension` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1569 |
 | `sw_add_drawing_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1533 |
+| `sw_add_equation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1859 |
 | `sw_add_hole_table` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3102 |
 | `sw_add_sketch_constraint` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1108 |
 | `sw_add_surface_finish` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3062 |
@@ -61,6 +62,7 @@
 | `sw_create_section_view` | — | 已覆盖 | 本仓库有实现且有真机判据 | 3298 |
 | `sw_create_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 855 |
 | `sw_delete_body` | — | 已覆盖 | 本仓库有实现且有真机判据 | 2369 |
+| `sw_delete_equation` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1880 |
 | `sw_delete_feature` | — | 已覆盖 | 本仓库有实现且有真机判据 | 1363 |
 | `sw_edit_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 872 |
 | `sw_exit_sketch` | — | 已覆盖 | 本仓库有实现且有真机判据 | 888 |
@@ -192,10 +194,8 @@
 | `sw_trim_weldment` | — | 未复核 | Trim selected weldment members to a planar or solid trim tool.""" | 2851 |
 | `sw_wrap` | — | 未复核 | Wrap a sketch around a selected curved face (emboss/deboss/scribe).""" | 3606 |
 | `sw_add_detail_view` | — | 未达可用 | 已登记但没打通： | 3012 |
-| `sw_add_equation` | — | 未达可用 | 已登记但没打通： | 1859 |
 | `sw_add_revision_table` | — | 未达可用 | 已登记但没打通： | 3112 |
 | `sw_add_section_view` | — | 未达可用 | 已登记但没打通： | 1553 |
-| `sw_delete_equation` | — | 未达可用 | 已登记但没打通： | 1880 |
 | `sw_edge_flange` | — | 未达可用 | 已登记但没打通： | 2719 |
 | `sw_export_flat_pattern` | — | 未达可用 | 已登记但没打通： | 2218 |
 | `sw_fold` | — | 未达可用 | 已登记但没打通： | 2779 |

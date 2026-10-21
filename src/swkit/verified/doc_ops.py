@@ -211,42 +211,67 @@ def capture_screenshot(doc: Any, path: str = "") -> Dict[str, Any]:
 
 
 def add_equation(doc: Any, expression: str = '"D1@草图1" = 40') -> Dict[str, Any]:
-    """加方程。判据：方程数 +1。"""
-    out = _result("sw_add_equation", "IModelDoc2.AddEquation")
+    """加方程/全局变量：`IEquationMgr.Add2(-1, expr, False)`。
+
+    坑（实测 SW 2025 SP4.1）：
+
+    * `IModelDoc2` **没有** `AddEquation`；方程只能走 `IEquationMgr`
+    * `GetEquationMgr()` 在 **pywin32** 下报"找不到成员" → 必须 **comtypes**
+    * `GetCount` / `Value` / `Equation` 在 comtypes 下是**方法**，要带括号
+    * `Add2` 成功返回**下标**（首条 0），失败返回 -1
+
+    判据：计数 +1 **且** `Equation(下标)` 读回与写入一致（不是只看返回值）。
+    """
+    out = _result("sw_add_equation", "IEquationMgr.Add2(-1, expr, False)")
     try:
-        before = _equation_count(doc)
-    except Exception:
-        before = -1
-    try:
-        ok = doc.AddEquation2(expression) if hasattr(doc, "AddEquation2") \
-            else doc.AddEquation(expression)
+        from .equations import equation_manager
+        em = equation_manager(doc)
+        before = em.GetCount()
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
-    after = _equation_count(doc)
-    out["detail"] = {"expression": expression, "returned": ok,
-                     "equations_before": before, "equations_after": after}
-    out["checks"] = {"equation_count": after >= 0 and after > before}
-    out["ok"] = out["checks"]["equation_count"]
+    out["detail"].update({"expression": expression, "count_before": before})
+    try:
+        idx = em.Add2(-1, expression, False)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = em.GetCount()
+    got = None
+    if isinstance(idx, int) and idx >= 0:
+        try:
+            got = em.Equation(idx)
+        except Exception:                           # noqa: BLE001
+            got = None
+    out["detail"].update({"returned_index": idx, "count_after": after,
+                          "readback": got})
+    out["checks"] = {"equation_count": after > before,
+                     "readback_matches": got == expression}
+    out["ok"] = all(out["checks"].values())
     return out
 
 
 def delete_equation(doc: Any, index: int = 0) -> Dict[str, Any]:
-    """删方程。判据：方程数 -1。"""
-    out = _result("sw_delete_equation", "IModelDoc2.DeleteEquation")
-    before = _equation_count(doc)
+    """删方程/全局变量：`IEquationMgr.Delete(index)`。判据：计数 -1。"""
+    out = _result("sw_delete_equation", "IEquationMgr.Delete(index)")
     try:
-        if hasattr(doc, "DeleteEquation2"):
-            ok = doc.DeleteEquation2(index)
-        else:
-            ok = doc.DeleteEquation(index)
+        from .equations import equation_manager
+        em = equation_manager(doc)
+        before = em.GetCount()
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
-    after = _equation_count(doc)
-    out["detail"] = {"index": index, "returned": ok,
-                     "equations_before": before, "equations_after": after}
-    out["checks"] = {"equation_removed": after >= 0 and after == before - 1}
+    if before <= 0:
+        out["detail"].update({"count_before": before, "error": "没有方程可删"})
+        return out
+    try:
+        em.Delete(int(index))
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = em.GetCount()
+    out["detail"].update({"index": index, "count_before": before, "count_after": after})
+    out["checks"] = {"equation_removed": after == before - 1}
     out["ok"] = out["checks"]["equation_removed"]
     return out
 

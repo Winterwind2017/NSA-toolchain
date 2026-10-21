@@ -225,6 +225,13 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
        "两块 40×25×10 重叠 20mm → 实体 2→**1**、体积 20000→**15000**（并集解析值）",
        "OperationType 要用 **swBodyOperationType_e**（SWBODYADD=15903，传 0 不生成特征）；"
        "ADD 时 MainBody 必须传 none_dispatch()；ToolVar 要 VARIANT(VT_ARRAY|VT_DISPATCH,[…])"),
+    _e("sw_add_equation", "doc", "IEquationMgr.Add2(-1, expr, False)",
+       "写 `\"W\" = 40` → 计数 **0→1**、`Equation(0)` 读回与写入**一致**；再写一条 → 2",
+       "`IModelDoc2` 没有 AddEquation；必须走 IEquationMgr，且 pywin32 下 GetEquationMgr 报找不到成员 "
+       "→ 用 comtypes；GetCount/Value/Equation 是**方法**要带括号；Add2 成功返回下标、失败 -1"),
+    _e("sw_delete_equation", "doc", "IEquationMgr.Delete(index)",
+       "两条方程依次删：计数 **2→1→0**，每次 -1",
+       "同 add：必须 comtypes；没有方程时提前返回而不是硬删"),
     _e("sw_analyze_draft", "feature",
        "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount",
        "分型线1（夹具 tests/fixtures/draft_parting_line.SLDPRT）：正拔模 **1**、负拔模 **1**、无拔模 **4**、跨面 **0**，合计 6 = 实体面数",
@@ -484,7 +491,7 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 
     ("sw_unfold", ToolEntry("sw_unfold", "sheet_metal", "unverified",
         "IModelDoc2.InsertSheetMetalUnfold()", "",
-        "平板无折弯时该动作无效果：特征 22→22、GetBendState 恒 1（需带折弯的钣金件才能验证）")),
+        "已用 insert_bends 造的**真带折弯件**重测（bend_state=3，含 ProcessBends/FlattenBends/FlatPattern）：4 种选择组合（不选/只边/面+边）都返回 None —— “面+边”会多出一个特征但体积 68000、包围盒 100×80×40 完全不变；空特征而非几何")),
     ("sw_fold", ToolEntry("sw_fold", "sheet_metal", "unverified",
         "IModelDoc2.InsertSheetMetalFold()", "", "同上：先要有展开态才谈折叠")),
 
@@ -493,11 +500,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_export_flat_pattern", ToolEntry("sw_export_flat_pattern", "sheet_metal",
         "unverified", "IModelDoc2.SaveAs(DXF)", "",
         "零件直接导 DXF 无输出（与 sw_export_dxf 同因：需工程图/展开图上下文）")),
-    ("sw_add_equation", ToolEntry("sw_add_equation", "doc", "unverified",
-        "IEquationMgr.Add", "",
-        "IModelDoc2 没有 AddEquation；IEquationMgr 需 comtypes 强类型，pywin32 下 GetEquationMgr 报找不到成员")),
-    ("sw_delete_equation", ToolEntry("sw_delete_equation", "doc", "unverified",
-        "IEquationMgr.Delete", "", "同上，随 add_equation 一起待解")),
+
+
     ("sw_add_revision_table", ToolEntry("sw_add_revision_table", "drawing", "unverified",
         "ISheet.InsertRevisionTable2(7 参)", "",
         "空模板与真实 .sldrevtbt 模板都返回 None，RevisionTable 仍为 None（SW2025 此上下文不可用）")),
@@ -581,7 +585,7 @@ _IMPLEMENTED = {
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
     "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft", "sw_export_iges",
-    "sw_move_body", "sw_combine_bodies",
+    "sw_move_body", "sw_combine_bodies", "sw_add_equation", "sw_delete_equation",
     "sw_revolve", "sw_mirror_feature", "sw_mirror", "sw_sketch_circular_pattern",
     "sw_sketch_convert_entities", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",
