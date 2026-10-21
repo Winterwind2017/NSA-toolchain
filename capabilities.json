@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 110
+    "verified": 111
   },
-  "generated_at": "2026-10-21T23:38:02",
+  "generated_at": "2026-10-21T23:39:43",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -89,6 +89,7 @@
     "feature.revolve": "L1–L3",
     "feature.shell": "L1–L3",
     "feature.shell_volume": "L1–L3",
+    "feature.spring": "L1–L3",
     "feature.stack_blocks": "L1–L3",
     "feature.thicken": "L1–L3",
     "feature.tube": "L1–L3",
@@ -201,6 +202,7 @@
     "feature.revolve": "solid_modeling",
     "feature.shell": "solid_modeling",
     "feature.shell_volume": "solid_modeling",
+    "feature.spring": "solid_modeling",
     "feature.stack_blocks": "solid_modeling",
     "feature.thicken": "solid_modeling",
     "feature.tube": "solid_modeling",
@@ -305,7 +307,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "d7c502b",
+    "kernel_commit": "8de5525",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -386,6 +388,7 @@
     "feature.revolve": "feature",
     "feature.shell": "feature",
     "feature.shell_volume": "feature",
+    "feature.spring": "feature",
     "feature.stack_blocks": "feature",
     "feature.thicken": "feature",
     "feature.tube": "feature",
