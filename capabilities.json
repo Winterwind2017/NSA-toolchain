@@ -10,16 +10,18 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 69
+    "verified": 71
   },
-  "generated_at": "2026-10-21T21:28:53",
+  "generated_at": "2026-10-21T21:31:26",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
     "asm.nested": "L1–L2",
     "asm.three_components": "L1–L2",
     "asm.two_components": "L1–L4",
+    "attr.double": "L2",
     "attr.int": "L2",
+    "attr.logical": "L2",
     "attr.on_body": "L2",
     "attr.on_feature": "L2",
     "attr.string": "L2–L4",
@@ -90,7 +92,9 @@
     "asm.nested": "assemblies",
     "asm.three_components": "assemblies",
     "asm.two_components": "assemblies",
+    "attr.double": "gateway",
     "attr.int": "gateway",
+    "attr.logical": "gateway",
     "attr.on_body": "gateway",
     "attr.on_feature": "gateway",
     "attr.string": "gateway",
@@ -198,7 +202,7 @@
     },
     {
       "id": "feature.rib",
-      "reason": "LoopOption 只有 Separate/SeparateOuter，链式剖面建不出来"
+      "reason": "part.Features 上没有 CreateRibBuilder"
     },
     {
       "id": "export.dxf",
@@ -223,7 +227,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "f417c9e",
+    "kernel_commit": "bd15fa3",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -234,7 +238,9 @@
     "asm.nested": "assembly",
     "asm.three_components": "assembly",
     "asm.two_components": "assembly",
+    "attr.double": "attr",
     "attr.int": "attr",
+    "attr.logical": "attr",
     "attr.on_body": "attr",
     "attr.on_feature": "attr",
     "attr.string": "attr",
