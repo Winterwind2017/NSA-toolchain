@@ -242,6 +242,13 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 30000.0, "max": 33000.0}},
         reopen=False),
+
+
+    Cap("curve.hyperbola", "curve", "双曲线（半实轴 50 / 半虚轴 25）", "curve_hyperbola", "L1–L3",
+        params={}, expect={"semi_transverse": 50.0, "semi_conjugate": 25.0},
+        reopen=False),
+    Cap("curve.parabola", "curve", "抛物线（焦准距 20）", "curve_parabola", "L1–L3",
+        params={}, expect={"focal_length": 20.0}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

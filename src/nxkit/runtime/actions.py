@@ -1645,65 +1645,6 @@ def surface_bounded_plane(params, workdir, rec):
     return reads
 
 
-def feature_thicken(params, workdir, rec):
-    """有界平面加厚 5 mm → 体积 25000。"""
-    part = new_part("thick")
-    lines = _rect_lines(part)
-    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
-    try:
-        rule = part.ScRuleFactory.CreateRuleCurveDumb(lines)
-        bp.BoundingCurves.AddToSection([rule], lines[0], None, None,
-                                       NXOpen.Point3d(0.0, 0.0, 0.0),
-                                       NXOpen.Section.Mode.Create)
-        sheet_feat = bp.CommitFeature()
-    finally:
-        try:
-            bp.Destroy()
-        except Exception:
-            pass
-    sheet = sheet_feat.GetBodies()[0]
-    faces = list(sheet.GetFaces())
-    tb = part.Features.CreateThickenBuilder(NXOpen.Features.Thicken.Null)
-    try:
-        frule = part.ScRuleFactory.CreateRuleFaceDumb(faces)
-        fsc = part.ScCollectors.CreateCollector()
-        fsc.AddRules([frule])
-        set_ok = None
-        for attr in ("FaceCollector", "Faces"):
-            try:
-                setattr(tb, attr, fsc)
-                set_ok = attr
-                break
-            except Exception as exc:
-                set_ok = "err:%s" % str(exc)[:60]
-        try:
-            tb.FirstOffset.SetFormula("5")
-        except Exception:
-            try:
-                tb.FirstOffset = "5"
-            except Exception:
-                pass
-        for name, val in (("Tolerance", 0.1), ("Tolerance", 0.5)):
-            try:
-                setattr(tb, name, val)
-                break
-            except Exception:
-                continue
-        tb.CommitFeature()
-        reads = {"face_attr": set_ok}
-    finally:
-        try:
-            tb.Destroy()
-        except Exception:
-            pass
-    bodies = _bodies_of(part)
-    reads["body_count"] = len(bodies)
-    if bodies:
-        reads.update(mass(part, bodies))
-    _close_part(part)
-    return reads
-
-
 def feature_tube(params, workdir, rec):
     """沿 100 mm 直线做 Ø20 管（实心）→ 31415.93。"""
     part = new_part("tube")
@@ -1760,6 +1701,29 @@ def feature_tube(params, workdir, rec):
     return reads
 
 
+def curve_hyperbola(params, workdir, rec):
+    part = new_part("hyp")
+    hyp = part.Curves.CreateHyperbola(
+        NXOpen.Point3d(0.0, 0.0, 0.0),
+        NXOpen.Vector3d(1.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 1.0, 0.0),
+        50.0, 25.0, -10.0, 10.0)
+    reads = {"semi_transverse": float(hyp.SemiTransverseLength),
+             "semi_conjugate": float(hyp.SemiConjugateLength)}
+    _close_part(part)
+    return reads
+
+
+def curve_parabola(params, workdir, rec):
+    part = new_part("par")
+    par = part.Curves.CreateParabola(
+        NXOpen.Point3d(0.0, 0.0, 0.0),
+        NXOpen.Vector3d(1.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 1.0, 0.0),
+        20.0, -10.0, 10.0)
+    reads = {"focal_length": float(par.FocalLength)}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1792,6 +1756,8 @@ ACTIONS = {
     "export_parasolid": export_parasolid,
     "export_acis": export_acis,
     "curve_ellipse": curve_ellipse,
+    "curve_hyperbola": curve_hyperbola,
+    "curve_parabola": curve_parabola,
     "attr_on_body": attr_on_body,
     "measure_face_area": measure_face_area,
     "solid_cone": solid_cone,
@@ -1819,7 +1785,6 @@ ACTIONS = {
     "chamfer_edge": chamfer_edge,
     "surface_bounded_plane": surface_bounded_plane,
     "feature_tube": feature_tube,
-    "feature_thicken": feature_thicken,
 }
 
 
