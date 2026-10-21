@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 108
+    "verified": 109
   },
-  "generated_at": "2026-10-21T23:23:13",
+  "generated_at": "2026-10-21T23:27:51",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -120,6 +120,7 @@
     "sketch.vertical": "L1–L2",
     "solid.cone": "L1–L3",
     "solid.cone_frustum": "L1–L3",
+    "solid.scale": "L1–L3",
     "solid.sphere": "L1–L3",
     "surface.bounded_plane": "L1–L2"
   },
@@ -230,10 +231,15 @@
     "sketch.vertical": "solid_modeling",
     "solid.cone": "solid_modeling",
     "solid.cone_frustum": "solid_modeling",
+    "solid.scale": "solid_modeling",
     "solid.sphere": "solid_modeling",
     "surface.bounded_plane": "solid_modeling"
   },
   "pending": [
+    {
+      "id": "solid.delete_body",
+      "reason": "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"
+    },
     {
       "id": "feature.hole",
       "reason": "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"
@@ -289,7 +295,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "e816530",
+    "kernel_commit": "8b672ec",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -401,6 +407,7 @@
     "sketch.vertical": "sketch",
     "solid.cone": "solid",
     "solid.cone_frustum": "solid",
+    "solid.scale": "solid",
     "solid.sphere": "solid",
     "surface.bounded_plane": "surface"
   }

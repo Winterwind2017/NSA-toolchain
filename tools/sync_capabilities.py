@@ -35,6 +35,7 @@ GROUP_LABEL = {
 
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
+    ("solid.delete_body", "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"),
     ("feature.hole", "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"),
     ("drawing.dimension", "part.Dimensions 的创建签名与视图绑定未验证"),
     ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
