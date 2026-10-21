@@ -36,11 +36,10 @@ GROUP_LABEL = {
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
     ("feature.hole", "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"),
-    ("feature.revolve", "CommitFeature 内存访问违例"),
     ("feature.mirror", "MirrorFeatureBuilder.Plane 只读"),
     ("drawing.dimension", "part.Dimensions 的创建签名与视图绑定未验证"),
     ("measure.distance", "MeasureDistance 无 Distance 属性，Information() 返回 None"),
-    ("cam.setup", "CreateCamSetup 返回 None，CAMSetup 报 no valid setup"),
+    ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),
     ("asm.constraints", "约束对象没有创建入口"),
     ("sketch.constraints", "Sketch.ConstraintGeometry 没有创建入口"),
