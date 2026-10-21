@@ -102,3 +102,11 @@
 `body.GetEdges()` 的顺序不稳定，选中的边长度可能是 20/50/100 mm：
 `V_removed = 0.5 × 5 × 5 × L`。判据必须给区间（本项目用 98500–100000），
 不能写死一个数。同类问题也出现在 `chamfer_multi`（面数 10~12）。
+
+## 十二、拉伸拔模：`Draft.DraftOption` 要枚举，不是 1
+
+`ExtrudeBuilder.Draft` 是 `MultiDraft`，`DraftOption` 必须给
+`NXOpen.GeometricUtilities.SimpleDraft.SimpleDraftType.SimpleFromStart`
+（传 `1` 报 "First parameter is invalid"）。只设 `DraftAngle = 5` 而 `DraftOption`
+仍是默认时，**体积一丝不变**（50000 → 仍然是 50000），是"假成功"的典型。
+设好之后 100×50×10 带 5° 拔模 = **48697.8757**。

@@ -2013,7 +2013,63 @@ def feature_boss(params, workdir, rec):
     return _volume_after_boolean(part, fa, fb, "Unite", workdir, "boss")
 
 
+def feature_extrude_taper(params, workdir, rec):
+    """100×50 截面拉伸 10 并带 5° 拔模 → 体积略小于 50000。"""
+    part = new_part("taper")
+    lines = _rect_lines(part)
+    secs = part.Sections.CreateSectionsUsingCurves(
+        lines, NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    b = part.Features.CreateExtrudeBuilder(NXOpen.Features.Feature.Null)
+    diag = {}
+    try:
+        b.Section = secs[0]
+        b.Direction = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(10.0)
+        except Exception:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula("10")
+        draft = b.Draft
+        diag["draft_type"] = type(draft).__name__
+        diag["draft_dir"] = [n for n in dir(draft) if not n.startswith("_")][:15]
+        try:
+            draft.DraftOption = NXOpen.GeometricUtilities.SimpleDraft.SimpleDraftType.SimpleFromStart
+            diag["option"] = "SimpleFromStart"
+        except Exception as exc:
+            diag["option"] = "err:%s" % str(exc)[:100]
+        for name in ("DraftAngle", "Angle", "FrontDraftAngle"):
+            if hasattr(draft, name):
+                try:
+                    getattr(draft, name).SetFormula("5")
+                    diag["angle"] = name
+                    break
+                except Exception as exc:
+                    diag["angle"] = "err:%s" % str(exc)[:60]
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads["faces"] = len(bodies[0].GetFaces())
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "taper.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    if b2:
+        reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"])
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "feature_extrude_taper": feature_extrude_taper,
     "feature_boss": feature_boss,
     "asm_nested": asm_nested,
     "asm_four_components": asm_four_components,

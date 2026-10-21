@@ -279,6 +279,11 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 103000.0, "max": 103300.0}},
         reopen=True),
+
+    Cap("feature.extrude_taper", "feature", "拉伸 10 带 5° 拔模", "feature_extrude_taper", "L1–L3",
+        params={}, expect={"body_count": 1, "faces": 6,
+                           "volume_mm3": {"min": 48600.0, "max": 48800.0}},
+        reopen=True),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
