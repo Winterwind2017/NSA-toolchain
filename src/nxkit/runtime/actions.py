@@ -517,7 +517,7 @@ def _export(params, workdir, rec, kind):
              "igs": bool(exists and kind == "iges")}
     if os.path.exists(path):
         with open(path, "rb") as fh:
-            head = fh.read(64).decode("latin-1", "replace")
+            head = fh.read(200).decode("latin-1", "replace")
         reads["export_head"] = head.strip()[:12]
     _close_part(part)
     return reads
@@ -2959,7 +2959,50 @@ def feature_thicken2(params, workdir, rec):
     return reads
 
 
+def export_parasolid(params, workdir, rec):
+    """导出 Parasolid 文本（X_T）。"""
+    part = new_part("para")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    path = os.path.join(workdir, "export.x_t")
+    if os.path.exists(path):
+        os.remove(path)
+    ex = session().DexManager.CreateParasolidExporter()
+    diag = {}
+    try:
+        ex.OutputFile = path
+        try:
+            ex.ExportFrom = NXOpen.ParasolidExporter.ExportFromOption.DisplayedPart
+            diag["export_from"] = "DisplayedPart"
+        except Exception as exc:
+            diag["export_from"] = "err:%s" % str(exc)[:100]
+        for flag in ("Solids", "Surfaces"):
+            try:
+                setattr(ex.ObjectTypes, flag, True)
+                diag["obj:" + flag] = True
+            except Exception as exc:
+                diag["obj:" + flag] = "err:%s" % str(exc)[:80]
+        ex.Commit()
+        diag["commit"] = "ok"
+    finally:
+        try:
+            ex.Destroy()
+        except Exception:
+            pass
+    exists = os.path.exists(path)
+    size = os.path.getsize(path) if exists else 0
+    head = ""
+    if exists:
+        with open(path, "rb") as fh:
+            head = fh.read(200).decode("latin-1", "replace")
+    reads = {"export_ok": bool(exists and size > 500), "export_bytes": size,
+             "head_ok": ("TRANSMIT" in head.upper() or "PARASOLID" in head.upper()),
+             "diag": diag}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "export_parasolid": export_parasolid,
     "feature_thicken2": feature_thicken2,
     "measure_distance": measure_distance,
     "asm_constraint_touch": asm_constraint_touch,

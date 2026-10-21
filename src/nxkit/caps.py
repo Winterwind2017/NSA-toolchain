@@ -384,6 +384,8 @@ CAPS: tuple[Cap, ...] = (
     Cap("export.step_ap214", "export", "AP214 STEP", "export_step_ap214", "L1–L2",
         params={}, expect={"export_ok": True, "has_iso_header": True,
                            "has_automotive_schema": True}, reopen=False),
+    Cap("export.parasolid", "export", "Parasolid X_T", "export_parasolid", "L1–L2",
+        params={}, expect={"export_ok": True, "head_ok": True}, reopen=False),
     Cap("measure.faces_two", "measure", "只量两个大面（面积 10000）", "measure_faces_two", "L2–L3",
         params={}, expect={"picked": 2,
                            "two_face_area": {"min": 9990.0, "max": 10010.0}},

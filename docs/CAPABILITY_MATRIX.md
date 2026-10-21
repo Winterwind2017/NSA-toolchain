@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **106** 条，全部真机通过；其中 **42** 条带 L4（存盘 → 重开 → 复测）。
+总计 **107** 条，全部真机通过；其中 **42** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -11,8 +11,8 @@
 | attr | 10 | 1 | gateway |
 | drawing | 10 | 0 | drafting |
 | assembly | 8 | 1 | assemblies |
+| export | 7 | 0 | gateway |
 | boolean | 6 | 6 | solid_modeling |
-| export | 6 | 0 | gateway |
 | solid | 6 | 6 | solid_modeling |
 | curve | 5 | 0 | solid_modeling |
 | measure | 5 | 1 | gateway |
@@ -27,7 +27,7 @@
 |---|---:|
 | assemblies | 8 |
 | drafting | 10 |
-| gateway | 27 |
+| gateway | 28 |
 | solid_modeling | 61 |
 
 ## 全部能力
@@ -128,6 +128,7 @@
 | `attr.update` | attr | L2 | — | gateway |
 | `part.inch` | part | L1–L3 | — | gateway |
 | `export.step_ap214` | export | L1–L2 | — | gateway |
+| `export.parasolid` | export | L1–L2 | — | gateway |
 | `measure.faces_two` | measure | L2–L3 | — | gateway |
 | `measure.distance` | measure | L2–L3 | — | gateway |
 | `feature.thicken` | feature | L1–L3 | — | solid_modeling |

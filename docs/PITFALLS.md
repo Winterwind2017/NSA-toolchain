@@ -174,3 +174,20 @@
 在装配里调用它，`run_journal` 整个会话中断（没有 result.json、判"会话中断"）。
 求解装配约束只能靠 `EndAssemblyConstraints()`；`EstablishNetwork`/`ClearNetwork`
 在脚本里属于危险接口，不要调用。
+
+## 二十一、Parasolid 导出的真正开关是 `ObjectTypes.Solids`
+
+`CreateParasolidExporter()` 即使设了 `ExportFrom = DisplayedPart`，默认 `ObjectTypes`
+全部为 False，`Commit()` 会报
+`Part has no valid export objects or all valid export objects are filtered out.`。
+必须显式打开类别：
+
+```python
+ex.ExportFrom = NXOpen.ParasolidExporter.ExportFromOption.DisplayedPart
+ex.ObjectTypes.Solids = True      # ← 缺这句就永远"没有可导对象"
+ex.OutputFile = path
+ex.Commit()
+```
+
+导出的 `.x_t` 头两行是 `**ABC...` 与 `**PARASOLID ...`，所以**判据要读前 200 字节**，
+只读 64 字节会漏掉关键字（本项目就漏过一次）。
