@@ -504,10 +504,10 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 
     ("sw_add_revision_table", ToolEntry("sw_add_revision_table", "drawing", "unverified",
         "ISheet.InsertRevisionTable2(7 参)", "",
-        "空模板与真实 .sldrevtbt 模板都返回 None，RevisionTable 仍为 None（SW2025 此上下文不可用）")),
+        "已用**真实模板全路径**重试（`lang/chinese-simplified/standard revision block.sldrevtbt`、英文 `no zone column.sldrevtbt`、空模板）与两种 API（InsertRevisionTable 5 参 / InsertRevisionTable2 7 参）：自由放置模式全返回 None；锚点模式（UseAnchorPoint=True, AnchorType 1-3）虽返回 `_Dispatch`，但其 Shape/Name/IsActive 全是 None，且 `ISheet.RevisionTable` 仍为 None、表格标注数读不到 —— 图纸本身有格式（`a3 - gb.slddrt`），所以不是缺格式")),
     ("sw_add_detail_view", ToolEntry("sw_add_detail_view", "drawing", "unverified",
         "IDrawingDoc.CreateDetailViewAt3(9 参)", "",
-        "返回 None、视图数不变：详图需要父视图上已有详图圆（detail circle）")),
+        "`CreateDetailViewAt3(9 参)` / `At4(12 参)` 在无详图圆时都返回 None、视图数不变；而**全类型库扫描确认没有任何 Create/Insert/Add DetailCircle 方法**（IView 只有 GetDetailCircle* 读取类）→ 详图圆只能交互创建，在图纸上画圆再用 SelectByID2 选 SKETCHSEGMENT 也选不中")),
     # ── 特征族里没打通/不可验证的（2026-10-20 实测依据）──────────────
 
 
