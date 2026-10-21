@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 60
+    "verified": 62
   },
-  "generated_at": "2026-10-21T21:10:52",
+  "generated_at": "2026-10-21T21:12:18",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.three_components": "L1–L2",
@@ -52,6 +52,7 @@
     "feature.edge_blend_all": "L1–L3",
     "feature.hole_array": "L1–L3",
     "feature.hole_blind": "L1–L3",
+    "feature.hole_csk": "L1–L3",
     "feature.hole_cyl": "L1–L3",
     "feature.pattern_circular": "L1–L3",
     "feature.pattern_grid": "L1–L3",
@@ -71,6 +72,7 @@
     "sketch.extrude": "L1–L3",
     "sketch.rect": "L1–L2",
     "solid.cone": "L1–L3",
+    "solid.cone_frustum": "L1–L3",
     "solid.sphere": "L1–L3",
     "surface.bounded_plane": "L1–L2"
   },
@@ -134,7 +136,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "400be7c",
+    "kernel_commit": "5a2ef15",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -179,6 +181,7 @@
     "feature.edge_blend_all": "feature",
     "feature.hole_array": "feature",
     "feature.hole_blind": "feature",
+    "feature.hole_csk": "feature",
     "feature.hole_cyl": "feature",
     "feature.pattern_circular": "feature",
     "feature.pattern_grid": "feature",
@@ -198,6 +201,7 @@
     "sketch.extrude": "sketch",
     "sketch.rect": "sketch",
     "solid.cone": "solid",
+    "solid.cone_frustum": "solid",
     "solid.sphere": "solid",
     "surface.bounded_plane": "surface"
   }
