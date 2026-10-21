@@ -95,6 +95,10 @@ def main() -> int:
     except Exception:
         pass
     results["mirror_feature"] = F.mirror_feature(doc, "前视基准面")
+    # 实体镜像（mark 256）——与镜像特征不同的能力
+    doc = _new_part_with_rect()
+    F.extrude(doc, depth_mm=20.0)
+    results["mirror_body"] = F.mirror_body(doc, "前视基准面")
 
     print()
     for name, res in known.items():

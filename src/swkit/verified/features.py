@@ -340,3 +340,61 @@ def mirror_feature(doc: Any, plane: str = "前视基准面") -> Dict[str, Any]:
                      "volume_doubled": bool(doubled)}
     out["ok"] = all(out["checks"].values())
     return out
+
+
+def mirror_body(doc: Any, plane: str = "前视基准面") -> Dict[str, Any]:
+    """镜像**实体**（`InsertMirrorFeature2(BMirrorBody=True)`）。
+
+    与 `mirror_feature` 的区别：这里镜像的是**整个实体**，不是特征。
+    选择标记（官方 Remarks）：待镜像**实体 = 256**、镜像面/基准面 = **2**。
+
+    实测 40×25×20 块跨前视基准面：体积 20000→**40000**、实体 1→**2**、
+    特征树出现 `MirrorSolid`。
+    """
+    out = _result("sw_mirror", "IFeatureManager.InsertMirrorFeature2(BMirrorBody=True)")
+    before = shape_counts(doc)
+    v0 = _volume_mm3(doc)
+    out["detail"].update({"plane": plane, "solids_before": before["solids"],
+                          "volume_before_mm3": v0})
+    body = None
+    for b in bodies(doc, 0):
+        body = b
+        break
+    if body is None:
+        out["detail"]["error"] = "没有实体可镜像"
+        return out
+    box = None
+    try:
+        box = [float(x) for x in (val(wrap(body), "GetBodyBox") or [])[:6]]
+    except Exception:                               # noqa: BLE001
+        box = None
+    doc.ClearSelection2(True)
+    ok_body = False
+    if box and len(box) == 6:
+        cx = (box[0] + box[3]) / 2.0
+        cy = (box[1] + box[4]) / 2.0
+        cz = (box[2] + box[5]) / 2.0
+        ok_body = doc.Extension.SelectByID2("", "SOLIDBODY", cx, cy, cz, False, 256,
+                                            none_dispatch(), 0)
+    ok_plane = doc.Extension.SelectByID2(plane, "PLANE", 0, 0, 0, True, 2,
+                                         none_dispatch(), 0)
+    out["detail"].update({"selected_body": bool(ok_body),
+                          "selected_plane": bool(ok_plane)})
+    if not (ok_body and ok_plane):
+        out["detail"]["error"] = "选择失败（实体或基准面）"
+        return out
+    try:
+        feat = doc.FeatureManager.InsertMirrorFeature2(True, False, False, False, 0)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    after = shape_counts(doc)
+    v1 = _volume_mm3(doc)
+    out["detail"].update({"solids_after": after["solids"],
+                          "features_after": after["features"],
+                          "volume_after_mm3": v1,
+                          "feature": None if feat is None else str(val(feat, "Name"))})
+    out["checks"] = {"feature_added": after["features"] > before["features"],
+                     "solid_added": after["solids"] > before["solids"]}
+    out["ok"] = all(out["checks"].values())
+    return out

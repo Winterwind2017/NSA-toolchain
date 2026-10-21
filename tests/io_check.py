@@ -43,9 +43,9 @@ def main() -> int:
     results = {}
     results["step"] = IO.export_step(os.path.join(OUT, "block.step"))
     results["stl"] = IO.export_stl(os.path.join(OUT, "block.stl"))
-    results["pdf"] = IO.export_pdf(os.path.join(OUT, "block.pdf"))
     known = {}
-    known["iges"] = IO.export_iges(os.path.join(OUT, "block.iges"))
+    results["iges"] = IO.export_iges(os.path.join(OUT, "block.iges"), doc=doc)
+    results["pdf"] = IO.export_pdf(os.path.join(OUT, "block.pdf"))
     known["dxf"] = IO.export_dxf(os.path.join(OUT, "block.dxf"))
     results["save"] = IO.save_document(doc, os.path.join(OUT, "block.SLDPRT"))
 

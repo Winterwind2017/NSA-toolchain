@@ -496,6 +496,26 @@ def sw_planar_surface() -> Dict[str, Any]:
     return _with_doc(SUR.planar_surface)
 
 
+@mcp.tool(name="sw_mirror")
+def sw_mirror(plane: str = "前视基准面") -> Dict[str, Any]:
+    """镜像**实体**（verified）：判据 实体数 +1。
+
+    与 `sw_mirror_feature`（镜像特征）不同。选择标记：实体 = **256**、基准面 = **2**。
+    """
+    from ..verified import features as FE
+    return _with_doc(FE.mirror_body, plane)
+
+
+@mcp.tool(name="sw_export_iges")
+def sw_export_iges(path: str) -> Dict[str, Any]:
+    r"""导出 IGES（verified）：判据 文件 >200B 且头部含 `SolidWorks IGES`。
+
+    必须走 `SaveAs4`，且 `Errors`/`Warnings` 两个输出参数传 `VARIANT(VT_BYREF|VT_I4, 0)`。
+    """
+    from ..verified import io_export as IO
+    return _com(lambda: IO.export_iges(path))
+
+
 @mcp.tool(name="sw_mirror_feature")
 def sw_mirror_feature(plane: str = "前视基准面") -> Dict[str, Any]:
     """镜像特征（verified）：判据 体积必须翻倍。

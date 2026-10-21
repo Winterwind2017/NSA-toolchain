@@ -112,9 +112,49 @@ def export_pdf(path: str) -> Dict[str, Any]:
                    path, lambda p: _kernel().export_pdf(p))
 
 
-def export_iges(path: str) -> Dict[str, Any]:
-    return _export("sw_export_iges", "IModelDoc2.SaveAs(IGES)",
-                   path, lambda p: _kernel().export_iges(p))
+def _saveas4(doc: Any, target: str, version: int = 0, options: int = 1) -> Any:
+    """`SaveAs4(Name, Version, Options, Errors, Warnings)`。
+
+    `Errors`/`Warnings` 是**输出参数**：必须传
+    `VARIANT(VT_BYREF|VT_I4, 0)`，传 0/None 都报"类型不匹配"。
+    """
+    import pythoncom
+    from win32com.client import VARIANT
+
+    def _out():
+        return VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
+
+    return doc.SaveAs4(target, int(version), int(options), _out(), _out())
+
+
+def export_iges(path: str = "", doc: Any = None) -> Dict[str, Any]:
+    """导出 IGES。判据：文件存在、>200B、头部含 `SolidWorks IGES`/`S`+`1H`。
+
+    坑：走 `IModelDoc2.SaveAs4` 且两个输出参数要 `VT_BYREF`；
+    内核的 `SaveAs` 路径调用不报错但**不写文件**（0 字节）。
+    """
+    current = None
+    try:
+        current = pyw().Dispatch("SldWorks.Application").ActiveDoc
+    except Exception:                               # noqa: BLE001
+        current = None
+    d = doc if doc is not None else current
+    if d is None:
+        out = _result("sw_export_iges", "IModelDoc2.SaveAs4(5 参)")
+        out["detail"]["error"] = "没有打开的文档"
+        return out
+    # 扩展名必须归一化成 .igs：SolidWorks 对 .iges **不写文件**
+    # （实测 .igs/.IGS → 22304 B，.iges → 0 B，且 SaveAs4 不报错）
+    target = path
+    root_dir, ext = os.path.splitext(path)
+    if ext.lower() not in (".igs",):
+        target = root_dir + ".igs"
+    out = _export("sw_export_iges", "IModelDoc2.SaveAs4(5 参, byref out)",
+                  target, lambda p: _saveas4(d, p, 0, 1))
+    if target != path:
+        out["detail"]["requested_path"] = os.path.abspath(path)
+        out["detail"]["ext_normalized"] = True
+    return out
 
 
 def export_dxf(path: str) -> Dict[str, Any]:

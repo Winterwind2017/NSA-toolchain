@@ -200,6 +200,12 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
     _e("sw_revolve", "feature", "IModelDoc.FeatureRevolve2(5 参)",
        "10–30 矩形绕 X 轴 360°：体积 **25132.741 mm³** = πR²h（R=20,h=20）；360°:180° 体积比 **2.0000**",
        "5 参版在 IModelDoc 上（不在 IModelDoc2），内核走错接口才报'非选择性的参数'；须 comtypes QI"),
+    _e("sw_mirror", "feature", "IFeatureManager.InsertMirrorFeature2(BMirrorBody=True)",
+       "40×25×20 实体跨前视基准面镜像：体积 20000→**40000**、实体 1→**2**、特征 MirrorSolid",
+       "与 sw_mirror_feature 不同：这里镜像**实体**，选择标记 实体=**256**、基准面=**2**（之前误用 32）"),
+    _e("sw_export_iges", "io", "IModelDoc2.SaveAs4(5 参, Errors/Warnings 用 VT_BYREF)",
+       "导出 IGES：**22304 B**，头部 SolidWorks IGES file using analytic repr",
+       "两个坑：① 内核走 SaveAs 不写文件，必须 SaveAs4 且 Errors/Warnings 传 VARIANT(VT_BYREF|VT_I4, 0)；② 扩展名只认 **.igs**，传 .iges 会静默 0 字节（实现里已归一化）"),
     _e("sw_mirror_feature", "feature", "IFeatureManager.InsertMirrorFeature2(5 参)",
        "40×25×20 实体跨前视基准面镜像：体积 20000→**40000**（比 **2.0**）、特征「镜向1」",
        "选择标记：待镜像特征 = **1**，镜像面/基准面 = **2**（官方 Remarks 表）"),
@@ -498,12 +504,6 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
 
 
 
-    ("sw_mirror", ToolEntry("sw_mirror", "feature", "unverified",
-        "InsertMirrorFeature2(5 参)", "",
-        "特征(选中 2 个对象)+基准面(mark 32)都选好后仍返回 None")),
-    ("sw_export_iges", ToolEntry("sw_export_iges", "feature", "unverified",
-        "IModelDoc2.SaveAs(IGES)", "",
-        "调用不报错但文件根本没生成（0 字节/不存在）")),
     ("sw_export_dxf", ToolEntry("sw_export_dxf", "feature", "unverified",
         "IModelDoc2.SaveAs(DXF)", "",
         "零件直接导 DXF 无输出（DXF 需工程图或展开图上下文）")),
@@ -575,8 +575,8 @@ _IMPLEMENTED = {
     # 图纸补充（verified/drawing_extra.py，2026-10-20 真机 3/5）
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
-    "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft",
-    "sw_revolve", "sw_mirror_feature", "sw_sketch_circular_pattern",
+    "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft", "sw_export_iges",
+    "sw_revolve", "sw_mirror_feature", "sw_mirror", "sw_sketch_circular_pattern",
     "sw_sketch_convert_entities", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",
     # 上游装配结构/状态族（verified/asm_state.py，2026-10-20 真机 11/11）
