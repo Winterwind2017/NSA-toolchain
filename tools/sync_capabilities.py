@@ -110,6 +110,7 @@ def build_snapshot() -> dict:
         "counts": {"verified": len(verified), "families": len(set(verified.values()))},
         "verified": verified,
         "levels": levels,
+        "licenses": {c.id: c.license for c in caps.CAPS if c.license},
         "cli_commands": cli,
         "pending": [{"id": i, "reason": r} for i, r in PENDING],
     }

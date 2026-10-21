@@ -34,7 +34,9 @@ NX 的 NXOpen 接口有一批**反直觉**的地方：builder 的 `Null` 哨兵�
 2. `nxkit selftest` —— 离线自检（动作/判据/负例，不需要 NX）。
 3. `nxkit list` —— **只用这张表**里的能力；表里没有的先看
    [`docs/UNSUPPORTED.md`](https://github.com/Winterwind2017/nxkit/blob/main/docs/UNSUPPORTED.md)。
-4. 动手前想清楚判据：这次改动应该让**实体数 / 面数 / 边数 / 体积 / 面积 /
+4. `nxkit licenses` —— 读 SPLM `.dat`，确认本机买了这条能力需要的 feature
+   （建模 `solid_modeling`、制图 `drafting`、装配 `assemblies`、其余 `gateway`）；
+5. 动手前想清楚判据：这次改动应该让**实体数 / 面数 / 边数 / 体积 / 面积 /
    属性 / 文件签名**中的哪一个变化？说不出来就先别调。
 
 没装内核时：
@@ -82,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **66** 条 verified 能力（内核 `nxkit 0.1.0`，commit `2c9da2b`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **66** 条 verified 能力（内核 `nxkit 0.1.0`，commit `0d056a9`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
