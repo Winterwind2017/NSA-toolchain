@@ -1553,6 +1553,67 @@ def edge_blend_all(params, workdir, rec):
     return reads
 
 
+def measure_face_single(params, workdir, rec):
+    """最大面的面积/周长（100×50 面：5000 / 300）。"""
+    part = new_part("face1")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    mm = part.MeasureManager
+    unit = _unit(part)
+    best = None
+    for face in body.GetFaces():
+        mf = mm.NewFaceProperties(unit, unit, 0.99, [face])
+        area = float(mf.Area)
+        if best is None or area > best[0]:
+            best = (area, float(mf.Perimeter))
+    reads = {"face_area_max": best[0], "face_perimeter_max": best[1]}
+    _close_part(part)
+    return reads
+
+
+def chamfer_edge(params, workdir, rec):
+    """单边倒角 5 mm：面 7，体积在 99000–100000（边长度随选择变化）。"""
+    part = new_part("chama")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    cb = part.Features.CreateChamferBuilder(NXOpen.Features.Feature.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleEdgeDumb([list(body.GetEdges())[0]])
+        sc = part.ScCollectors.CreateCollector()
+        sc.AddRules([rule])
+        cb.SmartCollector = sc
+        opt = None
+        for value in (2, 1):
+            try:
+                cb.Option = value
+                opt = value
+                break
+            except Exception:
+                continue
+        try:
+            cb.FirstOffsetExp.SetFormula("5")
+        except Exception:
+            pass
+        try:
+            cb.AngleExp.SetFormula("30")
+        except Exception:
+            pass
+        cb.CommitFeature()
+        reads = {"option_used": opt}
+    finally:
+        try:
+            cb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    reads["faces"] = len(bodies[0].GetFaces()) if bodies else 0
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1608,6 +1669,8 @@ ACTIONS = {
     "asm_three_components": asm_three_components,
     "feature_revolve": feature_revolve,
     "edge_blend_all": edge_blend_all,
+    "measure_face_single": measure_face_single,
+    "chamfer_edge": chamfer_edge,
 }
 
 

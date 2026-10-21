@@ -224,6 +224,14 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 94000.0, "max": 100000.0}},
         reopen=False),
+
+    Cap("measure.face_single", "measure", "最大面的面积/周长", "measure_face_single", "L3",
+        params={}, expect={"face_area_max": 5000.0, "face_perimeter_max": 300.0},
+        reopen=False),
+    Cap("feature.chamfer_edge", "feature", "单边倒角 5 mm（另一条边）", "chamfer_edge", "L1–L3",
+        params={}, expect={"body_count": 1, "faces": 7,
+                           "volume_mm3": {"min": 99000.0, "max": 100000.0}},
+        reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
