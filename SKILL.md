@@ -82,16 +82,16 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **35** 条 verified 能力（内核 `nxkit 0.1.0`，commit `0a7aa36`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **38** 条 verified 能力（内核 `nxkit 0.1.0`，commit `21c4371`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **特征（拉伸）**（9） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
+| **特征（拉伸）**（10） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
 | **实体**（5） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.sphere`（L1–L3） |
-| **属性**（3） | `attr.int`（L2） `attr.on_body`（L2） `attr.string`（L2–L4） |
+| **属性**（4） | `attr.int`（L2） `attr.on_body`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） |
+| **导出**（4） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） |
 | **布尔**（3） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.union`（L1–L4） |
 | **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
-| **导出**（3） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
 | **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
 | **测量**（2） | `measure.face_area`（L3） `measure.mass`（L3） |
