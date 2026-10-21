@@ -365,6 +365,19 @@ CAPS: tuple[Cap, ...] = (
         expect={"sheet_height": 841.0, "sheet_width": 1189.0}, reopen=False),
     Cap("sketch.tangent", "sketch", "相切约束", "sketch_tangent", "L1–L2",
         params={}, expect={"con_ok": True}, reopen=False),
+    Cap("drawing.sheet_ansi_a", "drawing", "ANSI A 图幅 8.5×11 in", "drawing_sheet_size", "L1–L2",
+        params={"size": "A"},
+        expect={"sheet_height": 8.5, "sheet_width": 11.0}, reopen=False),
+    Cap("drawing.sheet_ansi_b", "drawing", "ANSI B 图幅 11×17 in", "drawing_sheet_size", "L1–L2",
+        params={"size": "B"},
+        expect={"sheet_height": 11.0, "sheet_width": 17.0}, reopen=False),
+    Cap("drawing.sheet_ansi_c", "drawing", "ANSI C 图幅 17×22 in", "drawing_sheet_size", "L1–L2",
+        params={"size": "C"},
+        expect={"sheet_height": 17.0, "sheet_width": 22.0}, reopen=False),
+    Cap("attr.delete", "attr", "属性删除后读回为空", "attr_delete", "L2",
+        params={}, expect={"before": "abc", "deleted": True}, reopen=False),
+    Cap("attr.update", "attr", "属性覆写为 new", "attr_update", "L2",
+        params={}, expect={"value": "new"}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:

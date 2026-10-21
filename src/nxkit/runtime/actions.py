@@ -2520,7 +2520,36 @@ def sketch_tangent(params, workdir, rec):
     return reads
 
 
+def attr_delete(params, workdir, rec):
+    """写属性再删掉，验证读回为空/异常。"""
+    part = new_part("attrdel")
+    part.SetAttribute("NXKIT_TMP", "abc")
+    before = str(part.GetStringAttribute("NXKIT_TMP"))
+    part.DeleteAttributeByTypeAndTitle(
+        NXOpen.NXObject.AttributeType.String, "NXKIT_TMP",
+        NXOpen.Update.Option.Now)
+    try:
+        after = str(part.GetStringAttribute("NXKIT_TMP"))
+    except Exception:
+        after = ""
+    reads = {"before": before, "after": after, "deleted": after == ""}
+    _close_part(part)
+    return reads
+
+
+def attr_update(params, workdir, rec):
+    """覆写同一标题的属性值。"""
+    part = new_part("attrup")
+    part.SetAttribute("NXKIT_UPD", "old")
+    part.SetAttribute("NXKIT_UPD", "new")
+    reads = {"value": str(part.GetStringAttribute("NXKIT_UPD"))}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "attr_delete": attr_delete,
+    "attr_update": attr_update,
     "sketch_tangent": sketch_tangent,
     "sketch_constraint_pair": sketch_constraint_pair,
     "sketch_constraint_extra": sketch_constraint_extra,

@@ -139,3 +139,11 @@
 - 删函数用 `ast` 解析取 `FunctionDef` 的 `lineno/end_lineno` 精确切片，或**从 git 恢复**再重做；
 - 任何批量文本替换后，**先 `py_compile` + `nxkit selftest`，再跑真机**；
 - 修坏了先 `git checkout HEAD -- <file>`，别在破损文件上继续打补丁。
+
+## 十六、ANSI 图幅读回是**英寸**，ISO 图幅是**毫米**
+
+同一个 `InsertSheet(...)`，`sheet.Height/Length` 的单位跟着图幅系列走：
+- `A4/A3/A2/A1/A0` → **毫米**（如 A4 = 210 / 297）
+- `A/B/C/D/E`（ANSI）→ **英寸**（如 A = 8.5 / 11，B = 11 / 17）
+
+判据必须按系列给单位，否则 A 图幅会"差 25.4 倍"。

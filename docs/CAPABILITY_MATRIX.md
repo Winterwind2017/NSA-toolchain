@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **87** 条，全部真机通过；其中 **41** 条带 L4（存盘 → 重开 → 复测）。
+总计 **92** 条，全部真机通过；其中 **41** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -8,8 +8,8 @@
 |---|---:|---:|---|
 | feature | 24 | 24 | solid_modeling |
 | sketch | 16 | 2 | solid_modeling |
-| drawing | 7 | 0 | drafting |
-| attr | 6 | 1 | gateway |
+| drawing | 10 | 0 | drafting |
+| attr | 8 | 1 | gateway |
 | solid | 6 | 6 | solid_modeling |
 | assembly | 5 | 1 | assemblies |
 | boolean | 5 | 5 | solid_modeling |
@@ -26,8 +26,8 @@
 | license | 能力数 |
 |---|---:|
 | assemblies | 5 |
-| drafting | 7 |
-| gateway | 18 |
+| drafting | 10 |
+| gateway | 20 |
 | solid_modeling | 57 |
 
 ## 全部能力
@@ -121,3 +121,8 @@
 | `drawing.sheet_a1` | drawing | L1–L2 | — | drafting |
 | `drawing.sheet_a0` | drawing | L1–L2 | — | drafting |
 | `sketch.tangent` | sketch | L1–L2 | — | solid_modeling |
+| `drawing.sheet_ansi_a` | drawing | L1–L2 | — | drafting |
+| `drawing.sheet_ansi_b` | drawing | L1–L2 | — | drafting |
+| `drawing.sheet_ansi_c` | drawing | L1–L2 | — | drafting |
+| `attr.delete` | attr | L2 | — | gateway |
+| `attr.update` | attr | L2 | — | gateway |
