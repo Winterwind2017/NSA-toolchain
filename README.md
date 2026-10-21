@@ -84,7 +84,7 @@ python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 ## 现状与差距
 
 - `docs/CAPABILITY_MATRIX.md`：族 × 层级 × 许可 × 是否 L4 的完整矩阵（脚本生成）
-- `docs/STATUS.md、docs/VERIFY.md`：条数、许可档位、未打通清单与"为什么没到 200+"的说明
+- `docs/STATUS.md、docs/VERIFY.md、docs/FINAL_REPORT.md`：条数、许可档位、未打通清单与"为什么没到 200+"的说明
 - `docs/UNSUPPORTED.md`：每一项未打通能力的**错误原文**
 
 ## 判据怎么算
