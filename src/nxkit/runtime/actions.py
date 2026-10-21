@@ -2172,7 +2172,28 @@ def feature_stack_blocks(params, workdir, rec):
     return _volume_after_boolean(part, fa, fb, "Unite", workdir, "stack")
 
 
+def attr_double(params, workdir, rec):
+    """写实数属性 3.25 并读回。"""
+    part = new_part("attrd")
+    part.SetAttribute("NXKIT_DBL", 3.25)
+    reads = {"double_attr": round(float(part.GetRealAttribute("NXKIT_DBL")), 6)}
+    _close_part(part)
+    return reads
+
+
+def attr_logical(params, workdir, rec):
+    """写布尔属性 True 并读回。"""
+    part = new_part("attrl")
+    part.SetBooleanUserAttribute("NXKIT_BOOL", 0, True,
+                                 NXOpen.Update.Option.Now)
+    reads = {"logical_attr": bool(part.GetBooleanUserAttribute("NXKIT_BOOL", 0))}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "attr_double": attr_double,
+    "attr_logical": attr_logical,
     "feature_stack_blocks": feature_stack_blocks,
     "feature_offset_face": feature_offset_face,
     "feature_cross_hole": feature_cross_hole,

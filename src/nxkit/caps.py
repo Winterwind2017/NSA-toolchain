@@ -316,6 +316,10 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 114500.0, "max": 115500.0}},
         reopen=True),
+    Cap("attr.double", "attr", "实数属性 3.25 读回", "attr_double", "L2",
+        params={}, expect={"double_attr": 3.25}, reopen=False),
+    Cap("attr.logical", "attr", "布尔属性 True 读回", "attr_logical", "L2",
+        params={}, expect={"logical_attr": True}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:
