@@ -9,11 +9,13 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 62
+    "verified": 64
   },
-  "generated_at": "2026-10-21T21:12:18",
+  "generated_at": "2026-10-21T21:14:37",
   "levels": {
     "asm.add_component": "L1–L2",
+    "asm.four_components": "L1–L2",
+    "asm.nested": "L1–L2",
     "asm.three_components": "L1–L2",
     "asm.two_components": "L1–L4",
     "attr.int": "L2",
@@ -136,13 +138,15 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "5a2ef15",
+    "kernel_commit": "f8d55c7",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
   "schema": 1,
   "verified": {
     "asm.add_component": "assembly",
+    "asm.four_components": "assembly",
+    "asm.nested": "assembly",
     "asm.three_components": "assembly",
     "asm.two_components": "assembly",
     "attr.int": "attr",
