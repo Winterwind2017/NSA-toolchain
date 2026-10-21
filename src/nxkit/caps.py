@@ -46,6 +46,9 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("inspect.face_types", "inspect", "圆柱体面类型分类（2 平面 + 1 圆柱面）",
+        "inspect_face_types", "L1–L2", params={},
+        expect={"face_total": 3, "planar": 2, "cylindrical": 1}, reopen=False),
     Cap("measure.perimeter", "measure", "顶面周长（100×50 → 300）",
         "measure_face_perimeter", "L1–L2", params={},
         expect={"perimeter_mm": {"min": 299.5, "max": 300.5},

@@ -3956,7 +3956,40 @@ def measure_face_perimeter(params, workdir, rec):
     _close_part(part)
     return reads
 
+def inspect_face_types(params, workdir, rec):
+    """圆柱体：2 个平面 + 1 个圆柱面（按 Face.SolidFaceType 分类）。"""
+    part = new_part("ftype")
+    cyl = make_cylinder(part, 0, 0, 0, 25.0, 80.0)
+    body = cyl.GetBodies()[0]
+    enum_cls = NXOpen.Face.FaceType
+    candidates = ("Rubber", "Planar", "Cylindrical", "Conical", "Spherical",
+                  "SurfaceOfRevolution", "Parametric", "Blending")
+
+    def name_of(ft):
+        for attr in candidates:
+            try:
+                if ft == getattr(enum_cls, attr):
+                    return attr
+            except Exception:
+                continue
+        return "raw:" + str(ft).split(".")[-1]
+
+    counts = {}
+    for f in body.GetFaces():
+        try:
+            kind = name_of(f.SolidFaceType)
+        except Exception as exc:
+            kind = "err:%s" % str(exc)[:40]
+        counts[kind] = counts.get(kind, 0) + 1
+    reads = {"face_total": len(list(body.GetFaces())),
+             "planar": counts.get("Planar", 0),
+             "cylindrical": counts.get("Cylindrical", 0),
+             "types": counts}
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "inspect_face_types": inspect_face_types,
     "measure_face_perimeter": measure_face_perimeter,
     "surface_sew": surface_sew,
     "surface_through_curves": surface_through_curves,

@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **126** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
+总计 **127** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -18,8 +18,8 @@
 | measure | 6 | 2 | gateway |
 | part | 4 | 1 | gateway |
 | surface | 4 | 1 | solid_modeling |
+| inspect | 3 | 0 | gateway |
 | file | 2 | 1 | gateway |
-| inspect | 2 | 0 | gateway |
 
 ## 按许可档位
 
@@ -27,13 +27,14 @@
 |---|---:|
 | assemblies | 8 |
 | drafting | 12 |
-| gateway | 31 |
+| gateway | 32 |
 | solid_modeling | 75 |
 
 ## 全部能力
 
 | id | 族 | 层级 | L4 | 许可 |
 |---|---|---|---|---|
+| `inspect.face_types` | inspect | L1–L2 | — | gateway |
 | `measure.perimeter` | measure | L1–L2 | — | gateway |
 | `surface.sew` | surface | L1–L2 | — | solid_modeling |
 | `surface.through_curves` | surface | L1–L2 | — | solid_modeling |
