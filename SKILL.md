@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **122** 条 verified 能力（内核 `nxkit 0.1.0`，commit `92e71a1`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **122** 条 verified 能力（内核 `nxkit 0.1.0`，commit `922fc10`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|

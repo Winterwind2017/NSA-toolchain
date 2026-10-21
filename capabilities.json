@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 122
   },
-  "generated_at": "2026-10-22T00:30:40",
+  "generated_at": "2026-10-22T00:31:08",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -329,7 +329,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "92e71a1",
+    "kernel_commit": "922fc10",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
