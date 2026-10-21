@@ -309,6 +309,13 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.cross_hole", "feature", "横向 Ø20 通孔（管道求差）", "feature_cross_hole", "L1–L3",
         params={}, expect={"volume_mm3": {"min": 68500.0, "max": 68700.0}},
         reopen=True),
+    Cap("feature.offset_face", "feature", "六面偏置 5 mm（110×60×30）", "feature_offset_face", "L1–L3",
+        params={}, expect={"volume_mm3": {"min": 197000.0, "max": 199000.0}},
+        reopen=True),
+    Cap("feature.stack_blocks", "feature", "两块叠加并集（115000）", "feature_stack_blocks", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 114500.0, "max": 115500.0}},
+        reopen=True),
 )
 
 def licenses() -> list[tuple[str, str]]:

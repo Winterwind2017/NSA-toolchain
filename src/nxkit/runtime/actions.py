@@ -2115,7 +2115,66 @@ def feature_cross_hole(params, workdir, rec):
     return reads
 
 
+def feature_offset_face(params, workdir, rec):
+    """六个面各偏置 5 mm → 110×60×30 = 198000。"""
+    part = new_part("off")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    faces = list(body.GetFaces())
+    diag = {"sentinel": None, "collector": None}
+    of = None
+    for name in ("OffsetFace", "Feature"):
+        try:
+            of = part.Features.CreateOffsetFaceBuilder(getattr(NXOpen.Features, name).Null)
+            diag["sentinel"] = name
+            break
+        except Exception as exc:
+            diag["sentinel"] = "err:%s" % str(exc)[:80]
+            of = None
+    if of is None:
+        raise RuntimeError("CreateOffsetFaceBuilder 不可用: %r" % diag)
+    try:
+        rule = part.ScRuleFactory.CreateRuleFaceDumb(faces)
+        try:
+            of.FaceCollector.AddRules([rule])
+            diag["collector"] = "AddRules"
+        except Exception as exc:
+            diag["collector"] = "err:%s" % str(exc)[:100]
+        try:
+            of.Distance.SetFormula("5")
+        except Exception as exc:
+            diag["distance"] = "err:%s" % str(exc)[:100]
+        cf = of.CommitFeature()
+    finally:
+        try:
+            of.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads["faces"] = len(bodies[0].GetFaces())
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "off.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    if b2:
+        reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"])
+    _close_part(part2)
+    return reads
+
+
+def feature_stack_blocks(params, workdir, rec):
+    """两块叠加并集：100×50×20 + 50×30×10 = 115000。"""
+    part = new_part("stack")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_block(part, 25.0, 10.0, 20.0, 50.0, 30.0, 10.0)
+    return _volume_after_boolean(part, fa, fb, "Unite", workdir, "stack")
+
+
 ACTIONS = {
+    "feature_stack_blocks": feature_stack_blocks,
+    "feature_offset_face": feature_offset_face,
     "feature_cross_hole": feature_cross_hole,
     "feature_extrude_taper": feature_extrude_taper,
     "feature_boss": feature_boss,

@@ -76,7 +76,7 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（67 条，全部真机通过）
+## 能力（69 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
