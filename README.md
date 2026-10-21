@@ -64,6 +64,12 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 
 `selftest` 会自动做这项预检（读不到 `.dat` 时跳过，不误报）。
 
+## 现状与差距
+
+- `docs/CAPABILITY_MATRIX.md`：族 × 层级 × 许可 × 是否 L4 的完整矩阵（脚本生成）
+- `docs/STATUS.md`：条数、许可档位、未打通清单与"为什么没到 200+"的说明
+- `docs/UNSUPPORTED.md`：每一项未打通能力的**错误原文**
+
 ## 判据怎么算
 
 | 级别 | 内容 | 例子 |
@@ -76,7 +82,7 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（94 条，全部真机通过）
+## 能力（95 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|

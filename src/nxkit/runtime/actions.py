@@ -2591,7 +2591,27 @@ def export_step_ap214(params, workdir, rec):
     return reads
 
 
+def _face_area(part, faces):
+    mm = part.MeasureManager
+    return float(mm.NewFaceProperties(_unit(part), _unit(part), 0.99, faces).Area)
+
+
+def measure_faces_two(params, workdir, rec):
+    """只量两个面（两个 100×50 面 → 面积 10000）。"""
+    part = new_part("face2")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    faces = list(body.GetFaces())
+    big = [f for f in faces if abs(_face_area(part, [f]) - 5000.0) < 1.0]
+    picked = big[:2]
+    reads = {"picked": len(picked),
+             "two_face_area": float(_face_area(part, picked))}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "measure_faces_two": measure_faces_two,
     "part_inch": part_inch,
     "export_step_ap214": export_step_ap214,
     "attr_delete": attr_delete,
