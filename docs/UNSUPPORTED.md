@@ -39,3 +39,5 @@
 | `solid.split_body` | 走到 `BooleanTool.FacePlaneTool.ToolPlane`：该属性**只要 `NXOpen.Plane`**，给 `DatumPlane` 报 `Expecting NXOpen.Plane type, found NXOpen.DatumPlane`；而 `part.Planes.CreateFixedPlane(...)` 给的 Plane 虽能赋值，`Commit` 仍报 `The tool object is missing`；`DatumPlane` 又没有 `.Plane` 可取（只有 Feature/Origin/Normal） | 需要 NX 认的 Plane 句柄 |
 
 | `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX/DeltaY/DeltaZ` 是 **float 属性**（不是表达式），设成 100/0/0 后 `CommitFeature()` 仍报 `Feature has zero parameters` | 需要正确的运动参数提交方式 |
+
+| `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for this operation` | 需要正确的参考点服务配置 |
