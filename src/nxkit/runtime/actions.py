@@ -1183,6 +1183,44 @@ def hole_array(params, workdir, rec):
     return reads
 
 
+def feature_shell(params, workdir, rec):
+    """块抽壳 2 mm（封闭空腔）→ 29344。"""
+    part = new_part("shell")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    sb = part.Features.CreateShellBuilder(NXOpen.Features.Feature.Null)
+    try:
+        sb.Body = body
+        thickness_set = None
+        for setter in (lambda: sb.SetDefaultThickness("2"),
+                       lambda: setattr(sb, "DefaultThickness", "2"),
+                       lambda: sb.DefaultThickness.SetFormula("2")):
+            try:
+                setter()
+                thickness_set = "ok"
+                break
+            except Exception as exc:
+                thickness_set = "err:%s" % str(exc)[:80]
+        try:
+            sb.Tolerance = 0.01
+        except Exception:
+            pass
+        cf = sb.CommitFeature()
+        reads = {"feature": str(cf.GetFeatureName())}
+    finally:
+        try:
+            sb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["thickness_set"] = thickness_set
+    reads["body_count"] = len(bodies)
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1227,6 +1265,7 @@ ACTIONS = {
     "drawing_dimension": drawing_dimension,
     "boolean_two_tools": boolean_two_tools,
     "hole_array": hole_array,
+    "feature_shell": feature_shell,
 }
 
 

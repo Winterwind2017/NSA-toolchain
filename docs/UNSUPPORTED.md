@@ -15,6 +15,8 @@
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 | 依赖基础视图（已通） |
 | `measure.distance` | `MeasureDistance` 没有 `Distance` 属性，`Information()` 返回 `None`；数值在 `CreateFeature()` 产出的 `Measure` 表达式里，未打通 | 依赖 `Measure.CreateFeature` |
 | `cam.setup` | `part.CreateCamSetup("mill_planar")` **返回 None**，随后 `part.CAMSetup` 报 `Current part does not contain valid setup`；试过 `mill_planar`/`mill_contour`/`drill` | 可能要在 CAM 应用上下文里建（`NXOpen.CAM` 域） |
+| `feature.revolve` | `CreateRevolveBuilder` + `Section` + `Axes.CreateAxis` 后 `CommitFeature()` 报 **内存访问违例** | 需要换截面/轴构造方式 |
+| `feature.mirror` | `MirrorFeatureBuilder.Plane` **只读**（只能 `PlaneOption` + `PlaneConstructor`），未找到可写入口 | 需要 PlaneConstructor 用法 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints` | 装配约束 API 未挖 | 依赖组件（已通） |
 | `export.dxf` | `DxfdwgCreator` 需要图纸/视图上下文 | 依赖出图（已通） |

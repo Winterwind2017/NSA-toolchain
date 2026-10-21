@@ -174,6 +174,12 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.hole_array", "feature", "四个 Ø20 通孔阵列", "hole_array", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": 74867.25849365017}, reopen=False),
+
+
+    Cap("feature.shell", "feature", "块抽壳 2 mm（封闭空腔）", "feature_shell", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 28000.0, "max": 30000.0}},
+        reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
