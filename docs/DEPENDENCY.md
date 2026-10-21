@@ -1,7 +1,7 @@
 # 依赖分析与攻击顺序（DEPENDENCY）
 
 > 说明：这份文档回答一个问题——**先攻哪个、后攻哪个，才不会白费一轮**。
-> 生成时间 2026-10-21；能力数 116（L4 53）。
+> 生成时间 2026-10-21；能力数 117（L4 53）。
 
 ## 0. 结论先说
 
@@ -76,7 +76,7 @@ graph LR
 ```
 第 1 批（A 级，按依赖先后）
   1. feature.chamfer_angle   ← 实体+边都已就绪，只差 Option/AngleExp
-  2. sketch.constraints(剩余) ← 草图已通，逐个试枚举
+  2. sketch.constraints(剩余) ← ✅ normal 已通；slope/constant_angle 判为不可用
   3. feature.sweep           ← ✅ 已通（G0/G1 容差是关键）
   4. sketch.constant_length  ← 单参报错，试配合尺寸
 

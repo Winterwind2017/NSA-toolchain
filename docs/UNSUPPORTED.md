@@ -42,3 +42,5 @@
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for this operation` | 需要正确的参考点服务配置 |
 
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） | 需要正确的求解触发方式 |
+
+| `sketch.slope` / `sketch.constant_angle` / `sketch.constant_length` | 三个 API 都能调，但一律返回 `Unable to create sketch geometric constraint.`（同族的 normal / tangent / parallel 都能建）→ 这几个类型可能在 journal 下不可用 | 需要 UI 上下文或前置条件 |

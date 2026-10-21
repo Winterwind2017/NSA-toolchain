@@ -3484,7 +3484,72 @@ def feature_sweep_arc(params, workdir, rec):
     return reads
 
 
+def sketch_constraint_more(params, workdir, rec):
+    """constant_angle / normal / slope 三种约束。"""
+    import math
+    kind = str(params.get("kind", "normal"))
+    part = new_part("skm_" + kind)
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+
+    def cg(obj, pt=None):
+        g = NXOpen.Sketch.ConstraintGeometry()
+        g.Geometry = obj
+        g.PointType = (pt if pt is not None
+                       else NXOpen.Sketch.ConstraintPointType.NotSet)
+        return g
+
+    diag = {}
+    con = None
+    try:
+        if kind == "normal":
+            arc = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                        NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                        25.0, 0.0, 2.0 * math.pi)
+            line = part.Curves.CreateLine(p(25.0, 0.0, 0.0), p(80.0, 0.0, 0.0))
+            for g in (arc, line):
+                sketch.AddGeometry(g)
+            h1 = NXOpen.Sketch.ConstraintGeometryHelp()
+            h2 = NXOpen.Sketch.ConstraintGeometryHelp()
+            con = sketch.CreateNormalConstraint(cg(line), h1, cg(arc), h2)
+        elif kind == "slope":
+            l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+            l2 = part.Curves.CreateLine(p(0.0, 20.0, 0.0), p(80.0, 60.0, 0.0))
+            for g in (l1, l2):
+                sketch.AddGeometry(g)
+            con = sketch.CreateSlopeConstraint(cg(l1), cg(l2))
+        elif kind == "constant_angle":
+            l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+            sketch.AddGeometry(l1)
+            con = sketch.CreateConstantAngleConstraint(cg(l1))
+        else:
+            raise ValueError("unknown kind %r" % kind)
+        diag["con"] = "ok"
+    except Exception as exc:
+        diag["con"] = "err:%s" % str(exc)[:150]
+    tname = type(con).__name__ if con is not None else None
+    reads = {"con_ok": con is not None, "kind": kind,
+             "con_type": tname,
+             "type_ok": bool(tname and kind.replace("_", "").lower() in tname.lower()),
+             "diag": diag}
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue,
+                          NXOpen.Sketch.UpdateLevel.Model)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_constraint_more": sketch_constraint_more,
     "feature_sweep_arc": feature_sweep_arc,
     "chamfer_angle": chamfer_angle,
     "drawing_view_scale": drawing_view_scale,
