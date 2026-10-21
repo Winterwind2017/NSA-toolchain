@@ -4,16 +4,16 @@
 
 ## 数字
 
-- 真机通过能力：**95** 条（`nxkit run` 一次会话，连跑 2 次全绿）
+- 真机通过能力：**97** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**41** 条
-- 未打通（有证据、已记录）：**18** 项
-- 本机许可 feature：**4420** 个（C:\ProgramData\Siemens\siemens_SSQ.dat）
+- 未打通（有证据）：**18** 项
+- 本机许可 feature：**4420** 个
 
 ## 按许可档位
 
 | license | 能力数 |
 |---|---:|
-| assemblies | 5 |
+| assemblies | 7 |
 | drafting | 10 |
 | gateway | 23 |
 | solid_modeling | 57 |
@@ -26,9 +26,9 @@
 | sketch | 16 | 2 |
 | drawing | 10 | 0 |
 | attr | 8 | 1 |
+| assembly | 7 | 1 |
 | export | 6 | 0 |
 | solid | 6 | 6 |
-| assembly | 5 | 1 |
 | boolean | 5 | 5 |
 | curve | 5 | 0 |
 | measure | 4 | 1 |
@@ -37,7 +37,7 @@
 | file | 1 | 1 |
 | surface | 1 | 0 |
 
-## 未打通（按证据分类）
+## 未打通（按证据）
 
 | 能力 | 卡在哪里 |
 |---|---|
@@ -62,14 +62,13 @@
 
 ## 为什么没到 200+
 
-1. **每条都必须真机验证**：一条能力 = 改内核 + 跑 NX 会话 + 判据通过 + 连跑稳定。本轮 34 轮里平均 2.8 条/轮，瓶颈在 NXOpen 的可用面而不是写代码。
-2. **可选 builder 家族大量不可脚本化**：`CreateRibBuilder` 不在 `FeatureCollection` 上、`CreateCamSetup` 四种模板全返回 None、`CreateSectionViewBuilder` 拿不到 SectionLine、装配约束的 `ConstraintCollection.CreateConstraint` 不存在、DXF 导出会死循环（危险）。
-3. **同类变体不算新能力**：把 Ø20 通孔改成 Ø30 不产生新知识，故意没刷数。
-4. **判据质量优先**：41 条做了存盘重开复测；建模族 24/24 全带 L4。
+1. 每条都必须真机验证（改内核 → 跑 NX → 判据通过 → 连跑稳定）。
+2. 可选 builder 家族大量不可脚本化：rib 无 CreateRibBuilder、CAM setup 全 None、剖视图拿不到 SectionLine、装配约束 CreateConstraint 缺失、DXF 导出死循环。
+3. 同类变体不计入（Ø20→Ø30 不产生新知识）。
+4. 判据质量优先（41/97 带 L4）。
 
 ## 怎么继续扩
 
-- 新能力一律**追加**（append-only）到 `runtime/actions.py` 的 `ACTIONS` 之前；改完先 `py_compile` + `nxkit selftest`，再真机跑 2 次。
-- 判据只读 NX 状态（体积/面积/面数/属性/文件内容），不看返回值。
-- 没打通就写 `docs/UNSUPPORTED.md`（带错误原文），不要标成可用。
+- 新能力 append-only 追加到 `ACTIONS` 之前；先 py_compile + selftest，再真机 2 次。
+- 判据只读 NX 状态；没打通写 `docs/UNSUPPORTED.md`（带错误原文）。
 - 动手前 `nxkit licenses` 确认许可档位。

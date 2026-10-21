@@ -2610,7 +2610,44 @@ def measure_faces_two(params, workdir, rec):
     return reads
 
 
+def asm_five_components(params, workdir, rec):
+    """五个组件（两零件交替插入）。"""
+    a_path = _make_ref_part(os.path.join(workdir, "five_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "five_b.prt"), "cyl",
+                            (40.0, 30.0))
+    asm = new_part("asm5")
+    for i, path in enumerate((a_path, b_path, a_path, b_path, a_path)):
+        asm.ComponentAssembly.AddComponent(
+            path, "MODEL", "P%d" % i,
+            NXOpen.Point3d(150.0 * i, 0.0, 0.0), _identity(), -1)
+    children = asm.ComponentAssembly.RootComponent.GetChildren()
+    reads = {"components": len(children)}
+    _close_part(asm)
+    return reads
+
+
+def asm_component_names(params, workdir, rec):
+    """组件名按插入时的名字保留（A/B/C）。"""
+    a_path = _make_ref_part(os.path.join(workdir, "names_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "names_b.prt"), "cyl",
+                            (40.0, 30.0))
+    asm = new_part("asmname")
+    for i, (path, name) in enumerate(((a_path, "AAA"), (b_path, "BBB"),
+                                      (a_path, "CCC"))):
+        asm.ComponentAssembly.AddComponent(
+            path, "MODEL", name, NXOpen.Point3d(150.0 * i, 0.0, 0.0),
+            _identity(), -1)
+    names = sorted(str(c.Name) for c in asm.ComponentAssembly.RootComponent.GetChildren())
+    reads = {"names": ",".join(names), "name_count": len(names)}
+    _close_part(asm)
+    return reads
+
+
 ACTIONS = {
+    "asm_five_components": asm_five_components,
+    "asm_component_names": asm_component_names,
     "measure_faces_two": measure_faces_two,
     "part_inch": part_inch,
     "export_step_ap214": export_step_ap214,

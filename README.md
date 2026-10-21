@@ -82,7 +82,7 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（95 条，全部真机通过）
+## 能力（97 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
@@ -93,7 +93,7 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 | curve | `curve.line` `curve.arc` `curve.ellipse` `curve.hyperbola` `curve.parabola` |
 | surface | `surface.bounded_plane` |
 | feature | `extrude.rect` `extrude.ring` |
-| assembly | `asm.add_component` `asm.two_components` `asm.three_components` `asm.four_components` `asm.nested` |
+| assembly | `asm.add_component` `asm.two_components` `asm.three_components` `asm.four_components` `asm.nested` `asm.five_components` `asm.component_names` |
 | drawing | `drawing.sheet` `drawing.sheet_a4` `drawing.base_view` `drawing.view_isometric` |
 | attr | `attr.string` `attr.int` `attr.double` `attr.logical` `attr.on_body` `attr.on_feature` `attr.delete` `attr.update` |
 | measure | `measure.mass` `measure.face_area` `measure.face_single` |
