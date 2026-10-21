@@ -1,6 +1,6 @@
 # acadkit
 
-AutoCAD 2025 自动化内核（库 + CLI + 可选 MCP），设计与
+AutoCAD 2025 自动化内核（库 + CLI + 可选 MCP）。仓库：`Winterwind2017/autocad-agent-kit`。设计与
 [swkit](https://github.com/Winterwind2017/solidworks-agent-kit) 同构：
 
 > **每个能力都必须有可复现的判据；说不清判据的，不许标 verified。**
