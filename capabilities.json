@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 116
+    "verified": 117
   },
-  "generated_at": "2026-10-22T00:06:46",
+  "generated_at": "2026-10-22T00:09:26",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -120,6 +120,7 @@
     "sketch.horizontal": "L1–L2",
     "sketch.linear_dim": "L1–L2",
     "sketch.midpoint": "L1–L2",
+    "sketch.normal": "L1–L2",
     "sketch.parallel": "L1–L2",
     "sketch.perpendicular": "L1–L2",
     "sketch.rect": "L1–L2",
@@ -238,6 +239,7 @@
     "sketch.horizontal": "solid_modeling",
     "sketch.linear_dim": "solid_modeling",
     "sketch.midpoint": "solid_modeling",
+    "sketch.normal": "solid_modeling",
     "sketch.parallel": "solid_modeling",
     "sketch.perpendicular": "solid_modeling",
     "sketch.rect": "solid_modeling",
@@ -250,6 +252,10 @@
     "surface.bounded_plane": "solid_modeling"
   },
   "pending": [
+    {
+      "id": "sketch.slope",
+      "reason": "报 Unable to create sketch geometric constraint"
+    },
     {
       "id": "sketch.point_on_curve",
       "reason": "约束能建但几何不动（无 Solve 触发）"
@@ -317,7 +323,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "fff7d50",
+    "kernel_commit": "62f38a8",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -429,6 +435,7 @@
     "sketch.horizontal": "sketch",
     "sketch.linear_dim": "sketch",
     "sketch.midpoint": "sketch",
+    "sketch.normal": "sketch",
     "sketch.parallel": "sketch",
     "sketch.perpendicular": "sketch",
     "sketch.rect": "sketch",
