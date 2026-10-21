@@ -46,6 +46,10 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("surface.midsurface", "surface", "两片体求中面（3 片 / 间距 5）",
+        "surface_midsurface", "L1–L2", params={},
+        expect={"sheet_count": 3,
+                "gap": {"min": 4.9, "max": 5.1}}, reopen=False),
     Cap("drawing.dimension", "drawing", "视图上建线性尺寸标注（失败退回直接标注）",
         "drawing_dimension", "L1–L2", params={},
         expect={"dimension_created": True}, reopen=False),

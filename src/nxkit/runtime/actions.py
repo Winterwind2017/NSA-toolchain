@@ -4499,7 +4499,64 @@ def drawing_projected_view(params, workdir, rec):
     _close_part(part)
     return reads
 
+def surface_midsurface(params, workdir, rec):
+    """两张平行片体（z=0 / z=10）求中面 → 第 3 张片体，间距各 5。"""
+    part = new_part("midsrf")
+    p = NXOpen.Point3d
+
+    def mk(z):
+        pts = [p(0.0, 0.0, z), p(100.0, 0.0, z),
+               p(100.0, 60.0, z), p(0.0, 60.0, z)]
+        lines = [part.Curves.CreateLine(pts[i], pts[(i + 1) % 4]) for i in range(4)]
+        bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+        try:
+            bp.BoundingCurves.AddToSection(
+                [part.ScRuleFactory.CreateRuleCurveDumb(lines)], lines[0],
+                None, None, pts[0], NXOpen.Section.Mode.Create)
+            bp.CommitFeature()
+        finally:
+            try:
+                bp.Destroy()
+            except Exception:
+                pass
+        return [b for b in _bodies_of(part) if b.IsSheetBody][-1]
+
+    s1 = mk(0.0)
+    s2 = mk(10.0)
+    diag = {}
+    mb = part.Features.CreateMidSurfaceByTwoSheetsBuilder(
+        NXOpen.Features.MidSurfaceByTwoSheets.Null)
+    try:
+        # 关键：rule 必须是 BodyDumb（用 FaceDumb 会报 invalid or unsuitable OM object）
+        mb.FirstSheetBody.AddRules([part.ScRuleFactory.CreateRuleBodyDumb([s1])])
+        mb.SecondSheetBody.AddRules([part.ScRuleFactory.CreateRuleBodyDumb([s2])])
+        mb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:120]
+    finally:
+        try:
+            mb.Destroy()
+        except Exception:
+            pass
+    sheets = [b for b in _bodies_of(part) if b.IsSheetBody]
+    reads = {"sheet_count": len(sheets), "diag": diag}
+    if len(sheets) >= 3:
+        mid = sheets[-1]
+        try:
+            f1 = list(sheets[0].GetFaces())[0]
+            fm = list(mid.GetFaces())[0]
+            d = part.MeasureManager.NewDistance(_unit(part), False, f1, fm)
+            reads["gap"] = round(float(d.Value), 4)
+            reads["area"] = round(float(part.MeasureManager.NewFaceProperties(
+                _unit(part), _unit(part), 0.99, [fm]).Area), 2)
+        except Exception as exc:
+            diag["measure"] = str(exc)[:60]
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "surface_midsurface": surface_midsurface,
     "drawing_dimension": drawing_dimension,
     "drawing_projected_view": drawing_projected_view,
     "solid_delete_face": solid_delete_face,

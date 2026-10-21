@@ -20,7 +20,6 @@
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） | 需要正确签名 |
 | `sketch.constraints`（其余类型） | 重合/水平/竖直/等长/垂直/固定 已通；相切、中点、共线等未逐个验证 | 逐步加 |
 | `drawing.section_view` | `CreateSectionViewBuilder(base_view)` 报 `Invalid object type for this operation`；用 `SectionView.Null` 能构造，但 `ParentView` **不可写**、`Commit()` 报 `Null tag not allowed` | 需要剖切线先建（`SpecifySectionLineBuilder`）且父视图入口不可写 |
-| `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） | 未开始 |
 
 
 ## external
@@ -45,3 +44,6 @@
 
 
 | `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） | 需要选择对象的正确入口 |
+
+| `sheet_metal.flange` | `SilhouetteFlangeBuilder`：`BaseCurves`(Section) 与 `BaseFaces`(scCollector) 都能喂，`ReferenceVector` 也接受 Direction，但方向取 (0,0,1) 报 `Unable to project base curves to base faces.`，取 (0,1,0)/(1,0,0) 报 `Unable to create silhouette flange with given reference vector.` | 需要交互式选面/选向 |
+| `feature.text` | `TextBuilder.TextString` 可设、`PlacementFaces` 可喂，但 `PlanarFrame.CoordinateSystem` 无入口：`CoordinateSystemCollection.CreateCoordinateSystem` 的参数签名对不上（`No overload matches these arguments`），Commit 恒报 `Reference coordinate system undefined.` | 需要 UI 里的坐标系 |

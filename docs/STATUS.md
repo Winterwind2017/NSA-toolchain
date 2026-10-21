@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**139** 条
+- 真机通过能力：**140** 条（一次会话跑完，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**54** 条
-- 未打通（有证据）：**12** 项
+- 未打通（有证据）：**14** 项
 
 ## 按族
 
@@ -23,7 +23,7 @@
 | export | 7 | 0 |
 | inspect | 6 | 0 |
 | measure | 6 | 2 |
-| surface | 5 | 1 |
+| surface | 6 | 1 |
 | part | 4 | 1 |
 | file | 2 | 1 |
 
@@ -43,6 +43,8 @@
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** |
 | `curve.intersection` | `FirstFace/SecondFace` 只读，`FirstSet/SecondSet` 收对象但 Commit 报 `No objects for intersection curve`；用**组合投影**替代已打通（`curve.combined_projection`） |
 | `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） |
+| `sheet_metal.flange` | `SilhouetteFlangeBuilder`：`BaseCurves`(Section) 与 `BaseFaces`(scCollector) 都能喂，`ReferenceVector` 也接受 Direction，但方向取 (0,0,1) 报 `Unable to project base curves to base faces.`，取 (0,1, |
+| `feature.text` | `TextBuilder.TextString` 可设、`PlacementFaces` 可喂，但 `PlanarFrame.CoordinateSystem` 无入口：`CoordinateSystemCollection.CreateCoordinateSystem` 的参数签名对不上（`No overload matches these argumen |
 
 ## 新增能力的姿势
 
