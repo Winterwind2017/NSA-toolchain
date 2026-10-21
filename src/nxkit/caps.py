@@ -46,6 +46,22 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("feature.hole", "feature", "孔：顶面 Ø20 通孔（体积 93716.8）", "feature_hole",
+        "L1–L3", params={},
+        expect={"body_count": 1, "faces": 7,
+                "volume_mm3": {"min": 93710.0, "max": 93725.0}}, reopen=False),
+    Cap("solid.trim_body", "solid", "用辅助体的面修剪实体（目标 50000）",
+        "solid_trim_body", "L1–L2", params={},
+        expect={"body_count": 1,
+                "volume_mm3": {"min": 49000.0, "max": 51000.0}}, reopen=False),
+    Cap("feature.rib", "feature", "轮廓筋（10×15，体积 115000）", "feature_rib",
+        "L1–L3", params={},
+        expect={"body_count": 1,
+                "volume_mm3": {"min": 114800.0, "max": 115200.0}}, reopen=False),
+    Cap("feature.sweep_guide", "feature", "圆截面沿直线引导扫掠（体积 31415.9）",
+        "feature_sweep_guide", "L1–L3", params={},
+        expect={"body_count": 1,
+                "volume_mm3": {"min": 31300.0, "max": 31550.0}}, reopen=False),
     Cap("inspect.face_area_list", "inspect", "逐面面积分布（6 面 / 合计 16000）",
         "inspect_face_area_list", "L1–L2", params={},
         expect={"face_count": 6,

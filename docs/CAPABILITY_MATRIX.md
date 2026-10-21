@@ -1,18 +1,18 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **130** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
+总计 **134** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
 | family | 能力数 | 其中 L4 | 需要许可 |
 |---|---:|---:|---|
-| feature | 30 | 29 | solid_modeling |
+| feature | 33 | 29 | solid_modeling |
 | sketch | 18 | 2 | solid_modeling |
 | drawing | 12 | 0 | drafting |
 | attr | 10 | 2 | gateway |
+| solid | 9 | 8 | solid_modeling |
 | assembly | 8 | 1 | assemblies |
 | curve | 8 | 0 | solid_modeling |
-| solid | 8 | 8 | solid_modeling |
 | boolean | 7 | 7 | solid_modeling |
 | export | 7 | 0 | gateway |
 | inspect | 6 | 0 | gateway |
@@ -28,12 +28,16 @@
 | assemblies | 8 |
 | drafting | 12 |
 | gateway | 35 |
-| solid_modeling | 75 |
+| solid_modeling | 79 |
 
 ## 全部能力
 
 | id | 族 | 层级 | L4 | 许可 |
 |---|---|---|---|---|
+| `feature.hole` | feature | L1–L3 | — | solid_modeling |
+| `solid.trim_body` | solid | L1–L2 | — | solid_modeling |
+| `feature.rib` | feature | L1–L3 | — | solid_modeling |
+| `feature.sweep_guide` | feature | L1–L3 | — | solid_modeling |
 | `inspect.face_area_list` | inspect | L1–L2 | — | gateway |
 | `inspect.edge_count` | inspect | L1–L2 | — | gateway |
 | `inspect.body_state` | inspect | L1–L2 | — | gateway |

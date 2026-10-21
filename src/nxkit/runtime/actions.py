@@ -4049,7 +4049,219 @@ def inspect_face_area_list(params, workdir, rec):
     _close_part(part)
     return reads
 
+def feature_sweep_guide(params, workdir, rec):
+    """圆截面（Ø20）沿 100 mm 直线扫掠 → 圆柱体积 31415.9。"""
+    import math
+    part = new_part("swg")
+    p = NXOpen.Point3d
+    guide = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(0.0, 100.0, 0.0))
+    sec = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                NXOpen.Vector3d(0.0, 0.0, 1.0),
+                                10.0, 0.0, 2.0 * math.pi)
+    sg = part.Features.CreateSweepAlongGuideBuilder(NXOpen.Features.SweepAlongGuide.Null)
+    diag = {}
+    try:
+        sg.Section.AddToSection([part.ScRuleFactory.CreateRuleCurveDumb([sec])], sec,
+                                None, None, p(0.0, 0.0, 0.0),
+                                NXOpen.Section.Mode.Create)
+        diag["section"] = "ok"
+        sg.Guide.AddToSection([part.ScRuleFactory.CreateRuleCurveDumb([guide])], guide,
+                              None, None, p(0.0, 0.0, 0.0),
+                              NXOpen.Section.Mode.Create)
+        diag["guide"] = "ok"
+        try:
+            sg.ChainingTolerance = 0.01
+            sg.DistanceTolerance = 0.01
+            diag["tol"] = 0.01
+        except Exception:
+            pass
+        sg.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            sg.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "expected_volume": round(math.pi * 100.0 * 100.0, 2),
+             "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+def feature_rib(params, workdir, rec):
+    """轮廓筋：100×50×20 块顶面加 10×15 的筋（体积 100000 → 115000）。"""
+    part = new_part("rib")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    base = feat.GetBodies()[0]
+    top = None
+    for f in base.GetFaces():
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, [f])
+        if abs(float(mf.Area) - 5000.0) < 1.0:
+            top = f
+            break
+    if top is None:
+        raise RuntimeError("找不到顶面")
+    p = NXOpen.Point3d
+    prof = part.Curves.CreateLine(p(0.0, 25.0, 20.0), p(100.0, 25.0, 20.0))
+    cr = part.Features.CreateContourRibBuilder(NXOpen.Features.ContourRib.Null)
+    diag = {}
+    try:
+        cr.SelectFace.AddRules([part.ScRuleFactory.CreateRuleFaceDumb([top])])
+        diag["face"] = "ok"
+        cr.SelectCurve.AddToSection([part.ScRuleFactory.CreateRuleCurveDumb([prof])],
+                                    prof, None, None, p(0.0, 25.0, 20.0),
+                                    NXOpen.Section.Mode.Create)
+        diag["curve"] = "ok"
+        cr.WidthDim.SetFormula("10")
+        cr.HeightDim.SetFormula("15")
+        diag["dims"] = "10x15"
+        cr.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            cr.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    diag["bodies_before_unite"] = len(bodies)
+    # 筋默认是独立实体，用布尔并把它并进基体（与 UI 里"自动合并"等效）
+    if len(bodies) == 2:
+        try:
+            target = max(bodies, key=lambda b: float(
+                mass(part, [b])["volume_mm3"]))
+            tool = [b for b in bodies if b.Tag != target.Tag]
+            bb = part.Features.CreateBooleanBuilder(
+                NXOpen.Features.BooleanFeature.Null)
+            try:
+                bb.Operation = NXOpen.Features.Feature.BooleanType.Unite
+                bb.Target = target
+                bb.Tools.Add(tool)
+                bb.CommitFeature()
+                diag["unite"] = "ok"
+            finally:
+                try:
+                    bb.Destroy()
+                except Exception:
+                    pass
+        except Exception as exc:
+            diag["unite"] = "err:%s" % str(exc)[:100]
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+def solid_trim_body(params, workdir, rec):
+    """用片体面修剪实体：块 100×50×20 在 y=25 处切掉一半（目标体积 50000）。"""
+    part = new_part("trimv")
+    target = make_block(part, 0, 0, 0, 100, 50, 20).GetBodies()[0]
+    p = NXOpen.Point3d
+    # 单面片体当刀（y=25 平面），避免"两个 4000 面选错"的歧义
+    pts = [p(0.0, 25.0, -10.0), p(100.0, 25.0, -10.0),
+           p(100.0, 25.0, 30.0), p(0.0, 25.0, 30.0)]
+    lines = [part.Curves.CreateLine(pts[i], pts[(i + 1) % 4]) for i in range(4)]
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        bp.BoundingCurves.AddToSection(
+            [part.ScRuleFactory.CreateRuleCurveDumb(lines)], lines[0],
+            None, None, pts[0], NXOpen.Section.Mode.Create)
+        bp.CommitFeature()
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    sheets = [b for b in _bodies_of(part) if b.IsSheetBody]
+    if not sheets:
+        raise RuntimeError("刀片体没造出来")
+    kface = list(sheets[0].GetFaces())[0]
+    tb = part.Features.CreateTrimBodyBuilder(NXOpen.Features.TrimBody.Null)
+    diag = {}
+    try:
+        tb.AddTarget(target)
+        diag["target"] = "ok"
+        col = part.ScCollectors.CreateCollector()
+        col.AddRules([part.ScRuleFactory.CreateRuleFaceDumb([kface])])
+        tb.Tool = col
+        diag["tool"] = "collector(sheet face)"
+        tb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    solids = [b for b in bodies if b.IsSolidBody]
+    reads = {"body_count": len(solids), "diag": diag}
+    if solids:
+        reads.update(mass(part, solids))
+        reads["volume_mm3"] = round(reads["volume_mm3"], 3)
+    _close_part(part)
+    return reads
+
+def feature_hole(params, workdir, rec):
+    """孔：Ø20 深 20 的直孔（体积 100000 → 93716.8）。
+
+    块有上下两个 5000 mm² 的面，GetFaces() 顺序不保证哪个先出现；
+    逐个试，直到 commit 成功（失败的 builder 不会落特征）。
+    """
+    part = new_part("hole")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    p = NXOpen.Point3d
+    faces = []
+    for f in body.GetFaces():
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, [f])
+        if abs(float(mf.Area) - 5000.0) < 1.0:
+            faces.append(f)
+    if not faces:
+        raise RuntimeError("找不到 5000 mm² 的面")
+    diag = {"candidates": len(faces), "tried": []}
+    for face in faces:
+        hb = part.Features.CreateHoleFeatureBuilder(NXOpen.Features.Hole.Null)
+        try:
+            # 签名：SetSimpleHole(location, 通孔?, 放置面 ISurface, 深度 str)
+            hb.SetSimpleHole(p(50.0, 25.0, 20.0), True, face, "20")
+            hb.SetDepth("20")
+            hb.SetDiameter("20")
+            hb.PlacementFace = face
+            hb.SetTargetBody(body)
+            hb.CommitFeature()
+            diag["tried"].append("ok")
+            diag["commit"] = "ok"
+            break
+        except Exception as exc:
+            diag["tried"].append("err:%s" % str(exc)[:60])
+        finally:
+            try:
+                hb.Destroy()
+            except Exception:
+                pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+        reads["faces"] = len(list(bodies[0].GetFaces()))
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "feature_hole": feature_hole,
+    "solid_trim_body": solid_trim_body,
+    "feature_rib": feature_rib,
+    "feature_sweep_guide": feature_sweep_guide,
     "inspect_face_area_list": inspect_face_area_list,
     "inspect_edge_count": inspect_edge_count,
     "inspect_body_state": inspect_body_state,

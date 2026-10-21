@@ -14,11 +14,9 @@
 | 能力 | 卡在哪（真机证据） | 依赖 |
 |---|---|---|
 | `feature.chamfer` | `CreateChamferBuilder(...).SmartCollector` 是 **None**，没有可写的边集合；直接 `CommitFeature()` 报 `Referenced edge does not exist` | 需要找到边选择的正确挂点（`SelectEdge`/selection intent） |
-| `feature.hole` | 依赖分析的"Section 吃曲线"成立：`HolePosition.AddToSection` **接受短线段**（不再报 No overload）；`BooleanOperation.SetTargetBodies([body])` 也被接受。但 `CommitFeature()` 最后卡在 **`The Tolerance Specification requires three numbers`**——`hb.Tolerance` 是单个 float（赋值 0.01 也没用），要的是三元组规格 | 需要三元组公差规格的正确设置方式 |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 | 依赖基础视图（已通） |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints`（解算） | 约束对象 + 两个面参考已能建（见能力 `asm.constraint_refs`），但 `GetConstraintStatus()` 仍是 `NewlyCreated(0)`，`SolvePostponedConstraints()` 也不推成 Solved；另外 `CreateConstraintReference(geometry, movable_object, uses_axis, is_indirect)` 的**参数顺序与文档相反**（先几何后组件） | 需要正确的求解触发方式 |
-| `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 | 需要别的筋入口 |
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 | 需要别的枚举写入口 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） | 需要正确签名 |
 | `sketch.constraints`（其余类型） | 重合/水平/竖直/等长/垂直/固定 已通；相切、中点、共线等未逐个验证 | 逐步加 |
@@ -31,7 +29,6 @@
 
 （暂无。）
 
-| `feature.hole` | 依赖分析的"Section 吃曲线"成立：`HolePosition.AddToSection` **接受短线段**（不再报 No overload）；`BooleanOperation.SetTargetBodies([body])` 也被接受。但 `CommitFeature()` 最后卡在 **`The Tolerance Specification requires three numbers`**——`hb.Tolerance` 是单个 float（赋值 0.01 也没用），要的是三元组规格 | 需要三元组公差规格的正确设置方式 |
 
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing target body` | 需要正确的选择集初始化方式 |
 
