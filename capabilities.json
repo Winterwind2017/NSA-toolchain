@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 12,
-    "verified": 38
+    "verified": 40
   },
-  "generated_at": "2026-10-21T20:35:11",
+  "generated_at": "2026-10-21T20:40:18",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.two_components": "L1–L4",
@@ -24,6 +24,7 @@
     "body.topo": "L1–L3",
     "boolean.intersect": "L1–L4",
     "boolean.subtract": "L1–L4",
+    "boolean.two_tools": "L1–L3",
     "boolean.union": "L1–L4",
     "curve.arc": "L1–L3",
     "curve.ellipse": "L1–L3",
@@ -40,6 +41,7 @@
     "feature.chamfer": "L1–L3",
     "feature.chamfer_multi": "L1–L3",
     "feature.edge_blend": "L1–L3",
+    "feature.hole_array": "L1–L3",
     "feature.hole_cyl": "L1–L3",
     "feature.pattern_circular": "L1–L3",
     "feature.pattern_grid": "L1–L3",
@@ -100,7 +102,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "21c4371",
+    "kernel_commit": "0626ac0",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -117,6 +119,7 @@
     "body.topo": "inspect",
     "boolean.intersect": "boolean",
     "boolean.subtract": "boolean",
+    "boolean.two_tools": "boolean",
     "boolean.union": "boolean",
     "curve.arc": "curve",
     "curve.ellipse": "curve",
@@ -133,6 +136,7 @@
     "feature.chamfer": "feature",
     "feature.chamfer_multi": "feature",
     "feature.edge_blend": "feature",
+    "feature.hole_array": "feature",
     "feature.hole_cyl": "feature",
     "feature.pattern_circular": "feature",
     "feature.pattern_grid": "feature",

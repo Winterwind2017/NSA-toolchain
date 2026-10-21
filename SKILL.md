@@ -82,15 +82,15 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **38** 条 verified 能力（内核 `nxkit 0.1.0`，commit `21c4371`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **40** 条 verified 能力（内核 `nxkit 0.1.0`，commit `0626ac0`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **特征（拉伸）**（10） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
+| **特征（拉伸）**（11） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
 | **实体**（5） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.sphere`（L1–L3） |
 | **属性**（4） | `attr.int`（L2） `attr.on_body`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） |
+| **布尔**（4） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） |
 | **导出**（4） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） |
-| **布尔**（3） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.union`（L1–L4） |
 | **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
 | **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
@@ -106,7 +106,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | 能力 | 卡在哪 |
 |---|---|
 | `feature.hole` | `HolePackageBuilder` 需要点位/面，未打通 |
-| `drawing.dimension` | `part.Dimensions` 的创建签名与视图绑定未验证 |
+| `drawing.dimension` | 线性尺寸 builder 的关联能设，`Commit()` 报 `Unable to create a dimension from the selected objects and annotation plane`；`Origin` 只读 |
 | `measure.distance` | `MeasureDistance` 没有 `.Distance`，`Information()` 返回 `None` |
 | `cam.setup` | `part.CreateCamSetup("mill_planar")` 返回 `None`，`CAMSetup` 报 `no valid setup` |
 | `cae.mesh` | `NXOpen.CAE` 绑定大、解算慢，未开始 |
@@ -145,6 +145,7 @@ nxkit cap feature.pattern_grid     # 2×2 阵列：实体 4，体积 400000
 nxkit cap feature.pattern_circular # 圆周阵列 4 个：实体 4，体积 400000
 nxkit cap feature.pocket        # 挖 40×20 通槽：84000
 nxkit cap feature.hole_cyl      # 钻 Ø20 通孔：93716.815
+nxkit cap feature.hole_array    # 四个 Ø20 通孔：74867.26
 ```
 
 ### 布尔
@@ -153,6 +154,7 @@ nxkit cap feature.hole_cyl      # 钻 Ø20 通孔：93716.815
 nxkit cap boolean.subtract  # A−B → 92000
 nxkit cap boolean.union     # A∪B → 100000（B 在 A 内）
 nxkit cap boolean.intersect # A∩B → 8000
+nxkit cap boolean.two_tools # 一次减两个工具体 → 84000
 ```
 
 ### 装配
