@@ -785,6 +785,76 @@ def feature_hole_cyl(params, workdir, rec):
     return _volume_after_boolean(part, fa, fb, "Subtract")
 
 
+def _dex_export(kind, part, workdir):
+    ext = {"stl": ".stl", "parasolid": ".x_t", "acis": ".sat"}[kind]
+    path = os.path.join(workdir, "export_" + kind + ext)
+    if os.path.exists(path):
+        os.remove(path)
+    dm = session().DexManager
+    creator = {"stl": dm.CreateStlCreator,
+               "parasolid": dm.CreateParasolidExporter,
+               "acis": dm.CreateAcisExporter}[kind]()
+    try:
+        creator.OutputFile = path
+        creator.Commit()
+    finally:
+        try:
+            creator.Destroy()
+        except Exception:
+            pass
+    exists = os.path.exists(path)
+    size = os.path.getsize(path) if exists else 0
+    head = ""
+    if exists:
+        with open(path, "rb") as fh:
+            head = fh.read(48).decode("latin-1", "replace")
+    return {"export_path": path, "export_bytes": size,
+            "export_head": head.strip()[:24],
+            "export_ok": bool(exists and size > 100)}
+
+
+def _export_simple(kind):
+    def run(params, workdir, rec):
+        part = new_part("exp_" + kind)
+        make_block(part, 0, 0, 0, 100, 50, 20)
+        reads = _dex_export(kind, part, workdir)
+        _close_part(part)
+        return reads
+    return run
+
+
+def export_stl(params, workdir, rec):
+    return _export_simple("stl")(params, workdir, rec)
+def export_parasolid(params, workdir, rec):
+    return _export_simple("parasolid")(params, workdir, rec)
+def export_acis(params, workdir, rec):
+    return _export_simple("acis")(params, workdir, rec)
+
+
+def curve_ellipse(params, workdir, rec):
+    import math
+    part = new_part("ell")
+    e = part.Curves.CreateEllipse(NXOpen.Point3d(0.0, 0.0, 0.0),
+                                 NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                 NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                 50.0, 25.0, 0.0, 2.0 * math.pi)
+    reads = {"ellipse_major": float(e.MajorRadius),
+             "ellipse_minor": float(e.MinorRadius)}
+    _close_part(part)
+    return reads
+
+
+def attr_on_body(params, workdir, rec):
+    part = new_part("attrb")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    body.SetAttribute("NXKIT_BODY", "v1")
+    reads = {"body_attr": str(body.GetStringAttribute("NXKIT_BODY")),
+             "body_count": 1}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -813,6 +883,11 @@ ACTIONS = {
     "pattern_linear": pattern_linear,
     "feature_pocket": feature_pocket,
     "feature_hole_cyl": feature_hole_cyl,
+    "export_stl": export_stl,
+    "export_parasolid": export_parasolid,
+    "export_acis": export_acis,
+    "curve_ellipse": curve_ellipse,
+    "attr_on_body": attr_on_body,
 }
 
 

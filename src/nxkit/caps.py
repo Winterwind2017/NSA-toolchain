@@ -127,6 +127,17 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.hole_cyl", "feature", "块上钻 Ø20 通孔", "feature_hole_cyl", "L1–L3",
         params={},
         expect={"body_count": 1, "volume_mm3": 93716.81495770694}, reopen=False),
+
+    Cap("export.acis", "export", "导出 ACIS (.sat)", "export_acis", "L1–L2",
+        params={}, expect={"export_ok": True,
+                           "export_bytes": {"min": 100.0, "max": 100000000.0}},
+        reopen=False),
+
+    Cap("curve.ellipse", "curve", "椭圆（长半轴 50 / 短半轴 25）", "curve_ellipse", "L1–L3",
+        params={}, expect={"ellipse_major": 50.0, "ellipse_minor": 25.0},
+        reopen=False),
+    Cap("attr.on_body", "attr", "实体上写字符串属性", "attr_on_body", "L2",
+        params={}, expect={"body_attr": "v1", "body_count": 1}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
