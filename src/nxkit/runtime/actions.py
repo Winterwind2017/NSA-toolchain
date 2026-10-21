@@ -2795,7 +2795,107 @@ def sketch_linear_dim(params, workdir, rec):
     return reads
 
 
+def asm_constraint_touch(params, workdir, rec):
+    """两个块的贴合约束：建约束 → LoadConstraintGeometry → 建参考 → 看解算状态。"""
+    a_path = _make_ref_part(os.path.join(workdir, "ct_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "ct_b.prt"), "block",
+                            (40.0, 30.0, 10.0))
+    asm = new_part("asm_ct")
+    res_a = asm.ComponentAssembly.AddComponent(
+        a_path, "MODEL", "A", NXOpen.Point3d(0.0, 0.0, 0.0), _identity(), -1)
+    res_b = asm.ComponentAssembly.AddComponent(
+        b_path, "MODEL", "B", NXOpen.Point3d(0.0, 0.0, 60.0), _identity(), -1)
+    comp_a = res_a[0] if isinstance(res_a, (tuple, list)) else res_a
+    comp_b = res_b[0] if isinstance(res_b, (tuple, list)) else res_b
+
+    proto_a = comp_a.Prototype
+    proto_b = comp_b.Prototype
+    faces_a = list(next(iter(proto_a.Bodies)).GetFaces())
+    faces_b = list(next(iter(proto_b.Bodies)).GetFaces())
+    cand_a = [f for f in faces_a if abs(_face_area(proto_a, [f]) - 5000.0) < 1.0]
+    cand_b = [f for f in faces_b if abs(_face_area(proto_b, [f]) - 1200.0) < 1.0]
+    diag = {"cand": "%d/%d" % (len(cand_a), len(cand_b))}
+    if not cand_a or not cand_b:
+        raise RuntimeError("找不到目标面 %r" % diag)
+
+    pos = asm.ComponentAssembly.Positioner
+    pos.BeginAssemblyConstraints()
+    status = None
+    try:
+        con = pos.CreateConstraint(True)
+        diag["con"] = type(con).__name__
+        try:
+            pos.LoadConstraintGeometry([con])
+            diag["load"] = "ok"
+        except Exception as exc:
+            diag["load"] = "err:%s" % str(exc)[:120]
+        # 先设约束类型（各种可能的枚举位置都试）
+        for holder in ("PositioningConstraintType", "ComponentConstraintType"):
+            cls = getattr(NXOpen, holder, None)
+            if cls is None:
+                continue
+            for member in ("Touch", "Align", "DATUM", "Contact"):
+                try:
+                    con.ConstraintType = getattr(cls, member)
+                    diag["ctype"] = "%s.%s" % (holder, member)
+                    break
+                except Exception as exc:
+                    diag["ctype:%s.%s" % (holder, member)] = str(exc)[:60]
+            if "ctype" in diag:
+                break
+        if "ctype" not in diag:
+            try:
+                cls = getattr(NXOpen.Positioning, "ConstraintType", None)
+                if cls is not None:
+                    con.ConstraintType = cls.Touch
+                    diag["ctype"] = "Positioning.ConstraintType.Touch"
+            except Exception as exc:
+                diag["ctype"] = "err:%s" % str(exc)[:100]
+        # 参数顺序是 (geometry, movable_object)：反着传才被接受
+        r1 = con.CreateConstraintReference(cand_a[0], comp_a, False, False)
+        r2 = con.CreateConstraintReference(cand_b[0], comp_b, False, False)
+        diag["refs"] = [type(r1).__name__, type(r2).__name__]
+    finally:
+        try:
+            pos.EndAssemblyConstraints()
+        except Exception:
+            pass
+    try:
+        pos.SolvePostponedConstraints()
+        diag["solve"] = "SolvePostponedConstraints"
+    except Exception as exc:
+        diag["solve"] = "err:%s" % str(exc)[:100]
+    try:
+        raw = con.GetConstraintStatus()
+        code = int(getattr(raw, "value", raw))
+        base = type(raw).__name__.replace("MemberType", "")
+        holder = getattr(NXOpen.Positioning, base, None) or getattr(NXOpen, base, None)
+        name = None
+        if holder is not None:
+            try:
+                name = str(holder.ValueOf(code)).split(".")[-1]
+            except Exception:
+                name = None
+        diag["status_base"] = base
+        status = name or str(code)
+    except Exception as exc:
+        status = "err:%s" % str(exc)[:80]
+    try:
+        ctype_txt = str(con.ConstraintType)
+    except Exception:
+        ctype_txt = ""
+    reads = {"solver_status": status,
+             "ref_count": 2 if diag.get("refs") else 0,
+             "con_ok": con is not None,
+             "ctype_text": ctype_txt[:40],
+             "diag": diag}
+    _close_part(asm)
+    return reads
+
+
 ACTIONS = {
+    "asm_constraint_touch": asm_constraint_touch,
     "sketch_linear_dim": sketch_linear_dim,
     "feature_shell_volume": feature_shell_volume,
     "attr_on_face": attr_on_face,

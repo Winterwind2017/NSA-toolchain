@@ -410,6 +410,9 @@ CAPS: tuple[Cap, ...] = (
         reopen=False),
     Cap("sketch.linear_dim", "sketch", "两线间竖直尺寸 40", "sketch_linear_dim", "L1–L2",
         params={}, expect={"dim_ok": True, "expr_value": 40.0}, reopen=False),
+    Cap("asm.constraint_refs", "assembly", "建贴合约束并挂两个面参考",
+        "asm_constraint_touch", "L1–L2",
+        params={}, expect={"con_ok": True, "ref_count": 2}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:
