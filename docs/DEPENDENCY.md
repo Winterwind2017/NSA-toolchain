@@ -1,7 +1,7 @@
 # 依赖分析与攻击顺序（DEPENDENCY）
 
 > 说明：这份文档回答一个问题——**先攻哪个、后攻哪个，才不会白费一轮**。
-> 生成时间 2026-10-21；能力数 122（L4 54）。
+> 生成时间 2026-10-21；能力数 123（L4 54）。
 
 ## 0. 结论先说
 
@@ -139,3 +139,4 @@ graph TD
 | 镜像/切分的平面 | ✅ 面的形式可以（`ToolFaces.FaceCollector`） | split/mirror 已通 |
 | 旋转轴 | ❌ 只认 `NXOpen.Axis`（`DatumAxis` 被拒） | revolve 报类型错 |
 | 拉伸起面 | 未测 | — |
+| 投影目标面 | ✅ `part.Planes.CreateFixedPlane` 可以（DatumPlane 反而被拒） | curve.project 已通 |

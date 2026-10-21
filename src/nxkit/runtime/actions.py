@@ -3750,7 +3750,71 @@ def surface_ruled(params, workdir, rec):
     return reads
 
 
+def curve_project_to_plane(params, workdir, rec):
+    """把 z=0 的直线沿 +Z 投影到 z=40 的基准面上（投影结果 z≈40）。"""
+    part = new_part("cproj")
+    p = NXOpen.Point3d
+    line = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+    datum = part.Datums.CreateFixedDatumPlane(p(0.0, 0.0, 40.0), _identity())
+    pb = part.Features.CreateProjectCurveBuilder(NXOpen.Features.Feature.Null)
+    diag = {}
+    feat = None
+    try:
+        sec = pb.SectionToProject
+        diag["section_type"] = type(sec).__name__
+        rule = part.ScRuleFactory.CreateRuleCurveDumb([line])
+        try:
+            sec.AddToSection([rule], line, None, None, p(0.0, 0.0, 0.0),
+                             NXOpen.Section.Mode.Create)
+            diag["input"] = "AddToSection"
+        except Exception as exc:
+            diag["input"] = "err:%s" % str(exc)[:90]
+        for how in ("datum", "plane_to_project_to"):
+            try:
+                if how == "datum":
+                    pb.PlaneToProjectTo = datum
+                else:
+                    pb.PlaneToProjectTo = part.Planes.CreateFixedPlane(
+                        p(0.0, 0.0, 40.0), _identity())
+                diag["target"] = how
+                break
+            except Exception as exc:
+                diag["target:" + how] = str(exc)[:90]
+        try:
+            pb.ProjectionOption = NXOpen.Features.ProjectCurveBuilderProjectionOptions.AlongVector
+        except Exception as exc:
+            diag["proj_option"] = "err:%s" % str(exc)[:70]
+        try:
+            pb.Tolerance = 0.01
+        except Exception:
+            pass
+        feat = pb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            pb.Destroy()
+        except Exception:
+            pass
+    zs = []
+    if feat is not None:
+        try:
+            for ent in feat.GetEntities():
+                try:
+                    zs.append(round(float(ent.StartPoint.Z), 4))
+                except Exception:
+                    pass
+        except Exception as exc:
+            diag["entities"] = "err:%s" % str(exc)[:80]
+    reads = {"curve_ok": feat is not None, "entity_count": len(zs),
+             "proj_z": zs[0] if zs else None, "diag": diag}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "curve_project_to_plane": curve_project_to_plane,
     "surface_ruled": surface_ruled,
     "curve_offset_line": curve_offset_line,
     "datum_plane_at": datum_plane_at,

@@ -313,6 +313,10 @@ CAPS: tuple[Cap, ...] = (
         reopen=True),
 
 
+    Cap("curve.project", "curve", "直线投影到 z=40 基准面", "curve_project_to_plane",
+        "L1–L2", params={},
+        expect={"curve_ok": True, "entity_count": 1,
+                "proj_z": {"min": 39.5, "max": 40.5}}, reopen=False),
     Cap("curve.offset", "curve", "直线偏置 10（起点 y≈10）", "curve_offset_line",
         "L1–L2", params={},
         expect={"curve_ok": True, "entity_count": 1,

@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **122** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
+总计 **123** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -11,9 +11,9 @@
 | drawing | 12 | 0 | drafting |
 | attr | 10 | 2 | gateway |
 | assembly | 8 | 1 | assemblies |
+| curve | 8 | 0 | solid_modeling |
 | solid | 8 | 8 | solid_modeling |
 | boolean | 7 | 7 | solid_modeling |
-| curve | 7 | 0 | solid_modeling |
 | export | 7 | 0 | gateway |
 | measure | 5 | 2 | gateway |
 | part | 4 | 1 | gateway |
@@ -28,7 +28,7 @@
 | assemblies | 8 |
 | drafting | 12 |
 | gateway | 30 |
-| solid_modeling | 72 |
+| solid_modeling | 73 |
 
 ## 全部能力
 
@@ -99,6 +99,7 @@
 | `feature.spring` | feature | L1–L3 | 是 | solid_modeling |
 | `feature.sweep` | feature | L1–L3 | 是 | solid_modeling |
 | `feature.tube` | feature | L1–L3 | 是 | solid_modeling |
+| `curve.project` | curve | L1–L2 | — | solid_modeling |
 | `curve.offset` | curve | L1–L2 | — | solid_modeling |
 | `curve.helix` | curve | L1–L2 | — | solid_modeling |
 | `curve.hyperbola` | curve | L1–L3 | — | solid_modeling |

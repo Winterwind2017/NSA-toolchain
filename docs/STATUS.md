@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**122** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**123** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**54** 条
-- 未打通（有证据）：**14** 项
+- 未打通（有证据）：**15** 项
 
 ## 按族
 
@@ -17,9 +17,9 @@
 | drawing | 12 | 0 |
 | attr | 10 | 2 |
 | assembly | 8 | 1 |
+| curve | 8 | 0 |
 | solid | 8 | 8 |
 | boolean | 7 | 7 |
-| curve | 7 | 0 |
 | export | 7 | 0 |
 | measure | 5 | 2 |
 | part | 4 | 1 |
@@ -45,6 +45,7 @@
 | `solid.move_body` | 拆到最里层：`BodyToMove.AddRules` 生效、`Motion.Option = ModlMotionOptions.DeltaXyz` 生效、`DeltaX/Y/Z` 是 float 且赋值成功（100/0/0）、`ManipulatorOrigin` 也能设；`Commit()` 与 `CommitF |
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `In |
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动** |
+| `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** |
 
 ## 攻击顺序
 
