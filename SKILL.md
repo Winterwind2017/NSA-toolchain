@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **120** 条 verified 能力（内核 `nxkit 0.1.0`，commit `e548df4`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **121** 条 verified 能力（内核 `nxkit 0.1.0`，commit `f4cd4cc`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -95,8 +95,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **装配**（8） | `asm.add_component`（L1–L2） `asm.component_names`（L1–L2） `asm.constraint_refs`（L1–L2） `asm.five_components`（L1–L2） `asm.four_components`（L1–L2） `asm.nested`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
 | **实体**（8） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.cone_frustum`（L1–L3） `solid.scale`（L1–L3） `solid.sphere`（L1–L3） `solid.split_body`（L1–L3） |
 | **布尔**（7） | `boolean.intersect`（L1–L4） `boolean.intersect_two`（L1–L3） `boolean.subtract`（L1–L4） `boolean.subtract_retain`（L1–L3） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） `boolean.unite_three`（L1–L4） |
+| **曲线**（7） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.helix`（L1–L2） `curve.hyperbola`（L1–L3） `curve.line`（L1–L3） `curve.offset`（L1–L2） `curve.parabola`（L1–L3） |
 | **导出**（7） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.parasolid`（L1–L2） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.step_ap214`（L1–L2） `export.stl`（L1–L2） |
-| **曲线**（6） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.helix`（L1–L2） `curve.hyperbola`（L1–L3） `curve.line`（L1–L3） `curve.parabola`（L1–L3） |
 | **测量**（5） | `measure.distance`（L2–L3） `measure.face_area`（L3） `measure.face_single`（L3） `measure.faces_two`（L2–L3） `measure.mass`（L3） |
 | **部件**（4） | `datum.axis`（L1–L2） `datum.plane`（L1–L2） `part.inch`（L1–L3） `part.new`（L1） |
 | **文件**（2） | `file.roundtrip`（L4） `file.save_copy`（L1–L4） |
