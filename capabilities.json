@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 111
+    "verified": 112
   },
-  "generated_at": "2026-10-21T23:39:43",
+  "generated_at": "2026-10-21T23:42:44",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -38,6 +38,7 @@
     "boolean.intersect": "L1–L4",
     "boolean.intersect_two": "L1–L3",
     "boolean.subtract": "L1–L4",
+    "boolean.subtract_retain": "L1–L3",
     "boolean.two_tools": "L1–L3",
     "boolean.union": "L1–L4",
     "boolean.unite_three": "L1–L4",
@@ -151,6 +152,7 @@
     "boolean.intersect": "solid_modeling",
     "boolean.intersect_two": "solid_modeling",
     "boolean.subtract": "solid_modeling",
+    "boolean.subtract_retain": "solid_modeling",
     "boolean.two_tools": "solid_modeling",
     "boolean.union": "solid_modeling",
     "boolean.unite_three": "solid_modeling",
@@ -307,7 +309,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "8de5525",
+    "kernel_commit": "ace4bce",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -337,6 +339,7 @@
     "boolean.intersect": "boolean",
     "boolean.intersect_two": "boolean",
     "boolean.subtract": "boolean",
+    "boolean.subtract_retain": "boolean",
     "boolean.two_tools": "boolean",
     "boolean.union": "boolean",
     "boolean.unite_three": "boolean",
