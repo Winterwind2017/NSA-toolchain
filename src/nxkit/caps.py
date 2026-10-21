@@ -320,6 +320,9 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"double_attr": 3.25}, reopen=False),
     Cap("attr.logical", "attr", "布尔属性 True 读回", "attr_logical", "L2",
         params={}, expect={"logical_attr": True}, reopen=False),
+    Cap("sketch.constraint", "sketch", "两条线加重合约束", "sketch_constraint", "L1–L2",
+        params={}, expect={"coincidence_ok": True, "inferred": False},
+        reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:
