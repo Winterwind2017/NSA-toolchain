@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 100
+    "verified": 102
   },
-  "generated_at": "2026-10-21T22:12:40",
+  "generated_at": "2026-10-21T22:15:38",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -27,6 +27,7 @@
     "attr.int": "L2",
     "attr.logical": "L2",
     "attr.on_body": "L2",
+    "attr.on_face": "L2",
     "attr.on_feature": "L2",
     "attr.string": "L2–L4",
     "attr.update": "L2",
@@ -83,6 +84,7 @@
     "feature.pocket_blind": "L1–L3",
     "feature.revolve": "L1–L3",
     "feature.shell": "L1–L3",
+    "feature.shell_volume": "L1–L3",
     "feature.stack_blocks": "L1–L3",
     "feature.tube": "L1–L3",
     "file.roundtrip": "L4",
@@ -129,6 +131,7 @@
     "attr.int": "gateway",
     "attr.logical": "gateway",
     "attr.on_body": "gateway",
+    "attr.on_face": "gateway",
     "attr.on_feature": "gateway",
     "attr.string": "gateway",
     "attr.update": "gateway",
@@ -185,6 +188,7 @@
     "feature.pocket_blind": "solid_modeling",
     "feature.revolve": "solid_modeling",
     "feature.shell": "solid_modeling",
+    "feature.shell_volume": "solid_modeling",
     "feature.stack_blocks": "solid_modeling",
     "feature.tube": "solid_modeling",
     "file.roundtrip": "gateway",
@@ -293,7 +297,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "e6bd874",
+    "kernel_commit": "10bba78",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -312,6 +316,7 @@
     "attr.int": "attr",
     "attr.logical": "attr",
     "attr.on_body": "attr",
+    "attr.on_face": "attr",
     "attr.on_feature": "attr",
     "attr.string": "attr",
     "attr.update": "attr",
@@ -368,6 +373,7 @@
     "feature.pocket_blind": "feature",
     "feature.revolve": "feature",
     "feature.shell": "feature",
+    "feature.shell_volume": "feature",
     "feature.stack_blocks": "feature",
     "feature.tube": "feature",
     "file.roundtrip": "file",
