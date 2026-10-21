@@ -6,7 +6,8 @@
 
 | 能力 | 真机证据 |
 |---|---|
-| `cam.setup` | `part.CreateCamSetup("mill_planar"/"mill_contour"/"mill"/"MILL_PLANAR")` **全部返回 None**；`part.CAMSetup` 抛 `Error number: 1345023`；`part.CAMDataManager` 只暴露 2 个曲线 builder（`CreateBlendCurve3dBuilder`/`CreateOffsetCurve3dBuilder`）；`NXOpen.CAM` 能 import 但无 setup 创建器 |
+| `cam.setup` | `part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder |
+| `export.dxf` / `export.dwg` | **危险**：`CreateDxfdwgCreator().Commit()` 在无图纸上下文时**死循环**（实测 656 s CPU 未结束，需 taskkill）。不要在 journal 里再试 |
 
 ## pending（按依赖顺序）
 
@@ -23,7 +24,6 @@
 | `feature.sweep` | `SweptBuilder.SectionList.Append`/`GuideList.Append` 都成功，`CommitFeature()` 报 `Unable to approximate guide string` | 需要引导线/连续性或对齐参数 |
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 | 需要别的枚举写入口 |
 | `sketch.constraints` | `CreateCoincidentConstraint(geom1, geom2)` 要 `Sketch.ConstraintGeometry` 对象，stub 里没有创建入口 | 未通 |
-| `export.dxf` | `DxfdwgCreator` 需要图纸/视图上下文 | 依赖出图（已通） |
 | `export.parasolid` | 四种方式都失败：不选对象、`.Add(bodies)`、`.SetArray(bodies)`、`ExportFrom=DisplayedPart`，全部报 `Part has no valid export objects`（STL 用 `.Add` 已通） | 需要 `ObjectTypes` 正确取值 |
 | `feature.thicken` | `FaceCollector.AddRules` 能过、`FirstOffset.SetFormula("5")` 返回 ok，但结果为 **2 个片体**（体积 0）；加上 `Tolerance` 后又变成单实体 **16,500,000 mm³**（100×50×3300），厚度语义不对 | 需要正确的 offset 表达方式 |
 | `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Commit()` 返回 None | 需要"在视图上画剖切线"的取点接口 |

@@ -117,3 +117,25 @@
 第二个实体体积为 0（被消耗的工具体的残留记录）。`RetainTool=False` + `RetainTarget=True`
 反而变成 3 个实体、体积翻倍（100000 + 68584），更糟。
 处理方式：这类复合能力**不判 body_count**，只判体积（并保留 body_count 在 reads 里备查）。
+
+## 十四、DXF/DWG 导出在 journal 里会把 NX 挂死（危险）
+
+`session.DexManager.CreateDxfdwgCreator()` + `OutputFile` + `Commit()` 在**没有图纸上下文**时
+不是报错，而是**死循环**：实测 `run_journal.exe` 单进程烧了 **656 s CPU** 仍在转，
+最后手动 `taskkill /T /F` 才结束，会话直接判"中断"。
+→ 该能力标 **dead + hazardous**，不要在 journal 里再试；要 DXF 请走交互或别的工具链。
+→ 顺带把 CLI 默认 `--timeout` 从 900 s 降到 **300 s**（正常会话 16 s，卡死时更快止损）。
+
+## 十五、代码手术纪律（血泪版）
+
+本轮为了删一个函数，用了两类危险操作，都造成了真实损坏：
+
+1. **正则按行删 `"name": name,`** —— 本意是清理 ACTIONS 条目，结果把函数体里
+   `"body_count": 1,`、`"activated": activated,` 这类**普通字典行**一起删了，
+   5 条能力静默失败；
+2. **"删到下一个 def / 删到 ACTIONS"** —— 已经三次把 `ACTIONS` 字典本身吞掉。
+
+定规：
+- 删函数用 `ast` 解析取 `FunctionDef` 的 `lineno/end_lineno` 精确切片，或**从 git 恢复**再重做；
+- 任何批量文本替换后，**先 `py_compile` + `nxkit selftest`，再跑真机**；
+- 修坏了先 `git checkout HEAD -- <file>`，别在破损文件上继续打补丁。

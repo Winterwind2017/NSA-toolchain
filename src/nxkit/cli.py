@@ -161,14 +161,14 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("cap", help="跑一条能力")
     s.add_argument("id")
     s.add_argument("--workdir", default=None)
-    s.add_argument("--timeout", type=float, default=900.0)
+    s.add_argument("--timeout", type=float, default=300.0)
     s.add_argument("--verbose", action="store_true")
     s.set_defaults(func=cmd_cap)
 
     s = sub.add_parser("run", help="跑一组能力（默认全部，一次会话）")
     s.add_argument("--only", default=None, help="族或 id，逗号分隔")
     s.add_argument("--workdir", default=None)
-    s.add_argument("--timeout", type=float, default=900.0)
+    s.add_argument("--timeout", type=float, default=300.0)
     s.add_argument("--json", action="store_true")
     s.set_defaults(func=cmd_run)
 
