@@ -1221,6 +1221,180 @@ def feature_shell(params, workdir, rec):
     return reads
 
 
+def _xy_plane(part):
+    mat = NXOpen.Matrix3x3()
+    mat.Xx, mat.Xy, mat.Xz = 1.0, 0.0, 0.0
+    mat.Yx, mat.Yy, mat.Yz = 0.0, 1.0, 0.0
+    mat.Zx, mat.Zy, mat.Zz = 0.0, 0.0, 1.0
+    return part.Planes.CreateFixedPlane(NXOpen.Point3d(0.0, 0.0, 0.0), mat)
+
+
+def sketch_rect(params, workdir, rec):
+    """在 XY 平面上建草图并落 4 条线（100×50）。"""
+    part = new_part("sketch")
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    try:
+        sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+        activated = True
+    except Exception:
+        activated = False
+    p = NXOpen.Point3d
+    pts = [(0.0, 0.0), (100.0, 0.0), (100.0, 50.0), (0.0, 50.0)]
+    lines = []
+    for i in range(4):
+        a1 = pts[i]
+        b1 = pts[(i + 1) % 4]
+        ln = part.Curves.CreateLine(p(a1[0], a1[1], 0.0), p(b1[0], b1[1], 0.0))
+        try:
+            sketch.AddGeometry(ln)
+        except Exception:
+            pass
+        lines.append(ln)
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        try:
+            sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue)
+        except Exception:
+            pass
+    reads = {"sketches": len(list(part.Sketches)),
+             "curves": len(list(part.Curves)),
+             "activated": activated,
+             "lines_added": len(lines)}
+    _close_part(part)
+    return reads
+
+
+def _sketch_rect_lines(part):
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    try:
+        sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    except Exception:
+        pass
+    p = NXOpen.Point3d
+    pts = [(0.0, 0.0), (100.0, 0.0), (100.0, 50.0), (0.0, 50.0)]
+    lines = []
+    for i in range(4):
+        a1, b1 = pts[i], pts[(i + 1) % 4]
+        ln = part.Curves.CreateLine(p(a1[0], a1[1], 0.0), p(b1[0], b1[1], 0.0))
+        try:
+            sketch.AddGeometry(ln)
+        except Exception:
+            pass
+        lines.append(ln)
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        try:
+            sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue)
+        except Exception:
+            pass
+    return sketch, lines
+
+
+def sketch_extrude(params, workdir, rec):
+    """草图 4 条线 → 拉伸 10 → 体积 50000（草图驱动建模）。"""
+    part = new_part("skext")
+    sketch, lines = _sketch_rect_lines(part)
+    secs = part.Sections.CreateSectionsUsingCurves(
+        lines, NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    b = part.Features.CreateExtrudeBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.Section = secs[0]
+        b.Direction = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(10.0)
+        except Exception:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula("10")
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"sketches": len(list(part.Sketches)),
+             "body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def sketch_circle_extrude(params, workdir, rec):
+    """草图画 R20 整圆 → 拉伸 30 → 37699.11。"""
+    import math
+    part = new_part("skcirc")
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    try:
+        sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    except Exception:
+        pass
+    arc = part.Curves.CreateArc(NXOpen.Point3d(0.0, 0.0, 0.0),
+                                NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                20.0, 0.0, 2.0 * math.pi)
+    try:
+        sketch.AddGeometry(arc)
+    except Exception:
+        pass
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        try:
+            sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue)
+        except Exception:
+            pass
+    secs = part.Sections.CreateSectionsUsingCurves(
+        [arc], NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    b = part.Features.CreateExtrudeBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.Section = secs[0]
+        b.Direction = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(30.0)
+        except Exception:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula("30")
+        b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"sketches": len(list(part.Sketches)), "body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1266,6 +1440,9 @@ ACTIONS = {
     "boolean_two_tools": boolean_two_tools,
     "hole_array": hole_array,
     "feature_shell": feature_shell,
+    "sketch_rect": sketch_rect,
+    "sketch_extrude": sketch_extrude,
+    "sketch_circle_extrude": sketch_circle_extrude,
 }
 
 

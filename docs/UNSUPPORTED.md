@@ -24,7 +24,7 @@
 | `export.parasolid` | `CreateParasolidExporter().Commit()` 报 `Part has no valid export objects`；同样需要选择块 | 依赖选择块 |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 | 需要父视图的正确设入口 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） | 未开始 |
-| `sketch.*` | `part.Sketches` 只有曲线 builder，草图创建入口未摸清 | 未开始 |
+
 
 ## external
 

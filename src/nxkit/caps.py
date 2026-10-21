@@ -180,6 +180,19 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 28000.0, "max": 30000.0}},
         reopen=False),
+
+    Cap("sketch.rect", "sketch", "XY 平面草图 + 4 条线", "sketch_rect", "L1–L2",
+        params={}, expect={"sketches": 1, "activated": True, "lines_added": 4,
+                           "curves": {"min": 4.0, "max": 8.0}},
+        reopen=False),
+
+    Cap("sketch.extrude", "sketch", "草图 4 线拉伸 10 → 50000", "sketch_extrude", "L1–L3",
+        params={}, expect={"sketches": 1, "body_count": 1,
+                           "volume_mm3": 50000.0}, reopen=False),
+
+    Cap("sketch.circle_extrude", "sketch", "草图整圆拉伸 30 → 37699.11", "sketch_circle_extrude", "L1–L3",
+        params={}, expect={"sketches": 1, "body_count": 1,
+                           "volume_mm3": 37699.11184307752}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
