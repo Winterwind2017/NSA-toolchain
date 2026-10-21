@@ -3069,7 +3069,65 @@ def feature_mirror_face(params, workdir, rec):
     return reads
 
 
+def solid_scale(params, workdir, rec):
+    """整体缩放 2 倍 → 体积 ×8 = 800000。"""
+    part = new_part("scale")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    sc = part.Features.CreateScaleBuilder(NXOpen.Features.Feature.Null)
+    diag = {}
+    try:
+        rule = part.ScRuleFactory.CreateRuleBodyDumb([body])
+        for how in ("bodytoscale_add", "bodytoscale_setvalue"):
+            try:
+                if how == "bodytoscale_add":
+                    sc.BodyToScale.Add([body])
+                else:
+                    sc.BodyToScale.SetValue(body)
+                diag["body"] = how
+                break
+            except Exception as exc:
+                diag["body:" + how] = str(exc)[:90]
+        try:
+            sc.Point = part.Points.CreatePoint(NXOpen.Point3d(0.0, 0.0, 0.0))
+            diag["point"] = "Points.CreatePoint"
+        except Exception as exc:
+            diag["point"] = "err:%s" % str(exc)[:80]
+        for member in ("Uniform", "UniformScale", "General"):
+            try:
+                sc.Type = getattr(NXOpen.Features.ScaleBuilderType, member)
+                diag["type"] = member
+                break
+            except Exception as exc:
+                diag["type:" + member] = str(exc)[:60]
+        try:
+            sc.UniformFactor.SetFormula("2")
+            diag["uniform"] = str(sc.UniformFactor.Value)
+        except Exception as exc:
+            diag["uniform"] = "err:%s" % str(exc)[:80]
+        try:
+            sc.CommitFeature()
+            diag["commit"] = "ok"
+        except Exception as exc:
+            diag["commit"] = "err:%s" % str(exc)[:120]
+    finally:
+        try:
+            sc.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "scale.prt"))
+    b2 = _bodies_of(part2)
+    reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"]) if b2 else None
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "solid_scale": solid_scale,
     "feature_mirror_face": feature_mirror_face,
     "export_parasolid": export_parasolid,
     "feature_thicken2": feature_thicken2,

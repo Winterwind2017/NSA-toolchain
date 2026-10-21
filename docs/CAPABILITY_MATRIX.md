@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **108** 条，全部真机通过；其中 **49** 条带 L4（存盘 → 重开 → 复测）。
+总计 **109** 条，全部真机通过；其中 **50** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -12,8 +12,8 @@
 | drawing | 10 | 0 | drafting |
 | assembly | 8 | 1 | assemblies |
 | export | 7 | 0 | gateway |
+| solid | 7 | 7 | solid_modeling |
 | boolean | 6 | 6 | solid_modeling |
-| solid | 6 | 6 | solid_modeling |
 | curve | 5 | 0 | solid_modeling |
 | measure | 5 | 2 | gateway |
 | file | 2 | 1 | gateway |
@@ -28,7 +28,7 @@
 | assemblies | 8 |
 | drafting | 10 |
 | gateway | 28 |
-| solid_modeling | 62 |
+| solid_modeling | 63 |
 
 ## 全部能力
 
@@ -132,6 +132,7 @@
 | `measure.faces_two` | measure | L2–L3 | — | gateway |
 | `measure.distance` | measure | L2–L3 | — | gateway |
 | `feature.thicken` | feature | L1–L3 | 是 | solid_modeling |
+| `solid.scale` | solid | L1–L3 | 是 | solid_modeling |
 | `feature.mirror` | feature | L1–L3 | 是 | solid_modeling |
 | `asm.five_components` | assembly | L1–L2 | — | assemblies |
 | `asm.component_names` | assembly | L1–L2 | — | assemblies |

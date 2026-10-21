@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**108** 条（一次会话，连跑 2 次全绿）
-- 其中带 L4（存盘→重开→复测）：**49** 条
-- 未打通（有证据）：**12** 项
+- 真机通过能力：**109** 条（一次会话，连跑 2 次全绿）
+- 其中带 L4（存盘→重开→复测）：**50** 条
+- 未打通（有证据）：**13** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -16,7 +16,7 @@
 | assemblies | 8 |
 | drafting | 10 |
 | gateway | 28 |
-| solid_modeling | 62 |
+| solid_modeling | 63 |
 
 ## 按族
 
@@ -28,8 +28,8 @@
 | drawing | 10 | 0 |
 | assembly | 8 | 1 |
 | export | 7 | 0 |
+| solid | 7 | 7 |
 | boolean | 6 | 6 |
-| solid | 6 | 6 |
 | curve | 5 | 0 |
 | measure | 5 | 2 |
 | file | 2 | 1 |
@@ -53,9 +53,10 @@
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
 | `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝* |
+| `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报  |
 
 ## 怎么继续扩
 
 - 新能力 append-only 追加到 `ACTIONS` 之前；先 py_compile + selftest，再真机 2 次。
 - 判据只读 NX 状态；没打通写 `docs/UNSUPPORTED.md`（带错误原文）。
-- 动手前 `nxkit licenses` 确认许可档位。
+- 未用的 builder 还有 200+ 个（拆体/移动体/抽面/缝面/螺纹等），是可继续扩的方向。
