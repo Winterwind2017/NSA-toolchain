@@ -47,7 +47,6 @@ PENDING = [
     ("sketch.constraints", "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"),
     ("sketch.constant_length", "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"),
     ("export.dxf", "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"),
-    ("drawing.projected_view", "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"),
     ("drawing.section_view", "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"),
 ]
 

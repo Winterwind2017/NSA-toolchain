@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 136
+    "verified": 138
   },
-  "generated_at": "2026-10-22T02:37:38",
+  "generated_at": "2026-10-22T02:42:27",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -55,6 +55,7 @@
     "datum.axis": "L1–L2",
     "datum.plane": "L1–L2",
     "drawing.base_view": "L1–L3",
+    "drawing.projected_view": "L1–L2",
     "drawing.second_sheet": "L1–L2",
     "drawing.sheet": "L1–L2",
     "drawing.sheet_a0": "L1–L2",
@@ -141,6 +142,7 @@
     "sketch.vertical": "L1–L2",
     "solid.cone": "L1–L3",
     "solid.cone_frustum": "L1–L3",
+    "solid.delete_face": "L1–L2",
     "solid.scale": "L1–L3",
     "solid.sphere": "L1–L3",
     "solid.split_body": "L1–L3",
@@ -193,6 +195,7 @@
     "datum.axis": "gateway",
     "datum.plane": "gateway",
     "drawing.base_view": "drafting",
+    "drawing.projected_view": "drafting",
     "drawing.second_sheet": "drafting",
     "drawing.sheet": "drafting",
     "drawing.sheet_a0": "drafting",
@@ -279,6 +282,7 @@
     "sketch.vertical": "solid_modeling",
     "solid.cone": "solid_modeling",
     "solid.cone_frustum": "solid_modeling",
+    "solid.delete_face": "solid_modeling",
     "solid.scale": "solid_modeling",
     "solid.sphere": "solid_modeling",
     "solid.split_body": "solid_modeling",
@@ -339,17 +343,13 @@
       "reason": "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"
     },
     {
-      "id": "drawing.projected_view",
-      "reason": "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"
-    },
-    {
       "id": "drawing.section_view",
       "reason": "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"
     }
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "508c387",
+    "kernel_commit": "3939cd6",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -396,6 +396,7 @@
     "datum.axis": "part",
     "datum.plane": "part",
     "drawing.base_view": "drawing",
+    "drawing.projected_view": "drawing",
     "drawing.second_sheet": "drawing",
     "drawing.sheet": "drawing",
     "drawing.sheet_a0": "drawing",
@@ -482,6 +483,7 @@
     "sketch.vertical": "sketch",
     "solid.cone": "solid",
     "solid.cone_frustum": "solid",
+    "solid.delete_face": "solid",
     "solid.scale": "solid",
     "solid.sphere": "solid",
     "solid.split_body": "solid",
