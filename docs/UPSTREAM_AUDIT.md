@@ -208,7 +208,7 @@
 | `sw_split_body` | — | 未达可用 | 已登记但没打通： | 2349 |
 | `sw_unfold` | — | 未达可用 | 已登记但没打通： | 2769 |
 
-## 本仓库超出上游的能力（26 条）
+## 本仓库超出上游的能力（25 条）
 
 这些来自第 ③ 类资产（`sw-extra` 的仿真/运动/元数据）与 ④ 的修复层，上游 `server.py` 里没有对应工具，所以**不算覆盖上游**：
 
@@ -218,7 +218,6 @@
 | `sw_cut_extrude` | feature |
 | `sw_dxp` | meta |
 | `sw_export_iges` | io |
-| `sw_flow_check` | meta |
 | `sw_insert_bends` | sheet_metal |
 | `sw_mirror_feature` | feature |
 | `sw_motion_list` | study |
@@ -241,7 +240,7 @@
 | `swdm_stats` | meta |
 | `swdm_tables` | meta |
 
-## 未复核的 149 条怎么分批
+## 未复核的 42 条怎么分批
 
 按能力族归类（只统计未复核条目），便于分批验证：
 

@@ -156,3 +156,33 @@ def test_unsupported_doc_matches_registry() -> None:
         if m2:
             assert int(m2.group(1)) == counts[status], (
                 "%s 章节标题条数不一致" % status)
+
+def test_readme_counts_match_registry() -> None:
+    """README 的数字块由 `tools/gen_readme_counts.py` 生成，必须与代码一致。
+
+    这条防的是"README 漂移"：曾出现 `53 条 verified 配方`、`2 条不稳`、
+    `23 条超出上游`、`111/27/44` 等旧值，而代码早已是
+    150 verified / 3 unstable / 125 covered / 42 unchecked。
+    """
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "tools"))
+    import gen_readme_counts as G
+
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    frags = G.render_fragments()
+    regenerated = G.apply(readme, frags)
+    assert regenerated.strip() == readme.strip(), (
+        "README 数字块与代码不一致（跑 python tools/gen_readme_counts.py 重生成）")
+
+    # 两层数字必须自洽：verified = 上游已覆盖 + 本仓库自有
+    from swkit.registry import summary
+    audit = G._audit_counts()
+    counts = summary()
+    assert counts["verified"] - audit["covered"] == audit.get("beyond", -1), (
+        "verified(%d) - 已覆盖(%d) != 超出上游(%s)"
+        % (counts["verified"], audit["covered"], audit.get("beyond")))
+    assert sum(audit[k] for k in ("covered", "dead", "unstable",
+                                  "unusable", "unchecked")) == 188
