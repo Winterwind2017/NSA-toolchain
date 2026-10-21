@@ -41,7 +41,7 @@ PENDING = [
     ("measure.distance", "MeasureDistance 无 Distance 属性，Information() 返回 None"),
     ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),
-    ("asm.constraints", "约束对象没有创建入口"),
+    ("asm.constraints", "ConstraintCollection.CreateConstraint 不存在"),
     ("sketch.constraints", "Sketch.ConstraintGeometry 没有创建入口"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),
     ("feature.sweep", "Commit 报 Unable to approximate guide string"),

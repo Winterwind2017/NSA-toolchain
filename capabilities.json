@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 66
+    "verified": 67
   },
-  "generated_at": "2026-10-21T21:21:43",
+  "generated_at": "2026-10-21T21:25:40",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -52,6 +52,7 @@
     "feature.chamfer": "L1–L3",
     "feature.chamfer_edge": "L1–L3",
     "feature.chamfer_multi": "L1–L3",
+    "feature.cross_hole": "L1–L3",
     "feature.edge_blend": "L1–L3",
     "feature.edge_blend_all": "L1–L3",
     "feature.extrude_taper": "L1–L3",
@@ -120,6 +121,7 @@
     "feature.chamfer": "solid_modeling",
     "feature.chamfer_edge": "solid_modeling",
     "feature.chamfer_multi": "solid_modeling",
+    "feature.cross_hole": "solid_modeling",
     "feature.edge_blend": "solid_modeling",
     "feature.edge_blend_all": "solid_modeling",
     "feature.extrude_taper": "solid_modeling",
@@ -176,7 +178,7 @@
     },
     {
       "id": "asm.constraints",
-      "reason": "约束对象没有创建入口"
+      "reason": "ConstraintCollection.CreateConstraint 不存在"
     },
     {
       "id": "sketch.constraints",
@@ -213,7 +215,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "0d056a9",
+    "kernel_commit": "ed9b93d",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -257,6 +259,7 @@
     "feature.chamfer": "feature",
     "feature.chamfer_edge": "feature",
     "feature.chamfer_multi": "feature",
+    "feature.cross_hole": "feature",
     "feature.edge_blend": "feature",
     "feature.edge_blend_all": "feature",
     "feature.extrude_taper": "feature",
