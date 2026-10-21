@@ -1,7 +1,7 @@
 # 全量验证记录（VERIFY）
 
 > 目的：任何人在干净机器上，能按下面这几条命令复现"140 条真机通过"。
-> 最近复跑：2026-10-22（Asia/Shanghai），干净 clone @ `00f444a`。
+> 最近复跑：2026-10-22 02:55（Asia/Shanghai），干净 clone @ `0c032a5`。
 
 ## 0. 环境
 
@@ -19,7 +19,7 @@
 ```powershell
 git clone git@github.com:Winterwind2017/nxkit.git D:\bililive\_verify3\clone
 cd D:\bililive\_verify3\clone
-git log --oneline -1        # 00f444a
+git log --oneline -1        # 0c032a5
 $env:PYTHONPATH = "D:\bililive\_verify3\clone\src"
 ```
 
@@ -27,7 +27,7 @@ $env:PYTHONPATH = "D:\bililive\_verify3\clone\src"
 
 ```powershell
 python -m pytest -q tests
-# 9 passed in 0.09s
+# 9 passed in 0.09s（干净 clone 实测）
 
 python -m nxkit selftest
 # 自检通过：140 条能力，动作与判据齐全，负例都能被拒绝
@@ -40,7 +40,7 @@ python -m nxkit licenses
 
 ```powershell
 python -m nxkit run --workdir D:\bililive\_verify3\runs\full
-# 140/140 通过  (会话 18.8s, 退出码 1)
+# 140/140 通过  (会话 19.5s, 退出码 1)（干净 clone 实测）
 ```
 
 > 注意：`run_journal` 的**退出码是 1**（NX 特性），结果以 `result.json` 为准。
