@@ -16,7 +16,7 @@ capabilities:
     params: {}
     expect: {'view_count': 2, 'projected_ok': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [projected_ok, view_count]
   - id: solid.delete_face
     family: solid
@@ -27,7 +27,7 @@ capabilities:
     params: {}
     expect: {'hole_ok': True, 'body_count': 1, 'faces': 6, 'volume_mm3': {'min': 99990.0, 'max': 100010.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, hole_ok, volume_mm3]
   - id: curve.combined_projection
     family: curve
@@ -38,7 +38,7 @@ capabilities:
     params: {}
     expect: {'entity_count': 1, 'start_x': 0.0, 'start_y': 0.0, 'start_z': 0.0, 'end_z': {'min': 49.5, 'max': 50.5}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [end_z, entity_count, start_x, start_y, start_z]
   - id: surface.offset
     family: surface
@@ -49,7 +49,7 @@ capabilities:
     params: {}
     expect: {'sheet_count': 2, 'gap': {'min': 4.9, 'max': 5.1}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [gap, sheet_count]
   - id: feature.hole
     family: feature
@@ -60,7 +60,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 93710.0, 'max': 93725.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: solid.trim_body
     family: solid
@@ -71,7 +71,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 49000.0, 'max': 51000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.rib
     family: feature
@@ -82,7 +82,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 114800.0, 'max': 115200.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.sweep_guide
     family: feature
@@ -93,7 +93,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 31300.0, 'max': 31550.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: inspect.face_area_list
     family: inspect
@@ -104,7 +104,7 @@ capabilities:
     params: {}
     expect: {'face_count': 6, 'area_total': {'min': 15990.0, 'max': 16010.0}, 'area_min': {'min': 999.5, 'max': 1000.5}, 'area_max': {'min': 4999.5, 'max': 5000.5}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [area_max, area_min, area_total, face_count]
   - id: inspect.edge_count
     family: inspect
@@ -115,7 +115,7 @@ capabilities:
     params: {}
     expect: {'block_edges': 12, 'block_faces': 6, 'cyl_edges': 2, 'cyl_faces': 3}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [block_edges, block_faces, cyl_edges, cyl_faces]
   - id: inspect.body_state
     family: inspect
@@ -126,7 +126,7 @@ capabilities:
     params: {}
     expect: {'body_count': 2, 'solid_count': 1, 'sheet_count': 1, 'total_ok': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, sheet_count, solid_count, total_ok]
   - id: inspect.face_types
     family: inspect
@@ -137,7 +137,7 @@ capabilities:
     params: {}
     expect: {'face_total': 3, 'planar': 2, 'cylindrical': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [cylindrical, face_total, planar]
   - id: measure.perimeter
     family: measure
@@ -148,7 +148,7 @@ capabilities:
     params: {}
     expect: {'perimeter_mm': {'min': 299.5, 'max': 300.5}, 'area_mm2': {'min': 4990.0, 'max': 5010.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [area_mm2, perimeter_mm]
   - id: surface.sew
     family: surface
@@ -159,7 +159,7 @@ capabilities:
     params: {}
     expect: {'sheet_count': 1, 'sheet_area': {'min': 4990.0, 'max': 5010.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_area, sheet_count]
   - id: surface.through_curves
     family: surface
@@ -170,7 +170,7 @@ capabilities:
     params: {}
     expect: {'sheet_count': 1, 'sheet_area': {'min': 4990.0, 'max': 5010.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_area, sheet_count]
   - id: part.new
     family: part
@@ -181,7 +181,7 @@ capabilities:
     params: {'name': 'nxkit_part'}
     expect: {'part_name_ok': True, 'body_count': 0, 'units_mm': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, part_name_ok, units_mm]
   - id: datum.plane
     family: part
@@ -192,7 +192,7 @@ capabilities:
     params: {}
     expect: {'plane_ok': True, 'origin_z': 10.0, 'normal_z': 1.0, 'normal_x': 0.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [normal_x, normal_z, origin_z, plane_ok]
   - id: datum.axis
     family: part
@@ -203,7 +203,7 @@ capabilities:
     params: {}
     expect: {'axis_ok': True, 'origin_x': 0.0, 'dir_x': 1.0, 'dir_y': 0.0, 'dir_z': 0.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [axis_ok, dir_x, dir_y, dir_z, origin_x]
   - id: block.create
     family: solid
@@ -214,7 +214,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 100000.0, 'area_mm2': 16000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [area_mm2, body_count, edges, faces, volume_mm3]
   - id: block.two_bodies
     family: solid
@@ -225,7 +225,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 2, 'volume_mm3': 108000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: boolean.subtract_retain
     family: boolean
@@ -236,7 +236,7 @@ capabilities:
     params: {}
     expect: {'body_count': 2, 'volume_mm3': {'min': 105000.0, 'max': 107500.0}, 'body_count_reopened': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: boolean.subtract
     family: boolean
@@ -247,7 +247,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 92000.0, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: boolean.union
     family: boolean
@@ -258,7 +258,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 100000.0, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: boolean.intersect
     family: boolean
@@ -269,7 +269,7 @@ capabilities:
     params: {'offset_x': 50.0}
     expect: {'body_count': 1, 'volume_mm3': 8000.0, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: cylinder.create
     family: solid
@@ -280,7 +280,7 @@ capabilities:
     params: {'diameter': 40.0, 'height': 30.0}
     expect: {'body_count': 1, 'faces': 3, 'volume_mm3': 37699.11184307752}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: measure.mass
     family: measure
@@ -291,7 +291,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'volume_mm3': 100000.0, 'area_mm2': 16000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [area_mm2, volume_mm3]
   - id: body.topo
     family: inspect
@@ -302,7 +302,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'faces': 6, 'edges': 12}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [edges, faces]
   - id: file.roundtrip
     family: file
@@ -313,7 +313,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
     expect: {'volume_mm3': 100000.0, 'volume_reopened': 100000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [volume_mm3, volume_reopened]
   - id: curve.line
     family: curve
@@ -324,7 +324,7 @@ capabilities:
     params: {'dx': 100.0, 'dy': 0.0, 'dz': 0.0}
     expect: {'length': 100.0, 'start': [0.0, 0.0, 0.0], 'end': [100.0, 0.0, 0.0]}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [end, length, start]
   - id: curve.arc
     family: curve
@@ -335,7 +335,7 @@ capabilities:
     params: {'radius': 25.0}
     expect: {'radius': 25.0, 'circumference': 157.07963267948966}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [circumference, radius]
   - id: attr.string
     family: attr
@@ -346,7 +346,7 @@ capabilities:
     params: {'title': 'NXKIT_STR', 'value': 'hello-nx'}
     expect: {'attr_str': 'hello-nx', 'attr_after_reopen': 'hello-nx'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [attr_after_reopen, attr_str]
   - id: attr.int
     family: attr
@@ -357,7 +357,7 @@ capabilities:
     params: {'title': 'NXKIT_INT', 'value': 42}
     expect: {'attr_int': 42}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [attr_int]
   - id: extrude.rect
     family: feature
@@ -368,7 +368,7 @@ capabilities:
     params: {'length': 100.0, 'width': 50.0, 'distance': 10.0}
     expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 50000.0, 'area_mm2': 13000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [area_mm2, body_count, edges, faces, volume_mm3]
   - id: asm.add_component
     family: assembly
@@ -379,7 +379,7 @@ capabilities:
     params: {}
     expect: {'components': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [components]
   - id: asm.two_components
     family: assembly
@@ -390,7 +390,7 @@ capabilities:
     params: {}
     expect: {'components': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [components]
   - id: export.step
     family: export
@@ -401,7 +401,7 @@ capabilities:
     params: {}
     expect: {'export_head': 'ISO-10303-21'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [export_head]
   - id: export.iges
     family: export
@@ -412,7 +412,7 @@ capabilities:
     params: {}
     expect: {'igs': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [igs]
   - id: drawing.sheet
     family: drawing
@@ -423,7 +423,7 @@ capabilities:
     params: {'name': 'S1'}
     expect: {'sheet_created': True, 'sheet_height': 297.0, 'sheet_width': 420.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_created, sheet_height, sheet_width]
   - id: drawing.base_view
     family: drawing
@@ -434,7 +434,7 @@ capabilities:
     params: {'model_view': 'Front'}
     expect: {'view_created': True, 'model_view_used': 'Front'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [model_view_used, view_created]
   - id: extrude.ring
     family: feature
@@ -445,7 +445,7 @@ capabilities:
     params: {}
     expect: {'sections': 1, 'body_count': 1, 'volume_mm3': 42000.0, 'faces': 10}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, sections, volume_mm3]
   - id: feature.chamfer
     family: feature
@@ -456,7 +456,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: feature.edge_blend
     family: feature
@@ -467,7 +467,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: feature.pattern_linear
     family: feature
@@ -478,7 +478,7 @@ capabilities:
     params: {}
     expect: {'body_count': 3, 'volume_mm3': 300000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.pocket
     family: feature
@@ -489,7 +489,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 84000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.hole_cyl
     family: feature
@@ -500,7 +500,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 93716.81495770694}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: export.acis
     family: export
@@ -511,7 +511,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [export_bytes, export_ok]
   - id: curve.ellipse
     family: curve
@@ -522,7 +522,7 @@ capabilities:
     params: {}
     expect: {'ellipse_major': 50.0, 'ellipse_minor': 25.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [ellipse_major, ellipse_minor]
   - id: attr.on_body
     family: attr
@@ -533,7 +533,7 @@ capabilities:
     params: {}
     expect: {'body_attr': 'v1', 'body_count': 1, 'body_attr_reopened': 'v1'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_attr, body_attr_reopened, body_count]
   - id: measure.face_area
     family: measure
@@ -544,7 +544,7 @@ capabilities:
     params: {}
     expect: {'faces': 6, 'total_face_area': 16000.0, 'total_face_area_reopened': {'min': 15990.0, 'max': 16010.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [faces, total_face_area, total_face_area_reopened]
   - id: solid.cone
     family: solid
@@ -555,7 +555,7 @@ capabilities:
     params: {'diameter': 40.0, 'height': 30.0}
     expect: {'body_count': 1, 'volume_mm3': 12566.370614359172}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: solid.sphere
     family: solid
@@ -566,7 +566,7 @@ capabilities:
     params: {'diameter': 40.0}
     expect: {'body_count': 1, 'volume_mm3': 33510.32163829112}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.pattern_grid
     family: feature
@@ -577,7 +577,7 @@ capabilities:
     params: {}
     expect: {'body_count': 4, 'volume_mm3': 400000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.pattern_circular
     family: feature
@@ -588,7 +588,7 @@ capabilities:
     params: {}
     expect: {'body_count': 4, 'volume_mm3': 400000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: export.step_ap203
     family: export
@@ -599,7 +599,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'export_head': 'ISO-10303-21'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [export_head, export_ok]
   - id: attr.on_feature
     family: attr
@@ -610,7 +610,7 @@ capabilities:
     params: {}
     expect: {'feature_attr': 'f1', 'feature_name': 'Block(0)'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [feature_attr, feature_name]
   - id: feature.chamfer_angle
     family: feature
@@ -621,7 +621,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'option': 'OffsetAndAngle', 'angle': '30.0', 'volume_mm3': {'min': 98500.0, 'max': 99900.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [angle, body_count, faces, option, volume_mm3]
   - id: feature.chamfer_multi
     family: feature
@@ -632,7 +632,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': {'min': 10.0, 'max': 12.0}, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: boolean.two_tools
     family: boolean
@@ -643,7 +643,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 84000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.hole_array
     family: feature
@@ -654,7 +654,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 74867.25849365017}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.shell
     family: feature
@@ -665,7 +665,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 28000.0, 'max': 30000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: sketch.rect
     family: sketch
@@ -676,7 +676,7 @@ capabilities:
     params: {}
     expect: {'sketches': 1, 'activated': True, 'lines_added': 4, 'curves': {'min': 4.0, 'max': 8.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [activated, curves, lines_added, sketches]
   - id: sketch.extrude
     family: sketch
@@ -687,7 +687,7 @@ capabilities:
     params: {}
     expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 50000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, sketches, volume_mm3]
   - id: sketch.circle_extrude
     family: sketch
@@ -698,7 +698,7 @@ capabilities:
     params: {}
     expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 37699.11184307752}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, sketches, volume_mm3]
   - id: feature.pocket_blind
     family: feature
@@ -709,7 +709,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 92000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.hole_blind
     family: feature
@@ -720,7 +720,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 96858.40734641021}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: drawing.view_scale
     family: drawing
@@ -731,7 +731,7 @@ capabilities:
     params: {}
     expect: {'view_created': True, 'ratio_ok': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [ratio_ok, view_created]
   - id: drawing.second_sheet
     family: drawing
@@ -742,7 +742,7 @@ capabilities:
     params: {}
     expect: {'current': 'S2', 'current_height': 210.0, 'current_width': 297.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [current, current_height, current_width]
   - id: drawing.sheet_a4
     family: drawing
@@ -753,7 +753,7 @@ capabilities:
     params: {'size': 'A4'}
     expect: {'sheet_created': True, 'sheet_height': 210.0, 'sheet_width': 297.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_created, sheet_height, sheet_width]
   - id: drawing.view_isometric
     family: drawing
@@ -764,7 +764,7 @@ capabilities:
     params: {'model_view': 'Isometric'}
     expect: {'view_created': True, 'view_name': 'Isometric@1'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [view_created, view_name]
   - id: asm.three_components
     family: assembly
@@ -775,7 +775,7 @@ capabilities:
     params: {}
     expect: {'components': 3}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [components]
   - id: export.stl
     family: export
@@ -786,7 +786,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [export_bytes, export_ok]
   - id: feature.revolve
     family: feature
@@ -797,7 +797,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 37600.0, 'max': 37800.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.edge_blend_all
     family: feature
@@ -808,7 +808,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: measure.face_single
     family: measure
@@ -819,7 +819,7 @@ capabilities:
     params: {}
     expect: {'face_area_max': 5000.0, 'face_perimeter_max': 300.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [face_area_max, face_perimeter_max]
   - id: feature.chamfer_edge
     family: feature
@@ -830,7 +830,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98500.0, 'max': 100000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: surface.ruled
     family: surface
@@ -841,7 +841,7 @@ capabilities:
     params: {}
     expect: {'sheet_count': 1, 'sheet_area': {'min': 5800.0, 'max': 5860.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_area, sheet_count]
   - id: surface.bounded_plane
     family: surface
@@ -852,7 +852,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 1, 'sheet_count_reopened': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, sheet_count_reopened]
   - id: feature.spring
     family: feature
@@ -863,7 +863,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 28000.0, 'max': 33000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.sweep
     family: feature
@@ -874,7 +874,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 29000.0, 'max': 30200.0}, 'body_count_reopened': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: feature.tube
     family: feature
@@ -885,7 +885,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 30000.0, 'max': 33000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: curve.project
     family: curve
@@ -896,7 +896,7 @@ capabilities:
     params: {}
     expect: {'curve_ok': True, 'entity_count': 1, 'proj_z': {'min': 39.5, 'max': 40.5}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [curve_ok, entity_count, proj_z]
   - id: curve.offset
     family: curve
@@ -907,7 +907,7 @@ capabilities:
     params: {}
     expect: {'curve_ok': True, 'entity_count': 1, 'offset_dist': {'min': 9.5, 'max': 10.5}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [curve_ok, entity_count, offset_dist]
   - id: curve.helix
     family: curve
@@ -918,7 +918,7 @@ capabilities:
     params: {}
     expect: {'helix_ok': True, 'entity_count': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [entity_count, helix_ok]
   - id: curve.hyperbola
     family: curve
@@ -929,7 +929,7 @@ capabilities:
     params: {}
     expect: {'semi_transverse': 50.0, 'semi_conjugate': 25.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [semi_conjugate, semi_transverse]
   - id: curve.parabola
     family: curve
@@ -940,7 +940,7 @@ capabilities:
     params: {}
     expect: {'focal_length': 20.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [focal_length]
   - id: boolean.intersect_two
     family: boolean
@@ -951,7 +951,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': 12000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: inspect.body_type
     family: inspect
@@ -962,7 +962,7 @@ capabilities:
     params: {}
     expect: {'solid_is_solid': True, 'solid_is_sheet': False, 'sheet_is_sheet': True, 'sheet_is_solid': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_is_sheet, sheet_is_solid, solid_is_sheet, solid_is_solid]
   - id: feature.hole_csk
     family: feature
@@ -973,7 +973,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 91700.0, 'max': 91800.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: solid.cone_frustum
     family: solid
@@ -984,7 +984,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 21900.0, 'max': 22100.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: asm.four_components
     family: assembly
@@ -995,7 +995,7 @@ capabilities:
     params: {}
     expect: {'components': 4}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [components]
   - id: asm.nested
     family: assembly
@@ -1006,7 +1006,7 @@ capabilities:
     params: {}
     expect: {'components': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [components]
   - id: feature.boss
     family: feature
@@ -1017,7 +1017,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 103000.0, 'max': 103300.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.extrude_taper
     family: feature
@@ -1028,7 +1028,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'faces': 6, 'volume_mm3': {'min': 48600.0, 'max': 48800.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, faces, volume_mm3]
   - id: feature.cross_hole
     family: feature
@@ -1039,7 +1039,7 @@ capabilities:
     params: {}
     expect: {'volume_mm3': {'min': 68500.0, 'max': 68700.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [volume_mm3]
   - id: feature.offset_face
     family: feature
@@ -1050,7 +1050,7 @@ capabilities:
     params: {}
     expect: {'volume_mm3': {'min': 197000.0, 'max': 199000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [volume_mm3]
   - id: feature.stack_blocks
     family: feature
@@ -1061,7 +1061,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 114500.0, 'max': 115500.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: attr.double
     family: attr
@@ -1072,7 +1072,7 @@ capabilities:
     params: {}
     expect: {'double_attr': 3.25}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [double_attr]
   - id: attr.logical
     family: attr
@@ -1083,7 +1083,7 @@ capabilities:
     params: {}
     expect: {'logical_attr': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [logical_attr]
   - id: sketch.constraint
     family: sketch
@@ -1094,7 +1094,7 @@ capabilities:
     params: {}
     expect: {'coincidence_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [coincidence_ok, inferred]
   - id: sketch.horizontal
     family: sketch
@@ -1105,7 +1105,7 @@ capabilities:
     params: {'kind': 'horizontal'}
     expect: {'con_ok': True, 'inferred': False, 'geom_count': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, geom_count, inferred]
   - id: sketch.vertical
     family: sketch
@@ -1116,7 +1116,7 @@ capabilities:
     params: {'kind': 'vertical'}
     expect: {'con_ok': True, 'inferred': False, 'geom_count': 1}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, geom_count, inferred]
   - id: sketch.equal_length
     family: sketch
@@ -1127,7 +1127,7 @@ capabilities:
     params: {'kind': 'equal'}
     expect: {'con_ok': True, 'geom_count': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, geom_count]
   - id: sketch.perpendicular
     family: sketch
@@ -1138,7 +1138,7 @@ capabilities:
     params: {'kind': 'perpendicular'}
     expect: {'con_ok': True, 'geom_count': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, geom_count]
   - id: sketch.dimension
     family: sketch
@@ -1149,7 +1149,7 @@ capabilities:
     params: {}
     expect: {'dim_ok': True, 'expr_value': 50.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [dim_ok, expr_value]
   - id: sketch.fixed
     family: sketch
@@ -1160,7 +1160,7 @@ capabilities:
     params: {}
     expect: {'con_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, inferred]
   - id: sketch.collinear
     family: sketch
@@ -1171,7 +1171,7 @@ capabilities:
     params: {'kind': 'collinear'}
     expect: {'con_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, inferred]
   - id: sketch.concentric
     family: sketch
@@ -1182,7 +1182,7 @@ capabilities:
     params: {'kind': 'concentric'}
     expect: {'con_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, inferred]
   - id: sketch.midpoint
     family: sketch
@@ -1193,7 +1193,7 @@ capabilities:
     params: {'kind': 'midpoint'}
     expect: {'con_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, inferred]
   - id: sketch.parallel
     family: sketch
@@ -1204,7 +1204,7 @@ capabilities:
     params: {'kind': 'parallel'}
     expect: {'con_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, inferred]
   - id: sketch.equal_radius
     family: sketch
@@ -1215,7 +1215,7 @@ capabilities:
     params: {'kind': 'equal_radius'}
     expect: {'con_ok': True, 'inferred': False}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, inferred]
   - id: drawing.sheet_a2
     family: drawing
@@ -1226,7 +1226,7 @@ capabilities:
     params: {'size': 'A2'}
     expect: {'sheet_height': 420.0, 'sheet_width': 594.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_height, sheet_width]
   - id: drawing.sheet_a1
     family: drawing
@@ -1237,7 +1237,7 @@ capabilities:
     params: {'size': 'A1'}
     expect: {'sheet_height': 594.0, 'sheet_width': 841.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_height, sheet_width]
   - id: drawing.sheet_a0
     family: drawing
@@ -1248,7 +1248,7 @@ capabilities:
     params: {'size': 'A0'}
     expect: {'sheet_height': 841.0, 'sheet_width': 1189.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_height, sheet_width]
   - id: sketch.normal
     family: sketch
@@ -1259,7 +1259,7 @@ capabilities:
     params: {'kind': 'normal'}
     expect: {'con_ok': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok]
   - id: sketch.tangent
     family: sketch
@@ -1270,7 +1270,7 @@ capabilities:
     params: {}
     expect: {'con_ok': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok]
   - id: drawing.sheet_ansi_a
     family: drawing
@@ -1281,7 +1281,7 @@ capabilities:
     params: {'size': 'A'}
     expect: {'sheet_height': 8.5, 'sheet_width': 11.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_height, sheet_width]
   - id: drawing.sheet_ansi_b
     family: drawing
@@ -1292,7 +1292,7 @@ capabilities:
     params: {'size': 'B'}
     expect: {'sheet_height': 11.0, 'sheet_width': 17.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_height, sheet_width]
   - id: drawing.sheet_ansi_c
     family: drawing
@@ -1303,7 +1303,7 @@ capabilities:
     params: {'size': 'C'}
     expect: {'sheet_height': 17.0, 'sheet_width': 22.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [sheet_height, sheet_width]
   - id: attr.delete
     family: attr
@@ -1314,7 +1314,7 @@ capabilities:
     params: {}
     expect: {'before': 'abc', 'deleted': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [before, deleted]
   - id: attr.update
     family: attr
@@ -1325,7 +1325,7 @@ capabilities:
     params: {}
     expect: {'value': 'new'}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [value]
   - id: part.inch
     family: part
@@ -1336,7 +1336,7 @@ capabilities:
     params: {}
     expect: {'units_inch': True, 'body_count': 1, 'volume_mm3': {'min': 7.9, 'max': 8.1}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, units_inch, volume_mm3]
   - id: export.step_ap214
     family: export
@@ -1347,7 +1347,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'has_iso_header': True, 'has_automotive_schema': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [export_ok, has_automotive_schema, has_iso_header]
   - id: export.parasolid
     family: export
@@ -1358,7 +1358,7 @@ capabilities:
     params: {}
     expect: {'export_ok': True, 'head_ok': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [export_ok, head_ok]
   - id: measure.faces_two
     family: measure
@@ -1369,7 +1369,7 @@ capabilities:
     params: {}
     expect: {'picked': 2, 'two_face_area': {'min': 9990.0, 'max': 10010.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [picked, two_face_area]
   - id: measure.distance
     family: measure
@@ -1380,7 +1380,7 @@ capabilities:
     params: {}
     expect: {'measured': 20.0, 'faces_used': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [faces_used, measured]
   - id: feature.thicken
     family: feature
@@ -1391,7 +1391,7 @@ capabilities:
     params: {}
     expect: {'solid_count': 1, 'volume_mm3': {'min': 24800.0, 'max': 25200.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [solid_count, volume_mm3]
   - id: solid.split_body
     family: solid
@@ -1402,7 +1402,7 @@ capabilities:
     params: {}
     expect: {'body_count': 3, 'volume_mm3': {'min': 139000.0, 'max': 141000.0}, 'body_count_reopened': 3}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, body_count_reopened, volume_mm3]
   - id: solid.scale
     family: solid
@@ -1413,7 +1413,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 790000.0, 'max': 810000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.mirror
     family: feature
@@ -1424,7 +1424,7 @@ capabilities:
     params: {}
     expect: {'body_count': 2, 'volume_mm3': {'min': 199000.0, 'max': 201000.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: asm.five_components
     family: assembly
@@ -1435,7 +1435,7 @@ capabilities:
     params: {}
     expect: {'components': 5}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [components]
   - id: asm.component_names
     family: assembly
@@ -1446,7 +1446,7 @@ capabilities:
     params: {}
     expect: {'names': 'AAA,BBB,CCC', 'name_count': 3}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [name_count, names]
   - id: file.save_copy
     family: file
@@ -1457,7 +1457,7 @@ capabilities:
     params: {}
     expect: {'copy_exists': True, 'copy_body_count': 1, 'copy_volume': 100000.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [copy_body_count, copy_exists, copy_volume]
   - id: attr.count
     family: attr
@@ -1468,7 +1468,7 @@ capabilities:
     params: {}
     expect: {'title_count': 3}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [title_count]
   - id: boolean.unite_three
     family: boolean
@@ -1479,7 +1479,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 114500.0, 'max': 115500.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: feature.shell_volume
     family: feature
@@ -1490,7 +1490,7 @@ capabilities:
     params: {}
     expect: {'body_count': 1, 'volume_mm3': {'min': 29200.0, 'max': 29500.0}}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_count, volume_mm3]
   - id: attr.on_face
     family: attr
@@ -1501,7 +1501,7 @@ capabilities:
     params: {}
     expect: {'face_attr': 'x1', 'body_attr_empty': True}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [body_attr_empty, face_attr]
   - id: sketch.linear_dim
     family: sketch
@@ -1512,7 +1512,7 @@ capabilities:
     params: {}
     expect: {'dim_ok': True, 'expr_value': 40.0}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [dim_ok, expr_value]
   - id: asm.constraint_refs
     family: assembly
@@ -1523,5 +1523,5 @@ capabilities:
     params: {}
     expect: {'con_ok': True, 'ref_count': 2}
     evidence:
-      run: _runs/p84-full1 (138/138)
+      run: _runs/p84-final (138/138)
       checks: [con_ok, ref_count]

@@ -4,7 +4,7 @@
 
 ## 数字
 
-- 真机通过能力：**138** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**138** 条
 - 其中带 L4（存盘→重开→复测）：**54** 条
 - 未打通（有证据）：**13** 项
 
@@ -35,12 +35,12 @@
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
-| `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Commit()` 返回 |
+| `drawing.section_view` | `CreateSectionViewBuilder(base_view)` 报 `Invalid object type for this operation`；用 `SectionView.Null` 能构造，但 `ParentView` **不可写**、`Commit()` 报 `Null tag not allowed` |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
 | `solid.delete_body` | `BodyToDelete` 构造出来是 `None`；赋一个 `ScCollector` 后 `CommitFeature()` 返回成功，但**体仍在**（`removed=0`）→ 空操作。删面（`solid.delete_face`）已打通，可作为替代 |
 | `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） |
-| `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect ob |
-| `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10 |
+| `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for t |
+| `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） |
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** |
 | `curve.intersection` | `FirstFace/SecondFace` 只读，`FirstSet/SecondSet` 收对象但 Commit 报 `No objects for intersection curve`；用**组合投影**替代已打通（`curve.combined_projection`） |
 | `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） |
