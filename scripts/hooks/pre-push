@@ -78,7 +78,7 @@ if [ -n "$root" ] && [ -f "$root/tools/gen_readme_counts.py" ]; then
       echo "  可指定：SWKIT_PYTHON=/path/to/python git push" >&2
     else
       docfail=0
-      for gen in gen_unsupported gen_readme_counts gen_skill_capabilities; do
+      for gen in gen_unsupported gen_readme_counts; do
         out=$(PYTHONIOENCODING=utf-8 PYTHONPATH="$root/src" $PY "$root/tools/$gen.py" --check 2>&1)
         if [ $? -ne 0 ]; then
           echo "" >&2
@@ -98,17 +98,7 @@ if [ -n "$root" ] && [ -f "$root/tools/gen_readme_counts.py" ]; then
         echo "" >&2
         exit 1
       fi
-      skill_out=$(PYTHONIOENCODING=utf-8 PYTHONPATH="$root/src" $PY "$root/tools/check_skill.py" --check 2>&1)
-      if [ $? -ne 0 ]; then
-        echo "" >&2
-        echo "[swkit pre-push] 技能与代码不一致：check_skill.py 失败" >&2
-        printf '%s\n' "$skill_out" | sed 's/^/    /' >&2
-        echo "" >&2
-        echo "修法：修 skills/solidworks-automation/**，或跑 tools/gen_skill_capabilities.py 重生成索引" >&2
-        echo "" >&2
-        exit 1
-      fi
-      echo "[swkit pre-push] 文档与技能一致性 OK" >&2
+      echo "[swkit pre-push] 文档一致性 OK" >&2
     fi
   fi
 fi

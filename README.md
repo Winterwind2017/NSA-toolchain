@@ -10,7 +10,7 @@
 | Python 库 | `from swkit import SolidWorksApp, pattern_component` | 自己写脚本、做二次开发 |
 | CLI | `swkit status` / `swkit pattern-component --kind linear` | 手动跑、批处理、排查 |
 | MCP server | `swkit-mcp`（stdio） | 任意 MCP 客户端（Claude / DSH / Editor） |
-| Agent skill | `skills/solidworks-automation/SKILL.md` | 让 agent 知道"该怎么用、别踩什么" |
+| Agent skill | 独立仓库 [`ww-solidworks-automation`](https://github.com/Winterwind2017/ww-solidworks-automation) | 让 agent 知道"该怎么用、别踩什么"（不随内核分发） |
 
 ---
 
@@ -28,24 +28,6 @@
 
 这些不是"参数没调对"，所以这个仓库的做法是：**保留工具名以便迁移，实现全部按实测配方重写**，
 并把结论写进 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md)。
-
-## Agent 技能（skill）
-
-仓库自带一份给 Agent 用的技能：`skills/solidworks-automation/`（`SKILL.md` + `references/`）。
-它讲的是**怎么用 + 怎么验证**：开工前查 `swkit registry --implemented`、铁律、典型配方、
-已证伪清单、方法论（GB/T 审查 / DFM / 自审查）。
-
-```bash
-python tools/install_skill.py        # 装到 ~/.dsh/skills 与 ~/.cursor/skills
-python tools/install_skill.py --check   # 只校验装的是不是最新
-```
-
-三道防漂移：
-
-* 技能里的**能力索引由 `tools/gen_skill_capabilities.py` 从 registry 生成**；
-* `tools/check_skill.py` 校验：工具名必须存在、非 verified 只许出现在"别试这些"区块、
-  `swkit <cmd>` 必须是真子命令、散文里不许写会漂移的数量断言；
-* 两条都有离线测试（`test_skill_matches_registry`）且挂在 `pre-push` 上。
 
 ## 一条命令跑通全流程
 
