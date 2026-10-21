@@ -36,14 +36,13 @@ GROUP_LABEL = {
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
     ("feature.hole", "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"),
-    ("feature.mirror", "MirrorFeatureBuilder.Plane 只读"),
+    ("feature.mirror", "Plane.Value 可赋值但 Commit 仍报 No plane to Mirror about"),
     ("drawing.dimension", "part.Dimensions 的创建签名与视图绑定未验证"),
     ("measure.distance", "MeasureDistance 无 Distance 属性，Information() 返回 None"),
     ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),
     ("asm.constraints", "ConstraintCollection.CreateConstraint 不存在"),
     ("sketch.constraints", "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"),
-    ("sketch.linear_dim", "DimensionGeometry.AssocType 取值未找到"),
     ("sketch.constant_length", "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),
     ("feature.sweep", "Commit 报 Unable to approximate guide string"),
@@ -51,7 +50,7 @@ PENDING = [
     ("export.dxf", "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"),
     ("export.parasolid", "四种方式全报 no valid export objects"),
     ("feature.thicken", "出 2 个片体或厚度变 3300 mm，语义不对"),
-    ("drawing.projected_view", "ProjectedViewBuilder.Parent 只读"),
+    ("drawing.projected_view", "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"),
     ("drawing.section_view", "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"),
 ]
 

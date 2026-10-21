@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 102
+    "verified": 103
   },
-  "generated_at": "2026-10-21T22:18:45",
+  "generated_at": "2026-10-21T22:54:55",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -106,6 +106,7 @@
     "sketch.extrude": "L1–L3",
     "sketch.fixed": "L1–L2",
     "sketch.horizontal": "L1–L2",
+    "sketch.linear_dim": "L1–L2",
     "sketch.midpoint": "L1–L2",
     "sketch.parallel": "L1–L2",
     "sketch.perpendicular": "L1–L2",
@@ -210,6 +211,7 @@
     "sketch.extrude": "solid_modeling",
     "sketch.fixed": "solid_modeling",
     "sketch.horizontal": "solid_modeling",
+    "sketch.linear_dim": "solid_modeling",
     "sketch.midpoint": "solid_modeling",
     "sketch.parallel": "solid_modeling",
     "sketch.perpendicular": "solid_modeling",
@@ -228,7 +230,7 @@
     },
     {
       "id": "feature.mirror",
-      "reason": "MirrorFeatureBuilder.Plane 只读"
+      "reason": "Plane.Value 可赋值但 Commit 仍报 No plane to Mirror about"
     },
     {
       "id": "drawing.dimension",
@@ -253,10 +255,6 @@
     {
       "id": "sketch.constraints",
       "reason": "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"
-    },
-    {
-      "id": "sketch.linear_dim",
-      "reason": "DimensionGeometry.AssocType 取值未找到"
     },
     {
       "id": "sketch.constant_length",
@@ -288,7 +286,7 @@
     },
     {
       "id": "drawing.projected_view",
-      "reason": "ProjectedViewBuilder.Parent 只读"
+      "reason": "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"
     },
     {
       "id": "drawing.section_view",
@@ -395,6 +393,7 @@
     "sketch.extrude": "sketch",
     "sketch.fixed": "sketch",
     "sketch.horizontal": "sketch",
+    "sketch.linear_dim": "sketch",
     "sketch.midpoint": "sketch",
     "sketch.parallel": "sketch",
     "sketch.perpendicular": "sketch",
