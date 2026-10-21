@@ -8,52 +8,163 @@
 - `broken` —— 有明确证伪依据（类型库无该方法 / 参数横扫全失败）
 - `unstable` —— 曾成功，但会挂起/崩溃，或不具备可构造的判据
 
-> 「调用返回成功、几何量却不动」这一类（最危险，容易被误判成成功）统一收录在 [`SILENT_FAILURES.md`](SILENT_FAILURES.md)：逐项证据、共性教训、以及将来可用来复核的测试清单。
+> 「调用返回成功、几何量却不动」这一类（最危险，容易被误判成成功）统一收录在
+> [`SILENT_FAILURES.md`](SILENT_FAILURES.md)：逐项证据、共性教训、以及将来可用来复核的测试清单。
+
+> **本文件的三个状态章节由 `tools/gen_unsupported.py` 从 `src/swkit/registry.py` 生成，
+> 请勿手改**；改结论请改 registry 的 note，再重跑该脚本。
+> `tests/test_offline.py::test_unsupported_doc_matches_registry` 会校验两者一致。
 
 ---
 
-## broken（4 条）
+## broken —— 有明确证伪依据（5 条）
 
-### `sw_delete_face`
+### `sw_check_geometry`（feature）
 
-- 尝试：`IBody2.DeleteFaces3(faces, option, flag)`，`option ∈ {0,1,2,4,8}` × `flag ∈ {True,False}`
-  = **10 组全试**
-- 结果：全部返回 `(False, False)`，面数不变
-- 另试：改用 `VARIANT(VT_ARRAY|VT_DISPATCH)` 传数组 —— 同样无效
-- 结论：**不可用**。不要再换 option 组合去试。
+- API：`(无公开 API)`
+- 结论：sldworks.tlb 只有 IModelDoc2.DebugCheckBody/DebugCheckIgesGeom，没有 CheckGeometry
 
-### `sw_knit_surfaces`
+### `sw_delete_face`（feature）
 
-- 尝试：穷举 `sldworks.tlb` 里含 `knit` 的成员
-- 结果：只有 `IMirrorSolidFeatureData.KnitSurface`、`IPartingSurfaceFeatureData.Knit`
-  —— 都是**别的特征的属性**，不是"缝合曲面"这个功能
-- 注意：上游工具名是复数 `sw_knit_surfaces`，**没有**单数 `sw_knit_surface`
-- 结论：**类型库无该 API**
+- API：`IBody2.DeleteFaces3`
+- 结论：换 VARIANT(VT_ARRAY|VT_DISPATCH) 传数组同样无效
 
-### `sw_start_macro_recording` / `sw_stop_macro_recording`
+### `sw_knit_surfaces`（feature）
 
-- 尝试：穷举类型库里含 `record` / `macro` 的成员
-- 结果：只有 `InsertMacroFeature*`（宏特征）、`IJournalManager.WriteJournalToMacro`、
-  `RecordCOMCall` 等；**没有 Start/StopRecording**
-- 结论：**类型库无该 API**。录制宏只能在 UI 里点。
+- API：`（无）`
+- 结论：只有 IMirrorSolidFeatureData.KnitSurface / IPartingSurfaceFeatureData.Knit 这类别的特征的属性
+
+### `sw_start_macro_recording`（meta）
+
+- API：`（无）`
+- 结论：含 record/macro 的只有 InsertMacroFeature*/IJournalManager.WriteJournalToMacro
+
+### `sw_stop_macro_recording`（meta）
+
+- API：`（无）`
+- 结论：同上
+
+## unstable —— 不进自动回归（3 条）
+
+### `sw_add_sketch_dimension`（sketch）
+
+- API：`AddAlongXDimension mark=1`
+- 结论：不进自动回归；调用方需自行超时保护
+
+### `sw_flow_check`（meta）
+
+- API：`EFDApiSrv.EFDLauncher.Attach2RunningCADInstance + EFDApi.IApplication`
+- 结论：依赖 **Flow Simulation 插件已在当前 SW 会话中加载**：插件未加载时 attach 抛 E_FAIL(0x80004005)，已改为给出可执行提示并标 addin_loaded=False；插件加载时实测版本 Flow Simulation 2025 SP3.0 Build 6784、静默 True、工程数 0。tests/flow_check.py 在插件未加载时整体 SKIP
+
+### `sw_show_all_planes`（meta）
+
+- API：`UnblankRefGeom`
+- 结论：判据未立，不宜宣称已修
+
+## unverified —— 已登记但没打通（17 条）
+
+### `sw_add_detail_view`（drawing）
+
+- API：`IDrawingDoc.CreateDetailViewAt3(9 参)`
+- 结论：`CreateDetailViewAt3(9 参)` / `At4(12 参)` 在无详图圆时都返回 None、视图数不变；而**全类型库扫描确认没有任何 Create/Insert/Add DetailCircle 方法**（IView 只有 GetDetailCircle* 读取类）→ 详图圆只能交互创建，在图纸上画圆再用 SelectByID2 选 SKETCHSEGMENT 也选不中
+
+### `sw_add_revision_table`（drawing）
+
+- API：`ISheet.InsertRevisionTable2(7 参)`
+- 结论：已用**真实模板全路径**重试（`lang/chinese-simplified/standard revision block.sldrevtbt`、英文 `no zone column.sldrevtbt`、空模板）与两种 API（InsertRevisionTable 5 参 / InsertRevisionTable2 7 参）：自由放置模式全返回 None；锚点模式（UseAnchorPoint=True, AnchorType 1-3）虽返回 `_Dispatch`，但其 Shape/Name/IsActive 全是 None，且 `ISheet.RevisionTable` 仍为 None、表格标注数读不到 —— 图纸本身有格式（`a3 - gb.slddrt`），所以不是缺格式
+
+### `sw_add_section_view`（drawing）
+
+- API：`IDrawingDoc.CreateSectionViewAt`
+- 结论：图纸里没有"前视基准面"（剖视需在视图上画剖切线，不是选基准面）→ 找不到基准面
+
+### `sw_dimxpert_autodim`（meta）
+
+- API：`IDimXpertPart.AutoDimensionScheme(option)`
+- 结论：实测返回 False、GetAnnotationCount 仍 0；需预设 PartType/ToleranceType 或先选要素
+
+### `sw_edge_flange`（sheet_metal）
+
+- API：`IModelDoc2.InsertSheetMetalEdgeFlange(11 参)`
+- 结论：能**建出空特征**：InsertSketchForEdgeFlange 先造草图8（第 2 参必须传**草图特征对象**，传名字报类型不匹配），再 InsertSheetMetalEdgeFlange 得到 EdgeFlange 特征，但体积 4800→4800、面 6→6 不变。根因：InsertSketchForEdgeFlange 造的轮廓草图是空的（0 段 0 点），而 IEdgeFlangeFeatureData 没有 Length、长度只来自该草图 → 零几何；SetBendState 0/1/2/3 与重建都无效；改 OffsetType 报 RPC_E_SERVERFAULT。详见 docs/SHEET_METAL_NOTES.md
+
+### `sw_export_dxf`（feature）
+
+- API：`IModelDoc2.SaveAs(DXF)`
+- 结论：零件直接导 DXF 无输出（DXF 需工程图或展开图上下文）
+
+### `sw_export_flat_pattern`（sheet_metal）
+
+- API：`IModelDoc2.SaveAs(DXF)`
+- 结论：零件直接导 DXF 无输出（与 sw_export_dxf 同因：需工程图/展开图上下文）
+
+### `sw_flow_project`（meta）
+
+- API：`EFDApi.IDocument.CreateProject`
+- 结论：整轮求解需先配边界条件/目标/网格，再 ApplyCalculationControlOptions
+
+### `sw_fold`（sheet_metal）
+
+- API：`IModelDoc2.InsertSheetMetalFold()`
+- 结论：同上：先要有展开态才谈折叠
+
+### `sw_hide_all_planes`（view）
+
+- API：`IModelDoc2.SetUserPreferenceToggle`
+- 结论：swUserPreferenceToggle_e 里没有基准面/草图开关（实测仅 10 项：DisplayAxes/EntityPoints/…）
+
+### `sw_hide_all_sketches`（view）
+
+- API：`IModelDoc2.SetUserPreferenceToggle`
+- 结论：同上：无对应枚举常量
+
+### `sw_hole_wizard`（feature）
+
+- API：`IFeatureManager.HoleWizard5(27 参)`
+- 结论：按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），选顶面或选基准面都返回 None、体积 48000→48000 不变 —— 孔向导对本机不可用；等价能力走 sw_threaded_hole（底孔 FeatureCut4 + 倒角 + 真实螺纹，8/8 通过）
+
+### `sw_miter_flange`（sheet_metal）
+
+- API：`InsertSheetMetalMiterFlange(11 参)`
+- 结论：同 edge_flange，需先有可选边集与轮廓
+
+### `sw_show_all_sketches`（view）
+
+- API：`IModelDoc2.SetUserPreferenceToggle`
+- 结论：同上：无对应枚举常量
+
+### `sw_sketch_extend`（sketch）
+
+- API：`ISketchManager.SketchExtend(X, Y, Z)`
+- 结论：3 个参数是**目标点坐标**（不是选线段）；选线段或选端点都返回 **False**、线段长度 10→10 mm 不变。见 tests/split_extend_check.py
+
+### `sw_split_body`（body）
+
+- API：`IFeatureManager.PreSplitBody2（属性）/ PostSplitBody2(5 参)`
+- 结论：PreSplitBody2 是**属性**且能算出 **2** 个分割体（刀具被识别），但 PostSplitBody2 在 6 种封装下全返回 None 且实体数恒为 1：ConsumeCut True/False、BodiesToMark 传 tuple/list/VARIANT/单个体、Origins+SavePaths 用长度匹配的空数组或真实存盘路径都无效；swFm(132) 里也没有 split 定义 id，无法走 CreateDefinition。见 tests/split_extend_check.py
+
+### `sw_unfold`（sheet_metal）
+
+- API：`IModelDoc2.InsertSheetMetalUnfold()`
+- 结论：已用 insert_bends 造的**真带折弯件**重测（bend_state=3，含 ProcessBends/FlattenBends/FlatPattern）：4 种选择组合（不选/只边/面+边）都返回 None —— “面+边”会多出一个特征但体积 68000、包围盒 100×80×40 完全不变；空特征而非几何
 
 ---
 
-## unstable（2 条，不进自动回归）
+## 计数校验
 
-### `sw_add_sketch_dimension`
+| 状态 | 条数 |
+|---|---|
+| `broken` | 5 |
+| `unstable` | 3 |
+| `unverified` | 17 |
 
-- `AddAlongXDimension` + `mark=1`：round 17 成功（0.01→0.03）
-- 但 round 32 **挂起并崩溃过一次**
-- 处置：保留实现，但调用方必须自己加超时保护；**不要放进无人值守批处理**
-
-### `sw_show_all_planes`
-
-- `UnblankRefGeom` 存在且可调用
-- 但 `IFeature.Visible` 不反映图形区的实际可见性 → **构造不出"隐藏态"做 A/B**
-- 处置：判据未立，不宣称已修
+> 与 `swkit.registry.summary()` 一致；不一致时离线测试会失败。
 
 ---
+
+# 人工补充（不随 registry 生成）
+
+> 下面这些是历史调查笔记，内容不来自 registry，因此保留为手工维护。
 
 ## 上游实现里"根本不存在的方法"
 
@@ -74,66 +185,6 @@
 上游另有约 44 个工具（`sw_*`）本仓库**尚未逐个复核**。它们通过
 `sw_api(op, params)` 透传可用，但响应恒带 `"status": "unverified"`。
 迁移计划见 [`MIGRATION.md`](MIGRATION.md)。
-
----
-
-## unverified（31 条，已登记但没打通）
-
-> 全部都有**实测依据**，按"卡在哪里"归类。每条的原始证据在
-> `swkit.registry` 的 `note` 字段里，可用 `swkit registry` 查看。
-
-### A. 参数列表未定（`DISP_E_PARAMNOTOPTIONAL` / 必填维）
-
-| 工具 | 卡点 |
-|---|---|
-| `sw_revolve` | TLB 说 5 参、内核按 12 参调，**两边都报** `DISP_E_PARAMNOTOPTIONAL` |
-| `sw_hole_wizard` | `HoleWizard5` 需 **27 个参数**，内核只传 14 个 |
-| `sw_sketch_offset` | comtypes 要求 `CapEnds` 等必填维 |
-| `sw_sketch_linear_pattern` / `sw_sketch_circular_pattern` | 要求 `XSpacingDim`/`RadiusDim` 等**尺寸对象**，不能只传数值 |
-| `sw_sketch_convert_entities` | comtypes 下 `SketchUseEdge()` 不报错但**线段数不变** |
-| `sw_sketch_extend` | 选中线段后调用，长度 **20→20 不变**（未知是否要选端点或标记） |
-
-### B. 返回 `None` 或"假成功"（判据拦住了）
-
-| 工具 | 卡点 |
-|---|---|
-| `sw_chamfer` | 特征数 +1 但**面数 6→6 不变** —— 典型假成功 |
-| `sw_fillet` | 4 条边用 mark **0/1/2/4** 分别选中后仍返回 `None`（5 参/7 参都试过） |
-| `sw_mirror` | 特征(2 个对象)+基准面(mark 32)都选好后仍返回 `None` |
-| `sw_add_revision_table` | 空模板与真实 `.sldrevtbt` 都返回 `None`，`RevisionTable` 仍为 `None` |
-| `sw_add_detail_view` | 返回 `None`、视图数不变：详图需父视图上**已有详图圆** |
-| `sw_add_section_view` | 图纸里没有"前视基准面"（剖视要在视图上**画剖切线**，不是选基准面） |
-| `sw_extruded_surface` | `FeatureExtruRefSurface(15 参)` 返回 `None`、曲面数 0；`IFeatureManager` 版 21 参语义未定 |
-
-### C. 夹具/上下文造不出来（要更强的前置条件）
-
-| 工具 | 卡点 |
-|---|---|
-| `sw_move_body` | 三种参数解释都无位移（包围盒 `dx=0`） |
-| `sw_combine_bodies` | 两次相交拉伸被**自动合并**成 1 体，造不出"两个可组合的体" |
-| `sw_split_body` | 需先有分割线/基准面，`PostSplitBody2` 5 参未尝试 |
-| `sw_unfold` / `sw_fold` | 平板无折弯：特征 22→22、`GetBendState` 恒 1（需带折弯的钣金件） |
-| `sw_edge_flange` / `sw_miter_flange` | 选边 + `SketchFeat=None` 仍返回 `None`；疑需法兰轮廓草图 |
-| `sw_export_dxf` / `sw_export_iges` / `sw_export_flat_pattern` | 零件直接导无输出（DXF/IGES 需工程图或展开图上下文；IGES 调用不报错但**文件没生成**） |
-
-### D. 枚举/接口在本机不存在
-
-| 工具 | 卡点 |
-|---|---|
-| `sw_hide_all_planes` / `sw_hide_all_sketches` / `sw_show_all_sketches` | `swUserPreferenceToggle_e` 实测**只有 10 项**（`DisplayAxes`/`EntityPoints`/…），无基准面/草图开关 |
-
-### E. 方程接口
-
-| 工具 | 卡点 |
-|---|---|
-| `sw_add_equation` / `sw_delete_equation` | `IModelDoc2` **没有** `AddEquation`；`IEquationMgr` 需 comtypes（`sw_set_global_variable` 已用这条路打通，但**带尺寸名**的方程还没试成） |
-
-### F. 破坏性/未跑通（本仓库主动不做）
-
-| 工具 | 卡点 |
-|---|---|
-| `sw_dxp` | `autodim=True` 会**运行自动尺寸并保存文件** —— 破坏性，默认关闭 |
-| `sw_flow_check` | 加载项自检与建工程可调，但**未跑通求解** |
 
 ---
 

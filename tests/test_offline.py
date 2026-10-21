@@ -132,3 +132,27 @@ def test_repo_carries_cross_machine_reminder() -> None:
     assert "ssh-keygen" in h and "remote set-url" in h
     # hook 必须能被 install_hooks.py 识别为"自己装的"（幂等）
     assert "managed by swkit scripts/install_hooks.py" in h
+
+def test_unsupported_doc_matches_registry() -> None:
+    """`docs/UNSUPPORTED.md` 的状态章节由 registry 生成，数字必须一致。
+
+    这条防的是"文档漂移"：曾出现过文档里还列着早已转正的
+    `sw_revolve` / `sw_chamfer` / `sw_fillet`，而文档的目的恰恰是"别重复试"。
+    改结论请改 registry 的 note，再跑 `python tools/gen_unsupported.py`。
+    """
+    import re
+    from pathlib import Path
+
+    doc = Path(__file__).resolve().parents[1] / "docs" / "UNSUPPORTED.md"
+    text = doc.read_text(encoding="utf-8")
+    counts = summary()
+    for status in ("broken", "unstable", "unverified"):
+        m = re.search(r"\| `%s` \| (\d+) \|" % status, text)
+        assert m, "UNSUPPORTED.md 缺少 %s 的计数行" % status
+        assert int(m.group(1)) == counts[status], (
+            "%s 计数不一致：文档 %s vs registry %s（跑 tools/gen_unsupported.py 重生成）"
+            % (status, m.group(1), counts[status]))
+        m2 = re.search(r"^## \S+.*%s[^\n]*（(\d+) 条）" % status, text, re.M)
+        if m2:
+            assert int(m2.group(1)) == counts[status], (
+                "%s 章节标题条数不一致" % status)
