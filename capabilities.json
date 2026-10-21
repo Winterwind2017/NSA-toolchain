@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 109
+    "verified": 110
   },
-  "generated_at": "2026-10-21T23:35:55",
+  "generated_at": "2026-10-21T23:38:02",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -43,6 +43,7 @@
     "boolean.unite_three": "L1–L4",
     "curve.arc": "L1–L3",
     "curve.ellipse": "L1–L3",
+    "curve.helix": "L1–L2",
     "curve.hyperbola": "L1–L3",
     "curve.line": "L1–L3",
     "curve.parabola": "L1–L3",
@@ -154,6 +155,7 @@
     "boolean.unite_three": "solid_modeling",
     "curve.arc": "solid_modeling",
     "curve.ellipse": "solid_modeling",
+    "curve.helix": "solid_modeling",
     "curve.hyperbola": "solid_modeling",
     "curve.line": "solid_modeling",
     "curve.parabola": "solid_modeling",
@@ -303,7 +305,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "1d3961c",
+    "kernel_commit": "d7c502b",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -338,6 +340,7 @@
     "boolean.unite_three": "boolean",
     "curve.arc": "curve",
     "curve.ellipse": "curve",
+    "curve.helix": "curve",
     "curve.hyperbola": "curve",
     "curve.line": "curve",
     "curve.parabola": "curve",
