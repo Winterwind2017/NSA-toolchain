@@ -45,8 +45,7 @@ PENDING = [
     ("asm.constraints", "约束对象没有创建入口"),
     ("sketch.constraints", "Sketch.ConstraintGeometry 没有创建入口"),
     ("export.dxf", "DxfdwgCreator 需要图纸上下文"),
-    ("export.stl", "Commit 成功但 0 字节，需要 ExportSelectionBlock"),
-    ("export.parasolid", "Commit 报 no valid export objects，需要 ExportSelectionBlock"),
+    ("export.parasolid", "SetArray 后仍报 no valid export objects"),
     ("drawing.projected_view", "ProjectedViewBuilder.Parent 只读"),
 ]
 

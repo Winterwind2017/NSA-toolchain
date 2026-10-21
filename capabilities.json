@@ -9,11 +9,12 @@
   ],
   "counts": {
     "families": 13,
-    "verified": 48
+    "verified": 50
   },
-  "generated_at": "2026-10-21T20:47:33",
+  "generated_at": "2026-10-21T20:49:41",
   "levels": {
     "asm.add_component": "L1–L2",
+    "asm.three_components": "L1–L2",
     "asm.two_components": "L1–L4",
     "attr.int": "L2",
     "attr.on_body": "L2",
@@ -38,6 +39,7 @@
     "export.iges": "L1–L3",
     "export.step": "L1–L3",
     "export.step_ap203": "L1–L2",
+    "export.stl": "L1–L2",
     "extrude.rect": "L1–L4",
     "extrude.ring": "L1–L3",
     "feature.chamfer": "L1–L3",
@@ -104,12 +106,8 @@
       "reason": "DxfdwgCreator 需要图纸上下文"
     },
     {
-      "id": "export.stl",
-      "reason": "Commit 成功但 0 字节，需要 ExportSelectionBlock"
-    },
-    {
       "id": "export.parasolid",
-      "reason": "Commit 报 no valid export objects，需要 ExportSelectionBlock"
+      "reason": "SetArray 后仍报 no valid export objects"
     },
     {
       "id": "drawing.projected_view",
@@ -118,13 +116,14 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "1ce347f",
+    "kernel_commit": "3671083",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
   "schema": 1,
   "verified": {
     "asm.add_component": "assembly",
+    "asm.three_components": "assembly",
     "asm.two_components": "assembly",
     "attr.int": "attr",
     "attr.on_body": "attr",
@@ -149,6 +148,7 @@
     "export.iges": "export",
     "export.step": "export",
     "export.step_ap203": "export",
+    "export.stl": "export",
     "extrude.rect": "feature",
     "extrude.ring": "feature",
     "feature.chamfer": "feature",
