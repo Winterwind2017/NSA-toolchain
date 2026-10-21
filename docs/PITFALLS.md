@@ -95,3 +95,10 @@
   `rd.XSpacing.NCopies.SetFormula("3")`、`rd.XSpacing.PitchDistance.SetFormula("120")`。
   `NCopies` 是 **Expression**（直接赋 int 报只读），默认 2 个实例。
 - 三条都只动一个/一组具体边，判据看 **面数**（+1）与 **体积区间**。
+
+## 十一、单边倒角的体积随"选中哪条边"变化
+
+同一份 `chamfer_edge` 代码，体积可能读出 **99750 / 99375 / 98750** —— 因为
+`body.GetEdges()` 的顺序不稳定，选中的边长度可能是 20/50/100 mm：
+`V_removed = 0.5 × 5 × 5 × L`。判据必须给区间（本项目用 98500–100000），
+不能写死一个数。同类问题也出现在 `chamfer_multi`（面数 10~12）。

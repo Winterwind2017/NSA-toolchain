@@ -411,7 +411,12 @@ def extrude_rect(params, workdir, rec):
              "faces": len(body.GetFaces()),
              "edges": len(body.GetEdges())}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "ext.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1749,7 +1754,35 @@ def boolean_intersect_two(params, workdir, rec):
     return reads
 
 
+def inspect_body_type(params, workdir, rec):
+    """块实体是 solid、有界平面是 sheet。"""
+    part = new_part("btype")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    solid_body = feat.GetBodies()[0]
+    reads = {"solid_is_solid": bool(solid_body.IsSolidBody),
+             "solid_is_sheet": bool(solid_body.IsSheetBody)}
+    lines = _rect_lines(part)
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb(lines)
+        bp.BoundingCurves.AddToSection([rule], lines[0], None, None,
+                                       NXOpen.Point3d(0.0, 0.0, 0.0),
+                                       NXOpen.Section.Mode.Create)
+        bp.CommitFeature()
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    sheets = [b for b in _bodies_of(part) if bool(b.IsSheetBody)]
+    reads["sheet_is_sheet"] = len(sheets) == 1
+    reads["sheet_is_solid"] = bool(sheets[0].IsSolidBody) if sheets else None
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "inspect_body_type": inspect_body_type,
     "boolean_intersect_two": boolean_intersect_two,
     "part_new": part_new,
     "block_create": block_create,

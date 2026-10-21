@@ -82,7 +82,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("extrude.rect", "feature", "矩形截面拉伸（100×50×10）", "extrude_rect", "L1–L4",
         params={"length": 100.0, "width": 50.0, "distance": 10.0},
         expect={"body_count": 1, "faces": 6, "edges": 12,
-                "volume_mm3": 50000.0, "area_mm2": 13000.0}, reopen=False),
+                "volume_mm3": 50000.0, "area_mm2": 13000.0}, reopen=True),
 
     Cap("asm.add_component", "assembly", "装配插入 1 个组件", "asm_add_component", "L1–L2",
         params={}, expect={"components": 1}, reopen=False),
@@ -230,7 +230,7 @@ CAPS: tuple[Cap, ...] = (
         reopen=False),
     Cap("feature.chamfer_edge", "feature", "单边倒角 5 mm（另一条边）", "chamfer_edge", "L1–L3",
         params={}, expect={"body_count": 1, "faces": 7,
-                           "volume_mm3": {"min": 99000.0, "max": 100000.0}},
+                           "volume_mm3": {"min": 98500.0, "max": 100000.0}},
         reopen=False),
 
 
@@ -254,6 +254,11 @@ CAPS: tuple[Cap, ...] = (
     Cap("boolean.intersect_two", "boolean", "一次交两个工具体（交工具并集 12000）",
         "boolean_intersect_two", "L1–L3",
         params={}, expect={"body_count": 1, "volume_mm3": 12000.0}, reopen=False),
+
+    Cap("inspect.body_type", "inspect", "实体/片体判定", "inspect_body_type", "L1–L2",
+        params={}, expect={"solid_is_solid": True, "solid_is_sheet": False,
+                           "sheet_is_sheet": True, "sheet_is_solid": False},
+        reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
