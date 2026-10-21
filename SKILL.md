@@ -82,21 +82,21 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **30** 条 verified 能力（内核 `nxkit 0.1.0`，commit `9b863ff`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **35** 条 verified 能力（内核 `nxkit 0.1.0`，commit `0a7aa36`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **特征（拉伸）**（7） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
+| **特征（拉伸）**（9） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
+| **实体**（5） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.sphere`（L1–L3） |
 | **属性**（3） | `attr.int`（L2） `attr.on_body`（L2） `attr.string`（L2–L4） |
 | **布尔**（3） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.union`（L1–L4） |
 | **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
 | **导出**（3） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） |
-| **实体**（3） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
 | **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
+| **测量**（2） | `measure.face_area`（L3） `measure.mass`（L3） |
 | **文件**（1） | `file.roundtrip`（L4） |
 | **拓扑检查**（1） | `body.topo`（L1–L3） |
-| **测量**（1） | `measure.mass`（L3） |
 | **部件**（1） | `part.new`（L1） |
 <!-- gen:capabilities:END -->
 
@@ -129,6 +129,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 ```bash
 nxkit cap block.create      # 100×50×20 → 体积 100000、面 6、边 12
 nxkit cap cylinder.create   # Ø40×30 → 37699.11
+nxkit cap solid.cone        # Ø40×30 圆锥 → 12566.37
+nxkit cap solid.sphere      # Ø40 球 → 33510.32
 nxkit cap extrude.rect      # 矩形截面拉伸 → 50000
 nxkit cap extrude.ring      # 带内孔截面 → 42000
 ```
@@ -138,7 +140,9 @@ nxkit cap extrude.ring      # 带内孔截面 → 42000
 ```bash
 nxkit cap feature.chamfer       # 一条边倒角 5 mm：面 7，体积 98000–100000
 nxkit cap feature.edge_blend    # 一条边圆角 R5：面 7
-nxkit cap feature.pattern_linear # 沿 X 阵列 3 个：实体 3，体积 300000
+nxkit cap feature.pattern_linear   # 沿 X 阵列 3 个：实体 3，体积 300000
+nxkit cap feature.pattern_grid     # 2×2 阵列：实体 4，体积 400000
+nxkit cap feature.pattern_circular # 圆周阵列 4 个：实体 4，体积 400000
 nxkit cap feature.pocket        # 挖 40×20 通槽：84000
 nxkit cap feature.hole_cyl      # 钻 Ø20 通孔：93716.815
 ```
@@ -178,6 +182,7 @@ nxkit cap export.acis   # .sat 落盘
 ```bash
 nxkit cap attr.string   # 写字符串属性 → 存盘重开仍在
 nxkit cap measure.mass  # 体积/面积/重心
+nxkit cap measure.face_area # 六面面积和 16000
 nxkit cap body.topo     # 面 6 / 边 12
 ```
 

@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 12,
-    "verified": 30
+    "verified": 35
   },
-  "generated_at": "2026-10-21T20:31:02",
+  "generated_at": "2026-10-21T20:33:43",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.two_components": "L1–L4",
@@ -38,11 +38,16 @@
     "feature.chamfer": "L1–L3",
     "feature.edge_blend": "L1–L3",
     "feature.hole_cyl": "L1–L3",
+    "feature.pattern_circular": "L1–L3",
+    "feature.pattern_grid": "L1–L3",
     "feature.pattern_linear": "L1–L3",
     "feature.pocket": "L1–L3",
     "file.roundtrip": "L4",
+    "measure.face_area": "L3",
     "measure.mass": "L3",
-    "part.new": "L1"
+    "part.new": "L1",
+    "solid.cone": "L1–L3",
+    "solid.sphere": "L1–L3"
   },
   "pending": [
     {
@@ -92,7 +97,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "9b863ff",
+    "kernel_commit": "0a7aa36",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -123,10 +128,15 @@
     "feature.chamfer": "feature",
     "feature.edge_blend": "feature",
     "feature.hole_cyl": "feature",
+    "feature.pattern_circular": "feature",
+    "feature.pattern_grid": "feature",
     "feature.pattern_linear": "feature",
     "feature.pocket": "feature",
     "file.roundtrip": "file",
+    "measure.face_area": "measure",
     "measure.mass": "measure",
-    "part.new": "part"
+    "part.new": "part",
+    "solid.cone": "solid",
+    "solid.sphere": "solid"
   }
 }
