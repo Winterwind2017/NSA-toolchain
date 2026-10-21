@@ -1,6 +1,6 @@
 # 全量验证记录（VERIFY）
 
-> 目的：任何人在干净机器上，能按下面这几条命令复现"112 条真机通过"。
+> 目的：任何人在干净机器上，能按下面这几条命令复现"114 条真机通过"。
 > 记录时间：2026-10-21（本地时间 Asia/Shanghai）。
 
 ## 0. 环境
@@ -30,7 +30,7 @@ python -m pytest -q tests
 # 9 passed in 0.09s
 
 python -m nxkit selftest
-# 自检通过：112 条能力，动作与判据齐全，负例都能被拒绝
+# 自检通过：114 条能力，动作与判据齐全，负例都能被拒绝
 
 python -m nxkit licenses
 # 许可证文件: C:\ProgramData\Siemens\siemens_SSQ.dat
@@ -42,7 +42,7 @@ python -m nxkit licenses
 
 ```powershell
 python -m nxkit run --workdir D:\bililive\_verify\rundir
-# 112/112 通过  (会话 22.0s, 退出码 1)
+# 114/114 通过  (会话 22.0s, 退出码 1)
 ```
 
 > 注意：`run_journal` 的**退出码是 1**（NX 特性），结果以 `result.json` 为准。
@@ -56,7 +56,7 @@ python tools/check_skill.py --check
 python -m pytest -q tests
 # 4 passed in 0.01s
 python tools/sync_capabilities.py
-# verified: 112 | pending: 16 | cli: 7
+# verified: 114 | pending: 16 | cli: 7
 ```
 
 ## 5. 数字一致性

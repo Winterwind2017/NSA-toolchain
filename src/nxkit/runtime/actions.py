@@ -3282,7 +3282,65 @@ def boolean_subtract_retain(params, workdir, rec):
     return reads
 
 
+def drawing_view_scale(params, workdir, rec):
+    """同一视图：自动缩放 vs 比例 1:2 —— 后者应正好是一半。"""
+    part = new_part("vscale2")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+    model_view = None
+    for v in part.ModelingViews:
+        if str(v.Name) == "Front":
+            model_view = v
+            break
+    if model_view is None:
+        model_view = part.ModelingViews.WorkView
+
+    def make_view(ratio=None):
+        vb = part.DraftingViews.CreateBaseViewBuilder(NXOpen.Drawings.BaseView.Null)
+        try:
+            vb.SelectModelView.SelectedView = model_view
+            if ratio is not None:
+                vb.Scale.Numerator = float(ratio[0])
+                vb.Scale.Denominator = float(ratio[1])
+            return vb.Commit()
+        finally:
+            try:
+                vb.Destroy()
+            except Exception:
+                pass
+
+    auto = make_view(None)
+    half = make_view((1, 2))
+    s_auto = float(auto.Scale)
+    s_half = float(half.Scale)
+    reads = {"view_created": half is not None,
+             "scale_auto": round(s_auto, 6), "scale_ratio": round(s_half, 6),
+             "ratio_ok": abs(s_half * 2.0 - s_auto) < 0.01}
+    _close_part(part)
+    return reads
+
+def drawing_second_sheet(params, workdir, rec):
+    """插两张图（A3 + A4），当前图变成 A4。"""
+    part = new_part("twosheet")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    s1 = part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+    s2 = part.DrawingSheets.InsertSheet("S2", ss.A4, 1.0, 1.0, pa.FirstAngle)
+    cur = part.DrawingSheets.CurrentDrawingSheet
+    reads = {"sheet1": str(s1.Name), "sheet2": str(s2.Name),
+             "current": str(cur.Name) if cur is not None else None,
+             "current_height": float(cur.Height) if cur is not None else None,
+             "current_width": float(cur.Length) if cur is not None else None}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "drawing_view_scale": drawing_view_scale,
+    "drawing_second_sheet": drawing_second_sheet,
     "boolean_subtract_retain": boolean_subtract_retain,
     "feature_spring": feature_spring,
     "curve_helix": curve_helix,

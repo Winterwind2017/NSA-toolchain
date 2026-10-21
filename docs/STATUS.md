@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**112** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**114** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**52** 条
-- 未打通（有证据）：**15** 项
+- 未打通（有证据）：**16** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -14,7 +14,7 @@
 | license | 能力数 |
 |---|---:|
 | assemblies | 8 |
-| drafting | 10 |
+| drafting | 12 |
 | gateway | 28 |
 | solid_modeling | 66 |
 
@@ -24,8 +24,8 @@
 |---|---:|---:|
 | feature | 28 | 28 |
 | sketch | 17 | 2 |
+| drawing | 12 | 0 |
 | attr | 10 | 2 |
-| drawing | 10 | 0 |
 | assembly | 8 | 1 |
 | boolean | 7 | 7 |
 | export | 7 | 0 |
@@ -56,9 +56,15 @@
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报  |
 | `solid.split_body` | 走到 `BooleanTool.FacePlaneTool.ToolPlane`：该属性**只要 `NXOpen.Plane`**，给 `DatumPlane` 报 `Expecting NXOpen.Plane type, found NXOpen.DatumPlane`；而 `part.Planes.CreateF |
 | `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX |
+| `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `In |
+
+## 判据容差（2026-10-21 收紧）
+
+`judges._close` 按量级给容差：≥100 容 0.5（体积/面积），≥1 容 1e-3，其余 1e-6。
+早先统一用 0.5 绝对容差，会把「视图缩放 0.59 vs 期望 0.5」判通过——已修。
 
 ## 怎么继续扩
 
 - 新能力 append-only 追加到 `ACTIONS` 之前；先 py_compile + selftest，再真机 2 次。
 - 判据只读 NX 状态；没打通写 `docs/UNSUPPORTED.md`（带错误原文）。
-- 未用 builder 仍有 200 个左右，但不少需要交互上下文（见 UNSUPPORTED）。
+- 未用 builder 仍有约 200 个，但不少需要交互上下文（见 UNSUPPORTED）。

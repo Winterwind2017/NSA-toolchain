@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **112** 条，全部真机通过；其中 **52** 条带 L4（存盘 → 重开 → 复测）。
+总计 **114** 条，全部真机通过；其中 **52** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -8,8 +8,8 @@
 |---|---:|---:|---|
 | feature | 28 | 28 | solid_modeling |
 | sketch | 17 | 2 | solid_modeling |
+| drawing | 12 | 0 | drafting |
 | attr | 10 | 2 | gateway |
-| drawing | 10 | 0 | drafting |
 | assembly | 8 | 1 | assemblies |
 | boolean | 7 | 7 | solid_modeling |
 | export | 7 | 0 | gateway |
@@ -26,7 +26,7 @@
 | license | 能力数 |
 |---|---:|
 | assemblies | 8 |
-| drafting | 10 |
+| drafting | 12 |
 | gateway | 28 |
 | solid_modeling | 66 |
 
@@ -81,6 +81,8 @@
 | `sketch.circle_extrude` | sketch | L1–L3 | 是 | solid_modeling |
 | `feature.pocket_blind` | feature | L1–L3 | 是 | solid_modeling |
 | `feature.hole_blind` | feature | L1–L3 | 是 | solid_modeling |
+| `drawing.view_scale` | drawing | L1–L2 | — | drafting |
+| `drawing.second_sheet` | drawing | L1–L2 | — | drafting |
 | `drawing.sheet_a4` | drawing | L1–L2 | — | drafting |
 | `drawing.view_isometric` | drawing | L1–L2 | — | drafting |
 | `asm.three_components` | assembly | L1–L2 | — | assemblies |
