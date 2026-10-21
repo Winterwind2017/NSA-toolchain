@@ -186,3 +186,29 @@ def test_readme_counts_match_registry() -> None:
         % (counts["verified"], audit["covered"], audit.get("beyond")))
     assert sum(audit[k] for k in ("covered", "dead", "unstable",
                                   "unusable", "unchecked")) == 188
+
+
+def test_skill_matches_registry() -> None:
+    """技能文档必须与代码一致（`tools/check_skill.py` + 能力索引生成器）。
+
+    技能是给模型看的说明书：它说错，模型就会被带偏且**不会报错**。
+    本仓库真出现过技能里写"其中 32 条已验证但未编码"、而 registry 早已是 0 条，
+    还引用过 registry 里根本不存在的 `sw_threaded_hole`。
+    """
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "tools"))
+
+    import check_skill
+    import gen_skill_capabilities as G
+
+    problems = check_skill.check()
+    assert not problems, "技能校验失败：\n  - " + "\n  - ".join(problems)
+
+    skill = (root / "skills" / "solidworks-automation" / "SKILL.md").read_text(
+        encoding="utf-8")
+    regenerated = G.apply(skill, G.render())
+    assert regenerated.strip() == skill.strip(), (
+        "技能能力索引与 registry 不一致（跑 python tools/gen_skill_capabilities.py）")
