@@ -5,8 +5,26 @@ AutoCAD 2025 自动化内核（库 + CLI + 可选 MCP）。仓库：`Winterwind2
 
 > **每个能力都必须有可复现的判据；说不清判据的，不许标 verified。**
 
-当前状态：**P0（设计与盘点）已完成，执行代码尚未开始**。
-P0 只做只读分析，不碰 AutoCAD、不写驱动代码。
+当前状态：**P0 完成 + P1 步骤 1 完成**（包骨架 + `acadkit status` 环境自检已能真机跑通）。
+进度与真机验证记录见 [`docs/P1_PROGRESS.md`](docs/P1_PROGRESS.md)。
+
+## 已经能跑的命令
+
+```bash
+export PYTHONPATH=<repo>/src        # 或 pip install -e .
+
+acadkit selftest                    # 离线自检：registry 60 条 + 字段校验
+acadkit registry                    # 能力清单（--status verified / dead / ...）
+acadkit status                      # 环境自检（**只附加，不启动 AutoCAD**）
+acadkit env-baseline                # 采环境基线 → ~/.acadkit/env_baseline.json
+acadkit env-check                   # 与基线比对（漂移则 rc=5）
+```
+
+退出码：`0` 通过 · `3` AutoCAD 未运行（只读命令的正常结果）· `4` 环境不合规
+（profile 不是 `<<VANILLA>>` / 多实例）· `5` 环境漂移。
+
+真机已验证：未运行时不启动、运行中能读 profile、基线可采、改一个系统变量能被
+`env-check` 检出并 rc=5、还原后干净、`clean_quit` 能让进程真正消失且不留 `.sv$`。
 
 ## P0 产出（已就绪）
 

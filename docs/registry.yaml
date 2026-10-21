@@ -506,7 +506,7 @@ capabilities:
     backend: []
     status: dead
     source: ""
-    judge: "DIMUPDATE 命令不存在；改标注只能重建或改属性"
+    judge: "DIMUPDATE 命令不存在。替代：重建标注（删除后按新尺寸重画）或改标注属性（TextOverride/Measurement）"
     evidence: "matrix #2.2"
 
   - id: block.edit_inplace
@@ -514,7 +514,7 @@ capabilities:
     backend: []
     status: dead
     source: ""
-    judge: "BEDIT/ATTSYNC/ATTREDEF/BATTMAN 均不存在；改块=重定义 + 重插"
+    judge: "BEDIT/ATTSYNC/ATTREDEF/BATTMAN 均不存在。替代：重定义块（Block 表里改定义）+ 重插全部引用"
     evidence: "matrix #2.2"
 
   - id: interfere
@@ -522,5 +522,5 @@ capabilities:
     backend: []
     status: dead
     source: ""
-    judge: "INTERFERE 命令不存在；干涉只能靠布尔求交后看体积"
+    judge: "INTERFERE 命令不存在。替代：布尔求交（INTERSECT）后看结果体积，>0 即干涉"
     evidence: "matrix #2.2"
