@@ -12,18 +12,27 @@ NX 的坑和 AutoCAD 一样：调用返回对象/True 不代表几何变了。�
 （`MeasureManager` 的体积/面积、`GetBodies()` 数量、特征名、属性值），
 不看返回值。
 
+**容差按量级给**（`judges._tol`）：≥100 容 0.5（体积/面积）、≥1 容 1e-3、
+<1 容 1e-6。早期统一用 0.5 绝对容差，把"视图缩放 0.59 vs 期望 0.5"判通过——
+比率类判据等于没有。改判据时先想清楚变量量级。
+
 ## 3. 跑真机
 
 ```bash
 python -m nxkit selftest          # 离线（不需要 NX）
 python -m nxkit run --only solid  # 真机一族
-python -m nxkit run               # 全部，一次会话 ~14 s
+python -m nxkit run               # 全部 114 条，一次会话 ~22 s
+python -m nxkit licenses          # 本机 SPLM 许可覆盖
 ```
+
+复现口径见 `docs/VERIFY.md`（干净 clone → 9 测试 → selftest → licenses →
+真机 114/114 → 技能校验 → 五处数字一致；连续三次无抖动）。
 
 ## 4. 会话与超时
 
-- 一次 `run_journal` 会话约 13 s；**批量能力放在一个 job 里**，不要一条一起进程。
-- `session.run` 默认 900 s 超时；超时会 `taskkill /T` 掉 `run_journal` 与 `ugraf`。
+- 一次 `run_journal` 会话约 22 s（能力增多线性变慢）；**批量能力放在一个 job 里**，
+  不要一条一起进程。
+- `session.run` 默认 300 s 超时；超时会 `taskkill /T` 掉 `run_journal` 与 `ugraf`。
 - `run_journal` 成功时也可能返回退出码 1 —— **以 `result.json` 为准**。
 
 ## 5. NX 侧的硬规则（踩过的）
@@ -44,6 +53,20 @@ python -m nxkit run               # 全部，一次会话 ~14 s
 - `SaveAs` 目标已存在会抛 `File already exists`，先删。
 - 重开用 `parts.OpenActiveDisplay(path, DisplayPartOption.AllowAdditional)`，
   返回值是 tuple（取 `[0]`）。
+- 危险接口（**别调**）：`CreateDxfdwgCreator().Commit()` 死循环；
+  `ComponentPositioner.EstablishNetwork()` 直接崩 journal 会话。
+- 选择集三种形态要分清：`SelectObject`（`.Value = obj`）、
+  `SelectObjectList`（`.Add([obj])`）、`ScCollector`（`.AddRules([rule])`）；
+  传错就是 `No overload matches` 或 `NoneType has no attribute`。
+- 部分 builder 的参数是**服务 builder 或裸 float**：`MoveBody.Motion.DeltaX` 是 float、
+  `BaseViewBuilder.Scale.Numerator/Denominator` 是 float 且相对自动缩放、
+  `ThickenBuilder.FirstOffset` 是 Expression（默认 2.5）。
+
+## 5.1 组合能力比单条更值钱
+
+已验证的"曲线→实体"链路：螺旋线（`curve.helix`）可以当管路径
+（`CreateRuleCurveDumb([helix])` + `TubeBuilder.PathSection.AddToSection`）做出弹簧；
+拉伸/旋转同样吃曲线截面。往这个方向扩，比硬啃交互式 builder 划算。
 
 ## 6. 文档与代码一致
 
