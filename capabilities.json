@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 92
+    "verified": 94
   },
-  "generated_at": "2026-10-21T22:04:25",
+  "generated_at": "2026-10-21T22:06:57",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -55,6 +55,7 @@
     "export.iges": "L1–L3",
     "export.step": "L1–L3",
     "export.step_ap203": "L1–L2",
+    "export.step_ap214": "L1–L2",
     "export.stl": "L1–L2",
     "extrude.rect": "L1–L4",
     "extrude.ring": "L1–L3",
@@ -85,6 +86,7 @@
     "measure.face_area": "L3",
     "measure.face_single": "L3",
     "measure.mass": "L3",
+    "part.inch": "L1–L3",
     "part.new": "L1",
     "sketch.circle_extrude": "L1–L3",
     "sketch.collinear": "L1–L2",
@@ -149,6 +151,7 @@
     "export.iges": "gateway",
     "export.step": "gateway",
     "export.step_ap203": "gateway",
+    "export.step_ap214": "gateway",
     "export.stl": "gateway",
     "extrude.rect": "solid_modeling",
     "extrude.ring": "solid_modeling",
@@ -179,6 +182,7 @@
     "measure.face_area": "gateway",
     "measure.face_single": "gateway",
     "measure.mass": "gateway",
+    "part.inch": "gateway",
     "part.new": "gateway",
     "sketch.circle_extrude": "solid_modeling",
     "sketch.collinear": "solid_modeling",
@@ -277,7 +281,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "baebad1",
+    "kernel_commit": "6367615",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -324,6 +328,7 @@
     "export.iges": "export",
     "export.step": "export",
     "export.step_ap203": "export",
+    "export.step_ap214": "export",
     "export.stl": "export",
     "extrude.rect": "feature",
     "extrude.ring": "feature",
@@ -354,6 +359,7 @@
     "measure.face_area": "measure",
     "measure.face_single": "measure",
     "measure.mass": "measure",
+    "part.inch": "part",
     "part.new": "part",
     "sketch.circle_extrude": "sketch",
     "sketch.collinear": "sketch",
