@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **92** 条，全部真机通过；其中 **41** 条带 L4（存盘 → 重开 → 复测）。
+总计 **94** 条，全部真机通过；其中 **41** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -10,15 +10,15 @@
 | sketch | 16 | 2 | solid_modeling |
 | drawing | 10 | 0 | drafting |
 | attr | 8 | 1 | gateway |
+| export | 6 | 0 | gateway |
 | solid | 6 | 6 | solid_modeling |
 | assembly | 5 | 1 | assemblies |
 | boolean | 5 | 5 | solid_modeling |
 | curve | 5 | 0 | solid_modeling |
-| export | 5 | 0 | gateway |
 | measure | 3 | 1 | gateway |
 | inspect | 2 | 0 | gateway |
+| part | 2 | 0 | gateway |
 | file | 1 | 1 | gateway |
-| part | 1 | 0 | gateway |
 | surface | 1 | 0 | solid_modeling |
 
 ## 按许可档位
@@ -27,7 +27,7 @@
 |---|---:|
 | assemblies | 5 |
 | drafting | 10 |
-| gateway | 20 |
+| gateway | 22 |
 | solid_modeling | 57 |
 
 ## 全部能力
@@ -126,3 +126,5 @@
 | `drawing.sheet_ansi_c` | drawing | L1–L2 | — | drafting |
 | `attr.delete` | attr | L2 | — | gateway |
 | `attr.update` | attr | L2 | — | gateway |
+| `part.inch` | part | L1–L3 | — | gateway |
+| `export.step_ap214` | export | L1–L2 | — | gateway |

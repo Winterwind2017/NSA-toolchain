@@ -378,6 +378,12 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"before": "abc", "deleted": True}, reopen=False),
     Cap("attr.update", "attr", "属性覆写为 new", "attr_update", "L2",
         params={}, expect={"value": "new"}, reopen=False),
+    Cap("part.inch", "part", "英制部件（4×2×1 in 块，体积 8 in³）", "part_inch", "L1–L3",
+        params={}, expect={"units_inch": True, "body_count": 1,
+                           "volume_mm3": {"min": 7.9, "max": 8.1}}, reopen=False),
+    Cap("export.step_ap214", "export", "AP214 STEP", "export_step_ap214", "L1–L2",
+        params={}, expect={"export_ok": True, "has_iso_header": True,
+                           "has_automotive_schema": True}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:

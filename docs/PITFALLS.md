@@ -147,3 +147,16 @@
 - `A/B/C/D/E`（ANSI）→ **英寸**（如 A = 8.5 / 11，B = 11 / 17）
 
 判据必须按系列给单位，否则 A 图幅会"差 25.4 倍"。
+
+## 十七、`Part.Units` 枚举值是 0/1，不是 1/2
+
+`part.PartUnits` 读回字符串 `"0"` 表示 **Inches**，`"1"` 表示 **Millimeters**
+（`NXOpen.Part.Units.Inches == 0`）。判单位别用 "1/2"，会一直判错。
+另外英制部件里 `mass()` 的体积/面积是**部件单位**（in³ / in²），
+4×2×1 in 的块读回 8.0，不是 13109.7 mm³。
+
+## 十八、STEP 的协议可以从 schema 读出来
+
+`StepCreator.ExportAs = ExportAsOption.Ap214` 后，文件里会出现
+`FILE_SCHEMA(('AUTOMOTIVE_DESIGN'...))`；AP203 是 `CONFIG_CONTROL_DESIGN`。
+所以"我真的导出了 AP214"可以**读文件内容**验证，不必信返回值。

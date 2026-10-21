@@ -2547,7 +2547,53 @@ def attr_update(params, workdir, rec):
     return reads
 
 
+def part_inch(params, workdir, rec):
+    """英制部件：4×2×1 in 块 → 体积 8 in³。"""
+    part = session().Parts.NewDisplay("inch_part.prt", NXOpen.Part.Units.Inches)
+    session().Parts.SetWork(part)
+    feat = make_block(part, 0, 0, 0, 4.0, 2.0, 1.0)
+    body = feat.GetBodies()[0]
+    raw = str(part.PartUnits)
+    reads = {"units_raw": raw[:40],
+             "units_inch": raw == "0",
+             "body_count": 1}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
+def export_step_ap214(params, workdir, rec):
+    """AP214 STEP（schema 里应出现 AUTOMOTIVE_DESIGN）。"""
+    part = new_part("st214")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    path = os.path.join(workdir, "export_ap214.step")
+    if os.path.exists(path):
+        os.remove(path)
+    creator = session().DexManager.CreateStepCreator()
+    try:
+        creator.OutputFile = path
+        creator.ExportAs = NXOpen.StepCreator.ExportAsOption.Ap214
+        creator.Commit()
+    finally:
+        try:
+            creator.Destroy()
+        except Exception:
+            pass
+    exists = os.path.exists(path)
+    text = ""
+    if exists:
+        with open(path, "r", encoding="latin-1", errors="replace") as fh:
+            text = fh.read()
+    reads = {"export_ok": bool(exists and len(text) > 1000),
+             "has_iso_header": "ISO-10303-21" in text,
+             "has_automotive_schema": "AUTOMOTIVE_DESIGN" in text.upper()}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "part_inch": part_inch,
+    "export_step_ap214": export_step_ap214,
     "attr_delete": attr_delete,
     "attr_update": attr_update,
     "sketch_tangent": sketch_tangent,
