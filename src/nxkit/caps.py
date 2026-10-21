@@ -179,7 +179,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.shell", "feature", "块抽壳 2 mm（封闭空腔）", "feature_shell", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 28000.0, "max": 30000.0}},
-        reopen=False),
+        reopen=True),
 
     Cap("sketch.rect", "sketch", "XY 平面草图 + 4 条线", "sketch_rect", "L1–L2",
         params={}, expect={"sketches": 1, "activated": True, "lines_added": 4,
@@ -219,7 +219,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.revolve", "feature", "矩形绕 Z 转 360°（圆柱）", "feature_revolve", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 37600.0, "max": 37800.0}},
-        reopen=False),
+        reopen=True),
     Cap("feature.edge_blend_all", "feature", "全边圆角 R3", "edge_blend_all", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 94000.0, "max": 100000.0}},
@@ -241,7 +241,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.tube", "feature", "沿直线做 Ø20 管（实体）", "feature_tube", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 30000.0, "max": 33000.0}},
-        reopen=False),
+        reopen=True),
 
 
     Cap("curve.hyperbola", "curve", "双曲线（半实轴 50 / 半虚轴 25）", "curve_hyperbola", "L1–L3",
@@ -269,6 +269,11 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 21900.0, "max": 22100.0}},
         reopen=False),
+
+    Cap("asm.four_components", "assembly", "装配插 4 个组件", "asm_four_components", "L1–L2",
+        params={}, expect={"components": 4}, reopen=False),
+    Cap("asm.nested", "assembly", "子装配 + 零件（外层 2 节点）", "asm_nested", "L1–L2",
+        params={}, expect={"components": 2}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

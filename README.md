@@ -55,7 +55,7 @@ nxkit run                           # 全部，一次 NX 会话
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（62 条，全部真机通过）
+## 能力（64 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
@@ -66,7 +66,7 @@ nxkit run                           # 全部，一次 NX 会话
 | curve | `curve.line` `curve.arc` `curve.ellipse` `curve.hyperbola` `curve.parabola` |
 | surface | `surface.bounded_plane` |
 | feature | `extrude.rect` `extrude.ring` |
-| assembly | `asm.add_component` `asm.two_components` `asm.three_components` |
+| assembly | `asm.add_component` `asm.two_components` `asm.three_components` `asm.four_components` `asm.nested` |
 | drawing | `drawing.sheet` `drawing.sheet_a4` `drawing.base_view` `drawing.view_isometric` |
 | attr | `attr.string` `attr.int` `attr.on_body` `attr.on_feature` |
 | measure | `measure.mass` `measure.face_area` `measure.face_single` |

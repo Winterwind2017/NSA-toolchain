@@ -1241,7 +1241,12 @@ def feature_shell(params, workdir, rec):
     reads["body_count"] = len(bodies)
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "shell.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1531,7 +1536,12 @@ def feature_revolve(params, workdir, rec):
     body = feat.GetBodies()[0]
     reads = {"body_count": 1, "faces": len(body.GetFaces())}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "rev.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1710,7 +1720,12 @@ def feature_tube(params, workdir, rec):
     body = feat.GetBodies()[0]
     reads = {"body_count": 1, "faces": len(body.GetFaces())}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "tube.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1859,7 +1874,55 @@ def solid_cone_frustum(params, workdir, rec):
     return reads
 
 
+def asm_nested(params, workdir, rec):
+    """子装配 + 零件：外层装配 2 个子节点。"""
+    a_path = _make_ref_part(os.path.join(workdir, "nest_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "nest_b.prt"), "cyl",
+                            (40.0, 30.0))
+    sub = new_part("subasm")
+    sub.ComponentAssembly.AddComponent(
+        a_path, "MODEL", "A", NXOpen.Point3d(0.0, 0.0, 0.0), _identity(), -1)
+    sub.ComponentAssembly.AddComponent(
+        b_path, "MODEL", "B", NXOpen.Point3d(150.0, 0.0, 0.0), _identity(), -1)
+    sub_path = os.path.join(workdir, "subasm.prt")
+    if os.path.exists(sub_path):
+        os.remove(sub_path)
+    sub.SaveAs(sub_path)
+    _close_part(sub)
+
+    top = new_part("topasm")
+    top.ComponentAssembly.AddComponent(
+        sub_path, "MODEL", "SUB", NXOpen.Point3d(0.0, 0.0, 0.0), _identity(), -1)
+    top.ComponentAssembly.AddComponent(
+        b_path, "MODEL", "C", NXOpen.Point3d(0.0, 200.0, 0.0), _identity(), -1)
+    children = top.ComponentAssembly.RootComponent.GetChildren()
+    names = sorted(str(c.Name) for c in children)
+    reads = {"components": len(children), "names": names}
+    _close_part(top)
+    return reads
+
+
+def asm_four_components(params, workdir, rec):
+    """四个组件（两零件各两次）。"""
+    a_path = _make_ref_part(os.path.join(workdir, "four_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "four_b.prt"), "cyl",
+                            (40.0, 30.0))
+    asm = new_part("asm4")
+    for i, path in enumerate((a_path, b_path, a_path, b_path)):
+        asm.ComponentAssembly.AddComponent(
+            path, "MODEL", "P%d" % i,
+            NXOpen.Point3d(150.0 * i, 0.0, 0.0), _identity(), -1)
+    children = asm.ComponentAssembly.RootComponent.GetChildren()
+    reads = {"components": len(children)}
+    _close_part(asm)
+    return reads
+
+
 ACTIONS = {
+    "asm_nested": asm_nested,
+    "asm_four_components": asm_four_components,
     "feature_hole_csk": feature_hole_csk,
     "solid_cone_frustum": solid_cone_frustum,
     "inspect_body_type": inspect_body_type,
