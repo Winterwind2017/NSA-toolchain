@@ -58,3 +58,5 @@ def test_actions_exist_for_every_cap() -> None:
     text = open(src, encoding="utf-8").read()
     for c in caps.CAPS:
         assert ("def %s(" % c.action) in text, c.action
+        assert ('"%s": %s,' % (c.action, c.action)) in text, (
+            "%s 没登记进 ACTIONS（会导致整会话 0 通过）" % c.action)

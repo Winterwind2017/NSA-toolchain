@@ -88,6 +88,8 @@ def cmd_selftest(args) -> int:
             problems.append("%s 没有判据" % c.id)
         if ("def %s(" % c.action) not in actions_text:
             problems.append("%s 的动作 %r 未实现" % (c.id, c.action))
+        if ('"%s": %s,' % (c.action, c.action)) not in actions_text:
+            problems.append("%s 的动作 %r 没登记进 ACTIONS" % (c.id, c.action))
         fake = dict(c.expect)
         checks = judges.compare(fake, c.expect)
         if not judges.verdict(checks):

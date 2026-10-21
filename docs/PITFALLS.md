@@ -66,3 +66,15 @@
 - `ufs.Modl` 只有 213 个方法（原生 `UF_MODL_*` 815 个），`CreateBlock1` 不在里面。
 - 建块/拉伸走 `NXOpen.Features`；UF 只在有绑定时用。
 - `NXBIN\python` 里没有 `python.exe`，解释器嵌在 NX 里，只能 `run_journal -py`。
+
+## 九、改代码时的自伤（2026-10-21 真踩）
+
+- 用"从 `def X` 删到下一个 `def`"的方式删函数，**把夹在中间的 `ACTIONS` 字典一起删了**，
+  于是 22 条能力全部 `KeyError`、整会话 0 通过；而 `selftest` 只检查
+  `def X(` 是否存在，**照样通过**。
+- 修法：`selftest` 与 `tests/test_offline.py` 现在同时检查
+  `"动作": 函数,` 是否登记进 `ACTIONS`。删代码后先跑 `pytest` 再跑真机。
+- `MeasureDistance` 没有 `.Distance`；`Information()` 返回 `None`。别对着它写判据。
+- `MeasureManager.MeasureType` 的成员是 `Minimum`/`Maximum`，**不是** `MinimumDistance`。
+- `part.CreateCamSetup("mill_planar")` 返回 `None` 且不建 setup（`CAMSetup` 报
+  "Current part does not contain valid setup"）。
