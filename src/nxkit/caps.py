@@ -55,7 +55,7 @@ CAPS: tuple[Cap, ...] = (
                 "volume_mm3": 100000.0, "area_mm2": 16000.0}),
     Cap("block.two_bodies", "solid", "同一部件两个块（实体数=2）", "block_two", "L1–L4",
         params={"offset_x": 50.0},
-        expect={"body_count": 2, "volume_mm3": 108000.0}, reopen=False),
+        expect={"body_count": 2, "volume_mm3": 108000.0}, reopen=True),
     Cap("boolean.subtract", "boolean", "A−B（重叠 10×50×20）", "boolean_subtract", "L1–L4",
         params={"offset_x": 50.0},
         expect={"body_count": 1, "volume_mm3": 92000.0,
@@ -78,7 +78,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("measure.mass", "measure", "质量属性：体积/面积/重心", "measure_mass", "L3",
         params=dict(BLOCK),
         expect={"volume_mm3": 100000.0, "area_mm2": 16000.0},
-        reopen=False),
+        reopen=True),
     Cap("body.topo", "inspect", "拓扑计数：面 6 / 边 12 / 顶点 8", "body_topo", "L1–L3",
         params=dict(BLOCK),
         expect={"faces": 6, "edges": 12}, reopen=False),
@@ -275,7 +275,7 @@ CAPS: tuple[Cap, ...] = (
 
     Cap("boolean.intersect_two", "boolean", "一次交两个工具体（交工具并集 12000）",
         "boolean_intersect_two", "L1–L3",
-        params={}, expect={"body_count": 1, "volume_mm3": 12000.0}, reopen=False),
+        params={}, expect={"body_count": 1, "volume_mm3": 12000.0}, reopen=True),
 
     Cap("inspect.body_type", "inspect", "实体/片体判定", "inspect_body_type", "L1–L2",
         params={}, expect={"solid_is_solid": True, "solid_is_sheet": False,
@@ -347,6 +347,12 @@ CAPS: tuple[Cap, ...] = (
         expect={"con_ok": True, "inferred": False}, reopen=False),
     Cap("sketch.midpoint", "sketch", "中点约束", "sketch_constraint_extra", "L1–L2",
         params={"kind": "midpoint"},
+        expect={"con_ok": True, "inferred": False}, reopen=False),
+    Cap("sketch.parallel", "sketch", "平行约束", "sketch_constraint_pair", "L1–L2",
+        params={"kind": "parallel"},
+        expect={"con_ok": True, "inferred": False}, reopen=False),
+    Cap("sketch.equal_radius", "sketch", "等半径约束", "sketch_constraint_pair", "L1–L2",
+        params={"kind": "equal_radius"},
         expect={"con_ok": True, "inferred": False}, reopen=False),
 )
 

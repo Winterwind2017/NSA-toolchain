@@ -197,7 +197,12 @@ def block_two(params, workdir, rec):
     reads = {"body_count": len(bodies), "body_count_direct":
              int(fa.GetBodies()[0] is not None) + int(fb.GetBodies()[0] is not None)}
     reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "two.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -267,7 +272,12 @@ def measure_mass(params, workdir, rec):
     body = feat.GetBodies()[0]
     reads = mass(part, [body])
     reads["body_count"] = 1
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "massm.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1848,7 +1858,12 @@ def boolean_intersect_two(params, workdir, rec):
     reads = {"body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "int2.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -2412,7 +2427,56 @@ def sketch_constraint_extra(params, workdir, rec):
     return reads
 
 
+def sketch_constraint_pair(params, workdir, rec):
+    """平行 / 等半径约束。"""
+    import math
+    kind = str(params.get("kind", "parallel"))
+    part = new_part("skp_" + kind)
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+
+    def cg(obj):
+        g = NXOpen.Sketch.ConstraintGeometry()
+        g.Geometry = obj
+        g.PointType = NXOpen.Sketch.ConstraintPointType.NotSet
+        return g
+
+    if kind == "parallel":
+        l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+        l2 = part.Curves.CreateLine(p(0.0, 20.0, 0.0), p(100.0, 20.0, 0.0))
+        for ln in (l1, l2):
+            sketch.AddGeometry(ln)
+        con = sketch.CreateParallelConstraint(cg(l1), cg(l2))
+    elif kind == "equal_radius":
+        a1 = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                   NXOpen.Vector3d(0.0, 1.0, 0.0), 25.0, 0.0, 2.0 * math.pi)
+        a2 = part.Curves.CreateArc(p(80.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                   NXOpen.Vector3d(0.0, 1.0, 0.0), 25.0, 0.0, 2.0 * math.pi)
+        for arc in (a1, a2):
+            sketch.AddGeometry(arc)
+        con = sketch.CreateEqualRadiusConstraint(cg(a1), cg(a2))
+    else:
+        raise ValueError("未知约束 %r" % kind)
+
+    reads = {"kind": kind, "con_ok": con is not None,
+             "inferred": bool(con.IsInferred) if con is not None else None}
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_constraint_pair": sketch_constraint_pair,
     "sketch_constraint_extra": sketch_constraint_extra,
     "sketch_fixed": sketch_fixed,
     "sketch_dimension": sketch_dimension,
