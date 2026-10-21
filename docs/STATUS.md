@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**109** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**110** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**50** 条
-- 未打通（有证据）：**13** 项
+- 未打通（有证据）：**15** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -16,7 +16,7 @@
 | assemblies | 8 |
 | drafting | 10 |
 | gateway | 28 |
-| solid_modeling | 63 |
+| solid_modeling | 64 |
 
 ## 按族
 
@@ -30,7 +30,7 @@
 | export | 7 | 0 |
 | solid | 7 | 7 |
 | boolean | 6 | 6 |
-| curve | 5 | 0 |
+| curve | 6 | 0 |
 | measure | 5 | 2 |
 | file | 2 | 1 |
 | inspect | 2 | 0 |
@@ -54,9 +54,11 @@
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
 | `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝* |
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报  |
+| `solid.split_body` | 走到 `BooleanTool.FacePlaneTool.ToolPlane`：该属性**只要 `NXOpen.Plane`**，给 `DatumPlane` 报 `Expecting NXOpen.Plane type, found NXOpen.DatumPlane`；而 `part.Planes.CreateF |
+| `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX |
 
 ## 怎么继续扩
 
 - 新能力 append-only 追加到 `ACTIONS` 之前；先 py_compile + selftest，再真机 2 次。
 - 判据只读 NX 状态；没打通写 `docs/UNSUPPORTED.md`（带错误原文）。
-- 未用的 builder 还有 200+ 个（拆体/移动体/抽面/缝面/螺纹等），是可继续扩的方向。
+- 未用 builder 仍有 200 个左右，但不少需要交互上下文（见 UNSUPPORTED）。

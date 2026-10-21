@@ -3143,7 +3143,57 @@ def _put(selection, obj):
     return "SetValue"
 
 
+def curve_helix(params, workdir, rec):
+    """螺旋线：Ø40、螺距 20、3 圈。"""
+    part = new_part("helix")
+    hb = part.Features.CreateHelixBuilder(NXOpen.Features.Helix.Null)
+    diag = {}
+    try:
+        for member in ("Turns", "NumberOfTurns", "ByTurns"):
+            try:
+                hb.LengthMethod = getattr(NXOpen.Features.HelixBuilderLengthMethods, member)
+                diag["length_method"] = member
+                break
+            except Exception as exc:
+                diag["lm:" + member] = str(exc)[:60]
+        try:
+            hb.SizeLaw.Value.SetFormula("40")
+            diag["size"] = str(hb.SizeLaw.Value.Value)
+        except Exception as exc:
+            diag["size"] = "err:%s" % str(exc)[:90]
+        try:
+            hb.PitchLaw.Value.SetFormula("20")
+            diag["pitch"] = str(hb.PitchLaw.Value.Value)
+        except Exception as exc:
+            diag["pitch"] = "err:%s" % str(exc)[:90]
+        try:
+            hb.NumberOfTurns = "3"
+            diag["turns"] = hb.NumberOfTurns
+        except Exception as exc:
+            diag["turns"] = "err:%s" % str(exc)[:90]
+        feat = hb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+        feat = None
+    finally:
+        try:
+            hb.Destroy()
+        except Exception:
+            pass
+    ent = 0
+    if feat is not None:
+        try:
+            ent = len(list(feat.GetEntities()))
+        except Exception as exc:
+            diag["entities"] = "err:%s" % str(exc)[:80]
+    reads = {"helix_ok": feat is not None, "entity_count": ent, "diag": diag}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "curve_helix": curve_helix,
     "solid_scale": solid_scale,
     "feature_mirror_face": feature_mirror_face,
     "export_parasolid": export_parasolid,

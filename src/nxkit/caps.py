@@ -270,6 +270,8 @@ CAPS: tuple[Cap, ...] = (
         reopen=True),
 
 
+    Cap("curve.helix", "curve", "螺旋线 Ø40 / 螺距 20 / 3 圈", "curve_helix", "L1–L2",
+        params={}, expect={"helix_ok": True, "entity_count": 1}, reopen=False),
     Cap("curve.hyperbola", "curve", "双曲线（半实轴 50 / 半虚轴 25）", "curve_hyperbola", "L1–L3",
         params={}, expect={"semi_transverse": 50.0, "semi_conjugate": 25.0},
         reopen=False),
