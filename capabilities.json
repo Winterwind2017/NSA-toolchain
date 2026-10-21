@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 13,
-    "verified": 52
+    "verified": 54
   },
-  "generated_at": "2026-10-21T20:51:30",
+  "generated_at": "2026-10-21T20:53:52",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.three_components": "L1–L2",
@@ -43,6 +43,7 @@
     "extrude.rect": "L1–L4",
     "extrude.ring": "L1–L3",
     "feature.chamfer": "L1–L3",
+    "feature.chamfer_edge": "L1–L3",
     "feature.chamfer_multi": "L1–L3",
     "feature.edge_blend": "L1–L3",
     "feature.edge_blend_all": "L1–L3",
@@ -58,6 +59,7 @@
     "feature.shell": "L1–L3",
     "file.roundtrip": "L4",
     "measure.face_area": "L3",
+    "measure.face_single": "L3",
     "measure.mass": "L3",
     "part.new": "L1",
     "sketch.circle_extrude": "L1–L3",
@@ -100,6 +102,10 @@
       "reason": "Sketch.ConstraintGeometry 没有创建入口"
     },
     {
+      "id": "feature.chamfer_angle",
+      "reason": "ChamferBuilder.Option/AngleExp 赋值无效"
+    },
+    {
       "id": "export.dxf",
       "reason": "DxfdwgCreator 需要图纸上下文"
     },
@@ -114,7 +120,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "101d6ec",
+    "kernel_commit": "b8544a3",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -150,6 +156,7 @@
     "extrude.rect": "feature",
     "extrude.ring": "feature",
     "feature.chamfer": "feature",
+    "feature.chamfer_edge": "feature",
     "feature.chamfer_multi": "feature",
     "feature.edge_blend": "feature",
     "feature.edge_blend_all": "feature",
@@ -165,6 +172,7 @@
     "feature.shell": "feature",
     "file.roundtrip": "file",
     "measure.face_area": "measure",
+    "measure.face_single": "measure",
     "measure.mass": "measure",
     "part.new": "part",
     "sketch.circle_extrude": "sketch",

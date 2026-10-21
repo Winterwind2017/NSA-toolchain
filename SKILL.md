@@ -82,11 +82,11 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **52** 条 verified 能力（内核 `nxkit 0.1.0`，commit `101d6ec`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **54** 条 verified 能力（内核 `nxkit 0.1.0`，commit `b8544a3`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **特征（拉伸）**（16） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.edge_blend_all`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.revolve`（L1–L3） `feature.shell`（L1–L3） |
+| **特征（拉伸）**（17） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_edge`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.edge_blend_all`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.revolve`（L1–L3） `feature.shell`（L1–L3） |
 | **导出**（5） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.stl`（L1–L2） |
 | **实体**（5） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.sphere`（L1–L3） |
 | **属性**（4） | `attr.int`（L2） `attr.on_body`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） |
@@ -94,8 +94,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **制图**（4） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） `drawing.sheet_a4`（L1–L2） `drawing.view_isometric`（L1–L2） |
 | **装配**（3） | `asm.add_component`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
 | **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
+| **测量**（3） | `measure.face_area`（L3） `measure.face_single`（L3） `measure.mass`（L3） |
 | **sketch**（3） | `sketch.circle_extrude`（L1–L3） `sketch.extrude`（L1–L3） `sketch.rect`（L1–L2） |
-| **测量**（2） | `measure.face_area`（L3） `measure.mass`（L3） |
 | **文件**（1） | `file.roundtrip`（L4） |
 | **拓扑检查**（1） | `body.topo`（L1–L3） |
 | **部件**（1） | `part.new`（L1） |
@@ -112,6 +112,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `cam.setup` | **dead**：四种模板名全返回 None、`CAMSetup` 抛 1345023、`CAMDataManager` 只有 2 个曲线 builder |
 | `cae.mesh` | `NXOpen.CAE` 绑定大、解算慢，未开始 |
 | `asm.constraints` | 约束对象没有创建入口 |
+| `feature.chamfer_angle` | `ChamferBuilder.Option`/`AngleExp` 赋值无效 |
 | `sketch.constraints` | `ConstraintGeometry` 没有创建入口 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
 | `export.parasolid` | `SetArray([body])` 后仍报 `no valid export objects` |
@@ -151,6 +152,7 @@ nxkit cap feature.pocket_blind  # 盲槽 40×20 深 10：92000
 nxkit cap feature.shell         # 抽壳 2 mm：29344
 nxkit cap feature.revolve       # 矩形绕 Z 转 360°：37699.11
 nxkit cap feature.edge_blend_all # 全边圆角 R3：26 面
+nxkit cap feature.chamfer_edge  # 另一条边倒角：面 7
 ```
 
 ### 草图
@@ -202,6 +204,7 @@ nxkit cap export.stl    # .stl（需 ExportSelectionBlock.Add(bodies)）
 nxkit cap attr.string   # 写字符串属性 → 存盘重开仍在
 nxkit cap measure.mass  # 体积/面积/重心
 nxkit cap measure.face_area # 六面面积和 16000
+nxkit cap measure.face_single # 最大面 5000 / 周长 300
 nxkit cap body.topo     # 面 6 / 边 12
 ```
 
