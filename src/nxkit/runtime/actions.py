@@ -2913,7 +2913,54 @@ def measure_distance(params, workdir, rec):
     return reads
 
 
+def feature_thicken2(params, workdir, rec):
+    """有界平面加厚 5 mm（只看实体，片体留在那里）。"""
+    part = new_part("thick2")
+    lines = _rect_lines(part)
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb(lines)
+        bp.BoundingCurves.AddToSection([rule], lines[0], None, None,
+                                       NXOpen.Point3d(0.0, 0.0, 0.0),
+                                       NXOpen.Section.Mode.Create)
+        bp.CommitFeature()
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    sheets = [b for b in _bodies_of(part) if b.IsSheetBody]
+    tb = part.Features.CreateThickenBuilder(NXOpen.Features.Thicken.Null)
+    diag = {}
+    try:
+        tb.FaceCollector.AddRules([part.ScRuleFactory.CreateRuleFaceDumb(
+            list(sheets[0].GetFaces()))])
+        diag["first_default"] = str(tb.FirstOffset.Value)
+        tb.FirstOffset.SetFormula("5")
+        diag["first_set"] = str(tb.FirstOffset.Value)
+        diag["second"] = str(tb.SecondOffset.Value)
+        try:
+            tb.Tolerance = 0.01
+            diag["tol"] = "0.01"
+        except Exception as exc:
+            diag["tol"] = "err:%s" % str(exc)[:60]
+        tb.CommitFeature()
+        diag["commit"] = "ok"
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    solids = [b for b in _bodies_of(part) if b.IsSolidBody]
+    reads = {"solid_count": len(solids), "diag": diag}
+    if solids:
+        reads.update(mass(part, solids))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "feature_thicken2": feature_thicken2,
     "measure_distance": measure_distance,
     "asm_constraint_touch": asm_constraint_touch,
     "sketch_linear_dim": sketch_linear_dim,

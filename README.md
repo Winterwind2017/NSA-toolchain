@@ -37,7 +37,7 @@ nxkit run                           # 全部，一次 NX 会话
 `nxkit run` 输出：
 
 ```
-105/105 通过  (会话 21.2s, 退出码 1)
+106/106 通过  (会话 21.1s, 退出码 1)
   PASS block.create           0.19s
   PASS boolean.subtract       0.05s
   ...
@@ -74,12 +74,12 @@ python -m pytest -q tests        # 9 passed（离线：登记/判据负例/许�
 python -m nxkit selftest         # 102 条能力，动作与判据齐全，负例都能被拒绝
 python -m nxkit licenses         # 本机 4,420 feature，四档齐全
 python tools\check_consistency.py  # 五处数字一致（README/矩阵/STATUS/registry/快照）
-python -m nxkit run              # 105/105，约 18 s（一次 NX 会话）
+python -m nxkit run              # 106/106，约 18 s（一次 NX 会话）
 python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 ```
 
 2026-10-21 用**全新 clone** 复跑过：9 passed / selftest 102 / licenses 全绿 /
-真机 105 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
+真机 106 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
 
 ## 现状与差距
 
@@ -99,7 +99,7 @@ python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（105 条，全部真机通过）
+## 能力（106 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|

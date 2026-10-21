@@ -160,3 +160,17 @@
 `StepCreator.ExportAs = ExportAsOption.Ap214` 后，文件里会出现
 `FILE_SCHEMA(('AUTOMOTIVE_DESIGN'...))`；AP203 是 `CONFIG_CONTROL_DESIGN`。
 所以"我真的导出了 AP214"可以**读文件内容**验证，不必信返回值。
+
+## 十九、加厚后片体不会消失，体积要把片体排除掉
+
+`ThickenBuilder` 成功后会**保留原来的片体**并新增一个实体：
+`_bodies_of(part)` 数出 2 个，若把两者一起拿去算质量，片体贡献 0 体积、
+但会把 `body_count` 判据带偏（早期版本就是这么误判成"2 个片体、体积 0"）。
+正确做法：`solids = [b for b in bodies if b.IsSolidBody]` 再 `mass(part, solids)`。
+100×50 的片体加厚 5 mm → 实体体积 **25000**，`FirstOffset` 默认值是 2.5。
+
+## 二十、`ComponentPositioner.EstablishNetwork()` 会让 journal 会话直接崩掉
+
+在装配里调用它，`run_journal` 整个会话中断（没有 result.json、判"会话中断"）。
+求解装配约束只能靠 `EndAssemblyConstraints()`；`EstablishNetwork`/`ClearNetwork`
+在脚本里属于危险接口，不要调用。

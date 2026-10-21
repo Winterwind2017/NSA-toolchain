@@ -25,7 +25,6 @@
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） | 需要正确签名 |
 | `sketch.constraints`（其余类型） | 重合/水平/竖直/等长/垂直/固定 已通；相切、中点、共线等未逐个验证 | 逐步加 |
 | `export.parasolid` | 四种方式都失败：不选对象、`.Add(bodies)`、`.SetArray(bodies)`、`ExportFrom=DisplayedPart`，全部报 `Part has no valid export objects`（STL 用 `.Add` 已通） | 需要 `ObjectTypes` 正确取值 |
-| `feature.thicken` | `FaceCollector.AddRules` 能过、`FirstOffset.SetFormula("5")` 返回 ok，但结果为 **2 个片体**（体积 0）；加上 `Tolerance` 后又变成单实体 **16,500,000 mm³**（100×50×3300），厚度语义不对 | 需要正确的 offset 表达方式 |
 | `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Commit()` 返回 None | 需要"在视图上画剖切线"的取点接口 |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 | 需要父视图的正确设入口 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） | 未开始 |

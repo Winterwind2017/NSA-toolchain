@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**105** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**106** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**42** 条
-- 未打通（有证据）：**15** 项
+- 未打通（有证据）：**14** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -16,13 +16,13 @@
 | assemblies | 8 |
 | drafting | 10 |
 | gateway | 27 |
-| solid_modeling | 60 |
+| solid_modeling | 61 |
 
 ## 按族
 
 | family | 能力数 | L4 |
 |---|---:|---:|
-| feature | 25 | 24 |
+| feature | 26 | 24 |
 | sketch | 17 | 2 |
 | attr | 10 | 1 |
 | drawing | 10 | 0 |
@@ -51,7 +51,6 @@
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
 | `export.parasolid` | 四种方式都失败：不选对象、`.Add(bodies)`、`.SetArray(bodies)`、`ExportFrom=DisplayedPart`，全部报 `Part has no valid export objects`（STL 用 `.Add` 已通） |
-| `feature.thicken` | `FaceCollector.AddRules` 能过、`FirstOffset.SetFormula("5")` 返回 ok，但结果为 **2 个片体**（体积 0）；加上 `Tolerance` 后又变成单实体 **16,500,000 mm³**（100×50×3300），厚度语义不对 |
 | `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Co |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
