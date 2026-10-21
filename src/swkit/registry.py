@@ -216,6 +216,15 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
        "ISketchManager.CreateCircularSketchStepAndRepeat(9 参)",
        "Ø6 圆绕半径 20mm 阵列 4 份：线段 1→**4**、总长 18.85→**75.40**（×4）",
        "真实签名 9 参（TLB 只列 6）；三个 Dim 传 None 即可，须 comtypes"),
+    _e("sw_move_body", "body", "IFeatureManager.InsertMoveCopyBody2(12 参)",
+       "40×25×10 块平移 (20,-5,0) mm：包围盒位移 **精确等于请求值**；"
+       "copy=True,copies=2 → 实体 1→**3**",
+       "`TransX/Y/Z` 是**字面米制位移**（1.0=1000mm），`TransDist` 被忽略；"
+       "实体必须 `SelectByID2(\"\",\"SOLIDBODY\",x,y,z,…,mark=1,…)` 选中，坐标单位米"),
+    _e("sw_combine_bodies", "body", "IFeatureManager.InsertCombineFeature(3 参)",
+       "两块 40×25×10 重叠 20mm → 实体 2→**1**、体积 20000→**15000**（并集解析值）",
+       "OperationType 要用 **swBodyOperationType_e**（SWBODYADD=15903，传 0 不生成特征）；"
+       "ADD 时 MainBody 必须传 none_dispatch()；ToolVar 要 VARIANT(VT_ARRAY|VT_DISPATCH,[…])"),
     _e("sw_analyze_draft", "feature",
        "IPartingLineFeatureData.DraftAnalysis + GetFacesByTypeCount",
        "分型线1（夹具 tests/fixtures/draft_parting_line.SLDPRT）：正拔模 **1**、负拔模 **1**、无拔模 **4**、跨面 **0**，合计 6 = 实体面数",
@@ -464,12 +473,6 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "IModelDoc2.SetUserPreferenceToggle", "", "同上：无对应枚举常量")),
     ("sw_show_all_sketches", ToolEntry("sw_show_all_sketches", "view", "unverified",
         "IModelDoc2.SetUserPreferenceToggle", "", "同上：无对应枚举常量")),
-    ("sw_move_body", ToolEntry("sw_move_body", "body", "unverified",
-        "IFeatureManager.InsertMoveCopyBody2(12 参)", "",
-        "选中实体后三种参数解释（方向+距离 / 纯平移 / 距离字段）都无位移，包围盒 dx=0")),
-    ("sw_combine_bodies", ToolEntry("sw_combine_bodies", "body", "unverified",
-        "IFeatureManager.InsertCombineFeature(3 参)", "",
-        "两次相交拉伸会被自动合并成 1 个体，当前夹具造不出两个可组合的体")),
     ("sw_split_body", ToolEntry("sw_split_body", "body", "unverified",
         "IFeatureManager.PreSplitBody/PostSplitBody2", "",
         "需要先有分割线/基准面且 PostSplitBody2 是 5 参，未尝试")),
@@ -576,6 +579,7 @@ _IMPLEMENTED = {
     "sw_view_rotate", "sw_export_drawing_pdf", "sw_export_drawing_dwg",
     # 上游特征/导出族（verified/features.py、verified/io_export.py，2026-10-20）
     "sw_extrude", "sw_chamfer", "sw_fillet", "sw_analyze_draft", "sw_export_iges",
+    "sw_move_body", "sw_combine_bodies",
     "sw_revolve", "sw_mirror_feature", "sw_mirror", "sw_sketch_circular_pattern",
     "sw_sketch_convert_entities", "sw_export_step", "sw_export_stl", "sw_export_file",
     "sw_save_document",

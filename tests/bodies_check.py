@@ -1,13 +1,11 @@
-"""tests/bodies_check.py —— 实体级操作（缩放/删除）
+"""tests/bodies_check.py —— 实体级操作（缩放/删除/平移/组合）
 
-夹具：两个互不相交的拉伸体（各 40×25×20，第二个在 x=100）
+夹具：两个互不相交的拉伸体（各 40×25×20，第二个在 x=100）；组合用重叠两体。
 
 1. scale_body(2)：选定实体后 40×25×20 → **80×50×40**
 2. delete_body(1)：实体数 **2→1**
-
-已知未解（单列打印，不计入通过率）：
-* move：`InsertMoveCopyBody2` 三种参数解释都无位移
-* combine：两次相交拉伸会被自动合并成 1 个体，造不出"两个体重叠"
+3. move_body(20,-5)：包围盒位移 = 请求值；copy=copies=2 → 实体 1→3
+4. combine_bodies(add)：两块重叠 20mm → 实体 2→1、体积 = 并集
 
     python tests/bodies_check.py
 """
@@ -43,10 +41,7 @@ def _two_body_part(gap: float = 100.0):
 
 def main() -> int:
     results = {}
-    known = {
-        "move": "选中实体后 InsertMoveCopyBody2 的三种参数解释都无位移（dx=0）",
-        "combine": "两次相交拉伸自动合并为 1 体，需先关闭 merge 才能造出可组合的两个体",
-    }
+    known = {}
 
     doc = _two_body_part()
     print("缩放前:", B.body_stats(doc))
@@ -55,11 +50,38 @@ def main() -> int:
     doc = _two_body_part()
     results["delete"] = B.delete_body(doc, 1)
 
+    # 平移：单实体，判据是包围盒位移 = 请求值
+    doc = F.new_part()
+    S.create_sketch(doc, "前视基准面")
+    S.rectangle(doc, 0, 0, 40, 25)
+    F.extrude(doc, 10.0)
+    results["move"] = B.move_body(doc, 20.0, -5.0, 0.0)
+
+    # 复制：同一个体复制 2 份 → 实体 1→3
+    doc = F.new_part()
+    S.create_sketch(doc, "前视基准面")
+    S.rectangle(doc, 0, 0, 40, 25)
+    F.extrude(doc, 10.0)
+    results["move_copy"] = B.move_body(doc, 60.0, 0.0, 0.0, copy=True, copies=2)
+
+    # 组合：先复制出一个重叠 20mm 的体，再并集
+    doc = F.new_part()
+    S.create_sketch(doc, "前视基准面")
+    S.rectangle(doc, 0, 0, 40, 25)
+    F.extrude(doc, 10.0)
+    B.move_body(doc, 20.0, 0.0, 0.0, copy=True, copies=1)
+    doc = __import__("swkit.core.com", fromlist=["pyw"]).pyw().Dispatch(
+        __import__("swkit.core.com", fromlist=["pyw"]).pyw().Dispatch(
+            "SldWorks.Application").ActiveDoc)
+    results["combine"] = B.combine_bodies(doc, "add")
+
     for name, res in results.items():
         print("== %-8s ok=%-5s checks=%s" % (name, res.get("ok"), res.get("checks")))
         keep = {k: v for k, v in (res.get("detail") or {}).items()
                 if k in ("factor", "size_before_mm", "size_after_mm",
-                         "bodies_before", "bodies_after", "selected", "error")}
+                         "bodies_before", "bodies_after", "selected", "error",
+                         "delta_mm", "delta_expected_mm", "copies",
+                         "volume_after_mm3", "volume_sum_before_mm3", "feature")}
         if keep:
             print("   " + json.dumps(keep, ensure_ascii=False, default=str)[:340])
 

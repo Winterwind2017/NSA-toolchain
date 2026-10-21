@@ -558,7 +558,32 @@ def sw_scale_body(factor: float = 2.0) -> Dict[str, Any]:
     return _with_doc(B.scale_body, factor)
 
 
+@mcp.tool(name="sw_move_body")
+def sw_move_body(dx_mm: float = 0.0, dy_mm: float = 0.0, dz_mm: float = 0.0,
+                 copy: bool = False, copies: int = 1) -> Dict[str, Any]:
+    r"""平移/复制实体（verified）：判据 包围盒位移 = 请求值。
+
+    坑：TransX/Y/Z 是**字面米制位移**（1.0=1000mm），TransDist 被忽略；
+    实体必须按 SOLIDBODY + mark **1** 选中，坐标单位是米。
+    """
+    from ..verified import bodies as BD
+    return _with_doc(BD.move_body, dx_mm, dy_mm, dz_mm, copy, copies)
+
+
+@mcp.tool(name="sw_combine_bodies")
+def sw_combine_bodies(operation: str = "add") -> Dict[str, Any]:
+    r"""组合实体（verified）：判据 实体数 -1 且体积在并集范围内。
+
+    坑：OperationType 用 swBodyOperationType_e（add=**15903**，传 0 不生成特征）；
+    ADD 时 MainBody 必须 
+one_dispatch()；先要用 sw_move_body(copy=True) 造第二个体。
+    """
+    from ..verified import bodies as BD
+    return _with_doc(BD.combine_bodies, operation)
+
+
 @mcp.tool(name="sw_delete_body")
+
 def sw_delete_body(body_index: int = 0) -> Dict[str, Any]:
     """删除实体（verified）：判据实体数 -1。"""
     from ..verified import bodies as B
