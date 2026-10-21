@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 139
+    "verified": 140
   },
-  "generated_at": "2026-10-22T02:50:35",
+  "generated_at": "2026-10-22T02:54:45",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -149,6 +149,7 @@
     "solid.split_body": "L1–L3",
     "solid.trim_body": "L1–L2",
     "surface.bounded_plane": "L1–L2",
+    "surface.midsurface": "L1–L2",
     "surface.offset": "L1–L2",
     "surface.ruled": "L1–L2",
     "surface.sew": "L1–L2",
@@ -290,6 +291,7 @@
     "solid.split_body": "solid_modeling",
     "solid.trim_body": "solid_modeling",
     "surface.bounded_plane": "solid_modeling",
+    "surface.midsurface": "solid_modeling",
     "surface.offset": "solid_modeling",
     "surface.ruled": "solid_modeling",
     "surface.sew": "solid_modeling",
@@ -347,7 +349,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "a0f1718",
+    "kernel_commit": "0c032a5",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -488,6 +490,7 @@
     "solid.split_body": "solid",
     "solid.trim_body": "solid",
     "surface.bounded_plane": "surface",
+    "surface.midsurface": "surface",
     "surface.offset": "surface",
     "surface.ruled": "surface",
     "surface.sew": "surface",
