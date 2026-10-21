@@ -44,6 +44,7 @@ PENDING = [
     ("asm.constraints", "ConstraintCollection.CreateConstraint 不存在"),
     ("sketch.constraints", "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"),
     ("sketch.linear_dim", "DimensionGeometry.AssocType 取值未找到"),
+    ("sketch.constant_length", "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),
     ("feature.sweep", "Commit 报 Unable to approximate guide string"),
     ("feature.rib", "part.Features 上没有 CreateRibBuilder"),

@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 78
+    "verified": 81
   },
-  "generated_at": "2026-10-21T21:56:18",
+  "generated_at": "2026-10-21T21:58:19",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -79,12 +79,15 @@
     "measure.mass": "L3",
     "part.new": "L1",
     "sketch.circle_extrude": "L1–L3",
+    "sketch.collinear": "L1–L2",
+    "sketch.concentric": "L1–L2",
     "sketch.constraint": "L1–L2",
     "sketch.dimension": "L1–L2",
     "sketch.equal_length": "L1–L2",
     "sketch.extrude": "L1–L3",
     "sketch.fixed": "L1–L2",
     "sketch.horizontal": "L1–L2",
+    "sketch.midpoint": "L1–L2",
     "sketch.perpendicular": "L1–L2",
     "sketch.rect": "L1–L2",
     "sketch.vertical": "L1–L2",
@@ -159,12 +162,15 @@
     "measure.mass": "gateway",
     "part.new": "gateway",
     "sketch.circle_extrude": "solid_modeling",
+    "sketch.collinear": "solid_modeling",
+    "sketch.concentric": "solid_modeling",
     "sketch.constraint": "solid_modeling",
     "sketch.dimension": "solid_modeling",
     "sketch.equal_length": "solid_modeling",
     "sketch.extrude": "solid_modeling",
     "sketch.fixed": "solid_modeling",
     "sketch.horizontal": "solid_modeling",
+    "sketch.midpoint": "solid_modeling",
     "sketch.perpendicular": "solid_modeling",
     "sketch.rect": "solid_modeling",
     "sketch.vertical": "solid_modeling",
@@ -211,6 +217,10 @@
       "reason": "DimensionGeometry.AssocType 取值未找到"
     },
     {
+      "id": "sketch.constant_length",
+      "reason": "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"
+    },
+    {
       "id": "feature.chamfer_angle",
       "reason": "ChamferBuilder.Option/AngleExp 赋值无效"
     },
@@ -245,7 +255,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "72706c4",
+    "kernel_commit": "5f4acbf",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -316,12 +326,15 @@
     "measure.mass": "measure",
     "part.new": "part",
     "sketch.circle_extrude": "sketch",
+    "sketch.collinear": "sketch",
+    "sketch.concentric": "sketch",
     "sketch.constraint": "sketch",
     "sketch.dimension": "sketch",
     "sketch.equal_length": "sketch",
     "sketch.extrude": "sketch",
     "sketch.fixed": "sketch",
     "sketch.horizontal": "sketch",
+    "sketch.midpoint": "sketch",
     "sketch.perpendicular": "sketch",
     "sketch.rect": "sketch",
     "sketch.vertical": "sketch",
