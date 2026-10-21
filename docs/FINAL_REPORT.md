@@ -1,107 +1,104 @@
 # nxkit 最终交付报告
 
-> 生成时间：2026-10-21（Asia/Shanghai）。数字由 `src/nxkit/caps.py` 现算，与 `docs/CAPABILITY_MATRIX.md` / `docs/STATUS.md` 同源。
+> 数字由 `src/nxkit/caps.py` 现算，与 `docs/CAPABILITY_MATRIX.md` / `docs/STATUS.md` / `docs/registry.yaml` / 技能快照同源（`tools/check_consistency.py` 校验）。
 
 ## 1. 一句话结论
 
-用真机跑通 **114 条** NX 2512 能力（其中 **52 条**做到存盘→重开→复测），做成可复现的内核 + 技能两个仓库；**没有**达到 200+ 的目标条数，原因在 §6 用数据说明。
+用真机跑通 **130 条** NX 2512 能力（其中 **54 条**做到存盘→重开→复测），做成可复现的内核 + 技能两个仓库；**没有**达到 200+ 的条数目标，原因在 §6 用数据说明，路线在 §7。
 
 ## 2. 交付物
 
-| 仓库 | 内容 | 位置 |
-|---|---|---|
-| `nxkit` | 内核：能力登记、动作库、判据、许可闸门、会话、CLI、文档 | `D:\bililive\nxkit` / GitHub `Winterwind2017/nxkit` |
-| `ww-nx-automation` | 技能：SKILL.md、能力快照、校验/同步/安装脚本、4 个测试 | `D:\bililive\ww-nx-automation` / GitHub `Winterwind2017/ww-nx-automation` |
-| 已安装 | `~/.dsh/skills/ww-nx-automation`、`~/.cursor/skills/ww-nx-automation` | 两处均 114 条，快照带 kernel commit |
+| 仓库 | 内容 |
+|---|---|
+| `nxkit` | 内核：能力登记、动作库、判据、许可闸门、会话、CLI、`tools/add_cap.py` |
+| `ww-nx-automation` | 技能：SKILL.md、能力快照、校验/同步/安装脚本、4 个测试 |
+| 已安装 | `~/.dsh/skills/ww-nx-automation` 与 `~/.cursor/skills/ww-nx-automation` |
 
 ## 3. 数字
 
-- 真机通过：**114** 条
-- 带 L4（存盘重开复测）：**52** 条（45%）
-- 按族：
+- 真机通过：**130**
+- L4（存盘→重开→复测）：**54**（41%）
+- 未打通（有证据）：**18**
 
-  - feature: 28（L4 28）
-  - sketch: 17（L4 2）
-  - drawing: 12（L4 0）
-  - attr: 10（L4 2）
-  - assembly: 8（L4 1）
-  - boolean: 7（L4 7）
-  - export: 7（L4 0）
-  - solid: 7（L4 7）
-  - curve: 6（L4 0）
-  - measure: 5（L4 2）
-  - file: 2（L4 1）
-  - inspect: 2（L4 0）
-  - part: 2（L4 1）
-  - surface: 1（L4 1）
+| family | 能力数 | 其中 L4 | 许可 |
+|---|---:|---:|---|
+| feature | 30 | 29 | solid_modeling |
+| sketch | 18 | 2 | solid_modeling |
+| drawing | 12 | 0 | drafting |
+| attr | 10 | 2 | gateway |
+| assembly | 8 | 1 | assemblies |
+| curve | 8 | 0 | solid_modeling |
+| solid | 8 | 8 | solid_modeling |
+| boolean | 7 | 7 | solid_modeling |
+| export | 7 | 0 | gateway |
+| inspect | 6 | 0 | gateway |
+| measure | 6 | 2 | gateway |
+| part | 4 | 1 | gateway |
+| surface | 4 | 1 | solid_modeling |
+| file | 2 | 1 | gateway |
 
-- 按许可档位：
+按许可档位：
 
-  - assemblies: 8
-  - drafting: 12
-  - gateway: 28
-  - solid_modeling: 66
+- `assemblies`：8 条
+- `drafting`：12 条
+- `gateway`：35 条
+- `solid_modeling`：75 条
 
 ## 4. 验证口径
 
-见 `docs/VERIFY.md`：干净 clone → 9 离线测试 → `selftest` → `licenses` → 真机 114/114 → 技能校验 → 五处数字一致；连续 3 次全量无抖动（22 s 量级）。
+见 `docs/VERIFY.md`：干净 clone → 9 离线测试 → `selftest` → `licenses` → 真机 130/130（约 19 s）→ 技能校验 → 五处数字一致。
 
-## 5. 40 轮之后新增的能力（这一阶段的主要产出）
+## 5. 这一阶段（61→79 轮）的主要产出
 
 | 能力 | 关键发现 |
 |---|---|
-| `sketch.linear_dim` | `DimensionGeometry.AssocType` 要给 `Sketch.AssocType.StartPoint` |
-| `asm.constraint_refs` | `CreateConstraintReference` 参数顺序与文档相反（先几何后组件） |
-| `measure.distance` | 单位对象名 `MilliMeter`，数值在 `MeasureDistance.Value` |
-| `feature.thicken` | 加厚会保留片体，判据只算 `IsSolidBody` |
-| `export.parasolid` | 必须显式 `ObjectTypes.Solids = True` |
-| `feature.mirror` | 镜像平面要传模型上的**面**，不是 `part.Planes` 造的 Plane |
-| `solid.scale` | 缩放因子是 `UniformFactor`（不是 X/Y/Z 方向表达式） |
-| `curve.helix` | `SizeLaw/PitchLaw` 的数值在 `.Value`（Expression）里 |
-| `feature.spring` | 螺旋线可当管路径（曲线→实体链路打通） |
-| `boolean.subtract_retain` | `Target` 要 Body；`RetainTool=True`+`RetainTarget=False` |
-| `drawing.view_scale` | `Numerator/Denominator` 是相对自动缩放，判据要自校准 |
-| `drawing.second_sheet` | 图纸 `Length` 是长边、`Height` 是短边 |
+| `feature.chamfer_angle` | `ChamferBuilderChamferOption.OffsetAndAngle` + `AngleExp` 同时生效 |
+| `feature.sweep` | 真正卡点是 **G0/G1 容差默认 0**；还要 `Swept.Null` 哨兵 + `Append(Section)` |
+| `sketch.normal` | `CreateNormalConstraint(geom, help, geom, help)`；同族 slope/constant_angle 被 NX 拒 |
+| `solid.split_body` | 工具体走 `BooleanTool.FacePlaneTool.ToolFaces.FaceCollector`（借辅助体的面） |
+| `datum.plane` / `datum.axis` | `CreateFixedDatumPlane(origin, matrix)` / `CreateFixedDatumAxis(start, end)` |
+| `curve.offset` | `CurvesToOffset` 是 Section；直线偏置必须给 `PointOnOffsetPlane`（`NXOpen.Point`） |
+| `surface.ruled` | `FirstSection/SecondSection` 要直接 `AddToSection`（赋新 Section 对象无效） |
+| `curve.project` | `PlaneToProjectTo` 只认 `NXOpen.Plane`（DatumPlane 反被拒） |
+| `surface.through_curves` | `SectionsList.Append(section)` |
+| `surface.sew` | `TargetBodies/ToolBodies` 是 `SelectObjectList`；`SewBuilderTypes.Sheet` |
+| `measure.perimeter` | `MeasureFaces` 同时给 Area 与 **Perimeter** |
+| `inspect.face_types` | `Face.SolidFaceType` 的 `str()` 是数字，要用**相等比较**取名字 |
+| `inspect.body_state` / `edge_count` | 块 12 边 6 面、圆柱 **2 边** 3 面（无 seam 边） |
+| `inspect.face_area_list` | 逐面面积分布比「总量」更能发现合并/拆分错误 |
 
-同期修掉一个**判据缺陷**：`judges._close` 原本对所有数值用 0.5 绝对容差，会把 0.59 判成 0.5；已改为按量级给容差（≥100→0.5、≥1→1e-3、<1→1e-6）。
+工具化：新增 `tools/add_cap.py`（锚点插入 + py_compile + selftest），因为历史上 5 次手工改 `ACTIONS` 附近区域把整段字典删掉、导致全会话 0 条。
 
-## 6. 为什么没到 200+（数据）
+判据缺陷修正：`judges._close` 早期对所有数值用 0.5 绝对容差（把 0.59 判成 0.5 通过），已改为按量级给容差（≥100→0.5、≥1→1e-3、<1→1e-6）。
+
+## 6. 为什么没到 200+（数据 + 分类）
 
 | 事实 | 数据 |
 |---|---|
 | `FeatureCollection` 上的 builder 总数 | 223 |
 | 已实际使用 | 19 |
-| 逐个试过但卡住的接口 | 16 项（见 `docs/UNSUPPORTED.md`，带 NX 错误原文） |
-| 失败类型 | 见下 |
+| 试过但没打通（带 NX 错误原文） | 18 |
 
-失败类型分布：
+没打通的分三类（这是本阶段最重要的结论）：
 
-1. **交互式 builder 在 journal 里缺上下文**（最多）：
-   `HolePosition` 是 Section 但四种喂法全拒；`ParentViewBuilder.View` 不可写；
-   `BooleanTool.FacePlaneTool.ToolPlane` 只认特定 Plane 句柄；
-   `OffsetSurfaceBuilder.FaceSets` 要 `FaceSetOffset` 对象；
-   `PatternBodyBuilder.ReferencePoint` 是服务 builder。
-2. **求解器不可用**：`ComponentPositioner.EstablishNetwork()` 直接崩会话；
-   `SolvePostponedConstraints()` 推不动 `NewlyCreated`。
-3. **危险接口**：`CreateDxfdwgCreator().Commit()` 死循环（656 s CPU，需 taskkill）。
-4. **构建器不存在**：`CreateRibBuilder` 不在 `FeatureCollection`；`TorusBuilder` 无；
-   `CreateCamSetup` 四种模板全 None。
+| 类型 | 特征 | 例子 |
+|---|---|---|
+| **A. 服务对象无工厂** | `new` 出来的对象立刻失效，或 builder 要 `XxxService`/`XxxData` | `FaceSetOffset`、`PatternReferencePointService`、孔的公差三元组 |
+| **B. 选择入口不可写** | `StartObject`/`FirstFace` 等只读，且找不到 `Set*` | `curve.bridge`、`curve.intersection`、`drawing.projected_view` |
+| **C. 求值器不生效** | 参数全设上、`Commit` 也成功，几何不动 | `solid.move_body`（ModlMotion） |
 
-换句话说：**不是接口少，而是「脚本可用的接口」比「UI 可用的功能」少得多**；每条新能力平均要 2–4 次真机试错，而试错失败率约 40%。
+反过来，**能做成的**几乎都是「参数是几何值/表达式/枚举」的 builder；凡是需要内部服务对象或交互上下文的，journal 一律拿不到。
 
 ## 7. 后续怎么扩（有依据的路线）
 
-1. **曲线→实体链路**（已验证可复制）：螺旋→管成功，同理可做
-   样条→管（线束）、曲线→旋转（回转体）、曲线→沿引导线扫掠。
-2. **按「选择集三形态」逐个试**（`SelectObject`/`SelectObjectList`/`ScCollector`）：
-   很多「失败」其实是选错了集合类型。
-3. **优先幂等的几何能力**（有体积/面积判据），少碰交互式会话类。
-4. **参考 NX 自带 journal 录制**：在 UI 里操作一次并录 journal，
-   比盲猜 builder 参数快一个数量级（本阶段没做，是最大的效率缺口）。
+1. **录 journal**：在 UI 里操作一次并录制，把 NX 自己生成的调用序列抄进 `actions.py`——这是本阶段最大的效率缺口（比盲猜 builder 参数快一个数量级）。
+2. **读类优先**：`measure` / `inspect` 一次通过率远高于写类；读数能力还能反过来加强写类判据（面数+边数+体积三重断言）。
+3. **曲线→实体链路**：螺旋→管、圆→扫掠已通，可复制到样条→管、曲线→旋转。
+4. **按选择集三形态排查**：`SelectObject(.Value)` / `SelectObjectList(.Add([x]))` / `ScCollector(.AddRules([r]))`；很多「失败」其实是选错集合类型。
 
 ## 8. 已知边界
 
-- 只在 **NX 2512 + 本机许可** 上验证；跨版本未测。
-- 判据是「读回值匹配」，不是「语义等价」；同一结果可能有别的实现。
+- 只在 NX 2512 + 本机许可上验证；跨版本未测。
+- 判据是「读回值匹配」，不是「语义等价」。
 - L4 只覆盖「存盘重开后读数不变」，不覆盖跨版本兼容。
-- 制图/装配解算/孔包这三块基本没打开，是后续最大空白。
+- 制图标注、装配解算、孔包这三块基本没打开，是最大空白。
