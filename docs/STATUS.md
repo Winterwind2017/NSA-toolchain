@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**123** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**124** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**54** 条
-- 未打通（有证据）：**15** 项
+- 未打通（有证据）：**16** 项
 
 ## 按族
 
@@ -23,9 +23,9 @@
 | export | 7 | 0 |
 | measure | 5 | 2 |
 | part | 4 | 1 |
+| surface | 3 | 1 |
 | file | 2 | 1 |
 | inspect | 2 | 0 |
-| surface | 2 | 1 |
 
 ## 未打通（按证据）
 
@@ -46,7 +46,12 @@
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `In |
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动** |
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** |
+| `curve.intersection` | `IntersectionCurveBuilder` 的 `FirstFace/SecondFace` **不可写**；`FirstSet/SecondSet` 是 `SelectObjectList`，`.Add([face])` 与 `.Add([body])` 都接受，但 `CommitFeature()` 一律 |
 
 ## 攻击顺序
 
 见 `docs/DEPENDENCY.md`：A 级（前置齐全）→ B 级（缺一个可合成句柄）→ C 级（缺内部服务对象/交互上下文）→ D/X（不做）。
+
+## 新增能力的正确姿势
+
+用 `python tools/add_cap.py spec.json`（锚点插入 + py_compile + selftest），不要手工删改 `ACTIONS` 附近区域——历史上 5 次把字典整段删掉。

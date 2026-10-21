@@ -46,6 +46,10 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("surface.through_curves", "surface", "三条平行线过曲线曲面（面积 5000）",
+        "surface_through_curves", "L1–L2", params={},
+        expect={"sheet_count": 1,
+                "sheet_area": {"min": 4990.0, "max": 5010.0}}, reopen=False),
     Cap("part.new", "part", "新建毫米部件", "part_new", "L1",
         params={"name": "nxkit_part"},
         expect={"part_name_ok": True, "body_count": 0, "units_mm": True}, reopen=False),

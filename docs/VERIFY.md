@@ -1,6 +1,6 @@
 # 全量验证记录（VERIFY）
 
-> 目的：任何人在干净机器上，能按下面这几条命令复现"123 条真机通过"。
+> 目的：任何人在干净机器上，能按下面这几条命令复现"124 条真机通过"。
 > 记录时间：2026-10-21（本地时间 Asia/Shanghai）。
 
 ## 0. 环境
@@ -30,7 +30,7 @@ python -m pytest -q tests
 # 9 passed in 0.07s
 
 python -m nxkit selftest
-# 自检通过：123 条能力，动作与判据齐全，负例都能被拒绝
+# 自检通过：124 条能力，动作与判据齐全，负例都能被拒绝
 
 python -m nxkit licenses
 # 许可证文件: C:\ProgramData\Siemens\siemens_SSQ.dat
@@ -42,7 +42,7 @@ python -m nxkit licenses
 
 ```powershell
 python -m nxkit run --workdir D:\bililive\_verify\rundir
-# 123/123 通过  (会话 22.2s, 退出码 1)
+# 124/124 通过  (会话 22.2s, 退出码 1)
 ```
 
 > 注意：`run_journal` 的**退出码是 1**（NX 特性），结果以 `result.json` 为准。
@@ -56,7 +56,7 @@ python tools/check_skill.py --check
 python -m pytest -q tests
 # 4 passed in 0.01s
 python tools/sync_capabilities.py
-# verified: 123 | pending: 16 | cli: 7
+# verified: 124 | pending: 16 | cli: 7
 ```
 
 ## 5. 数字一致性
@@ -75,10 +75,10 @@ python tools/check_consistency.py --skill D:\bililive\ww-nx-automation
 | 检查 | 结果 |
 |---|---|
 | 离线测试 | 9 passed |
-| 自检（动作/判据/负例） | 123 条，负例全部被拒 |
+| 自检（动作/判据/负例） | 124 条，负例全部被拒 |
 | 许可扫描 | 4,420 feature，四档齐全 |
-| 真机全量（工作副本） | **123/123**，连跑 2 次均通过 |
-| 真机全量（干净 clone） | **123/123**（commit 4a173bd，2026-10-21 复跑） |
+| 真机全量（工作副本） | **124/124**，连跑 2 次均通过 |
+| 真机全量（干净 clone） | **124/124**（commit 4a173bd，2026-10-21 复跑） |
 | 技能校验 + 测试 | 通过 / 4 passed |
 | 五处数字一致性 | 一致 |
 | L4（存盘→重开→复测） | **52 / 114** |
@@ -87,15 +87,15 @@ python tools/check_consistency.py --skill D:\bililive\ww-nx-automation
 
 | 轮次 | 结果 | 会话时长 | 失败 |
 |---|---|---|---|
-| run1 | 123/123 | 22.2 s | 0 |
-| run2 | 123/123 | 22.0 s | 0 |
-| run3 | 123/123 | 22.4 s | 0 |
+| run1 | 124/124 | 22.2 s | 0 |
+| run2 | 124/124 | 22.0 s | 0 |
+| run3 | 124/124 | 22.4 s | 0 |
 
 同一工作副本、无人工干预，三次连续全绿；会话时长稳定在 22 s 左右。
 （历史长期在 18–22 s，随能力数增长线性变慢。）
 
 ## 7. 结论
 
-- 能力清单可复现：同一 commit、同一环境，冷启动跑出 123/123。
+- 能力清单可复现：同一 commit、同一环境，冷启动跑出 124/124。
 - 没有"只在工作副本里能过"的能力。
 - 没打通的能力全部登记在 `docs/UNSUPPORTED.md`，每条带 NX 返回的错误原文。

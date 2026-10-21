@@ -3813,7 +3813,66 @@ def curve_project_to_plane(params, workdir, rec):
     return reads
 
 
+def surface_through_curves(params, workdir, rec):
+    """三条平行线做过曲线曲面（片体面积 5000）。"""
+    part = new_part("loft")
+    p = NXOpen.Point3d
+    lines = [
+        part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0)),
+        part.Curves.CreateLine(p(0.0, 25.0, 0.0), p(100.0, 25.0, 0.0)),
+        part.Curves.CreateLine(p(0.0, 50.0, 0.0), p(100.0, 50.0, 0.0)),
+    ]
+    tcb = part.Features.CreateThroughCurvesBuilder(NXOpen.Features.Feature.Null)
+    diag = {}
+    feat = None
+    try:
+        for curve in lines:
+            sec = part.Sections.CreateSectionsUsingCurves(
+                [curve], NXOpen.SectionCollection.LoopOption.Separate,
+                0.0095, 0.01, 0.5)[0]
+            placed = False
+            for how in ("append_obj", "append_list", "add_list"):
+                try:
+                    if how == "append_obj":
+                        tcb.SectionsList.Append(sec)
+                    elif how == "append_list":
+                        tcb.SectionsList.Append([sec])
+                    else:
+                        tcb.SectionsList.Add([sec])
+                    diag.setdefault("how", how)
+                    placed = True
+                    break
+                except Exception as exc:
+                    diag.setdefault("err:" + how, str(exc)[:70])
+            if not placed:
+                break
+        try:
+            tcb.PositionTolerance = 0.01
+            diag["tol"] = 0.01
+        except Exception:
+            pass
+        feat = tcb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            tcb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    sheets = [b for b in bodies if b.IsSheetBody]
+    reads = {"sheet_count": len(sheets), "diag": diag}
+    if sheets:
+        faces = list(sheets[0].GetFaces())
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, faces)
+        reads["sheet_area"] = round(float(mf.Area), 4)
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "surface_through_curves": surface_through_curves,
     "curve_project_to_plane": curve_project_to_plane,
     "surface_ruled": surface_ruled,
     "curve_offset_line": curve_offset_line,
