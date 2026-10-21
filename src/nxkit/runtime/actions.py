@@ -3126,6 +3126,18 @@ def solid_scale(params, workdir, rec):
     return reads
 
 
+def _put(selection, obj):
+    """把对象塞进 SelectObject / SelectObjectList，返回用哪种方式。"""
+    if hasattr(selection, "Value"):
+        selection.Value = obj
+        return "Value"
+    if hasattr(selection, "Add"):
+        selection.Add([obj])
+        return "Add"
+    selection.SetValue(obj)
+    return "SetValue"
+
+
 ACTIONS = {
     "solid_scale": solid_scale,
     "feature_mirror_face": feature_mirror_face,

@@ -35,3 +35,5 @@
 | `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝**点/面/列表（`No overload matches`），`CommitFeature()` 报 `Hole position not found. Specify a position.` | 需要点位 Section 的正确喂法 |
 
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing target body` | 需要正确的选择集初始化方式 |
+
+| `solid.split_body` | `CreateSplitBodyBuilder(SplitBody.Null)` 能建，`TargetBody.Add` 生效；但工具体走 `BooleanTool.ToolOption=FaceOrPlane` 后，`FacePlaneTool.ToolPlane` 为 None、赋 `part.Planes` 造出的 Plane 也报 `The tool object is missing`（大概要 datum plane 特征） | 需要 datum plane 作为工具体 |
