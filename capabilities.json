@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 77
+    "verified": 78
   },
-  "generated_at": "2026-10-21T21:54:34",
+  "generated_at": "2026-10-21T21:56:18",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -83,6 +83,7 @@
     "sketch.dimension": "L1–L2",
     "sketch.equal_length": "L1–L2",
     "sketch.extrude": "L1–L3",
+    "sketch.fixed": "L1–L2",
     "sketch.horizontal": "L1–L2",
     "sketch.perpendicular": "L1–L2",
     "sketch.rect": "L1–L2",
@@ -162,6 +163,7 @@
     "sketch.dimension": "solid_modeling",
     "sketch.equal_length": "solid_modeling",
     "sketch.extrude": "solid_modeling",
+    "sketch.fixed": "solid_modeling",
     "sketch.horizontal": "solid_modeling",
     "sketch.perpendicular": "solid_modeling",
     "sketch.rect": "solid_modeling",
@@ -202,7 +204,11 @@
     },
     {
       "id": "sketch.constraints",
-      "reason": "重合已通；水平/竖直/相切/尺寸未逐个验证"
+      "reason": "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"
+    },
+    {
+      "id": "sketch.linear_dim",
+      "reason": "DimensionGeometry.AssocType 取值未找到"
     },
     {
       "id": "feature.chamfer_angle",
@@ -239,7 +245,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "f838f79",
+    "kernel_commit": "72706c4",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -314,6 +320,7 @@
     "sketch.dimension": "sketch",
     "sketch.equal_length": "sketch",
     "sketch.extrude": "sketch",
+    "sketch.fixed": "sketch",
     "sketch.horizontal": "sketch",
     "sketch.perpendicular": "sketch",
     "sketch.rect": "sketch",
