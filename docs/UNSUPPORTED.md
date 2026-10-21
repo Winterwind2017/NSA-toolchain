@@ -47,3 +47,7 @@
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** | 用 `part.Axes.CreateAxis(point, dir)` 即可 |
 
 | `curve.intersection` | `IntersectionCurveBuilder` 的 `FirstFace/SecondFace` **不可写**；`FirstSet/SecondSet` 是 `SelectObjectList`，`.Add([face])` 与 `.Add([body])` 都接受，但 `CommitFeature()` 一律报 `No objects for intersection curve`（两个片体确实存在，sheets=2） | 需要正确的对象输入方式 |
+
+| `surface.offset` | `OffsetSurfaceBuilder` 要 `List[FaceSetOffset]`；`FaceSetOffset()` 能构造但立刻 `Object no longer exists`（必须由 NX 工厂创建，而 `FeatureCollection` 上没有它的工厂方法）；`AddFaceSets` 因此报 `Element number 0 no longer exists` | 需要 FaceSetOffset 的工厂 |
+
+| `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） | 需要选择对象的正确入口 |
