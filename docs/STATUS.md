@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**114** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**115** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**52** 条
-- 未打通（有证据）：**16** 项
+- 未打通（有证据）：**15** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -16,13 +16,13 @@
 | assemblies | 8 |
 | drafting | 12 |
 | gateway | 28 |
-| solid_modeling | 66 |
+| solid_modeling | 67 |
 
 ## 按族
 
 | family | 能力数 | L4 |
 |---|---:|---:|
-| feature | 28 | 28 |
+| feature | 29 | 28 |
 | sketch | 17 | 2 |
 | drawing | 12 | 0 |
 | attr | 10 | 2 |
@@ -47,7 +47,6 @@
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 |
 | `feature.sweep` | `SweptBuilder.SectionList.Append`/`GuideList.Append` 都成功，`CommitFeature()` 报 `Unable to approximate guide string` |
-| `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
 | `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Co |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 |
@@ -61,10 +60,12 @@
 ## 判据容差（2026-10-21 收紧）
 
 `judges._close` 按量级给容差：≥100 容 0.5（体积/面积），≥1 容 1e-3，其余 1e-6。
-早先统一用 0.5 绝对容差，会把「视图缩放 0.59 vs 期望 0.5」判通过——已修。
+
+## 攻击顺序
+
+见 `docs/DEPENDENCY.md`：A 级（前置齐全）→ B 级（缺一个可合成句柄）→ C 级（缺交互上下文）→ D/X（不做）。
 
 ## 怎么继续扩
 
 - 新能力 append-only 追加到 `ACTIONS` 之前；先 py_compile + selftest，再真机 2 次。
 - 判据只读 NX 状态；没打通写 `docs/UNSUPPORTED.md`（带错误原文）。
-- 未用 builder 仍有约 200 个，但不少需要交互上下文（见 UNSUPPORTED）。

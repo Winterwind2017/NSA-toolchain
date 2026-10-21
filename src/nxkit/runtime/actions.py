@@ -3338,7 +3338,63 @@ def drawing_second_sheet(params, workdir, rec):
     return reads
 
 
+def chamfer_angle(params, workdir, rec):
+    """角模式倒角（偏置 5 mm + 角度 30°）。"""
+    part = new_part("chamang")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    cb = part.Features.CreateChamferBuilder(NXOpen.Features.Feature.Null)
+    diag = {}
+    try:
+        rule = part.ScRuleFactory.CreateRuleEdgeDumb([list(body.GetEdges())[0]])
+        sc = part.ScCollectors.CreateCollector()
+        sc.AddRules([rule])
+        cb.SmartCollector = sc
+        opt = None
+        for member in ("OffsetAndAngle", "Asymmetric", "Symmetric"):
+            cls = getattr(NXOpen.Features, "ChamferBuilderChamferOption", None)
+            if cls is None:
+                break
+            try:
+                cb.Option = getattr(cls, member)
+                opt = member
+                break
+            except Exception as exc:
+                diag["opt:" + member] = str(exc)[:60]
+        if opt is None:
+            for value in (2, 1, 0):
+                try:
+                    cb.Option = value
+                    opt = value
+                    break
+                except Exception:
+                    continue
+        diag["option"] = opt
+        cb.FirstOffsetExp.SetFormula("5")
+        try:
+            cb.AngleExp.SetFormula("30")
+            diag["angle"] = str(cb.AngleExp.Value)
+        except Exception as exc:
+            diag["angle"] = "err:%s" % str(exc)[:80]
+        cb.CommitFeature()
+        diag["commit"] = "ok"
+    finally:
+        try:
+            cb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies),
+             "faces": len(bodies[0].GetFaces()) if bodies else 0,
+             "option": diag.get("option"), "angle": diag.get("angle"), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "chamfer_angle": chamfer_angle,
     "drawing_view_scale": drawing_view_scale,
     "drawing_second_sheet": drawing_second_sheet,
     "boolean_subtract_retain": boolean_subtract_retain,

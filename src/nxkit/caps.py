@@ -194,6 +194,12 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"feature_attr": "f1", "feature_name": "Block(0)"},
         reopen=False),
 
+    Cap("feature.chamfer_angle", "feature", "角模式倒角（5 mm / 30°）",
+        "chamfer_angle", "L1–L3",
+        params={}, expect={"body_count": 1, "faces": 7,
+                           "option": "OffsetAndAngle", "angle": "30.0",
+                           "volume_mm3": {"min": 98500.0, "max": 99900.0}},
+        reopen=False),
     Cap("feature.chamfer_multi", "feature", "四条边同时倒角 5 mm", "chamfer_multi", "L1–L3",
         params={},
         expect={"body_count": 1, "faces": {"min": 10.0, "max": 12.0},
