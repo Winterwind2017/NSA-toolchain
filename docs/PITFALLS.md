@@ -191,3 +191,15 @@ ex.Commit()
 
 导出的 `.x_t` 头两行是 `**ABC...` 与 `**PARASOLID ...`，所以**判据要读前 200 字节**，
 只读 64 字节会漏掉关键字（本项目就漏过一次）。
+
+## 二十二、镜像的 `Plane` 要的是"平面对象/面"，不是 `part.Planes` 造出来的 Plane
+
+`MirrorFeatureBuilder.Plane` 是 `SelectObject`，可以 `Plane.Value = obj`，但：
+
+- `Plane.Value = part.Planes.CreateFixedPlane(...)` → 赋值不报错、`CommitFeature()` 报
+  `No plane to Mirror about.`
+- `Plane.Value = body.GetFaces()[0]`（一个**平面面**）→ 通过，镜像出 2 个实体
+
+所以脚本里做镜像时，直接用模型上的平面面当镜像平面最省事；
+`NXOpen.Features.DatumPlane` 这个哨兵在本机不存在（`CreateDatumPlaneBuilder` 在，
+但 `DatumPlane.Null` 拿不到）。

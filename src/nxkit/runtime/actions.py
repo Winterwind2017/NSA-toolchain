@@ -3001,7 +3001,44 @@ def export_parasolid(params, workdir, rec):
     return reads
 
 
+def feature_mirror_face(params, workdir, rec):
+    """以块的一个大面为镜像平面做镜像 → 2 个实体 / 体积 200000。"""
+    part = new_part("mir2")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    faces = list(body.GetFaces())
+    big = [f for f in faces if abs(_face_area(part, [f]) - 5000.0) < 1.0]
+    diag = {"cand": len(big)}
+    if not big:
+        raise RuntimeError("找不到 100×50 的面")
+    mb = part.Features.CreateMirrorFeatureBuilder(NXOpen.Features.Feature.Null)
+    try:
+        mb.Plane.Value = big[0]
+        diag["plane"] = "face"
+        mb.FeatureSet.Add([feat])
+        diag["featureset"] = "ok"
+        mb.CommitFeature()
+        diag["commit"] = "ok"
+    finally:
+        try:
+            mb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "mir2.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    if b2:
+        reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"])
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "feature_mirror_face": feature_mirror_face,
     "export_parasolid": export_parasolid,
     "feature_thicken2": feature_thicken2,
     "measure_distance": measure_distance,

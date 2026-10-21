@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**107** 条（一次会话，连跑 2 次全绿）
-- 其中带 L4（存盘→重开→复测）：**42** 条
-- 未打通（有证据）：**13** 项
+- 真机通过能力：**108** 条（一次会话，连跑 2 次全绿）
+- 其中带 L4（存盘→重开→复测）：**43** 条
+- 未打通（有证据）：**12** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -16,13 +16,13 @@
 | assemblies | 8 |
 | drafting | 10 |
 | gateway | 28 |
-| solid_modeling | 61 |
+| solid_modeling | 62 |
 
 ## 按族
 
 | family | 能力数 | L4 |
 |---|---:|---:|
-| feature | 26 | 24 |
+| feature | 27 | 25 |
 | sketch | 17 | 2 |
 | attr | 10 | 1 |
 | drawing | 10 | 0 |
@@ -44,7 +44,6 @@
 | `cam.setup` | `part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder |
 | `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝* |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 |
-| `feature.mirror` | `MirrorFeatureBuilder.Plane` **只读**（只能 `PlaneOption` + `PlaneConstructor`），未找到可写入口 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 |
 | `feature.sweep` | `SweptBuilder.SectionList.Append`/`GuideList.Append` 都成功，`CommitFeature()` 报 `Unable to approximate guide string` |
