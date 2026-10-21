@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 12,
-    "verified": 22
+    "verified": 27
   },
-  "generated_at": "2026-10-21T20:18:23",
+  "generated_at": "2026-10-21T20:24:48",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.two_components": "L1–L4",
@@ -32,22 +32,19 @@
     "export.step": "L1–L3",
     "extrude.rect": "L1–L4",
     "extrude.ring": "L1–L3",
+    "feature.chamfer": "L1–L3",
+    "feature.edge_blend": "L1–L3",
+    "feature.hole_cyl": "L1–L3",
+    "feature.pattern_linear": "L1–L3",
+    "feature.pocket": "L1–L3",
     "file.roundtrip": "L4",
     "measure.mass": "L3",
     "part.new": "L1"
   },
   "pending": [
     {
-      "id": "feature.chamfer",
-      "reason": "SmartCollector 是 None，CommitFeature 报 Referenced edge does not exist"
-    },
-    {
       "id": "feature.hole",
-      "reason": "HolePackageBuilder 需要点/面，未打通"
-    },
-    {
-      "id": "feature.pattern",
-      "reason": "PatternService 未摸清"
+      "reason": "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"
     },
     {
       "id": "drawing.dimension",
@@ -80,7 +77,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "c20e2b0",
+    "kernel_commit": "a491f14",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -105,6 +102,11 @@
     "export.step": "export",
     "extrude.rect": "feature",
     "extrude.ring": "feature",
+    "feature.chamfer": "feature",
+    "feature.edge_blend": "feature",
+    "feature.hole_cyl": "feature",
+    "feature.pattern_linear": "feature",
+    "feature.pocket": "feature",
     "file.roundtrip": "file",
     "measure.mass": "measure",
     "part.new": "part"

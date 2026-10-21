@@ -1,12 +1,1 @@
-feat: ww-nx-automation —— 独立技能仓库首版
-
-照 ww-solidworks-automation / ww-autocad-automation 的形态：技能仓库不带执行代码，
-只带"怎么用 + 怎么验证 + 什么别试"，能力清单以带出处的快照为准。
-
-- SKILL.md：铁律（Null 哨兵/集合不可遍历/布尔去重/拉伸 Limits/出图枚举/导出入口/
-  重开 tuple/退出码/UF 许可证）、生成式能力索引、"还没打通"、典型配方、自检三问
-- capabilities.json：从 nxkit 能力表生成（verified/levels/CLI/pending），
-  带 nxkit 版本与内核 commit
-- references/：pitfalls（8 类）、recipes（各族配方与判据数字）、checklists
-- tools/：sync_capabilities（需内核）、check_skill（离线五规则）、install_skill
-- tests/：离线校验
+chore: 同步能力快照到 27 条（chamfer/edge_blend/pattern_linear/pocket/hole_cyl 转正）

@@ -82,10 +82,11 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **22** 条 verified 能力（内核 `nxkit 0.1.0`，commit `c20e2b0`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **27** 条 verified 能力（内核 `nxkit 0.1.0`，commit `a491f14`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
+| **特征（拉伸）**（7） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
 | **布尔**（3） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.union`（L1–L4） |
 | **实体**（3） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
@@ -93,7 +94,6 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **曲线**（2） | `curve.arc`（L1–L3） `curve.line`（L1–L3） |
 | **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
 | **导出**（2） | `export.iges`（L1–L3） `export.step`（L1–L3） |
-| **特征（拉伸）**（2） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） |
 | **文件**（1） | `file.roundtrip`（L4） |
 | **拓扑检查**（1） | `body.topo`（L1–L3） |
 | **测量**（1） | `measure.mass`（L3） |
@@ -105,9 +105,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- allow:pending:BEGIN -->
 | 能力 | 卡在哪 |
 |---|---|
-| `feature.chamfer` | `ChamferBuilder.SmartCollector` 是 `None`，`CommitFeature()` 报 `Referenced edge does not exist` |
 | `feature.hole` | `HolePackageBuilder` 需要点位/面，未打通 |
-| `feature.pattern` | `PatternFeatureBuilder.PatternService` 未摸清 |
 | `drawing.dimension` | `part.Dimensions` 的创建签名与视图绑定未验证 |
 | `measure.distance` | `MeasureDistance` 没有 `.Distance`，`Information()` 返回 `None` |
 | `cam.setup` | `part.CreateCamSetup("mill_planar")` 返回 `None`，`CAMSetup` 报 `no valid setup` |
@@ -130,6 +128,16 @@ nxkit cap block.create      # 100×50×20 → 体积 100000、面 6、边 12
 nxkit cap cylinder.create   # Ø40×30 → 37699.11
 nxkit cap extrude.rect      # 矩形截面拉伸 → 50000
 nxkit cap extrude.ring      # 带内孔截面 → 42000
+```
+
+### 特征（倒角/圆角/阵列/挖槽/钻孔）
+
+```bash
+nxkit cap feature.chamfer       # 一条边倒角 5 mm：面 7，体积 98000–100000
+nxkit cap feature.edge_blend    # 一条边圆角 R5：面 7
+nxkit cap feature.pattern_linear # 沿 X 阵列 3 个：实体 3，体积 300000
+nxkit cap feature.pocket        # 挖 40×20 通槽：84000
+nxkit cap feature.hole_cyl      # 钻 Ø20 通孔：93716.815
 ```
 
 ### 布尔

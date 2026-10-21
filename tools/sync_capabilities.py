@@ -35,9 +35,7 @@ GROUP_LABEL = {
 
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
-    ("feature.chamfer", "SmartCollector 是 None，CommitFeature 报 Referenced edge does not exist"),
-    ("feature.hole", "HolePackageBuilder 需要点/面，未打通"),
-    ("feature.pattern", "PatternService 未摸清"),
+    ("feature.hole", "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"),
     ("drawing.dimension", "part.Dimensions 的创建签名与视图绑定未验证"),
     ("measure.distance", "MeasureDistance 无 Distance 属性，Information() 返回 None"),
     ("cam.setup", "CreateCamSetup 返回 None，CAMSetup 报 no valid setup"),
