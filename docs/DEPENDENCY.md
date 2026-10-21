@@ -1,7 +1,7 @@
 # 依赖分析与攻击顺序（DEPENDENCY）
 
 > 说明：这份文档回答一个问题——**先攻哪个、后攻哪个，才不会白费一轮**。
-> 生成时间 2026-10-21；能力数 140（L4 54）。
+> 生成时间 2026-10-21；能力数 141（L4 54）。
 
 ## 0. 结论先说
 
@@ -62,7 +62,7 @@ graph LR
 | `feature.rib` | 实体+轮廓 | 构建器不存在 | **D** | CreateRibBuilder 不在 FeatureCollection |
 | `cam.setup` | CAM 模块 | builder 全 None | **D** | 需 CAM 许可与模块上下文 |
 | `cae.mesh` | CAE 模块 | builder/集合不可用 | **D** | 需 CAE 许可与网格上下文 |
-| `export.dxf` | 图纸 | 危险：Commit 死循环 | **X** | 永久禁用 |
+| `export.dxf` | 图纸 | 已打通（翻译器 CLI） | — | 已验证（约 15 s） |
 
 分级含义：
 
@@ -90,7 +90,7 @@ graph LR
 第 3 批（C 级）
  10. drawing.dimension / projected_view / section_view / asm 解算
 
-不做：feature.rib / cam.setup / cae.mesh / export.dxf
+不做：cam.setup / cae.mesh / export.dwg
 ```
 
 ## 4. 为什么第 1 批排在最前（依赖理由）

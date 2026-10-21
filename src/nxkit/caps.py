@@ -46,6 +46,11 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("export.dxf", "export", "DXF 导出（翻译器 CLI，约 190 KB）", "export_dxf",
+        "L1–L3", params={},
+        expect={"dxf_head_ok": True, "log_wrote": True,
+                "dxf_bytes": {"min": 50000.0, "max": 5000000.0},
+                "dxf_lines": {"min": 1.0, "max": 100000.0}}, reopen=False),
     Cap("surface.midsurface", "surface", "两片体求中面（3 片 / 间距 5）",
         "surface_midsurface", "L1–L2", params={},
         expect={"sheet_count": 3,

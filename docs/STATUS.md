@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**140** 条（一次会话跑完，连跑 2 次全绿）
+- 真机通过能力：**141** 条（一次会话跑完，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**54** 条
-- 未打通（有证据）：**14** 项
+- 未打通（有证据）：**13** 项
 
 ## 按族
 
@@ -19,8 +19,8 @@
 | solid | 10 | 8 |
 | curve | 9 | 0 |
 | assembly | 8 | 1 |
+| export | 8 | 0 |
 | boolean | 7 | 7 |
-| export | 7 | 0 |
 | inspect | 6 | 0 |
 | measure | 6 | 2 |
 | surface | 6 | 1 |
@@ -35,7 +35,6 @@
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
 | `drawing.section_view` | `CreateSectionViewBuilder(base_view)` 报 `Invalid object type for this operation`；用 `SectionView.Null` 能构造，但 `ParentView` **不可写**、`Commit()` 报 `Null tag not allowed` |
-| `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
 | `solid.delete_body` | `BodyToDelete` 构造出来是 `None`；赋一个 `ScCollector` 后 `CommitFeature()` 返回成功，但**体仍在**（`removed=0`）→ 空操作。删面（`solid.delete_face`）已打通，可作为替代 |
 | `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） |
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for t |

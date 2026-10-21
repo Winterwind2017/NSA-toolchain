@@ -118,13 +118,31 @@
 反而变成 3 个实体、体积翻倍（100000 + 68584），更糟。
 处理方式：这类复合能力**不判 body_count**，只判体积（并保留 body_count 在 reads 里备查）。
 
-## 十四、DXF/DWG 导出在 journal 里会把 NX 挂死（危险）
+## 十四、DXF 导出：NXOpen 是空操作，翻译器 CLI 才行
 
-`session.DexManager.CreateDxfdwgCreator()` + `OutputFile` + `Commit()` 在**没有图纸上下文**时
-不是报错，而是**死循环**：实测 `run_journal.exe` 单进程烧了 **656 s CPU** 仍在转，
-最后手动 `taskkill /T /F` 才结束，会话直接判"中断"。
-→ 该能力标 **dead + hazardous**，不要在 journal 里再试；要 DXF 请走交互或别的工具链。
-→ 顺带把 CLI 默认 `--timeout` 从 900 s 降到 **300 s**（正常会话 16 s，卡死时更快止损）。
+**旧结论（已推翻）**：`CreateDxfdwgCreator()` + `Commit()` 会死循环。
+
+拆开看是两件事：
+
+1. **不设 `SettingsFile`** → `Commit()` 死循环（656 s CPU，需 taskkill）；
+2. **设了 `SettingsFile`**（`<NX>\DXFDWG\dxfdwg.def`）→ `Commit()` 立刻返回、**不写任何文件**，
+   连翻译器 log 都不产生；`ExportData/ExportAs/OutputTo/ExportFrom/DrawingList/
+   UGI_DRAWING_NAMES` 全试过，仍是空的。→ NXOpen 这条路在 journal 里不可用。
+
+**能用的路**：直接起 NX 自带翻译器 CLI：
+
+```text
+<NX>\NXBIN\dxfdwg.exe <part.prt> o=<out.dxf> l=<log> d=<def> m=ugtodxf
+```
+
+- `<def>` 用 `<NX>\DXFDWG\dxfdwg.def` 的副本，把 `UGI_DRAWING_NAMES =` 改成
+  `UGI_DRAWING_NAMES = S1`（**默认空 = 什么都不导**），`LOG_FILE` 指到可写路径；
+- 输入必须是**已存盘的 .prt**（含图纸与视图），所以先 `SaveAs`；
+- 实测 100×50×20 块 + A3 + Front 视图 → **190 KB DXF**，log 记
+  `Line 16 / View Port 2 / Layout 6`；
+- 从 journal 里 `subprocess.run(..., timeout=180)` 调它即可，整条能力约 15 s（翻译器启动占大头）。
+
+→ `export.dxf` 现在是**已验证能力**；`export.dwg` 同一条 CLI 换 `m=ugtodwg`，尚未单独验证。
 
 ## 十五、代码手术纪律（血泪版）
 

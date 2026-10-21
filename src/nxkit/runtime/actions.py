@@ -4555,7 +4555,100 @@ def surface_midsurface(params, workdir, rec):
     _close_part(part)
     return reads
 
+def export_dxf(params, workdir, rec):
+    """DXF 导出：走 NX 自带翻译器 CLI（NXOpen 的 DxfdwgCreator 在 journal 里是空操作）。
+
+    实测：dxfdwg.exe <part> o=<dxf> l=<log> d=<def> m=ugtodxf
+    """
+    import subprocess
+
+    import NXOpen.Drawings
+    part = new_part("dxfexp")
+    p = NXOpen.Point3d
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+    mv = None
+    for v in part.ModelingViews:
+        if str(v.Name) == "Front":
+            mv = v
+            break
+    if mv is None:
+        mv = part.ModelingViews.WorkView
+    vb = part.DraftingViews.CreateBaseViewBuilder(NXOpen.Drawings.BaseView.Null)
+    try:
+        vb.SelectModelView.SelectedView = mv
+        vb.Commit()
+    finally:
+        try:
+            vb.Destroy()
+        except Exception:
+            pass
+
+    src = os.path.join(workdir, "dxf_src.prt")
+    dxf = os.path.join(workdir, "drawing.dxf")
+    log = os.path.join(workdir, "dxf_xlate.log")
+    mydef = os.path.join(workdir, "dxfdwg_s1.def")
+    for f in (src, dxf, log):
+        try:
+            os.remove(f)
+        except Exception:
+            pass
+    part.SaveAs(src)
+
+    base = os.environ.get("UGII_BASE_DIR", "")
+    if not base or not os.path.isdir(base):
+        for cand in (r"D:\Program Files\Siemens\DesigncenterNX2512",):
+            if os.path.isdir(cand):
+                base = cand
+                break
+    diag = {"nx_base": base}
+    inst_def = os.path.join(base, "DXFDWG", "dxfdwg.def")
+    text = open(inst_def, encoding="utf-8", errors="replace").read()
+    out_lines = []
+    for ln in text.splitlines():
+        if ln.strip().startswith("UGI_DRAWING_NAMES"):
+            out_lines.append("UGI_DRAWING_NAMES = S1")
+        elif ln.strip().startswith("LOG_FILE"):
+            out_lines.append("LOG_FILE = %s" % log)
+        else:
+            out_lines.append(ln)
+    open(mydef, "w", encoding="utf-8").write("\n".join(out_lines) + "\n")
+
+    exe = os.path.join(base, "NXBIN", "dxfdwg.exe")
+    env = dict(os.environ)
+    env.setdefault("UGII_BASE_DIR", base)
+    try:
+        proc = subprocess.run(
+            [exe, src, "o=" + dxf, "l=" + log, "d=" + mydef, "m=ugtodxf"],
+            cwd=workdir, env=env, timeout=180,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        diag["rc"] = proc.returncode
+        diag["stdout_tail"] = proc.stdout.decode("latin-1", "replace")[-80:]
+    except Exception as exc:
+        diag["run_err"] = str(exc)[:120]
+
+    reads = {"diag": diag}
+    if os.path.exists(dxf):
+        reads["dxf_bytes"] = os.path.getsize(dxf)
+        with open(dxf, "rb") as fh:
+            head = fh.read(32).decode("latin-1", "replace")
+        reads["dxf_head_ok"] = "SECTION" in head
+    if os.path.exists(log):
+        lt = open(log, encoding="utf-8", errors="replace").read()
+        reads["log_wrote"] = "Writing File" in lt
+        for line in lt.splitlines():
+            if "Line ....." in line:
+                try:
+                    reads["dxf_lines"] = int(line.split(":")[-1].strip())
+                except Exception:
+                    pass
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "export_dxf": export_dxf,
     "surface_midsurface": surface_midsurface,
     "drawing_dimension": drawing_dimension,
     "drawing_projected_view": drawing_projected_view,

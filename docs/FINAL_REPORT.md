@@ -6,9 +6,9 @@
 
 | 指标 | 数值 |
 |---|---|
-| 真机通过能力 | **140** |
+| 真机通过能力 | **141** |
 | 其中带 L4（存盘→重开→复测） | **54** |
-| 一次会话跑完全部能力 | ~18.7 s |
+| 一次会话跑完全部能力 | ~34 s（DXF 翻译器启动占 15 s） |
 | 未打通（每条都有 NX 原文错误） | **15** |
 
 ### 按族
@@ -81,7 +81,7 @@
 - **`cam.setup`**：`part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder
 - **`cae.mesh`**：`NXOpen.CAE` 绑定 16 MB，起解算耗时长
 
-### （f）永久禁用（会死循环）
+### （f）旧路径不可用（已用 CLI 替代）
 
 - **`export.dxf / export.dwg`**：见 UNSUPPORTED.md
 
