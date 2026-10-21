@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 106
+    "verified": 107
   },
-  "generated_at": "2026-10-21T23:12:09",
+  "generated_at": "2026-10-21T23:15:49",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -59,6 +59,7 @@
     "drawing.view_isometric": "L1–L2",
     "export.acis": "L1–L2",
     "export.iges": "L1–L3",
+    "export.parasolid": "L1–L2",
     "export.step": "L1–L3",
     "export.step_ap203": "L1–L2",
     "export.step_ap214": "L1–L2",
@@ -167,6 +168,7 @@
     "drawing.view_isometric": "drafting",
     "export.acis": "gateway",
     "export.iges": "gateway",
+    "export.parasolid": "gateway",
     "export.step": "gateway",
     "export.step_ap203": "gateway",
     "export.step_ap214": "gateway",
@@ -279,10 +281,6 @@
       "reason": "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"
     },
     {
-      "id": "export.parasolid",
-      "reason": "四种方式全报 no valid export objects"
-    },
-    {
       "id": "drawing.projected_view",
       "reason": "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"
     },
@@ -293,7 +291,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "a54cb57",
+    "kernel_commit": "5db6ac1",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -344,6 +342,7 @@
     "drawing.view_isometric": "drawing",
     "export.acis": "export",
     "export.iges": "export",
+    "export.parasolid": "export",
     "export.step": "export",
     "export.step_ap203": "export",
     "export.step_ap214": "export",

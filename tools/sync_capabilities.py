@@ -47,7 +47,6 @@ PENDING = [
     ("feature.sweep", "Commit 报 Unable to approximate guide string"),
     ("feature.rib", "part.Features 上没有 CreateRibBuilder"),
     ("export.dxf", "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"),
-    ("export.parasolid", "四种方式全报 no valid export objects"),
     ("drawing.projected_view", "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"),
     ("drawing.section_view", "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"),
 ]
