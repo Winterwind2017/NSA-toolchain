@@ -2558,7 +2558,12 @@ def part_inch(params, workdir, rec):
              "units_inch": raw == "0",
              "body_count": 1}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "inchp.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -2730,7 +2735,12 @@ def feature_shell_volume(params, workdir, rec):
     reads = {"body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "shellv.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -2955,7 +2965,12 @@ def feature_thicken2(params, workdir, rec):
     reads = {"solid_count": len(solids), "diag": diag}
     if solids:
         reads.update(mass(part, solids))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "thick3.prt"))
+    bodies2 = [b for b in _bodies_of(part2) if b.IsSolidBody]
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
