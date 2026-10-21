@@ -2354,7 +2354,66 @@ def sketch_fixed(params, workdir, rec):
     return reads
 
 
+def sketch_constraint_extra(params, workdir, rec):
+    """共线 / 同心 / 中点 / 定长约束。"""
+    import math
+    kind = str(params.get("kind", "collinear"))
+    part = new_part("skx_" + kind)
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+
+    def cg(obj):
+        g = NXOpen.Sketch.ConstraintGeometry()
+        g.Geometry = obj
+        g.PointType = NXOpen.Sketch.ConstraintPointType.NotSet
+        return g
+
+    if kind == "collinear":
+        l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+        l2 = part.Curves.CreateLine(p(20.0, 0.0, 0.0), p(120.0, 0.0, 0.0))
+        for ln in (l1, l2):
+            sketch.AddGeometry(ln)
+        con = sketch.CreateCollinearConstraint(cg(l1), cg(l2))
+    elif kind == "concentric":
+        a1 = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                   NXOpen.Vector3d(0.0, 1.0, 0.0), 25.0, 0.0, 2.0 * math.pi)
+        a2 = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                   NXOpen.Vector3d(0.0, 1.0, 0.0), 40.0, 0.0, 2.0 * math.pi)
+        for arc in (a1, a2):
+            sketch.AddGeometry(arc)
+        con = sketch.CreateConcentricConstraint(cg(a1), cg(a2))
+    elif kind == "midpoint":
+        l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+        sketch.AddGeometry(l1)
+        pt = part.Points.CreatePoint(p(50.0, 0.0, 0.0))
+        sketch.AddGeometry(pt)
+        con = sketch.CreateMidpointConstraint(cg(pt), cg(l1))
+    elif kind == "constant_length":
+        l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+        sketch.AddGeometry(l1)
+        con = sketch.CreateConstantLengthConstraint(cg(l1))
+    else:
+        raise ValueError("未知约束 %r" % kind)
+
+    reads = {"kind": kind, "con_ok": con is not None,
+             "inferred": bool(con.IsInferred) if con is not None else None}
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_constraint_extra": sketch_constraint_extra,
     "sketch_fixed": sketch_fixed,
     "sketch_dimension": sketch_dimension,
     "sketch_constraint_kind": sketch_constraint_kind,

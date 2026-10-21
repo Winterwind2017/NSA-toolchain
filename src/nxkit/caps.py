@@ -339,6 +339,15 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"dim_ok": True, "expr_value": 50.0}, reopen=False),
     Cap("sketch.fixed", "sketch", "固定约束", "sketch_fixed", "L1–L2",
         params={}, expect={"con_ok": True, "inferred": False}, reopen=False),
+    Cap("sketch.collinear", "sketch", "共线约束", "sketch_constraint_extra", "L1–L2",
+        params={"kind": "collinear"},
+        expect={"con_ok": True, "inferred": False}, reopen=False),
+    Cap("sketch.concentric", "sketch", "同心约束", "sketch_constraint_extra", "L1–L2",
+        params={"kind": "concentric"},
+        expect={"con_ok": True, "inferred": False}, reopen=False),
+    Cap("sketch.midpoint", "sketch", "中点约束", "sketch_constraint_extra", "L1–L2",
+        params={"kind": "midpoint"},
+        expect={"con_ok": True, "inferred": False}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:
