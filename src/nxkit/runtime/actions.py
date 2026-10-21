@@ -1365,7 +1365,8 @@ def sketch_rect(params, workdir, rec):
             pass
         lines.append(ln)
     try:
-        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue,
+                             NXOpen.Sketch.UpdateLevel.Model)
     except Exception:
         try:
             sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue)
@@ -2254,10 +2255,6 @@ def sketch_constraint(params, workdir, rec):
         reads["constraint_geometry"] = len(list(con.GetGeometry()))
     except Exception:
         reads["constraint_geometry"] = None
-    try:
-        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
-    except Exception:
-        pass
     _close_part(part)
     return reads
 
@@ -3393,7 +3390,102 @@ def chamfer_angle(params, workdir, rec):
     return reads
 
 
+def feature_sweep_arc(params, workdir, rec):
+    """圆截面沿圆弧引导线扫掠（弯管）。"""
+    import math
+    part = new_part("sweep")
+    p = NXOpen.Point3d
+    guide = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                  NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                  60.0, 0.0, math.pi / 2.0)
+    section = part.Curves.CreateArc(p(60.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                    NXOpen.Vector3d(0.0, 0.0, 1.0),
+                                    10.0, 0.0, 2.0 * math.pi)
+    sb = part.Features.CreateSweptBuilder(NXOpen.Features.Swept.Null)
+    diag = {}
+    try:
+        def put(lst, obj, tag):
+            for how in ("append_list", "append_one", "add_list"):
+                try:
+                    if how == "append_list":
+                        lst.Append([obj])
+                    elif how == "append_one":
+                        lst.Append(obj)
+                    else:
+                        lst.Add([obj])
+                    diag[tag] = how
+                    return True
+                except Exception as exc:
+                    diag[tag + ":" + how] = str(exc)[:70]
+            return False
+
+        for tag, curve, lst in (("section", section, sb.SectionList),
+                                ("guide", guide, sb.GuideList)):
+            made = None
+            try:
+                made = part.Sections.CreateSectionsUsingCurves(
+                    [curve], NXOpen.SectionCollection.LoopOption.Separate,
+                    0.0095, 0.01, 0.5)
+                diag[tag + "_sec"] = type(made).__name__
+            except Exception as exc:
+                diag[tag + "_sec"] = "err:%s" % str(exc)[:70]
+            target = made if made is not None else curve
+            ok = False
+            for how in ("append_obj", "append_list"):
+                try:
+                    if how == "append_obj":
+                        lst.Append(target)
+                    else:
+                        lst.Append([target])
+                    diag[tag] = how
+                    ok = True
+                    break
+                except Exception as exc:
+                    diag[tag + ":" + how] = str(exc)[:70]
+            if not ok:
+                put(lst, curve, tag + "_raw")
+        for name, val in (("G0Tolerance", 0.01), ("G1Tolerance", 0.5),
+                          ("Tolerance", 0.01)):
+            if hasattr(sb, name):
+                try:
+                    setattr(sb, name, val)
+                    diag[name] = val
+                except Exception as exc:
+                    diag[name] = "err:%s" % str(exc)[:50]
+        for name, member in (("OrientationType", "Fixed"), ("ScalingMethod", "Constant")):
+            if not hasattr(sb, name):
+                continue
+            try:
+                cls = getattr(NXOpen.Features, type(getattr(sb, name)).__name__.replace(
+                    "MemberType", ""), None)
+                if cls is not None:
+                    setattr(sb, name, getattr(cls, member))
+                    diag[name] = member
+            except Exception as exc:
+                diag[name] = "err:%s" % str(exc)[:60]
+        sb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            sb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "sweep.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"]) if b2 else None
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "feature_sweep_arc": feature_sweep_arc,
     "chamfer_angle": chamfer_angle,
     "drawing_view_scale": drawing_view_scale,
     "drawing_second_sheet": drawing_second_sheet,

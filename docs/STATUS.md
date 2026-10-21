@@ -4,25 +4,15 @@
 
 ## 数字
 
-- 真机通过能力：**115** 条（一次会话，连跑 2 次全绿）
-- 其中带 L4（存盘→重开→复测）：**52** 条
+- 真机通过能力：**116** 条（一次会话，连跑 2 次全绿）
+- 其中带 L4（存盘→重开→复测）：**53** 条
 - 未打通（有证据）：**15** 项
-- 本机许可 feature：**4420** 个
-
-## 按许可档位
-
-| license | 能力数 |
-|---|---:|
-| assemblies | 8 |
-| drafting | 12 |
-| gateway | 28 |
-| solid_modeling | 67 |
 
 ## 按族
 
 | family | 能力数 | L4 |
 |---|---:|---:|
-| feature | 29 | 28 |
+| feature | 30 | 29 |
 | sketch | 17 | 2 |
 | drawing | 12 | 0 |
 | attr | 10 | 2 |
@@ -46,7 +36,6 @@
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 |
-| `feature.sweep` | `SweptBuilder.SectionList.Append`/`GuideList.Append` 都成功，`CommitFeature()` 报 `Unable to approximate guide string` |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
 | `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Co |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 |
@@ -56,16 +45,12 @@
 | `solid.split_body` | 走到 `BooleanTool.FacePlaneTool.ToolPlane`：该属性**只要 `NXOpen.Plane`**，给 `DatumPlane` 报 `Expecting NXOpen.Plane type, found NXOpen.DatumPlane`；而 `part.Planes.CreateF |
 | `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX |
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `In |
-
-## 判据容差（2026-10-21 收紧）
-
-`judges._close` 按量级给容差：≥100 容 0.5（体积/面积），≥1 容 1e-3，其余 1e-6。
+| `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动** |
 
 ## 攻击顺序
 
 见 `docs/DEPENDENCY.md`：A 级（前置齐全）→ B 级（缺一个可合成句柄）→ C 级（缺交互上下文）→ D/X（不做）。
 
-## 怎么继续扩
+## 判据容差
 
-- 新能力 append-only 追加到 `ACTIONS` 之前；先 py_compile + selftest，再真机 2 次。
-- 判据只读 NX 状态；没打通写 `docs/UNSUPPORTED.md`（带错误原文）。
+`judges._close` 按量级给容差：≥100 容 0.5、≥1 容 1e-3、其余 1e-6。

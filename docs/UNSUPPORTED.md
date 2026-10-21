@@ -19,7 +19,6 @@
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints`（解算） | 约束对象 + 两个面参考已能建（见能力 `asm.constraint_refs`），但 `GetConstraintStatus()` 仍是 `NewlyCreated(0)`，`SolvePostponedConstraints()` 也不推成 Solved；另外 `CreateConstraintReference(geometry, movable_object, uses_axis, is_indirect)` 的**参数顺序与文档相反**（先几何后组件） | 需要正确的求解触发方式 |
 | `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 | 需要别的筋入口 |
-| `feature.sweep` | `SweptBuilder.SectionList.Append`/`GuideList.Append` 都成功，`CommitFeature()` 报 `Unable to approximate guide string` | 需要引导线/连续性或对齐参数 |
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 | 需要别的枚举写入口 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） | 需要正确签名 |
 | `sketch.constraints`（其余类型） | 重合/水平/竖直/等长/垂直/固定 已通；相切、中点、共线等未逐个验证 | 逐步加 |
@@ -41,3 +40,5 @@
 | `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX/DeltaY/DeltaZ` 是 **float 属性**（不是表达式），设成 100/0/0 后 `CommitFeature()` 仍报 `Feature has zero parameters` | 需要正确的运动参数提交方式 |
 
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for this operation` | 需要正确的参考点服务配置 |
+
+| `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） | 需要正确的求解触发方式 |
