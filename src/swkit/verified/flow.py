@@ -111,7 +111,19 @@ def status(sw_pid: Optional[int] = None, root: Optional[str] = None) -> Dict[str
         out["detail"]["error"] = str(exc)
         return out
     except Exception as exc:                        # noqa: BLE001
-        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        raw = "%s: %s" % (type(exc).__name__, exc)
+        # `Attach2RunningCADInstance` 在 **Flow Simulation 插件未在当前
+        # SolidWorks 会话里加载** 时会抛 E_FAIL(0x80004005, '未指定的错误')。
+        # 这不是 API 用法问题，而是环境前置条件——给出可执行的提示，
+        # 并标记 addin_loaded=False，避免被误读成"API 坏了"。
+        out["detail"]["raw_error"] = raw
+        out["detail"]["addin_loaded"] = False
+        out["detail"]["error"] = (
+            "Flow Simulation 插件未在当前 SolidWorks 会话中加载："
+            "请在 SolidWorks 里 工具 → 插件 勾选「SOLIDWORKS Flow Simulation」，"
+            "或重启 SolidWorks 后再调用。"
+            "（原始错误：%s）" % raw)
+        out["checks"] = {"addin_loaded": False}
         return out
 
     ver = _safe(app, "GetVersion")

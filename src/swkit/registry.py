@@ -42,9 +42,7 @@ _VERIFIED: List[Tuple[str, ToolEntry]] = [
     _e("sw_get_bounding_box", "meta", "IBody2.GetBodyBox",
        "X[-50,50] Y[-30,30] Z[0,10] mm"),
     _e("sw_list_materials", "meta", "解析 .sldmat", "3 库 / 29 分类 / 474 材料"),
-    _e("sw_flow_check", "meta", "EFDApiSrv.EFDLauncher.Attach2RunningCADInstance + EFDApi.IApplication",
-       "附加到运行中 SW：版本 **Flow Simulation 2025 SP3.0 Build 6784**、静默模式 True、工程数 0、CAD 文档对象可取",
-       "真正的 API 在 SOLIDWORKS Flow Simulation\\binCFW\\EFDApiSrv.tlb + EFDApi.tlb；FloXpress 的 FloWorks.App 只有 TB_on_* 按钮回调"),
+
     _e("sw_dxp", "meta", "swdimxpert.tlb: IDimXpertManager/IDimXpertPart",
        "create=False → 无 schema（DimXpertPart=None）；create=True → schema **模式2**、要素 0、标注 0",
        "DimXpert 接口在独立 swdimxpert.tlb（123 接口），不在 sldworks.tlb；入口 Extension.DimXpertManager(config, create)"),
@@ -106,6 +104,9 @@ _VERIFIED: List[Tuple[str, ToolEntry]] = [
 ]
 
 _UNSTABLE: List[Tuple[str, ToolEntry]] = [
+    ("sw_flow_check", ToolEntry("sw_flow_check", "meta", "unstable",
+        "EFDApiSrv.EFDLauncher.Attach2RunningCADInstance + EFDApi.IApplication", "",
+        "依赖 **Flow Simulation 插件已在当前 SW 会话中加载**：插件未加载时 attach 抛 E_FAIL(0x80004005)，已改为给出可执行提示并标 addin_loaded=False；插件加载时实测版本 Flow Simulation 2025 SP3.0 Build 6784、静默 True、工程数 0。tests/flow_check.py 在插件未加载时整体 SKIP")),
     ("sw_add_sketch_dimension",
      ToolEntry("sw_add_sketch_dimension", "sketch", "unstable",
                "AddAlongXDimension mark=1",
@@ -604,7 +605,7 @@ _IMPLEMENTED = {
     "sw_sketch_polygon", "sw_sketch_spline", "sw_sketch_centerline",
     # 草图 / 文档级（verified/sketch.py、verified/model.py，2026-10-20 真机 5/5）
     "sw_sketch_construction", "sw_sketch_text", "sw_add_sketch_constraint",
-    "sw_activate_display_state", "sw_list_materials", "sw_dxp", "sw_flow_check",
+    "sw_activate_display_state", "sw_list_materials", "sw_dxp",
     # 元数据（meta/*）
     "sw_props", "sw_scan", "swdm_stats", "swdm_query", "swdm_bom", "swdm_tables",
     "sw_ovba_selftest", "sw_ovba_dump",

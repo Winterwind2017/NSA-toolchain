@@ -1,0 +1,182 @@
+{
+  "elapsed_s": 143.8,
+  "passed": 15,
+  "total": 15,
+  "steps": [
+    {
+      "step": "A.底板拉伸",
+      "ok": true,
+      "checks": {
+        "feature_added": true,
+        "volume_changed": true
+      },
+      "detail": {
+        "volume_after_mm3": 40000.0
+      }
+    },
+    {
+      "step": "A.中心通孔",
+      "ok": true,
+      "checks": {
+        "feature_added": true,
+        "volume_dropped": true
+      },
+      "detail": {
+        "volume_before_mm3": 40000.0,
+        "volume_after_mm3": 39214.602,
+        "volume_delta_mm3": -785.398
+      }
+    },
+    {
+      "step": "A.四角圆角R5",
+      "ok": true,
+      "checks": {
+        "feature_added": true,
+        "faces_increased": true,
+        "volume_dropped": true
+      },
+      "detail": {
+        "volume_before_mm3": 39214.60183660255,
+        "volume_after_mm3": 38618.88621066186
+      }
+    },
+    {
+      "step": "A.保存",
+      "ok": true,
+      "checks": {
+        "file_exists": true
+      },
+      "detail": {
+        "path": "D:\\bililive\\acad_out\\demo\\plate.SLDPRT",
+        "volume_mm3": 3.861888621066186e-05
+      }
+    },
+    {
+      "step": "B.销轴旋转",
+      "ok": true,
+      "checks": {
+        "feature_added": true,
+        "volume_positive": true,
+        "below_solid_cylinder": true
+      },
+      "detail": {
+        "volume_mm3": 1570.796
+      }
+    },
+    {
+      "step": "B.保存",
+      "ok": true,
+      "checks": {
+        "file_exists": true
+      },
+      "detail": {
+        "path": "D:\\bililive\\acad_out\\demo\\pin.SLDPRT"
+      }
+    },
+    {
+      "step": "C.新建装配",
+      "ok": true,
+      "checks": {
+        "is_assembly": true
+      },
+      "detail": {}
+    },
+    {
+      "step": "C.插入两个零件",
+      "ok": true,
+      "checks": {
+        "first": true,
+        "second": true,
+        "components": 2
+      },
+      "detail": {}
+    },
+    {
+      "step": "C.干涉检查(分开)",
+      "ok": true,
+      "checks": {
+        "count_readable": true
+      },
+      "detail": {
+        "count": 0
+      }
+    },
+    {
+      "step": "D.新建工程图",
+      "ok": true,
+      "checks": {
+        "view_created": true,
+        "views_at_least_two": true
+      },
+      "detail": {
+        "views": 2
+      }
+    },
+    {
+      "step": "D.注释",
+      "ok": true,
+      "checks": {
+        "text_read_back": true,
+        "position_set": true
+      },
+      "detail": {
+        "text": "swkit demo"
+      }
+    },
+    {
+      "step": "D.导出PDF",
+      "ok": true,
+      "checks": {
+        "file_exists": true,
+        "signature_ok": true
+      },
+      "detail": {
+        "path": "D:\\bililive\\acad_out\\demo\\plate.pdf",
+        "bytes": 110856,
+        "head": "%PDF-1.4"
+      }
+    },
+    {
+      "step": "E.STEP",
+      "ok": true,
+      "checks": {
+        "file_exists": true,
+        "size_ok": true,
+        "signature_ok": true
+      },
+      "detail": {
+        "path": "D:\\bililive\\acad_out\\demo\\plate.step",
+        "bytes": 27688,
+        "head": "ISO-10303-21;\r\\nHEADER;\r\\nFILE_DESCRIPTION (( 'STE"
+      }
+    },
+    {
+      "step": "E.IGES",
+      "ok": true,
+      "checks": {
+        "file_exists": true,
+        "size_ok": true,
+        "signature_ok": true
+      },
+      "detail": {
+        "path": "D:\\bililive\\acad_out\\demo\\plate.igs",
+        "bytes": 61582,
+        "head": "SolidWorks IGES file using analytic representati"
+      }
+    },
+    {
+      "step": "F.全局变量方程",
+      "ok": true,
+      "checks": {
+        "equation_count": true,
+        "readback_matches": true
+      },
+      "detail": {
+        "expression": "\"DEMO_W\" = 40",
+        "count_before": 0,
+        "count_after": 1,
+        "readback": "\"DEMO_W\" = 40"
+      }
+    }
+  ]
+}

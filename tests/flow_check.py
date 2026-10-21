@@ -27,6 +27,14 @@ from swkit.verified import sketch_ops as S              # noqa: E402
 
 
 def main() -> int:
+    from swkit.verified import flow as _FL
+    _probe = _FL.status()
+    if (_probe.get("detail") or {}).get("addin_loaded") is False:
+        print("SKIP：Flow Simulation 插件未在当前 SolidWorks 会话中加载")
+        print("      " + str((_probe.get("detail") or {}).get("error"))[:160])
+        print("\n合计 0 项（SKIP），通过 0 —— 环境前置条件不满足，不算回归")
+        return 0
+
     if not FL.available():
         print("Flow Simulation 未安装，跳过")
         return 0

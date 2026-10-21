@@ -29,6 +29,25 @@
 这些不是"参数没调对"，所以这个仓库的做法是：**保留工具名以便迁移，实现全部按实测配方重写**，
 并把结论写进 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md)。
 
+## 一条命令跑通全流程
+
+```bash
+python examples/e2e_demo.py --out D:/demo
+```
+
+只用 **verified** 工具，从零跑到出图导出，15 步全部带几何判据：
+
+| 步骤 | 判据 |
+|---|---|
+| 底板拉伸 / 中心通孔 / 四角圆角 | 体积变化、体积下降、面数增加 |
+| 销轴旋转 | 体积 > 0 且小于同外径实心圆柱 |
+| 装配 + 插入两件 + 干涉检查 | 组件数 2、干涉计数可读（分开 130 mm 应为 0） |
+| 工程图 + 注释 + PDF | 视图数、注释文字读回、`%PDF` 签名 |
+| STEP / IGES 导出 | 文件头签名（`ISO-10303-21` / `SolidWorks IGES`） |
+| 全局变量方程 | 计数 +1 且 `Equation` 读回一致 |
+
+实测 **15/15 通过，143.8 s**；报告见 [`docs/regression/demo_report.json`](docs/regression/demo_report.json)。
+
 「调用返回成功、几何量却不动」这一类单独归到 [`docs/SILENT_FAILURES.md`](docs/SILENT_FAILURES.md)（逐项证据 + 共性教训 + 复核触发条件）。上游署名见 [`NOTICE.md`](NOTICE.md)。
 
 ---
@@ -108,7 +127,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_dxp` | `swdimxpert.tlb`（独立 TLB） | `create=False`→无 schema；`create=True`→schema**模式2**、要素 0、标注 0 |
 | `sw_chamfer` | `InsertFeatureChamfer(8 参)` | 4 边倒角 5mm：体积 48000→**46616.667**、面 6→**10**、边 12→**20** |
 | `sw_fillet` | `FeatureFillet3`（高层 14 参） | 4 边圆角 r5：体积 48000→**47382.87**、面 6→**10**、边 12→**20** |
-| `sw_flow_check` | `EFDApiSrv` + `EFDApi.tlb` | 版本 **Flow Simulation 2025 SP3.0 Build 6784**、静默 True、工程数 0、CAD 文档对象可取 |
+| `sw_flow_check` | `EFDApiSrv` + `EFDApi.tlb` | 插件加载时：版本 **Flow Simulation 2025 SP3.0 Build 6784**、静默 True、工程数 0（**环境依赖**：插件未加载时给出可执行提示并 SKIP，见 `docs/SILENT_FAILURES.md`） |
 | `sw_analyze_draft` | `IPartingLineFeatureData` | 分型线夹具：正拔模 **1**、负拔模 **1**、无拔模 **4**、跨面 **0**，合计 6 = 实体面数 |
 | `sw_mirror_feature` | `InsertMirrorFeature2`（标记 1/2） | 20000→**40000**（比 2.0），特征「镜向1」 |
 | `sw_revolve` | `IModelDoc.FeatureRevolve2`（5 参） | 25132.741 mm³ = πR²h；360°:180° = **2.0000** |
@@ -163,7 +182,7 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 每条都带 API 名与"用什么数字证明它成了"。
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **151 已编码 / 0 待编码**。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **150 已验证 / 3 已知不稳 / 0 待编码**。
 > 用 `swkit registry --implemented` 只看能直接用的那批（现在两者相等）。
 
 ### Tier B · api（透传，**unverified**）
@@ -225,7 +244,7 @@ src/swkit/
 
 > **两层数字别混淆**：
 > * **上游 188 条** → 已覆盖 **111** / 未达可用 **27** / 未复核 **44**（其余判死 4、不稳 2）
-> * **registry 的 verified 151** = 上游同名 **125** + 本仓库自有 **26**
+> * **registry 的 verified 150** = 上游同名 **125** + 本仓库自有 **25**（另有 3 项已知不稳：1 项环境依赖 + 2 项判据未立）
 >
 > 逐条"卡在哪里"见 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) 的 unverified 分类表
 > （参数未定 / 假成功 / 夹具造不出 / 枚举不存在 / 方程接口 / 破坏性不主动做）。

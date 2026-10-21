@@ -117,14 +117,14 @@ doc.FeatureManager.PostSplitBody2(pre, True, origins, names, "")   # → None
 
 | 项 | 卡点 |
 |---|---|
-| `sw_add_detail_view` | 详图需要父视图上已存在**详图圆**（detail circle） |
+| `sw_add_detail_view` | 全类型库扫描确认**没有任何 Create/Insert/Add DetailCircle 方法**（`IView` 只有读取类的 `GetDetailCircle*`）→ 详图圆只能交互创建；`CreateDetailViewAt3/At4` 无圆时返回 None；在图纸上画圆再用 `SelectByID2` 选 `SKETCHSEGMENT` 也选不中 |
 | `sw_add_section_view` | 剖视要在视图上画**剖切线**，不是选基准面；图纸里也没有"前视基准面" |
-| `sw_add_revision_table` | 空模板与真实 `.sldrevtbt` 模板都返回 `None` |
+| `sw_add_revision_table` | 三种模板（真实中文/英文/空）× 两种 API（5 参 / 7 参）都试过：自由放置模式全返回 None；锚点模式（`UseAnchorPoint=True` + AnchorType 1/2/3）虽返回 `_Dispatch`，但 Shape/Name/IsActive **全是 None**、`ISheet.RevisionTable` 仍 None。**已排除"缺图纸格式"**：图纸有 `a3 - gb.slddrt`，`SetSheetFormatName('A3')` 成功，重插仍 None |
 | `sw_export_dxf`、`sw_export_flat_pattern` | 零件直接导 DXF 无输出 —— 需要工程图或展开图上下文 |
-| `sw_unfold`、`sw_fold` | 能切 `GetBendState` 但几何不变；折叠更要有展开态 |
+| `sw_unfold`、`sw_fold` | 已用 `insert_bends` 造的**真带折弯件**（bend_state=3，含 `ProcessBends`/`FlattenBends`/`FlatPattern`）重测：4 种选择组合全返回 None，"面+边"只多出一个空特征，体积 68000、包围盒 100×80×40 不变 |
 | `sw_flow_project` | `CreateProject` 返回 `IProject`，但 `GetProjectsCount` 仍 0；整轮求解要先配边界条件/目标/网格 |
-| `sw_add/delete_equation` | `IModelDoc2` 没有 `AddEquation`；`IEquationMgr` 需 comtypes 强类型，pywin32 下 `GetEquationMgr` 报找不到成员 |
 | `sw_miter_flange` | 同 `edge_flange`：需要可选边集 + 轮廓，且同属"钣金轮廓生成"这条有缺陷的路径 |
+| `sw_add/delete_equation` | ✅ **已转正**：`GetEquationMgr()` 在 pywin32 下报找不到成员，走 comtypes 后 `Add2` 可用（计数 +1 且 `Equation` 读回一致） |
 
 ---
 
