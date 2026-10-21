@@ -49,6 +49,7 @@ PENDING = [
     ("export.parasolid", "四种方式全报 no valid export objects"),
     ("feature.thicken", "出 2 个片体或厚度变 3300 mm，语义不对"),
     ("drawing.projected_view", "ProjectedViewBuilder.Parent 只读"),
+    ("drawing.section_view", "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"),
 ]
 
 

@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 64
+    "verified": 65
   },
-  "generated_at": "2026-10-21T21:14:37",
+  "generated_at": "2026-10-21T21:17:58",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.four_components": "L1–L2",
@@ -47,6 +47,7 @@
     "export.stl": "L1–L2",
     "extrude.rect": "L1–L4",
     "extrude.ring": "L1–L3",
+    "feature.boss": "L1–L3",
     "feature.chamfer": "L1–L3",
     "feature.chamfer_edge": "L1–L3",
     "feature.chamfer_multi": "L1–L3",
@@ -134,11 +135,15 @@
     {
       "id": "drawing.projected_view",
       "reason": "ProjectedViewBuilder.Parent 只读"
+    },
+    {
+      "id": "drawing.section_view",
+      "reason": "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"
     }
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "f8d55c7",
+    "kernel_commit": "e747926",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -178,6 +183,7 @@
     "export.stl": "export",
     "extrude.rect": "feature",
     "extrude.ring": "feature",
+    "feature.boss": "feature",
     "feature.chamfer": "feature",
     "feature.chamfer_edge": "feature",
     "feature.chamfer_multi": "feature",
