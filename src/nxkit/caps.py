@@ -354,6 +354,17 @@ CAPS: tuple[Cap, ...] = (
     Cap("sketch.equal_radius", "sketch", "等半径约束", "sketch_constraint_pair", "L1–L2",
         params={"kind": "equal_radius"},
         expect={"con_ok": True, "inferred": False}, reopen=False),
+    Cap("drawing.sheet_a2", "drawing", "A2 图幅 594×420", "drawing_sheet_size", "L1–L2",
+        params={"size": "A2"},
+        expect={"sheet_height": 420.0, "sheet_width": 594.0}, reopen=False),
+    Cap("drawing.sheet_a1", "drawing", "A1 图幅 841×594", "drawing_sheet_size", "L1–L2",
+        params={"size": "A1"},
+        expect={"sheet_height": 594.0, "sheet_width": 841.0}, reopen=False),
+    Cap("drawing.sheet_a0", "drawing", "A0 图幅 1189×841", "drawing_sheet_size", "L1–L2",
+        params={"size": "A0"},
+        expect={"sheet_height": 841.0, "sheet_width": 1189.0}, reopen=False),
+    Cap("sketch.tangent", "sketch", "相切约束", "sketch_tangent", "L1–L2",
+        params={}, expect={"con_ok": True}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:

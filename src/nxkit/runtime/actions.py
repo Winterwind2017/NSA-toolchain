@@ -2475,7 +2475,53 @@ def sketch_constraint_pair(params, workdir, rec):
     return reads
 
 
+def sketch_tangent(params, workdir, rec):
+    """圆弧与直线相切（需要两个 help 对象）。"""
+    import math
+    part = new_part("sktan")
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+    arc = part.Curves.CreateArc(p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                25.0, 0.0, 2.0 * math.pi)
+    line = part.Curves.CreateLine(p(0.0, 25.0, 0.0), p(100.0, 25.0, 0.0))
+    sketch.AddGeometry(arc)
+    sketch.AddGeometry(line)
+
+    def cg(obj):
+        g = NXOpen.Sketch.ConstraintGeometry()
+        g.Geometry = obj
+        g.PointType = NXOpen.Sketch.ConstraintPointType.NotSet
+        return g
+
+    diag = {}
+    try:
+        h1 = NXOpen.Sketch.ConstraintGeometryHelp()
+        h2 = NXOpen.Sketch.ConstraintGeometryHelp()
+        diag["help"] = "ctor"
+        con = sketch.CreateTangentConstraint(cg(arc), h1, cg(line), h2)
+    except Exception as exc:
+        diag["err"] = str(exc)[:150]
+        con = None
+    reads = {"con_ok": con is not None, "diag": diag,
+             "inferred": bool(con.IsInferred) if con is not None else None}
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_tangent": sketch_tangent,
     "sketch_constraint_pair": sketch_constraint_pair,
     "sketch_constraint_extra": sketch_constraint_extra,
     "sketch_fixed": sketch_fixed,
