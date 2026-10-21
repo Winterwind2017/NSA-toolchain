@@ -3598,7 +3598,42 @@ def solid_split_by_face(params, workdir, rec):
     return reads
 
 
+def datum_plane_at(params, workdir, rec):
+    """建固定基准面（原点 z=10、法向 +Z），读回 Origin/Normal。"""
+    part = new_part("dplane")
+    z = float(params.get("z", 10.0))
+    plane = part.Datums.CreateFixedDatumPlane(
+        NXOpen.Point3d(0.0, 0.0, z), _identity())
+    origin = plane.Origin
+    normal = plane.Normal
+    reads = {"plane_ok": plane is not None,
+             "origin_z": round(float(origin.Z), 6),
+             "normal_z": round(float(normal.Z), 6),
+             "normal_x": round(float(normal.X), 6),
+             "is_feature": hasattr(plane, "Feature")}
+    _close_part(part)
+    return reads
+
+
+def datum_axis_at(params, workdir, rec):
+    """建固定基准轴（原点→X 100），读回 Origin/Direction。"""
+    part = new_part("daxis")
+    axis = part.Datums.CreateFixedDatumAxis(
+        NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Point3d(100.0, 0.0, 0.0))
+    origin = axis.Origin
+    direction = axis.Direction
+    reads = {"axis_ok": axis is not None,
+             "origin_x": round(float(origin.X), 6),
+             "dir_x": round(float(direction.X), 6),
+             "dir_y": round(float(direction.Y), 6),
+             "dir_z": round(float(direction.Z), 6)}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "datum_plane_at": datum_plane_at,
+    "datum_axis_at": datum_axis_at,
     "solid_split_by_face": solid_split_by_face,
     "sketch_constraint_more": sketch_constraint_more,
     "feature_sweep_arc": feature_sweep_arc,
