@@ -45,3 +45,5 @@
 | `sketch.slope` / `sketch.constant_angle` / `sketch.constant_length` | 三个 API 都能调，但一律返回 `Unable to create sketch geometric constraint.`（同族的 normal / tangent / parallel 都能建）→ 这几个类型可能在 journal 下不可用 | 需要 UI 上下文或前置条件 |
 
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** | 用 `part.Axes.CreateAxis(point, dir)` 即可 |
+
+| `curve.intersection` | `IntersectionCurveBuilder` 的 `FirstFace/SecondFace` **不可写**；`FirstSet/SecondSet` 是 `SelectObjectList`，`.Add([face])` 与 `.Add([body])` 都接受，但 `CommitFeature()` 一律报 `No objects for intersection curve`（两个片体确实存在，sheets=2） | 需要正确的对象输入方式 |
