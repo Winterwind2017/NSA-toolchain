@@ -237,6 +237,11 @@ CAPS: tuple[Cap, ...] = (
     Cap("surface.bounded_plane", "surface", "4 条线建有界平面片体", "surface_bounded_plane", "L1–L2",
         params={}, expect={"body_count": 1, "faces": 1}, reopen=False),
 
+
+    Cap("feature.tube", "feature", "沿直线做 Ø20 管（实体）", "feature_tube", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 30000.0, "max": 33000.0}},
+        reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

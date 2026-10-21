@@ -1704,6 +1704,62 @@ def feature_thicken(params, workdir, rec):
     return reads
 
 
+def feature_tube(params, workdir, rec):
+    """沿 100 mm 直线做 Ø20 管（实心）→ 31415.93。"""
+    part = new_part("tube")
+    p = NXOpen.Point3d
+    line = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+    secs = part.Sections.CreateSectionsUsingCurves(
+        [line], NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    sentinel = None
+    for name in ("Tube", "Feature"):
+        try:
+            sentinel = getattr(NXOpen.Features, name).Null
+            tb = part.Features.CreateTubeBuilder(sentinel)
+            break
+        except Exception:
+            tb = None
+            continue
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb([line])
+        tb.PathSection.AddToSection([rule], line, None, None,
+                                    NXOpen.Point3d(0.0, 0.0, 0.0),
+                                    NXOpen.Section.Mode.Create)
+        for name in ("OuterDiameter", "Diameter"):
+            if hasattr(tb, name):
+                try:
+                    getattr(tb, name).SetFormula("20")
+                except Exception:
+                    try:
+                        setattr(tb, name, "20")
+                    except Exception:
+                        pass
+        try:
+            tb.Tolerance = 0.01
+        except Exception:
+            pass
+        try:
+            feat = tb.CommitFeature()
+        except Exception as exc:
+            diag = {}
+            for name in ("OuterDiameter", "InnerDiameter", "Tolerance", "OutputOption"):
+                try:
+                    diag[name] = str(getattr(tb, name))[:40]
+                except Exception:
+                    diag[name] = "?"
+            raise RuntimeError("%s | %r" % (str(exc)[:120], diag))
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads = {"body_count": 1, "faces": len(body.GetFaces())}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1762,6 +1818,7 @@ ACTIONS = {
     "measure_face_single": measure_face_single,
     "chamfer_edge": chamfer_edge,
     "surface_bounded_plane": surface_bounded_plane,
+    "feature_tube": feature_tube,
     "feature_thicken": feature_thicken,
 }
 
