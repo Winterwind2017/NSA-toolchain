@@ -46,6 +46,12 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("inspect.face_area_list", "inspect", "逐面面积分布（6 面 / 合计 16000）",
+        "inspect_face_area_list", "L1–L2", params={},
+        expect={"face_count": 6,
+                "area_total": {"min": 15990.0, "max": 16010.0},
+                "area_min": {"min": 999.5, "max": 1000.5},
+                "area_max": {"min": 4999.5, "max": 5000.5}}, reopen=False),
     Cap("inspect.edge_count", "inspect", "边计数（块 12 / 圆柱 3）",
         "inspect_edge_count", "L1–L2", params={},
         expect={"block_edges": 12, "block_faces": 6,

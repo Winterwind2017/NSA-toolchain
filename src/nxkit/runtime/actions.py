@@ -4030,7 +4030,27 @@ def inspect_edge_count(params, workdir, rec):
     _close_part(part)
     return reads
 
+def inspect_face_area_list(params, workdir, rec):
+    """逐面面积分布：块 6 面 = 2×5000 + 2×2000 + 2×1000（合计 16000）。"""
+    part = new_part("fareas")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    areas = []
+    for f in body.GetFaces():
+        mf = part.MeasureManager.NewFaceProperties(
+            _unit(part), _unit(part), 0.99, [f])
+        areas.append(round(float(mf.Area), 4))
+    areas.sort()
+    reads = {"face_count": len(areas),
+             "area_total": round(sum(areas), 4),
+             "area_min": areas[0] if areas else None,
+             "area_max": areas[-1] if areas else None,
+             "areas": areas}
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "inspect_face_area_list": inspect_face_area_list,
     "inspect_edge_count": inspect_edge_count,
     "inspect_body_state": inspect_body_state,
     "inspect_face_types": inspect_face_types,
