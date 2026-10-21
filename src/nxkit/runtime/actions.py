@@ -796,19 +796,15 @@ def _dex_export(kind, part, workdir):
                "acis": dm.CreateAcisExporter}[kind]()
     try:
         creator.OutputFile = path
+        if kind == "parasolid":
+            try:
+                creator.ExportFrom = NXOpen.ParasolidExporter.ExportFromOption.DisplayedPart
+            except Exception:
+                pass
         try:
             bodies = _bodies_of(part)
-            if bodies:
-                if kind == "parasolid":
-                    creator.ExportSelectionBlock.SetArray(bodies)
-                    for name in ("ExportFrom", "ExportFromOption", "ObjectTypes"):
-                        if hasattr(creator, name):
-                            try:
-                                setattr(creator, name, getattr(creator, name))
-                            except Exception:
-                                pass
-                else:
-                    creator.ExportSelectionBlock.Add(bodies)
+            if bodies and kind != "parasolid":
+                creator.ExportSelectionBlock.Add(bodies)
         except Exception:
             pass
         creator.Commit()
@@ -1614,6 +1610,100 @@ def chamfer_edge(params, workdir, rec):
     return reads
 
 
+def _rect_lines(part, w=100.0, h=50.0):
+    p = NXOpen.Point3d
+    pts = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)]
+    lines = []
+    for i in range(4):
+        a1, b1 = pts[i], pts[(i + 1) % 4]
+        lines.append(part.Curves.CreateLine(p(a1[0], a1[1], 0.0), p(b1[0], b1[1], 0.0)))
+    return lines
+
+
+def surface_bounded_plane(params, workdir, rec):
+    """4 条线围成有界平面（片体）。"""
+    part = new_part("bplane")
+    lines = _rect_lines(part)
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb(lines)
+        bp.BoundingCurves.AddToSection([rule], lines[0], None, None,
+                                       NXOpen.Point3d(0.0, 0.0, 0.0),
+                                       NXOpen.Section.Mode.Create)
+        set_ok = "AddToSection"
+        feat = bp.CommitFeature()
+        reads = {"feature": str(feat.GetFeatureName()), "attr_used": set_ok}
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    reads["faces"] = len(bodies[0].GetFaces()) if bodies else 0
+    _close_part(part)
+    return reads
+
+
+def feature_thicken(params, workdir, rec):
+    """有界平面加厚 5 mm → 体积 25000。"""
+    part = new_part("thick")
+    lines = _rect_lines(part)
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb(lines)
+        bp.BoundingCurves.AddToSection([rule], lines[0], None, None,
+                                       NXOpen.Point3d(0.0, 0.0, 0.0),
+                                       NXOpen.Section.Mode.Create)
+        sheet_feat = bp.CommitFeature()
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    sheet = sheet_feat.GetBodies()[0]
+    faces = list(sheet.GetFaces())
+    tb = part.Features.CreateThickenBuilder(NXOpen.Features.Thicken.Null)
+    try:
+        frule = part.ScRuleFactory.CreateRuleFaceDumb(faces)
+        fsc = part.ScCollectors.CreateCollector()
+        fsc.AddRules([frule])
+        set_ok = None
+        for attr in ("FaceCollector", "Faces"):
+            try:
+                setattr(tb, attr, fsc)
+                set_ok = attr
+                break
+            except Exception as exc:
+                set_ok = "err:%s" % str(exc)[:60]
+        try:
+            tb.FirstOffset.SetFormula("5")
+        except Exception:
+            try:
+                tb.FirstOffset = "5"
+            except Exception:
+                pass
+        for name, val in (("Tolerance", 0.1), ("Tolerance", 0.5)):
+            try:
+                setattr(tb, name, val)
+                break
+            except Exception:
+                continue
+        tb.CommitFeature()
+        reads = {"face_attr": set_ok}
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1671,6 +1761,8 @@ ACTIONS = {
     "edge_blend_all": edge_blend_all,
     "measure_face_single": measure_face_single,
     "chamfer_edge": chamfer_edge,
+    "surface_bounded_plane": surface_bounded_plane,
+    "feature_thicken": feature_thicken,
 }
 
 

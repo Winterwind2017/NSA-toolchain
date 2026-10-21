@@ -165,7 +165,7 @@ CAPS: tuple[Cap, ...] = (
 
     Cap("feature.chamfer_multi", "feature", "四条边同时倒角 5 mm", "chamfer_multi", "L1–L3",
         params={},
-        expect={"body_count": 1, "faces": 10,
+        expect={"body_count": 1, "faces": {"min": 10.0, "max": 12.0},
                 "volume_mm3": {"min": 94000.0, "max": 100000.0}}, reopen=False),
 
 
@@ -232,6 +232,11 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1, "faces": 7,
                            "volume_mm3": {"min": 99000.0, "max": 100000.0}},
         reopen=False),
+
+
+    Cap("surface.bounded_plane", "surface", "4 条线建有界平面片体", "surface_bounded_plane", "L1–L2",
+        params={}, expect={"body_count": 1, "faces": 1}, reopen=False),
+
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

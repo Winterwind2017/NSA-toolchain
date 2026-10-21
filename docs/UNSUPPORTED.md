@@ -22,7 +22,8 @@
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 | 需要别的枚举写入口 |
 | `sketch.constraints` | `CreateCoincidentConstraint(geom1, geom2)` 要 `Sketch.ConstraintGeometry` 对象，stub 里没有创建入口 | 未通 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸/视图上下文 | 依赖出图（已通） |
-| `export.parasolid` | `ExportSelectionBlock.SetArray([body])` 后仍报 `Part has no valid export objects`（STL 用同样手法已通） | 需要 `ExportFrom`/`ObjectTypes` 的正确组合 |
+| `export.parasolid` | 四种方式都失败：不选对象、`.Add(bodies)`、`.SetArray(bodies)`、`ExportFrom=DisplayedPart`，全部报 `Part has no valid export objects`（STL 用 `.Add` 已通） | 需要 `ObjectTypes` 正确取值 |
+| `feature.thicken` | 有界平面 + `FaceCollector` + `FirstOffset=5` 后 `CommitFeature()` 报 `Distance tolerance is too small`；`Tolerance` 赋值不生效 | 需要正确的 face collector/容差设置 |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 | 需要父视图的正确设入口 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） | 未开始 |
 
