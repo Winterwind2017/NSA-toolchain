@@ -82,7 +82,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **59** 条 verified 能力（内核 `nxkit 0.1.0`，commit `92ee378`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **60** 条 verified 能力（内核 `nxkit 0.1.0`，commit `400be7c`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -96,8 +96,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **装配**（3） | `asm.add_component`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
 | **测量**（3） | `measure.face_area`（L3） `measure.face_single`（L3） `measure.mass`（L3） |
 | **sketch**（3） | `sketch.circle_extrude`（L1–L3） `sketch.extrude`（L1–L3） `sketch.rect`（L1–L2） |
+| **拓扑检查**（2） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） |
 | **文件**（1） | `file.roundtrip`（L4） |
-| **拓扑检查**（1） | `body.topo`（L1–L3） |
 | **部件**（1） | `part.new`（L1） |
 | **surface**（1） | `surface.bounded_plane`（L1–L2） |
 <!-- gen:capabilities:END -->
@@ -212,6 +212,7 @@ nxkit cap measure.mass  # 体积/面积/重心
 nxkit cap measure.face_area # 六面面积和 16000
 nxkit cap measure.face_single # 最大面 5000 / 周长 300
 nxkit cap body.topo     # 面 6 / 边 12
+nxkit cap inspect.body_type # 块=solid、有界平面=sheet
 ```
 
 ## 交付前的自检三问
