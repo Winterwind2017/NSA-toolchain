@@ -44,6 +44,7 @@ PENDING = [
     ("asm.constraints", "约束对象没有创建入口"),
     ("sketch.constraints", "Sketch.ConstraintGeometry 没有创建入口"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),
+    ("feature.sweep", "Commit 报 Unable to approximate guide string"),
     ("export.dxf", "DxfdwgCreator 需要图纸上下文"),
     ("export.parasolid", "四种方式全报 no valid export objects"),
     ("feature.thicken", "出 2 个片体或厚度变 3300 mm，语义不对"),

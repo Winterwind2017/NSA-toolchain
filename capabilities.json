@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 58
+    "verified": 59
   },
-  "generated_at": "2026-10-21T21:03:23",
+  "generated_at": "2026-10-21T21:06:44",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.three_components": "L1–L2",
@@ -24,6 +24,7 @@
     "block.two_bodies": "L1–L4",
     "body.topo": "L1–L3",
     "boolean.intersect": "L1–L4",
+    "boolean.intersect_two": "L1–L3",
     "boolean.subtract": "L1–L4",
     "boolean.two_tools": "L1–L3",
     "boolean.union": "L1–L4",
@@ -110,6 +111,10 @@
       "reason": "ChamferBuilder.Option/AngleExp 赋值无效"
     },
     {
+      "id": "feature.sweep",
+      "reason": "Commit 报 Unable to approximate guide string"
+    },
+    {
       "id": "export.dxf",
       "reason": "DxfdwgCreator 需要图纸上下文"
     },
@@ -128,7 +133,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "bb4bd15",
+    "kernel_commit": "92ee378",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -145,6 +150,7 @@
     "block.two_bodies": "solid",
     "body.topo": "inspect",
     "boolean.intersect": "boolean",
+    "boolean.intersect_two": "boolean",
     "boolean.subtract": "boolean",
     "boolean.two_tools": "boolean",
     "boolean.union": "boolean",

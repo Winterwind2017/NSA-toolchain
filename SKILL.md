@@ -82,16 +82,16 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **58** 条 verified 能力（内核 `nxkit 0.1.0`，commit `bb4bd15`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **59** 条 verified 能力（内核 `nxkit 0.1.0`，commit `92ee378`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
 | **特征（拉伸）**（18） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_edge`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.edge_blend_all`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.revolve`（L1–L3） `feature.shell`（L1–L3） `feature.tube`（L1–L3） |
+| **布尔**（5） | `boolean.intersect`（L1–L4） `boolean.intersect_two`（L1–L3） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） |
 | **曲线**（5） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.hyperbola`（L1–L3） `curve.line`（L1–L3） `curve.parabola`（L1–L3） |
 | **导出**（5） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.stl`（L1–L2） |
 | **实体**（5） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.sphere`（L1–L3） |
 | **属性**（4） | `attr.int`（L2） `attr.on_body`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） |
-| **布尔**（4） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） |
 | **制图**（4） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） `drawing.sheet_a4`（L1–L2） `drawing.view_isometric`（L1–L2） |
 | **装配**（3） | `asm.add_component`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
 | **测量**（3） | `measure.face_area`（L3） `measure.face_single`（L3） `measure.mass`（L3） |
@@ -113,6 +113,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `cam.setup` | **dead**：四种模板名全返回 None、`CAMSetup` 抛 1345023、`CAMDataManager` 只有 2 个曲线 builder |
 | `cae.mesh` | `NXOpen.CAE` 绑定大、解算慢，未开始 |
 | `asm.constraints` | 约束对象没有创建入口 |
+| `feature.sweep` | `CommitFeature` 报 `Unable to approximate guide string` |
 | `feature.chamfer_angle` | `ChamferBuilder.Option`/`AngleExp` 赋值无效 |
 | `sketch.constraints` | `ConstraintGeometry` 没有创建入口 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
@@ -174,6 +175,7 @@ nxkit cap boolean.subtract  # A−B → 92000
 nxkit cap boolean.union     # A∪B → 100000（B 在 A 内）
 nxkit cap boolean.intersect # A∩B → 8000
 nxkit cap boolean.two_tools # 一次减两个工具体 → 84000
+nxkit cap boolean.intersect_two # 一次交两个工具体 → 12000（交的是工具并集）
 ```
 
 ### 装配
