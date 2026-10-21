@@ -3631,7 +3631,80 @@ def datum_axis_at(params, workdir, rec):
     return reads
 
 
+def curve_offset_line(params, workdir, rec):
+    """把直线沿 +Y 偏置 10（判据：偏置后起点 y≈10）。"""
+    part = new_part("coff")
+    p = NXOpen.Point3d
+    line = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+    sent = None
+    for name in ("OffsetCurve", "Feature"):
+        try:
+            sent = getattr(NXOpen.Features, name).Null
+            ocb = part.Features.CreateOffsetCurveBuilder(sent)
+            break
+        except Exception:
+            ocb = None
+            continue
+    diag = {}
+    feat = None
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb([line])
+        sec = ocb.CurvesToOffset
+        diag["sec_type"] = type(sec).__name__
+        try:
+            sec.AddToSection([rule], line, None, None,
+                             NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Section.Mode.Create)
+            diag["curves"] = "AddToSection"
+        except Exception as exc:
+            diag["curves"] = "err:%s" % str(exc)[:90]
+        ocb.OffsetDistance.SetFormula("10")
+        diag["distance"] = str(ocb.OffsetDistance.Value)
+        try:
+            ocb.PointOnOffsetPlane = part.Points.CreatePoint(NXOpen.Point3d(0.0, 0.0, 10.0))
+            diag["plane_point"] = "z=10"
+        except Exception as exc:
+            diag["plane_point"] = "err:%s" % str(exc)[:70]
+        try:
+            ocb.Tolerance = 0.01
+            diag["tol"] = 0.01
+        except Exception:
+            pass
+        feat = ocb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            ocb.Destroy()
+        except Exception:
+            pass
+    ys = []
+    if feat is not None:
+        try:
+            for ent in feat.GetEntities():
+                try:
+                    sp = ent.StartPoint
+                    ep = ent.EndPoint
+                    ys.append((round(float(sp.X), 3), round(float(sp.Y), 3),
+                               round(float(sp.Z), 3),
+                               round(float(ep.X), 3), round(float(ep.Y), 3),
+                               round(float(ep.Z), 3)))
+                except Exception:
+                    pass
+        except Exception as exc:
+            diag["entities"] = "err:%s" % str(exc)[:80]
+    reads = {"curve_ok": feat is not None, "entity_count": len(ys),
+             "points": ys[:2], "diag": diag}
+    if ys:
+        import math
+        sp = ys[0]
+        reads["offset_dist"] = round(math.hypot(sp[1], sp[2]), 4)
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "curve_offset_line": curve_offset_line,
     "datum_plane_at": datum_plane_at,
     "datum_axis_at": datum_axis_at,
     "solid_split_by_face": solid_split_by_face,

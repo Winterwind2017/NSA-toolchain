@@ -309,6 +309,10 @@ CAPS: tuple[Cap, ...] = (
         reopen=True),
 
 
+    Cap("curve.offset", "curve", "直线偏置 10（起点 y≈10）", "curve_offset_line",
+        "L1–L2", params={},
+        expect={"curve_ok": True, "entity_count": 1,
+                "offset_dist": {"min": 9.5, "max": 10.5}}, reopen=False),
     Cap("curve.helix", "curve", "螺旋线 Ø40 / 螺距 20 / 3 圈", "curve_helix", "L1–L2",
         params={}, expect={"helix_ok": True, "entity_count": 1}, reopen=False),
     Cap("curve.hyperbola", "curve", "双曲线（半实轴 50 / 半虚轴 25）", "curve_hyperbola", "L1–L3",
