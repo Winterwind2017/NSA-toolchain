@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **123** 条 verified 能力（内核 `nxkit 0.1.0`，commit `c96104f`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **124** 条 verified 能力（内核 `nxkit 0.1.0`，commit `790bbed`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -99,9 +99,9 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **导出**（7） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.parasolid`（L1–L2） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.step_ap214`（L1–L2） `export.stl`（L1–L2） |
 | **测量**（5） | `measure.distance`（L2–L3） `measure.face_area`（L3） `measure.face_single`（L3） `measure.faces_two`（L2–L3） `measure.mass`（L3） |
 | **部件**（4） | `datum.axis`（L1–L2） `datum.plane`（L1–L2） `part.inch`（L1–L3） `part.new`（L1） |
+| **surface**（3） | `surface.bounded_plane`（L1–L2） `surface.ruled`（L1–L2） `surface.through_curves`（L1–L2） |
 | **文件**（2） | `file.roundtrip`（L4） `file.save_copy`（L1–L4） |
 | **拓扑检查**（2） | `body.topo`（L1–L3） `inspect.body_type`（L1–L2） |
-| **surface**（2） | `surface.bounded_plane`（L1–L2） `surface.ruled`（L1–L2） |
 <!-- gen:capabilities:END -->
 
 ## 还没打通（别重复试）
@@ -175,6 +175,7 @@ nxkit cap feature.tube          # 直线做 Ø20 管：31415.93
 ### 草图
 
 ```bash
+nxkit cap surface.through_curves # 三条平行线过曲线曲面（5000）
 nxkit cap surface.bounded_plane  # 4 条线围成有界平面片体
 nxkit cap sketch.rect            # XY 平面草图 + 4 条线（自带 2 条参考线）
 nxkit cap sketch.extrude         # 草图 4 线拉伸 10 → 50000
