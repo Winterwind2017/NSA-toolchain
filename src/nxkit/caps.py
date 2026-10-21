@@ -138,6 +138,23 @@ CAPS: tuple[Cap, ...] = (
         reopen=False),
     Cap("attr.on_body", "attr", "实体上写字符串属性", "attr_on_body", "L2",
         params={}, expect={"body_attr": "v1", "body_count": 1}, reopen=False),
+
+    Cap("measure.face_area", "measure", "六面面积和/周长", "measure_face_area", "L3",
+        params={},
+        expect={"faces": 6, "total_face_area": 16000.0}, reopen=False),
+    Cap("solid.cone", "solid", "Ø40×30 圆锥", "solid_cone", "L1–L3",
+        params={"diameter": 40.0, "height": 30.0},
+        expect={"body_count": 1, "volume_mm3": 12566.370614359172},
+        reopen=False),
+    Cap("solid.sphere", "solid", "Ø40 球", "solid_sphere", "L1–L3",
+        params={"diameter": 40.0},
+        expect={"body_count": 1, "volume_mm3": 33510.32163829112},
+        reopen=False),
+
+    Cap("feature.pattern_grid", "feature", "2×2 矩形阵列", "pattern_grid", "L1–L3",
+        params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=False),
+    Cap("feature.pattern_circular", "feature", "绕 Z 圆周阵列 4 个", "pattern_circular", "L1–L3",
+        params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}

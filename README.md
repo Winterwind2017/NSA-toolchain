@@ -55,19 +55,19 @@ nxkit run                           # 全部，一次 NX 会话
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（30 条，全部真机通过）
+## 能力（35 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
 | part | `part.new` |
-| solid | `block.create` `block.two_bodies` `cylinder.create` |
+| solid | `block.create` `block.two_bodies` `cylinder.create` `cone` `sphere` |
 | boolean | `subtract` `union` `intersect` |
 | curve | `curve.line` `curve.arc` `curve.ellipse` |
 | feature | `extrude.rect` `extrude.ring` |
 | assembly | `asm.add_component` `asm.two_components` |
 | drawing | `drawing.sheet` `drawing.base_view` |
 | attr | `attr.string` `attr.int` `attr.on_body` |
-| measure | `measure.mass` |
+| measure | `measure.mass` `measure.face_area` |
 | inspect | `body.topo` |
 | export | `export.step` `export.iges` `export.acis` |
 | file | `file.roundtrip` |

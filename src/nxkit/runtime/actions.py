@@ -855,6 +855,167 @@ def attr_on_body(params, workdir, rec):
     return reads
 
 
+def measure_face_area(params, workdir, rec):
+    """六个面的面积和 = 16000，面 6。"""
+    part = new_part("facearea")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    faces = list(body.GetFaces())
+    mm = part.MeasureManager
+    mf = mm.NewFaceProperties(_unit(part), _unit(part), 0.99, faces)
+    reads = {"faces": len(faces),
+             "total_face_area": float(mf.Area),
+             "perimeter": float(mf.Perimeter)}
+    _close_part(part)
+    return reads
+
+
+def solid_cone(params, workdir, rec):
+    part = new_part("cone")
+    d = float(params.get("diameter", 40.0))
+    h = float(params.get("height", 30.0))
+    cb = part.Features.CreateConeBuilder(NXOpen.Features.Cone.Null)
+    try:
+        for name in ("BottomDiameter", "BaseDiameter", "Diameter"):
+            if hasattr(cb, name):
+                try:
+                    getattr(cb, name).SetFormula(str(d))
+                    break
+                except Exception:
+                    continue
+        try:
+            cb.Height.SetFormula(str(h))
+        except Exception:
+            pass
+        try:
+            cb.Origin = NXOpen.Point3d(0.0, 0.0, 0.0)
+            cb.Direction = NXOpen.Vector3d(0.0, 0.0, 1.0)
+        except Exception:
+            pass
+        feat = cb.CommitFeature()
+    finally:
+        try:
+            cb.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads = {"body_count": 1}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
+def solid_sphere(params, workdir, rec):
+    part = new_part("sph")
+    d = float(params.get("diameter", 40.0))
+    sb = part.Features.CreateSphereBuilder(NXOpen.Features.Sphere.Null)
+    try:
+        for name in ("Diameter", "SphereDiameter"):
+            if hasattr(sb, name):
+                try:
+                    getattr(sb, name).SetFormula(str(d))
+                    break
+                except Exception:
+                    continue
+        try:
+            sb.Center = NXOpen.Point3d(0.0, 0.0, 0.0)
+        except Exception:
+            pass
+        feat = sb.CommitFeature()
+    finally:
+        try:
+            sb.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads = {"body_count": 1}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
+def pattern_grid(params, workdir, rec):
+    """2×2 矩形阵列（X 间距 120，Y 间距 80）→ 实体 4、体积 400000。"""
+    part = new_part("grid")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    pb = part.Features.CreatePatternFeatureBuilder(NXOpen.Features.Feature.Null)
+    try:
+        pb.FeatureList.Add([feat])
+        svc = pb.PatternService
+        try:
+            svc.PatternType = svc.PatternEnum.Linear
+        except Exception:
+            pass
+        rd = svc.RectangularDefinition
+        rd.XDirection = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            rd.UseYDirectionToggle = True
+        except Exception:
+            pass
+        rd.YDirection = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 1.0, 0.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        xs, ys = rd.XSpacing, rd.YSpacing
+        xs.NCopies.SetFormula("2")
+        xs.PitchDistance.SetFormula("120")
+        ys.NCopies.SetFormula("2")
+        ys.PitchDistance.SetFormula("80")
+        cf = pb.CommitFeature()
+        reads = {"feature": str(cf.GetFeatureName())}
+    finally:
+        try:
+            pb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def pattern_circular(params, workdir, rec):
+    """绕 Z 轴圆周阵列 4 个（各 90°）→ 实体 4、体积 400000。"""
+    part = new_part("circ")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    pb = part.Features.CreatePatternFeatureBuilder(NXOpen.Features.Feature.Null)
+    try:
+        pb.FeatureList.Add([feat])
+        svc = pb.PatternService
+        svc.PatternType = svc.PatternEnum.Circular
+        cd = svc.CircularDefinition
+        cd.RotationAxis = part.Axes.CreateAxis(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            cd.RotationCenter = part.Points.CreatePoint(
+                NXOpen.Point3d(0.0, 0.0, 0.0))
+        except Exception:
+            pass
+        sp = cd.AngularSpacing
+        sp.NCopies.SetFormula("4")
+        try:
+            sp.PitchAngle.SetFormula("90")
+        except Exception:
+            sp.PitchDistance.SetFormula("90")
+        cf = pb.CommitFeature()
+        reads = {"feature": str(cf.GetFeatureName())}
+    finally:
+        try:
+            pb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -888,6 +1049,11 @@ ACTIONS = {
     "export_acis": export_acis,
     "curve_ellipse": curve_ellipse,
     "attr_on_body": attr_on_body,
+    "measure_face_area": measure_face_area,
+    "solid_cone": solid_cone,
+    "solid_sphere": solid_sphere,
+    "pattern_grid": pattern_grid,
+    "pattern_circular": pattern_circular,
 }
 
 
