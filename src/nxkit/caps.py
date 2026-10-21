@@ -46,6 +46,10 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("surface.offset", "surface", "片体法向偏置 5（2 片 / 间距 5）", "surface_offset",
+        "L1–L2", params={},
+        expect={"sheet_count": 2,
+                "gap": {"min": 4.9, "max": 5.1}}, reopen=False),
     Cap("feature.hole", "feature", "孔：顶面 Ø20 通孔（体积 93716.8）", "feature_hole",
         "L1–L3", params={},
         expect={"body_count": 1, "faces": 7,

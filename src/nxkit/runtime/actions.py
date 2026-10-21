@@ -4257,7 +4257,64 @@ def feature_hole(params, workdir, rec):
     _close_part(part)
     return reads
 
+def surface_offset(params, workdir, rec):
+    """片体面沿法向偏置 5：得到第 2 张片体，两面间距 5。"""
+    part = new_part("soffv")
+    p = NXOpen.Point3d
+    pts = [p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0),
+           p(100.0, 50.0, 0.0), p(0.0, 50.0, 0.0)]
+    lines = [part.Curves.CreateLine(pts[i], pts[(i + 1) % 4]) for i in range(4)]
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        bp.BoundingCurves.AddToSection(
+            [part.ScRuleFactory.CreateRuleCurveDumb(lines)], lines[0],
+            None, None, pts[0], NXOpen.Section.Mode.Create)
+        bp.CommitFeature()
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    sheets = [b for b in _bodies_of(part) if b.IsSheetBody]
+    if not sheets:
+        raise RuntimeError("片体没造出来")
+    base_face = list(sheets[0].GetFaces())[0]
+    vb = part.Features.CreateVariableOffsetBuilder(NXOpen.Features.VariableOffset.Null)
+    diag = {}
+    try:
+        vb.Face.Value = base_face
+        diag["face"] = "ok"
+        vb.DistanceTolerance = 0.1
+        vb.IsApplyToAll = True
+        for nm in ("OffsetAtA", "OffsetAtB", "OffsetAtC", "OffsetAtD"):
+            try:
+                getattr(vb, nm).SetFormula("5")
+            except Exception:
+                pass
+        vb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            vb.Destroy()
+        except Exception:
+            pass
+    sheets2 = [b for b in _bodies_of(part) if b.IsSheetBody]
+    reads = {"sheet_count": len(sheets2), "diag": diag}
+    if len(sheets2) >= 2:
+        f1 = list(sheets2[0].GetFaces())[0]
+        f2 = list(sheets2[1].GetFaces())[0]
+        try:
+            d = part.MeasureManager.NewDistance(_unit(part), False, f1, f2)
+            reads["gap"] = round(float(d.Value), 4)
+        except Exception as exc:
+            reads["gap_err"] = str(exc)[:80]
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "surface_offset": surface_offset,
     "feature_hole": feature_hole,
     "solid_trim_body": solid_trim_body,
     "feature_rib": feature_rib,
