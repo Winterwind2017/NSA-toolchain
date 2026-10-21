@@ -2323,7 +2323,39 @@ def sketch_dimension(params, workdir, rec):
     return reads
 
 
+def _sketch_two_lines(part):
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+    l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0))
+    l2 = part.Curves.CreateLine(p(0.0, 40.0, 0.0), p(100.0, 40.0, 0.0))
+    for ln in (l1, l2):
+        sketch.AddGeometry(ln)
+    return sketch, l1, l2
+
+
+def sketch_fixed(params, workdir, rec):
+    """把一条线固定（Fixed 约束）。"""
+    part = new_part("skfix")
+    sketch, l1, l2 = _sketch_two_lines(part)
+    g = NXOpen.Sketch.ConstraintGeometry()
+    g.Geometry = l1
+    g.PointType = NXOpen.Sketch.ConstraintPointType.NotSet
+    con = sketch.CreateFixedConstraint(g)
+    reads = {"con_ok": con is not None,
+             "inferred": bool(con.IsInferred) if con is not None else None}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_fixed": sketch_fixed,
     "sketch_dimension": sketch_dimension,
     "sketch_constraint_kind": sketch_constraint_kind,
     "sketch_constraint": sketch_constraint,

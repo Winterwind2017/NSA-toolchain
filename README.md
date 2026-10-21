@@ -76,12 +76,12 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 判据只比 **NX 里读回来的读数**（`MeasureManager` / `GetBodies` / 属性），
 不看返回值、不看异常。
 
-## 能力（77 条，全部真机通过）
+## 能力（78 条，全部真机通过）
 
 | 族 | 能力 |
 |---|---|
 | part | `part.new` |
-| sketch | `sketch.rect` `sketch.extrude` `sketch.circle_extrude` `sketch.constraint` `sketch.horizontal` `sketch.vertical` `sketch.equal_length` `sketch.perpendicular` `sketch.dimension` |
+| sketch | `sketch.rect` `sketch.extrude` `sketch.circle_extrude` `sketch.constraint` `sketch.horizontal` `sketch.vertical` `sketch.equal_length` `sketch.perpendicular` `sketch.dimension` `sketch.fixed` |
 | solid | `block.create` `block.two_bodies` `cylinder.create` `cone` `sphere` `cone_frustum` |
 | boolean | `subtract` `union` `intersect` `two_tools` `intersect_two` |
 | curve | `curve.line` `curve.arc` `curve.ellipse` `curve.hyperbola` `curve.parabola` |

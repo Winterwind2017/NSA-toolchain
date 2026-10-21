@@ -337,6 +337,8 @@ CAPS: tuple[Cap, ...] = (
         expect={"con_ok": True, "geom_count": 2}, reopen=False),
     Cap("sketch.dimension", "sketch", "整圆直径尺寸 50", "sketch_dimension", "L1–L2",
         params={}, expect={"dim_ok": True, "expr_value": 50.0}, reopen=False),
+    Cap("sketch.fixed", "sketch", "固定约束", "sketch_fixed", "L1–L2",
+        params={}, expect={"con_ok": True, "inferred": False}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:
