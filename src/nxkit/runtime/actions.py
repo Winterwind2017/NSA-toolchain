@@ -3988,7 +3988,51 @@ def inspect_face_types(params, workdir, rec):
     _close_part(part)
     return reads
 
+def inspect_body_state(params, workdir, rec):
+    """实体/片体判定：块是 solid 非 sheet，片体反之。"""
+    part = new_part("bstate")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    p = NXOpen.Point3d
+    pts = [p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0),
+           p(100.0, 50.0, 0.0), p(0.0, 50.0, 0.0)]
+    lines = [part.Curves.CreateLine(pts[i], pts[(i + 1) % 4]) for i in range(4)]
+    bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+    try:
+        bp.BoundingCurves.AddToSection(
+            [part.ScRuleFactory.CreateRuleCurveDumb(lines)], lines[0],
+            None, None, pts[0], NXOpen.Section.Mode.Create)
+        bp.CommitFeature()
+    finally:
+        try:
+            bp.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    solids = [b for b in bodies if b.IsSolidBody]
+    sheets = [b for b in bodies if b.IsSheetBody]
+    reads = {"body_count": len(bodies), "solid_count": len(solids),
+             "sheet_count": len(sheets), "total_ok": len(solids) + len(sheets) == len(bodies)}
+    _close_part(part)
+    return reads
+
+def inspect_edge_count(params, workdir, rec):
+    """边计数：块 12 边、圆柱 3 边（两块料分别统计）。"""
+    part = new_part("ecount")
+    blk = make_block(part, 0, 0, 0, 100, 50, 20)
+    b1 = blk.GetBodies()[0]
+    block_edges = len(list(b1.GetEdges()))
+    cyl = make_cylinder(part, 200.0, 0.0, 0.0, 25.0, 80.0)
+    b2 = cyl.GetBodies()[0]
+    cyl_edges = len(list(b2.GetEdges()))
+    cyl_faces = len(list(b2.GetFaces()))
+    reads = {"block_edges": block_edges, "block_faces": len(list(b1.GetFaces())),
+             "cyl_edges": cyl_edges, "cyl_faces": cyl_faces}
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "inspect_edge_count": inspect_edge_count,
+    "inspect_body_state": inspect_body_state,
     "inspect_face_types": inspect_face_types,
     "measure_face_perimeter": measure_face_perimeter,
     "surface_sew": surface_sew,

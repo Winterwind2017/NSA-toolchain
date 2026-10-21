@@ -46,6 +46,14 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("inspect.edge_count", "inspect", "边计数（块 12 / 圆柱 3）",
+        "inspect_edge_count", "L1–L2", params={},
+        expect={"block_edges": 12, "block_faces": 6,
+                "cyl_edges": 2, "cyl_faces": 3}, reopen=False),
+    Cap("inspect.body_state", "inspect", "实体/片体判定（1 solid + 1 sheet）",
+        "inspect_body_state", "L1–L2", params={},
+        expect={"body_count": 2, "solid_count": 1, "sheet_count": 1,
+                "total_ok": True}, reopen=False),
     Cap("inspect.face_types", "inspect", "圆柱体面类型分类（2 平面 + 1 圆柱面）",
         "inspect_face_types", "L1–L2", params={},
         expect={"face_total": 3, "planar": 2, "cylindrical": 1}, reopen=False),
