@@ -2894,7 +2894,27 @@ def asm_constraint_touch(params, workdir, rec):
     return reads
 
 
+def measure_distance(params, workdir, rec):
+    """两个 100×50 面之间的距离 = 20。"""
+    part = new_part("dist")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    faces = list(feat.GetBodies()[0].GetFaces())
+    big = [f for f in faces if abs(_face_area(part, [f]) - 5000.0) < 1.0][:2]
+    unit = None
+    for name in ("MilliMeter", "Millimeters", "Millimeter"):
+        try:
+            unit = part.UnitCollection.FindObject(name)
+            break
+        except Exception:
+            continue
+    md = part.MeasureManager.NewDistance(unit, False, big[0], big[1])
+    reads = {"measured": round(float(md.Value), 6), "faces_used": len(big)}
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "measure_distance": measure_distance,
     "asm_constraint_touch": asm_constraint_touch,
     "sketch_linear_dim": sketch_linear_dim,
     "feature_shell_volume": feature_shell_volume,

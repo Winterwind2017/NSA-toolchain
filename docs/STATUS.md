@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**104** 条（一次会话，连跑 2 次全绿）
+- 真机通过能力：**105** 条（一次会话，连跑 2 次全绿）
 - 其中带 L4（存盘→重开→复测）：**42** 条
-- 未打通（有证据）：**16** 项
+- 未打通（有证据）：**15** 项
 - 本机许可 feature：**4420** 个
 
 ## 按许可档位
@@ -15,7 +15,7 @@
 |---|---:|
 | assemblies | 8 |
 | drafting | 10 |
-| gateway | 26 |
+| gateway | 27 |
 | solid_modeling | 60 |
 
 ## 按族
@@ -31,7 +31,7 @@
 | export | 6 | 0 |
 | solid | 6 | 6 |
 | curve | 5 | 0 |
-| measure | 4 | 1 |
+| measure | 5 | 1 |
 | file | 2 | 1 |
 | inspect | 2 | 0 |
 | part | 2 | 0 |
@@ -42,9 +42,8 @@
 | 能力 | 卡在哪里 |
 |---|---|
 | `cam.setup` | `part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder |
-| `feature.hole` | `CreateHolePackageBuilder` 要 `HolePackage.Null` 哨兵，参数未摸清；**通孔已用「圆柱 + 布尔差」实现**（`feature.hole_cyl`） |
+| `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝* |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 |
-| `measure.distance` | `MeasureDistance` 没有 `Distance` 属性，`Information()` 返回 `None`；数值在 `CreateFeature()` 产出的 `Measure` 表达式里，未打通 |
 | `feature.mirror` | `MirrorFeatureBuilder.Plane` **只读**（只能 `PlaneOption` + `PlaneConstructor`），未找到可写入口 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `feature.rib` | `part.Features` 上**没有 `CreateRibBuilder`**（`CreateRpoBuilder` 倒是存在）；stub 里的 RibBuilder 类拿不到实例 |
@@ -56,7 +55,7 @@
 | `drawing.section_view` | 三条入口都不通：`part.SectionLines` 不存在；`CreateSectionViewBuilder` 需要 SectionLine/SectionView 对象；`CreateSectionInViewBuilder()` 只暴露 `Views`（SelectObjectList），不画剖切线时 `Co |
 | `drawing.projected_view` | `CreateProjectedViewBuilder(ProjectedView.Null)` 的 `Parent` 只读、`ParentView` 不存在 |
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
-| `feature.hole` | H olePackageBuilder 能建；`HolePosition` 是 Section，缺"孔位点"选择规则（ScRuleFactory 无 point 规则） |
+| `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝* |
 
 ## 怎么继续扩
 

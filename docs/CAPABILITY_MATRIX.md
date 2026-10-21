@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **104** 条，全部真机通过；其中 **42** 条带 L4（存盘 → 重开 → 复测）。
+总计 **105** 条，全部真机通过；其中 **42** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -15,7 +15,7 @@
 | export | 6 | 0 | gateway |
 | solid | 6 | 6 | solid_modeling |
 | curve | 5 | 0 | solid_modeling |
-| measure | 4 | 1 | gateway |
+| measure | 5 | 1 | gateway |
 | file | 2 | 1 | gateway |
 | inspect | 2 | 0 | gateway |
 | part | 2 | 0 | gateway |
@@ -27,7 +27,7 @@
 |---|---:|
 | assemblies | 8 |
 | drafting | 10 |
-| gateway | 26 |
+| gateway | 27 |
 | solid_modeling | 60 |
 
 ## 全部能力
@@ -129,6 +129,7 @@
 | `part.inch` | part | L1–L3 | — | gateway |
 | `export.step_ap214` | export | L1–L2 | — | gateway |
 | `measure.faces_two` | measure | L2–L3 | — | gateway |
+| `measure.distance` | measure | L2–L3 | — | gateway |
 | `asm.five_components` | assembly | L1–L2 | — | assemblies |
 | `asm.component_names` | assembly | L1–L2 | — | assemblies |
 | `file.save_copy` | file | L1–L4 | — | gateway |

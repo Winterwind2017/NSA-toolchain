@@ -388,6 +388,8 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"picked": 2,
                            "two_face_area": {"min": 9990.0, "max": 10010.0}},
         reopen=False),
+    Cap("measure.distance", "measure", "两个大面之间距离 20", "measure_distance", "L2–L3",
+        params={}, expect={"measured": 20.0, "faces_used": 2}, reopen=False),
     Cap("asm.five_components", "assembly", "装配插 5 个组件", "asm_five_components", "L1–L2",
         params={}, expect={"components": 5}, reopen=False),
     Cap("asm.component_names", "assembly", "组件名保留（AAA/BBB/CCC）", "asm_component_names", "L1–L2",

@@ -16,7 +16,6 @@
 | `feature.chamfer` | `CreateChamferBuilder(...).SmartCollector` 是 **None**，没有可写的边集合；直接 `CommitFeature()` 报 `Referenced edge does not exist` | 需要找到边选择的正确挂点（`SelectEdge`/selection intent） |
 | `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝**点/面/列表（`No overload matches`），`CommitFeature()` 报 `Hole position not found. Specify a position.` | 需要点位 Section 的正确喂法 |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 | 依赖基础视图（已通） |
-| `measure.distance` | `MeasureDistance` 没有 `Distance` 属性，`Information()` 返回 `None`；数值在 `CreateFeature()` 产出的 `Measure` 表达式里，未打通 | 依赖 `Measure.CreateFeature` |
 | `feature.mirror` | `MirrorFeatureBuilder.Plane` **只读**（只能 `PlaneOption` + `PlaneConstructor`），未找到可写入口 | 需要 PlaneConstructor 用法 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints`（解算） | 约束对象 + 两个面参考已能建（见能力 `asm.constraint_refs`），但 `GetConstraintStatus()` 仍是 `NewlyCreated(0)`，`SolvePostponedConstraints()` 也不推成 Solved；另外 `CreateConstraintReference(geometry, movable_object, uses_axis, is_indirect)` 的**参数顺序与文档相反**（先几何后组件） | 需要正确的求解触发方式 |
