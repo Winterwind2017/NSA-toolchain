@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 138
+    "verified": 139
   },
-  "generated_at": "2026-10-22T02:45:31",
+  "generated_at": "2026-10-22T02:50:35",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -55,6 +55,7 @@
     "datum.axis": "L1–L2",
     "datum.plane": "L1–L2",
     "drawing.base_view": "L1–L3",
+    "drawing.dimension": "L1–L2",
     "drawing.projected_view": "L1–L2",
     "drawing.second_sheet": "L1–L2",
     "drawing.sheet": "L1–L2",
@@ -195,6 +196,7 @@
     "datum.axis": "gateway",
     "datum.plane": "gateway",
     "drawing.base_view": "drafting",
+    "drawing.dimension": "drafting",
     "drawing.projected_view": "drafting",
     "drawing.second_sheet": "drafting",
     "drawing.sheet": "drafting",
@@ -315,10 +317,6 @@
       "reason": "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"
     },
     {
-      "id": "drawing.dimension",
-      "reason": "part.Dimensions 的创建签名与视图绑定未验证"
-    },
-    {
       "id": "cam.setup",
       "reason": "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"
     },
@@ -349,7 +347,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "45e4e76",
+    "kernel_commit": "a0f1718",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -396,6 +394,7 @@
     "datum.axis": "part",
     "datum.plane": "part",
     "drawing.base_view": "drawing",
+    "drawing.dimension": "drawing",
     "drawing.projected_view": "drawing",
     "drawing.second_sheet": "drawing",
     "drawing.sheet": "drawing",
