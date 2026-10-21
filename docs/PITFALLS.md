@@ -110,3 +110,10 @@
 （传 `1` 报 "First parameter is invalid"）。只设 `DraftAngle = 5` 而 `DraftOption`
 仍是默认时，**体积一丝不变**（50000 → 仍然是 50000），是"假成功"的典型。
 设好之后 100×50×10 带 5° 拔模 = **48697.8757**。
+
+## 十三、布尔后的"零体积幽灵实体"
+
+`feature.cross_hole`（管道求差）体积正确（68584.07），但 `_bodies_of` 数出 **2 个实体**：
+第二个实体体积为 0（被消耗的工具体的残留记录）。`RetainTool=False` + `RetainTarget=True`
+反而变成 3 个实体、体积翻倍（100000 + 68584），更糟。
+处理方式：这类复合能力**不判 body_count**，只判体积（并保留 body_count 在 reads 里备查）。

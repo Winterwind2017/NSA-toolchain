@@ -2068,7 +2068,55 @@ def feature_extrude_taper(params, workdir, rec):
     return reads
 
 
+def feature_cross_hole(params, workdir, rec):
+    """块上横向 Ø20 通孔（管道 + 布尔差）→ 68584.07。"""
+    part = new_part("cross")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    p = NXOpen.Point3d
+    line = part.Curves.CreateLine(p(-10.0, 25.0, 10.0), p(110.0, 25.0, 10.0))
+    secs = part.Sections.CreateSectionsUsingCurves(
+        [line], NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    tb = part.Features.CreateTubeBuilder(NXOpen.Features.Tube.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb([line])
+        tb.PathSection.AddToSection([rule], line, None, None,
+                                    NXOpen.Point3d(0.0, 0.0, 0.0),
+                                    NXOpen.Section.Mode.Create)
+        tb.OuterDiameter.SetFormula("20")
+        tb.Tolerance = 0.01
+        tube_feat = tb.CommitFeature()
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    tool = tube_feat.GetBodies()[0]
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Subtract
+        bb.Target = fa.GetBodies()[0]
+        bb.Tools.Add([tool])
+        bb.CommitFeature()
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "cross.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    if b2:
+        reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"])
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "feature_cross_hole": feature_cross_hole,
     "feature_extrude_taper": feature_extrude_taper,
     "feature_boss": feature_boss,
     "asm_nested": asm_nested,

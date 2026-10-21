@@ -306,6 +306,9 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 1, "faces": 6,
                            "volume_mm3": {"min": 48600.0, "max": 48800.0}},
         reopen=True),
+    Cap("feature.cross_hole", "feature", "横向 Ø20 通孔（管道求差）", "feature_cross_hole", "L1–L3",
+        params={}, expect={"volume_mm3": {"min": 68500.0, "max": 68700.0}},
+        reopen=True),
 )
 
 def licenses() -> list[tuple[str, str]]:
