@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 105
   },
-  "generated_at": "2026-10-21T23:08:28",
+  "generated_at": "2026-10-21T23:08:49",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -241,10 +241,6 @@
       "reason": "part.Dimensions 的创建签名与视图绑定未验证"
     },
     {
-      "id": "measure.distance",
-      "reason": "MeasureDistance 无 Distance 属性，Information() 返回 None"
-    },
-    {
       "id": "cam.setup",
       "reason": "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"
     },
@@ -299,7 +295,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "449a808",
+    "kernel_commit": "a54cb57",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
