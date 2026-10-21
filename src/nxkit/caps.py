@@ -323,6 +323,18 @@ CAPS: tuple[Cap, ...] = (
     Cap("sketch.constraint", "sketch", "两条线加重合约束", "sketch_constraint", "L1–L2",
         params={}, expect={"coincidence_ok": True, "inferred": False},
         reopen=False),
+    Cap("sketch.horizontal", "sketch", "水平约束", "sketch_constraint_kind", "L1–L2",
+        params={"kind": "horizontal"},
+        expect={"con_ok": True, "inferred": False, "geom_count": 1}, reopen=False),
+    Cap("sketch.vertical", "sketch", "竖直约束", "sketch_constraint_kind", "L1–L2",
+        params={"kind": "vertical"},
+        expect={"con_ok": True, "inferred": False, "geom_count": 1}, reopen=False),
+    Cap("sketch.equal_length", "sketch", "等长约束", "sketch_constraint_kind", "L1–L2",
+        params={"kind": "equal"},
+        expect={"con_ok": True, "geom_count": 2}, reopen=False),
+    Cap("sketch.perpendicular", "sketch", "垂直约束", "sketch_constraint_kind", "L1–L2",
+        params={"kind": "perpendicular"},
+        expect={"con_ok": True, "geom_count": 2}, reopen=False),
 )
 
 def licenses() -> list[tuple[str, str]]:

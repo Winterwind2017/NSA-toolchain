@@ -2230,7 +2230,57 @@ def sketch_constraint(params, workdir, rec):
     return reads
 
 
+def sketch_constraint_kind(params, workdir, rec):
+    """水平/竖直/等长/垂直约束（kind 区分）。"""
+    kind = str(params.get("kind", "horizontal"))
+    part = new_part("skc_" + kind)
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+    l1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 10.0, 0.0))
+    l2 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(20.0, 60.0, 0.0))
+    for ln in (l1, l2):
+        sketch.AddGeometry(ln)
+
+    def cg(curve):
+        g = NXOpen.Sketch.ConstraintGeometry()
+        g.Geometry = curve
+        g.PointType = NXOpen.Sketch.ConstraintPointType.NotSet
+        return g
+
+    if kind == "horizontal":
+        con = sketch.CreateHorizontalConstraint(cg(l1))
+    elif kind == "vertical":
+        con = sketch.CreateVerticalConstraint(cg(l2))
+    elif kind == "equal":
+        con = sketch.CreateEqualLengthConstraint(cg(l1), cg(l2))
+    elif kind == "perpendicular":
+        con = sketch.CreatePerpendicularConstraint(cg(l1), cg(l2))
+    else:
+        raise ValueError("未知约束类型 %r" % kind)
+
+    reads = {"kind": kind, "con_ok": con is not None,
+             "inferred": bool(con.IsInferred) if con is not None else None}
+    try:
+        reads["geom_count"] = len(list(con.GetGeometry()))
+    except Exception:
+        reads["geom_count"] = None
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_constraint_kind": sketch_constraint_kind,
     "sketch_constraint": sketch_constraint,
     "attr_double": attr_double,
     "attr_logical": attr_logical,
