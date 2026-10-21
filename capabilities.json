@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 105
+    "verified": 106
   },
-  "generated_at": "2026-10-21T23:08:49",
+  "generated_at": "2026-10-21T23:12:09",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -87,6 +87,7 @@
     "feature.shell": "L1–L3",
     "feature.shell_volume": "L1–L3",
     "feature.stack_blocks": "L1–L3",
+    "feature.thicken": "L1–L3",
     "feature.tube": "L1–L3",
     "file.roundtrip": "L4",
     "file.save_copy": "L1–L4",
@@ -194,6 +195,7 @@
     "feature.shell": "solid_modeling",
     "feature.shell_volume": "solid_modeling",
     "feature.stack_blocks": "solid_modeling",
+    "feature.thicken": "solid_modeling",
     "feature.tube": "solid_modeling",
     "file.roundtrip": "gateway",
     "file.save_copy": "gateway",
@@ -279,10 +281,6 @@
     {
       "id": "export.parasolid",
       "reason": "四种方式全报 no valid export objects"
-    },
-    {
-      "id": "feature.thicken",
-      "reason": "出 2 个片体或厚度变 3300 mm，语义不对"
     },
     {
       "id": "drawing.projected_view",
@@ -374,6 +372,7 @@
     "feature.shell": "feature",
     "feature.shell_volume": "feature",
     "feature.stack_blocks": "feature",
+    "feature.thicken": "feature",
     "feature.tube": "feature",
     "file.roundtrip": "file",
     "file.save_copy": "file",

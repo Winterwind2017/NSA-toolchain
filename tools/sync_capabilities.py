@@ -48,7 +48,6 @@ PENDING = [
     ("feature.rib", "part.Features 上没有 CreateRibBuilder"),
     ("export.dxf", "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"),
     ("export.parasolid", "四种方式全报 no valid export objects"),
-    ("feature.thicken", "出 2 个片体或厚度变 3300 mm，语义不对"),
     ("drawing.projected_view", "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"),
     ("drawing.section_view", "三条入口都不通：无 SectionLines、无 SectionLine 创建、SectionInView 提交为 None"),
 ]
