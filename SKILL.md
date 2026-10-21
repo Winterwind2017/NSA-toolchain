@@ -84,12 +84,12 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **76** 条 verified 能力（内核 `nxkit 0.1.0`，commit `1a3e80a`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **77** 条 verified 能力（内核 `nxkit 0.1.0`，commit `f838f79`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
 | **特征（拉伸）**（24） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.boss`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_edge`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.cross_hole`（L1–L3） `feature.edge_blend`（L1–L3） `feature.edge_blend_all`（L1–L3） `feature.extrude_taper`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_csk`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.offset_face`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.revolve`（L1–L3） `feature.shell`（L1–L3） `feature.stack_blocks`（L1–L3） `feature.tube`（L1–L3） |
-| **sketch**（8） | `sketch.circle_extrude`（L1–L3） `sketch.constraint`（L1–L2） `sketch.equal_length`（L1–L2） `sketch.extrude`（L1–L3） `sketch.horizontal`（L1–L2） `sketch.perpendicular`（L1–L2） `sketch.rect`（L1–L2） `sketch.vertical`（L1–L2） |
+| **sketch**（9） | `sketch.circle_extrude`（L1–L3） `sketch.constraint`（L1–L2） `sketch.dimension`（L1–L2） `sketch.equal_length`（L1–L2） `sketch.extrude`（L1–L3） `sketch.horizontal`（L1–L2） `sketch.perpendicular`（L1–L2） `sketch.rect`（L1–L2） `sketch.vertical`（L1–L2） |
 | **属性**（6） | `attr.double`（L2） `attr.int`（L2） `attr.logical`（L2） `attr.on_body`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） |
 | **实体**（6） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.cone_frustum`（L1–L3） `solid.sphere`（L1–L3） |
 | **装配**（5） | `asm.add_component`（L1–L2） `asm.four_components`（L1–L2） `asm.nested`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
@@ -181,6 +181,7 @@ nxkit cap sketch.horizontal      # 水平约束
 nxkit cap sketch.vertical        # 竖直约束
 nxkit cap sketch.equal_length    # 等长约束
 nxkit cap sketch.perpendicular   # 垂直约束
+nxkit cap sketch.dimension       # 整圆直径尺寸 50
 ```
 
 ### 布尔
