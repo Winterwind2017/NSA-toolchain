@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 123
   },
-  "generated_at": "2026-10-22T00:32:52",
+  "generated_at": "2026-10-22T00:36:24",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -265,6 +265,10 @@
   },
   "pending": [
     {
+      "id": "curve.intersection",
+      "reason": "FirstSet/SecondSet 收对象但 Commit 报 No objects"
+    },
+    {
       "id": "feature.revolve_datum",
       "reason": "RevolveBuilder.Axis 只认 NXOpen.Axis，DatumAxis 被拒"
     },
@@ -331,7 +335,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "e11fcab",
+    "kernel_commit": "c96104f",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
