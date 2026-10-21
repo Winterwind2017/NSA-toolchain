@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 12,
-    "verified": 40
+    "verified": 41
   },
-  "generated_at": "2026-10-21T20:40:18",
+  "generated_at": "2026-10-21T20:43:16",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.two_components": "L1–L4",
@@ -47,6 +47,7 @@
     "feature.pattern_grid": "L1–L3",
     "feature.pattern_linear": "L1–L3",
     "feature.pocket": "L1–L3",
+    "feature.shell": "L1–L3",
     "file.roundtrip": "L4",
     "measure.face_area": "L3",
     "measure.mass": "L3",
@@ -58,6 +59,14 @@
     {
       "id": "feature.hole",
       "reason": "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"
+    },
+    {
+      "id": "feature.revolve",
+      "reason": "CommitFeature 内存访问违例"
+    },
+    {
+      "id": "feature.mirror",
+      "reason": "MirrorFeatureBuilder.Plane 只读"
     },
     {
       "id": "drawing.dimension",
@@ -102,7 +111,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "0626ac0",
+    "kernel_commit": "5762609",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -142,6 +151,7 @@
     "feature.pattern_grid": "feature",
     "feature.pattern_linear": "feature",
     "feature.pocket": "feature",
+    "feature.shell": "feature",
     "file.roundtrip": "file",
     "measure.face_area": "measure",
     "measure.mass": "measure",
