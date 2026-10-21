@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 125
+    "verified": 126
   },
-  "generated_at": "2026-10-22T00:41:13",
+  "generated_at": "2026-10-22T00:45:30",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -110,6 +110,7 @@
     "measure.face_single": "L3",
     "measure.faces_two": "L2–L3",
     "measure.mass": "L3",
+    "measure.perimeter": "L1–L2",
     "part.inch": "L1–L3",
     "part.new": "L1",
     "sketch.circle_extrude": "L1–L3",
@@ -237,6 +238,7 @@
     "measure.face_single": "gateway",
     "measure.faces_two": "gateway",
     "measure.mass": "gateway",
+    "measure.perimeter": "gateway",
     "part.inch": "gateway",
     "part.new": "gateway",
     "sketch.circle_extrude": "solid_modeling",
@@ -339,7 +341,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "fd65404",
+    "kernel_commit": "c51c280",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -441,6 +443,7 @@
     "measure.face_single": "measure",
     "measure.faces_two": "measure",
     "measure.mass": "measure",
+    "measure.perimeter": "measure",
     "part.inch": "part",
     "part.new": "part",
     "sketch.circle_extrude": "sketch",
