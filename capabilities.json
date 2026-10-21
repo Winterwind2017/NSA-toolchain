@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 135
+    "verified": 136
   },
-  "generated_at": "2026-10-22T02:32:43",
+  "generated_at": "2026-10-22T02:37:38",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -43,6 +43,7 @@
     "boolean.union": "L1–L4",
     "boolean.unite_three": "L1–L4",
     "curve.arc": "L1–L3",
+    "curve.combined_projection": "L1–L2",
     "curve.ellipse": "L1–L3",
     "curve.helix": "L1–L2",
     "curve.hyperbola": "L1–L3",
@@ -180,6 +181,7 @@
     "boolean.union": "solid_modeling",
     "boolean.unite_three": "solid_modeling",
     "curve.arc": "solid_modeling",
+    "curve.combined_projection": "solid_modeling",
     "curve.ellipse": "solid_modeling",
     "curve.helix": "solid_modeling",
     "curve.hyperbola": "solid_modeling",
@@ -289,10 +291,6 @@
   },
   "pending": [
     {
-      "id": "curve.intersection",
-      "reason": "FirstSet/SecondSet 收对象但 Commit 报 No objects"
-    },
-    {
       "id": "feature.revolve_datum",
       "reason": "RevolveBuilder.Axis 只认 NXOpen.Axis，DatumAxis 被拒"
     },
@@ -351,7 +349,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "d490fff",
+    "kernel_commit": "508c387",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -386,6 +384,7 @@
     "boolean.union": "boolean",
     "boolean.unite_three": "boolean",
     "curve.arc": "curve",
+    "curve.combined_projection": "curve",
     "curve.ellipse": "curve",
     "curve.helix": "curve",
     "curve.hyperbola": "curve",
