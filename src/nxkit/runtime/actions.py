@@ -1016,6 +1016,78 @@ def pattern_circular(params, workdir, rec):
     return reads
 
 
+def export_step_ap203(params, workdir, rec):
+    part = new_part("st203")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    path = os.path.join(workdir, "export_ap203.step")
+    if os.path.exists(path):
+        os.remove(path)
+    creator = session().DexManager.CreateStepCreator()
+    try:
+        creator.OutputFile = path
+        try:
+            creator.ExportAs = NXOpen.StepCreator.ExportAsOption.Ap203
+        except Exception:
+            pass
+        creator.Commit()
+    finally:
+        try:
+            creator.Destroy()
+        except Exception:
+            pass
+    exists = os.path.exists(path)
+    head = ""
+    if exists:
+        with open(path, "rb") as fh:
+            head = fh.read(12).decode("latin-1", "replace")
+    reads = {"export_ok": bool(exists and os.path.getsize(path) > 1000),
+             "export_head": head}
+    _close_part(part)
+    return reads
+
+
+def attr_on_feature(params, workdir, rec):
+    part = new_part("attrf")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    feat.SetAttribute("NXKIT_FEAT", "f1")
+    reads = {"feature_attr": str(feat.GetStringAttribute("NXKIT_FEAT")),
+             "feature_name": str(feat.GetFeatureName())}
+    _close_part(part)
+    return reads
+
+
+def chamfer_multi(params, workdir, rec):
+    """四条边同时倒角 5 mm（多边选择规则）。"""
+    part = new_part("cham4")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    edges = list(body.GetEdges())[:4]
+    cb = part.Features.CreateChamferBuilder(NXOpen.Features.Feature.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleEdgeDumb(edges)
+        sc = part.ScCollectors.CreateCollector()
+        sc.AddRules([rule])
+        cb.SmartCollector = sc
+        try:
+            cb.FirstOffsetExp.SetFormula("5")
+            cb.SecondOffsetExp.SetFormula("5")
+        except Exception:
+            pass
+        cb.CommitFeature()
+    finally:
+        try:
+            cb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies),
+             "faces": len(bodies[0].GetFaces()) if bodies else 0}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1054,6 +1126,9 @@ ACTIONS = {
     "solid_sphere": solid_sphere,
     "pattern_grid": pattern_grid,
     "pattern_circular": pattern_circular,
+    "export_step_ap203": export_step_ap203,
+    "attr_on_feature": attr_on_feature,
+    "chamfer_multi": chamfer_multi,
 }
 
 

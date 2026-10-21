@@ -155,6 +155,18 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=False),
     Cap("feature.pattern_circular", "feature", "绕 Z 圆周阵列 4 个", "pattern_circular", "L1–L3",
         params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=False),
+
+    Cap("export.step_ap203", "export", "导出 STEP AP203", "export_step_ap203", "L1–L2",
+        params={}, expect={"export_ok": True,
+                           "export_head": "ISO-10303-21"}, reopen=False),
+    Cap("attr.on_feature", "attr", "特征上写字符串属性", "attr_on_feature", "L2",
+        params={}, expect={"feature_attr": "f1", "feature_name": "Block(0)"},
+        reopen=False),
+
+    Cap("feature.chamfer_multi", "feature", "四条边同时倒角 5 mm", "chamfer_multi", "L1–L3",
+        params={},
+        expect={"body_count": 1, "faces": 10,
+                "volume_mm3": {"min": 94000.0, "max": 100000.0}}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
