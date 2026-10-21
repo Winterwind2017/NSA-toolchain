@@ -1,0 +1,3356 @@
+{
+  "tool": "acadkit live judges",
+  "generated_at": "2026-10-21T17:08:49",
+  "workdir": "D:\\bililive\\acadkit\\_scratch\\judges_20261021_170252",
+  "autocad": {
+    "launched": true,
+    "exe": "D:\\Program Files\\Autodesk\\AutoCAD 2025\\acad.exe",
+    "profile": null,
+    "waited_s": 6.0
+  },
+  "env_before": {
+    "process_count": 0,
+    "sv_count": 0
+  },
+  "env_after": {
+    "process_count": 0,
+    "sv_count": 0
+  },
+  "results": [
+    {
+      "id": "geom.line",
+      "family": "geom",
+      "title": "直线：计数/端点/长度/重开",
+      "ok": true,
+      "duration_s": 7.11,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "geometry": true,
+        "length": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "start_du": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "end_du": [
+          60.0,
+          0.0,
+          0.0
+        ],
+        "length_du": 60.0,
+        "length_expected_du": 60.0,
+        "length_mm": 60.0,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "mm_per_du": 1.0,
+        "unit_note": "INSUNITS=4",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.533,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.circle",
+      "family": "geom",
+      "title": "圆：计数/半径/面积=πR²/重开",
+      "ok": true,
+      "duration_s": 6.56,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "geometry": true,
+        "area": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "center_du": [
+          10.0,
+          20.0,
+          0.0
+        ],
+        "center_expected_du": [
+          10.0,
+          20.0,
+          0.0
+        ],
+        "radius_du": 25.0,
+        "radius_expected_du": 25.0,
+        "radius_mm": 25.0,
+        "area_du2": 1963.4954084936207,
+        "area_expected_du2": 1963.495408,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "mm_per_du": 1.0,
+        "unit_note": "INSUNITS=4",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.526,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.arc",
+      "family": "geom",
+      "title": "圆弧：Center/Radius/起止角",
+      "ok": true,
+      "duration_s": 6.54,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Center": true,
+        "attr:Radius": true,
+        "attr:StartAngle": true,
+        "attr:EndAngle": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ARC",
+        "object_name": "AcDbArc",
+        "attributes": {
+          "Center": {
+            "expected": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "read": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "Radius": {
+            "expected": 10.0,
+            "read": 10.0
+          },
+          "StartAngle": {
+            "expected": 0.0,
+            "read": 0.0
+          },
+          "EndAngle": {
+            "expected": 1.5707963267948966,
+            "read": 1.5707963267948966
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ARC": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.503,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.polyline",
+      "family": "geom",
+      "title": "多段线：顶点/闭合/长度",
+      "ok": true,
+      "duration_s": 6.48,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Closed": true,
+        "attr:vertices": true,
+        "attr:Length": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "LWPOLYLINE",
+        "object_name": "AcDbPolyline",
+        "attributes": {
+          "Closed": {
+            "expected": false,
+            "read": false
+          },
+          "vertices": {
+            "expected": [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                40.0,
+                0.0
+              ],
+              [
+                40.0,
+                30.0
+              ]
+            ],
+            "read": [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                40.0,
+                0.0
+              ],
+              [
+                40.0,
+                30.0
+              ]
+            ]
+          },
+          "Length": {
+            "expected": 70.0,
+            "read": 70.0
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "LWPOLYLINE": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.53,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.rect",
+      "family": "geom",
+      "title": "矩形：闭合/4 顶点/面积",
+      "ok": true,
+      "duration_s": 6.48,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "closed": true,
+        "area": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "vertices_du": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            40.0,
+            0.0
+          ],
+          [
+            40.0,
+            30.0
+          ],
+          [
+            0.0,
+            30.0
+          ]
+        ],
+        "vertices_expected_du": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            30.0
+          ],
+          [
+            40.0,
+            0.0
+          ],
+          [
+            40.0,
+            30.0
+          ]
+        ],
+        "closed": true,
+        "width_du": 40.0,
+        "height_du": 30.0,
+        "area_du2": 1200.0,
+        "area_expected_du2": 1200.0,
+        "area_mm2": 1200.0,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "mm_per_du": 1.0,
+        "unit_note": "INSUNITS=4",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.494,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.ellipse",
+      "family": "geom",
+      "title": "椭圆：长短轴/面积",
+      "ok": true,
+      "duration_s": 6.5,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Center": true,
+        "attr:MajorRadius": true,
+        "attr:MinorRadius": true,
+        "attr:Area": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ELLIPSE",
+        "object_name": "AcDbEllipse",
+        "attributes": {
+          "Center": {
+            "expected": [
+              100.0,
+              0.0,
+              0.0
+            ],
+            "read": [
+              100.0,
+              0.0,
+              0.0
+            ]
+          },
+          "MajorRadius": {
+            "expected": 20.0,
+            "read": 20.0
+          },
+          "MinorRadius": {
+            "expected": 10.0,
+            "read": 10.0
+          },
+          "Area": {
+            "expected": 628.3185307179587,
+            "read": 628.3185307179587
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ELLIPSE": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.51,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.spline",
+      "family": "geom",
+      "title": "样条：控制点数",
+      "ok": true,
+      "duration_s": 6.46,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "closed": true,
+        "control_points": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "control_points": 6.0,
+        "min_control_points": 4,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.492,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "geom.hatch",
+      "family": "geom",
+      "title": "填充：ANSI31/面积",
+      "ok": true,
+      "duration_s": 6.6,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:PatternName": true,
+        "attr:Area": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "80",
+        "type": "HATCH",
+        "object_name": "AcDbHatch",
+        "attributes": {
+          "PatternName": {
+            "expected": "ANSI31",
+            "read": "ANSI31"
+          },
+          "Area": {
+            "expected": 1200.0,
+            "read": 1200.0
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "80"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "LWPOLYLINE": 1,
+          "HATCH": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.497,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "text.single",
+      "family": "text",
+      "title": "单行文字：内容/位置/字高",
+      "ok": true,
+      "duration_s": 6.46,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:TextString": true,
+        "attr:InsertionPoint": true,
+        "attr:Height": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "TEXT",
+        "object_name": "AcDbText",
+        "attributes": {
+          "TextString": {
+            "expected": "ACADKIT 文字",
+            "read": "ACADKIT 文字"
+          },
+          "InsertionPoint": {
+            "expected": [
+              0.0,
+              200.0,
+              0.0
+            ],
+            "read": [
+              0.0,
+              200.0,
+              0.0
+            ]
+          },
+          "Height": {
+            "expected": 5.0,
+            "read": 5.0
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "TEXT": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.509,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "text.mtext",
+      "family": "text",
+      "title": "多行文字：内容/宽度",
+      "ok": true,
+      "duration_s": 6.4,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Width": true,
+        "contains:TextString": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "MTEXT",
+        "object_name": "AcDbMText",
+        "attributes": {
+          "Width": {
+            "expected": 80.0,
+            "read": 80.0
+          },
+          "TextString": {
+            "contains": "多行文字 MTEXT",
+            "read": "多行文字 MTEXT"
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "MTEXT": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.5,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "text.style",
+      "family": "text",
+      "title": "文字样式：新增 + 字体读回",
+      "ok": true,
+      "duration_s": 6.36,
+      "negative": false,
+      "checks": {
+        "new_row": true,
+        "row_exists": true,
+        "contains:FontFile": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "table": "textstyles",
+        "name": "CN_STYLE",
+        "row": {
+          "FontFile": "SimSun.ttf",
+          "BigFontFile": "",
+          "Height": 0.0,
+          "Width": 1.0,
+          "LastHeight": 2.5
+        },
+        "rows_before": 2,
+        "rows_memory": 3,
+        "attributes": {
+          "FontFile": {
+            "contains": "SimSun",
+            "read": "SimSun.ttf"
+          }
+        },
+        "row_reopened": {
+          "FontFile": "SimSun.ttf",
+          "BigFontFile": "",
+          "Height": 0.0,
+          "Width": 1.0,
+          "LastHeight": 2.5
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.511,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.linear",
+      "family": "dim",
+      "title": "线性标注：Measurement/文字外侧",
+      "ok": true,
+      "duration_s": 6.51,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "measurement": true,
+        "text_side": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "80",
+        "measurement_du": 60.0,
+        "measurement_expected_du": 60.0,
+        "measurement_mm": 60.0,
+        "text_position_du": [
+          30.0,
+          11.875,
+          0.0
+        ],
+        "dim_line_du": [
+          30.0,
+          10.0
+        ],
+        "text_outside": true,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "80"
+        },
+        "unit_note": "INSUNITS=4",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.508,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.aligned",
+      "family": "dim",
+      "title": "对齐标注：Measurement",
+      "ok": true,
+      "duration_s": 6.46,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Measurement": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ALIGNEDDIMENSION",
+        "object_name": "AcDbAlignedDimension",
+        "attributes": {
+          "Measurement": {
+            "expected": 60.0,
+            "read": 60.0
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ALIGNEDDIMENSION": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.504,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.diametric",
+      "family": "dim",
+      "title": "直径标注：Measurement=2R",
+      "ok": true,
+      "duration_s": 6.47,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "measurement": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "80",
+        "measurement_du": 50.0,
+        "measurement_expected_du": 50.0,
+        "diameter_mm": 50.0,
+        "radius_source_du": 25.0,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "80"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.503,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.radial",
+      "family": "dim",
+      "title": "半径标注：Measurement=R",
+      "ok": true,
+      "duration_s": 7.18,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "measurement": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "80",
+        "measurement_du": 25.0,
+        "measurement_expected_du": 25.0,
+        "radius_mm": 25.0,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "80"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.5,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.angular",
+      "family": "dim",
+      "title": "角度标注：Measurement=π/2",
+      "ok": true,
+      "duration_s": 6.76,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Measurement": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ANGULARDIMENSION",
+        "object_name": "AcDb2LineAngularDimension",
+        "attributes": {
+          "Measurement": {
+            "expected": 1.5707963267948966,
+            "read": 1.5707963267948952
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ANGULARDIMENSION": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.533,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.ordinate",
+      "family": "dim",
+      "title": "坐标标注：Measurement=X",
+      "ok": true,
+      "duration_s": 6.59,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Measurement": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ORDINATEDIMENSION",
+        "object_name": "AcDbOrdinateDimension",
+        "attributes": {
+          "Measurement": {
+            "expected": 350.0,
+            "read": 350.00000000000017
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ORDINATEDIMENSION": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.493,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.arc",
+      "family": "dim",
+      "title": "弧长标注：Measurement=R·θ",
+      "ok": true,
+      "duration_s": 6.58,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Measurement": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ARCDIMENSION",
+        "object_name": "AcDbArcDimension",
+        "attributes": {
+          "Measurement": {
+            "expected": 31.41592653589793,
+            "read": 31.41592653589793
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ARCDIMENSION": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.494,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.baseline",
+      "family": "dim",
+      "title": "基线标注：两条同基 Measurement",
+      "ok": true,
+      "duration_s": 6.77,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "measurements": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "type": "ROTATEDDIMENSION",
+        "expected": [
+          40.0,
+          100.0
+        ],
+        "read": [
+          40.0,
+          100.0
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.495,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.continuous",
+      "family": "dim",
+      "title": "连续标注：两段首尾相接且和=总长",
+      "ok": true,
+      "duration_s": 6.84,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "measurements": true,
+        "total": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "type": "ROTATEDDIMENSION",
+        "expected": [
+          40.0,
+          60.0
+        ],
+        "read": [
+          40.0,
+          60.0
+        ],
+        "total_expected": 100.0,
+        "total_read": 100.0,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.522,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.tolerance",
+      "family": "dim",
+      "title": "尺寸公差：DIMTOL+TextOverride 读回",
+      "ok": true,
+      "duration_s": 7.19,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "measurement": true,
+        "text_override": true,
+        "dimtol": true,
+        "dimtp": true,
+        "dimtm": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "measurement_read": 60.0,
+        "text_override_read": "60 +0.02/-0.01",
+        "expected_override": "60 +0.02/-0.01",
+        "dimtol": 1,
+        "dimtp": 0.02,
+        "dimtm": 0.01,
+        "upper": 0.02,
+        "lower": 0.01,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.519,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.fit_code",
+      "family": "dim",
+      "title": "配合代号查表（纯 Python）",
+      "ok": true,
+      "duration_s": 4.28,
+      "negative": false,
+      "checks": {
+        "fit:H7@50": true,
+        "fit:h6@50": true,
+        "fit:H8@100": true,
+        "fit:f7@25": true,
+        "fit:g6@10": true,
+        "out_of_range_raises": true,
+        "unknown_code_raises": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "reference": [
+          {
+            "code": "H7",
+            "nominal": 50.0,
+            "expected": [
+              0.025,
+              0.0
+            ],
+            "read": [
+              0.025,
+              0.0
+            ]
+          },
+          {
+            "code": "h6",
+            "nominal": 50.0,
+            "expected": [
+              0.0,
+              -0.016
+            ],
+            "read": [
+              0.0,
+              -0.016
+            ]
+          },
+          {
+            "code": "H8",
+            "nominal": 100.0,
+            "expected": [
+              0.054,
+              0.0
+            ],
+            "read": [
+              0.054,
+              0.0
+            ]
+          },
+          {
+            "code": "f7",
+            "nominal": 25.0,
+            "expected": [
+              -0.02,
+              -0.041
+            ],
+            "read": [
+              -0.02,
+              -0.041
+            ]
+          },
+          {
+            "code": "g6",
+            "nominal": 10.0,
+            "expected": [
+              -0.005,
+              -0.014
+            ],
+            "read": [
+              -0.005,
+              -0.014
+            ]
+          }
+        ],
+        "out_of_range_raised": "ValueError",
+        "unknown_code_raised": "ValueError",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.518,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "dim.api_missing",
+      "family": "dim",
+      "title": "负例：AddDimLinear 不存在（必须抛错）",
+      "ok": true,
+      "duration_s": 4.29,
+      "negative": true,
+      "checks": {
+        "raised": true,
+        "right_exception": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "raised": "AttributeError",
+        "expected": [
+          "AttributeError"
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.491,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": [
+        "AddDimLinear -> AttributeError"
+      ]
+    },
+    {
+      "id": "gdt.tolerance",
+      "family": "gdt",
+      "title": "形位公差：ACDBFCF + 符号码",
+      "ok": true,
+      "duration_s": 6.78,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:TextString": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "ACDBFCF",
+        "object_name": "AcDbFcf",
+        "attributes": {
+          "TextString": {
+            "expected": "{\\Fgdt;n}%%v0.02",
+            "read": "{\\Fgdt;n}%%v0.02"
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "ACDBFCF": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.511,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "symbol.roughness",
+      "family": "symbol",
+      "title": "粗糙度符号：3 线 + Ra 文字",
+      "ok": true,
+      "duration_s": 6.8,
+      "negative": false,
+      "checks": {
+        "count:LINE": true,
+        "count:TEXT": true,
+        "attr:0:TextString": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "deltas": {
+          "LINE": {
+            "before": 0,
+            "memory": 3,
+            "expected": 3
+          },
+          "TEXT": {
+            "before": 0,
+            "memory": 1,
+            "expected": 1
+          }
+        },
+        "expected": {
+          "LINE": 3,
+          "TEXT": 1
+        },
+        "attrs": [
+          {
+            "type": "TEXT",
+            "key": "TextString",
+            "expected": "Ra 3.2",
+            "read": "Ra 3.2"
+          }
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.524,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "symbol.weld",
+      "family": "symbol",
+      "title": "焊接符号：2 线 + 焊缝尺寸",
+      "ok": true,
+      "duration_s": 6.73,
+      "negative": false,
+      "checks": {
+        "count:LINE": true,
+        "count:TEXT": true,
+        "attr:0:TextString": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "deltas": {
+          "LINE": {
+            "before": 0,
+            "memory": 2,
+            "expected": 2
+          },
+          "TEXT": {
+            "before": 0,
+            "memory": 1,
+            "expected": 1
+          }
+        },
+        "expected": {
+          "LINE": 2,
+          "TEXT": 1
+        },
+        "attrs": [
+          {
+            "type": "TEXT",
+            "key": "TextString",
+            "expected": "6",
+            "read": "6"
+          }
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.501,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "symbol.centerline",
+      "family": "symbol",
+      "title": "中心线：线型 + 两端超出",
+      "ok": true,
+      "duration_s": 6.57,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Length": true,
+        "attr:Linetype": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "LINE",
+        "object_name": "AcDbLine",
+        "attributes": {
+          "Length": {
+            "expected": 44.0,
+            "read": 44.0
+          },
+          "Linetype": {
+            "expected": "CENTER2",
+            "read": "CENTER2"
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "LINE": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.521,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "symbol.centermark",
+      "family": "symbol",
+      "title": "中心标记：十字过圆心",
+      "ok": true,
+      "duration_s": 6.81,
+      "negative": false,
+      "checks": {
+        "two_lines": true,
+        "through_center": true,
+        "arm_length": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "arm_expected": 11.0,
+        "lines": [
+          {
+            "mid": [
+              0.0,
+              0.0
+            ],
+            "length": 22.0,
+            "through_center": true,
+            "length_ok": true
+          },
+          {
+            "mid": [
+              0.0,
+              0.0
+            ],
+            "length": 22.0,
+            "through_center": true,
+            "length_ok": true
+          }
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.516,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "symbol.balloon",
+      "family": "symbol",
+      "title": "序号气泡：MULTILEADER + 序号",
+      "ok": true,
+      "duration_s": 6.91,
+      "negative": false,
+      "checks": {
+        "count:CIRCLE": true,
+        "count:LINE": true,
+        "count:TEXT": true,
+        "attr:0:TextString": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "deltas": {
+          "CIRCLE": {
+            "before": 0,
+            "memory": 1,
+            "expected": 1
+          },
+          "LINE": {
+            "before": 0,
+            "memory": 1,
+            "expected": 1
+          },
+          "TEXT": {
+            "before": 0,
+            "memory": 1,
+            "expected": 1
+          }
+        },
+        "expected": {
+          "CIRCLE": 1,
+          "LINE": 1,
+          "TEXT": 1
+        },
+        "attrs": [
+          {
+            "type": "TEXT",
+            "key": "TextString",
+            "expected": "1",
+            "read": "1"
+          }
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.548,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "table.bom",
+      "family": "table",
+      "title": "BOM 表：逐格 + 合计",
+      "ok": true,
+      "duration_s": 6.72,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "size": true,
+        "cells": true,
+        "reopen": true,
+        "sum": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "rows": 5,
+        "rows_expected": 5,
+        "columns": 3,
+        "columns_expected": 3,
+        "grid": [
+          [
+            "BOM",
+            "",
+            ""
+          ],
+          [
+            "NO.",
+            "NAME",
+            "QTY"
+          ],
+          [
+            "1",
+            "BRACKET",
+            "2"
+          ],
+          [
+            "2",
+            "PLATE",
+            "3"
+          ],
+          [
+            "TOTAL",
+            "",
+            "5"
+          ]
+        ],
+        "cells_expected": {
+          "0,0": "BOM",
+          "1,0": "NO.",
+          "1,1": "NAME",
+          "1,2": "QTY",
+          "2,0": "1",
+          "2,1": "BRACKET",
+          "2,2": "2",
+          "3,0": "2",
+          "3,1": "PLATE",
+          "3,2": "3",
+          "4,0": "TOTAL",
+          "4,2": "5"
+        },
+        "cell_mismatch": {},
+        "sum_column": 2,
+        "sum": {
+          "total_row": 4,
+          "detail_rows": [
+            2,
+            3
+          ],
+          "total_read": 5.0,
+          "parts_read": [
+            2.0,
+            3.0
+          ],
+          "sum_parts": 5.0
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.521,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "table.grid",
+      "family": "table",
+      "title": "通用网格表：逐格 + 合计",
+      "ok": true,
+      "duration_s": 6.97,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "size": true,
+        "cells": true,
+        "reopen": true,
+        "sum": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "rows": 5,
+        "rows_expected": 5,
+        "columns": 3,
+        "columns_expected": 3,
+        "grid": [
+          [
+            "GRID",
+            "",
+            ""
+          ],
+          [
+            "NO.",
+            "NAME",
+            "QTY"
+          ],
+          [
+            "1",
+            "BRACKET",
+            "2"
+          ],
+          [
+            "2",
+            "PLATE",
+            "3"
+          ],
+          [
+            "TOTAL",
+            "",
+            "5"
+          ]
+        ],
+        "cells_expected": {
+          "0,0": "GRID",
+          "1,0": "NO.",
+          "1,1": "NAME",
+          "1,2": "QTY",
+          "2,0": "1",
+          "2,1": "BRACKET",
+          "2,2": "2",
+          "3,0": "2",
+          "3,1": "PLATE",
+          "3,2": "3",
+          "4,0": "TOTAL",
+          "4,2": "5"
+        },
+        "cell_mismatch": {},
+        "sum_column": 2,
+        "sum": {
+          "total_row": 4,
+          "detail_rows": [
+            2,
+            3
+          ],
+          "total_read": 5.0,
+          "parts_read": [
+            2.0,
+            3.0
+          ],
+          "sum_parts": 5.0
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.52,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "block.define",
+      "family": "block",
+      "title": "块定义 + 属性定义",
+      "ok": true,
+      "duration_s": 6.68,
+      "negative": false,
+      "checks": {
+        "new_block": true,
+        "entity_count": true,
+        "attdef_count": true,
+        "attdef_values": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "block_name": "BOM_MARK",
+        "block_entity_count": 3,
+        "block_types": {
+          "CIRCLE": 1,
+          "ATTRIBUTEDEFINITION": 2
+        },
+        "block_types_expected": {
+          "CIRCLE": 1,
+          "ATTRIBUTEDEFINITION": 2
+        },
+        "attdefs_read": {
+          "PART_NO": "P-001",
+          "MATERIAL": "Q235"
+        },
+        "attdefs_expected": {
+          "PART_NO": "P-001",
+          "MATERIAL": "Q235"
+        },
+        "attdef_count": 2,
+        "reopened_block_present": true,
+        "blocks_before": 3,
+        "blocks_memory": 4,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.501,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "block.insert_with_attributes",
+      "family": "block",
+      "title": "块插入 + 属性值",
+      "ok": true,
+      "duration_s": 6.88,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "name": true,
+        "insertion": true,
+        "attr_count": true,
+        "attr_values": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "85",
+        "block_name": "BOM_MARK",
+        "block_name_read": "BOM_MARK",
+        "insertion_du": [
+          100.0,
+          0.0,
+          0.0
+        ],
+        "insertion_expected_du": [
+          100,
+          0,
+          0
+        ],
+        "attributes_read": {
+          "PART_NO": "P-777",
+          "MATERIAL": "45#"
+        },
+        "attributes_expected": {
+          "PART_NO": "P-777",
+          "MATERIAL": "45#"
+        },
+        "attr_count": 2,
+        "attr_count_expected": 2,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "85"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.535,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "block.short_attributes",
+      "family": "block",
+      "title": "负例：属性少一个 → 判据必须失败",
+      "ok": true,
+      "duration_s": 6.82,
+      "negative": true,
+      "checks": {
+        "negative_observed": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "85",
+        "block_name": "BOM_MARK",
+        "block_name_read": "BOM_MARK",
+        "insertion_du": [
+          100.0,
+          0.0,
+          0.0
+        ],
+        "insertion_expected_du": [
+          100,
+          0,
+          0
+        ],
+        "attributes_read": {
+          "PART_NO": "P-777"
+        },
+        "attributes_expected": {
+          "PART_NO": "P-777",
+          "MATERIAL": "Q235"
+        },
+        "attr_count": 1,
+        "attr_count_expected": 2,
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "85"
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.503,
+          "no_modal_limit_s": 10.0
+        },
+        "judge": {
+          "ok": false,
+          "checks": {
+            "count": true,
+            "type": true,
+            "name": true,
+            "insertion": true,
+            "attr_count": false,
+            "attr_values": false,
+            "reopen": true
+          },
+          "detail": {
+            "handle": "85",
+            "block_name": "BOM_MARK",
+            "block_name_read": "BOM_MARK",
+            "insertion_du": [
+              100.0,
+              0.0,
+              0.0
+            ],
+            "insertion_expected_du": [
+              100,
+              0,
+              0
+            ],
+            "attributes_read": {
+              "PART_NO": "P-777"
+            },
+            "attributes_expected": {
+              "PART_NO": "P-777",
+              "MATERIAL": "Q235"
+            },
+            "attr_count": 1,
+            "attr_count_expected": 2,
+            "reopen": {
+              "reopened_source": "reopened",
+              "mismatch": {},
+              "reopened_handle": "85"
+            }
+          },
+          "expected_fail_checks": [
+            "attr_count"
+          ]
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "frame.titleblock",
+      "family": "frame",
+      "title": "A3 图框 + 标题栏 6 属性",
+      "ok": true,
+      "duration_s": 7.18,
+      "negative": false,
+      "checks": {
+        "frame.count": true,
+        "frame.type": true,
+        "frame.closed": true,
+        "frame.area": true,
+        "frame.reopen": true,
+        "block.count": true,
+        "block.type": true,
+        "block.name": true,
+        "block.insertion": true,
+        "block.attr_count": true,
+        "block.attr_values": true,
+        "block.reopen": true,
+        "titleblock_lines": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "frame": {
+          "handle": "7F",
+          "vertices_du": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              420.0,
+              0.0
+            ],
+            [
+              420.0,
+              297.0
+            ],
+            [
+              0.0,
+              297.0
+            ]
+          ],
+          "vertices_expected_du": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              297.0
+            ],
+            [
+              420.0,
+              0.0
+            ],
+            [
+              420.0,
+              297.0
+            ]
+          ],
+          "closed": true,
+          "width_du": 420.0,
+          "height_du": 297.0,
+          "area_du2": 124740.0,
+          "area_expected_du2": 124740.0,
+          "area_mm2": 124740.0,
+          "reopen": {
+            "reopened_source": "reopened",
+            "mismatch": {},
+            "reopened_handle": "7F"
+          },
+          "mm_per_du": 1.0,
+          "unit_note": "INSUNITS=4"
+        },
+        "block": {
+          "handle": "8D",
+          "block_name": "TITLEBLOCK",
+          "block_name_read": "TITLEBLOCK",
+          "insertion_du": [
+            242.0,
+            2.0,
+            0.0
+          ],
+          "insertion_expected_du": [
+            242.0,
+            2.0,
+            0.0
+          ],
+          "attributes_read": {
+            "DWG_NO": "ACADKIT-001",
+            "TITLE": "PART",
+            "MATERIAL": "Q235",
+            "SCALE": "1:1",
+            "WEIGHT": "1.2",
+            "DESIGNER": "AK"
+          },
+          "attributes_expected": {
+            "DWG_NO": "ACADKIT-001",
+            "TITLE": "PART",
+            "MATERIAL": "Q235",
+            "SCALE": "1:1",
+            "WEIGHT": "1.2",
+            "DESIGNER": "AK"
+          },
+          "attr_count": 6,
+          "attr_count_expected": 6,
+          "reopen": {
+            "reopened_source": "reopened",
+            "mismatch": {},
+            "reopened_handle": "8D"
+          }
+        },
+        "frame_area_expected": 124740.0,
+        "titleblock_lines": 4,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.518,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "layout.multipage",
+      "family": "frame",
+      "title": "新建布局 + 视口",
+      "ok": true,
+      "duration_s": 7.2,
+      "negative": false,
+      "checks": {
+        "layout_exists": true,
+        "viewport_added": true,
+        "viewport_read": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "name": "SHEET_A",
+        "viewports_before": 2,
+        "viewports_after": 3,
+        "viewports_read": 3,
+        "viewports_reopened": 3,
+        "layouts": [
+          "Model",
+          "SHEET_A",
+          "布局1",
+          "布局2"
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.528,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "layer.create",
+      "family": "layer",
+      "title": "建图层：Name/Color 读回",
+      "ok": true,
+      "duration_s": 6.57,
+      "negative": false,
+      "checks": {
+        "new_row": true,
+        "row_exists": true,
+        "attr:Color": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "table": "layers",
+        "name": "01_OUTLINE",
+        "row": {
+          "Color": "3",
+          "Linetype": "Continuous",
+          "Lineweight": -3,
+          "Plottable": true,
+          "Freeze": false,
+          "Lock": false,
+          "LayerOn": true
+        },
+        "rows_before": 1,
+        "rows_memory": 2,
+        "attributes": {
+          "Color": {
+            "expected": 3,
+            "read": "3"
+          }
+        },
+        "row_reopened": {
+          "Color": "3",
+          "Linetype": "Continuous",
+          "Lineweight": -3,
+          "Plottable": true,
+          "Freeze": false,
+          "Lock": false,
+          "LayerOn": true
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.516,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "layer.set_current",
+      "family": "layer",
+      "title": "设当前层 + 新实体落层",
+      "ok": true,
+      "duration_s": 6.71,
+      "negative": false,
+      "checks": {
+        "layer_row": true,
+        "active_layer": true,
+        "entity_on_layer": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "name": "02_CENTER",
+        "active_layer_read": "02_CENTER",
+        "entity_layer": "02_CENTER",
+        "active_reopened": "02_CENTER",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.507,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "layer.snapshot",
+      "family": "layer",
+      "title": "图层状态快照：属性级保存→改→恢复",
+      "ok": true,
+      "duration_s": 6.72,
+      "negative": false,
+      "checks": {
+        "mutated:04_SNAP.Color": true,
+        "restored:04_SNAP.Color": true,
+        "reopen:04_SNAP.Color": true,
+        "mutated:04_SNAP.Freeze": true,
+        "restored:04_SNAP.Freeze": true,
+        "reopen:04_SNAP.Freeze": true,
+        "mutated:0.Color": true,
+        "restored:0.Color": true,
+        "reopen:0.Color": true,
+        "restored:0.Linetype": true,
+        "restored:0.Lineweight": true,
+        "restored:0.Freeze": true,
+        "restored:0.Lock": true,
+        "restored:0.LayerOn": true,
+        "restored:04_SNAP.Linetype": true,
+        "restored:04_SNAP.Lineweight": true,
+        "restored:04_SNAP.Lock": true,
+        "restored:04_SNAP.LayerOn": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "snapshot_layers": 2,
+        "mutated": {
+          "04_SNAP": {
+            "Color": 1,
+            "Freeze": true
+          },
+          "0": {
+            "Color": 4
+          }
+        },
+        "changed": {
+          "04_SNAP": {
+            "Color": 1,
+            "Linetype": "Continuous",
+            "Lineweight": -3,
+            "Freeze": true,
+            "Lock": false,
+            "LayerOn": true
+          },
+          "0": {
+            "Color": 4,
+            "Linetype": "Continuous",
+            "Lineweight": -3,
+            "Freeze": false,
+            "Lock": false,
+            "LayerOn": true
+          }
+        },
+        "restored": {
+          "04_SNAP": {
+            "Color": "6",
+            "Linetype": "Continuous",
+            "Lineweight": -3,
+            "Plottable": true,
+            "Freeze": false,
+            "Lock": false,
+            "LayerOn": true
+          },
+          "0": {
+            "Color": "7",
+            "Linetype": "Continuous",
+            "Lineweight": -3,
+            "Plottable": true,
+            "Freeze": false,
+            "Lock": false,
+            "LayerOn": true
+          }
+        },
+        "reopened": {
+          "04_SNAP": {
+            "Color": "6",
+            "Linetype": "Continuous",
+            "Lineweight": -3,
+            "Plottable": true,
+            "Freeze": false,
+            "Lock": false,
+            "LayerOn": true
+          },
+          "0": {
+            "Color": "7",
+            "Linetype": "Continuous",
+            "Lineweight": -3,
+            "Plottable": true,
+            "Freeze": false,
+            "Lock": false,
+            "LayerOn": true
+          }
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.495,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "env.sysvar",
+      "family": "env",
+      "title": "系统变量：设置/读回/还原",
+      "ok": true,
+      "duration_s": 4.19,
+      "negative": false,
+      "checks": {
+        "set_readback": true,
+        "restored": true,
+        "changed": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "name": "DIMTXT",
+        "expected": 3.5,
+        "before": 2.5,
+        "after": 3.5,
+        "restored": 2.5,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.489,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "env.dimstyle",
+      "family": "env",
+      "title": "标注样式：ActiveDimStyle + DIMTXT",
+      "ok": true,
+      "duration_s": 4.84,
+      "negative": false,
+      "checks": {
+        "style_row": true,
+        "active": true,
+        "dimtxt": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "name": "ACADKIT_DIM",
+        "height": 3.5,
+        "active_read": "ACADKIT_DIM",
+        "dimtxt_read": 3.5,
+        "active_reopened": null,
+        "dimtxt_reopened": null,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.509,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "solid.primitive",
+      "family": "solid",
+      "title": "基本体：box/cylinder/sphere 体积",
+      "ok": true,
+      "duration_s": 6.67,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "volume:8000": true,
+        "volume:6283.19": true,
+        "volume:4188.79": true,
+        "type": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "expected": [
+          8000.0,
+          6283.185307,
+          4188.790205
+        ],
+        "read": [
+          null,
+          null,
+          null
+        ],
+        "pairs": [
+          {
+            "expected": 8000.0,
+            "matched": 8000.0
+          },
+          {
+            "expected": 6283.185307179587,
+            "matched": 6283.185307179588
+          },
+          {
+            "expected": 4188.790204786391,
+            "matched": 4188.790204786391
+          }
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.493,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "solid.extrude",
+      "family": "solid",
+      "title": "拉伸：体积 = 轮廓面积 × 高度",
+      "ok": true,
+      "duration_s": 6.63,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "volume:12000": true,
+        "type": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "expected": [
+          12000.0
+        ],
+        "read": [
+          null
+        ],
+        "pairs": [
+          {
+            "expected": 12000.0,
+            "matched": 12000.0
+          }
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.499,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "boolean.union",
+      "family": "boolean",
+      "title": "并集：2→1，V=10000",
+      "ok": true,
+      "duration_s": 7.84,
+      "negative": false,
+      "checks": {
+        "count_before_two": true,
+        "count_after_one": true,
+        "volume": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "volume_expected": 10000.0,
+        "volume_read": 10000.0,
+        "counts_before": {},
+        "counts_memory": {
+          "3DSOLID": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.49,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "boolean.subtract",
+      "family": "boolean",
+      "title": "差集：2→1，V=6000",
+      "ok": true,
+      "duration_s": 7.87,
+      "negative": false,
+      "checks": {
+        "count_before_two": true,
+        "count_after_one": true,
+        "volume": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "volume_expected": 6000.0,
+        "volume_read": 6000.0,
+        "counts_before": {},
+        "counts_memory": {
+          "3DSOLID": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.501,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "boolean.intersect",
+      "family": "boolean",
+      "title": "交集：2→1，V=2000",
+      "ok": true,
+      "duration_s": 7.82,
+      "negative": false,
+      "checks": {
+        "count_before_two": true,
+        "count_after_one": true,
+        "volume": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "volume_expected": 2000.0,
+        "volume_read": 2000.0,
+        "counts_before": {},
+        "counts_memory": {
+          "3DSOLID": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.513,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "boolean.section_slice",
+      "family": "boolean",
+      "title": "SLICE：两块体积之和=原体积",
+      "ok": true,
+      "duration_s": 7.67,
+      "negative": false,
+      "checks": {
+        "two_pieces": true,
+        "each_positive": true,
+        "sum": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "expected_total": 8000.0,
+        "pieces": [
+          4000.0,
+          4000.0
+        ],
+        "sum_read": 8000.0,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.497,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "view.zoom",
+      "family": "view",
+      "title": "ZoomExtents：视图包住几何",
+      "ok": true,
+      "duration_s": 4.3,
+      "negative": false,
+      "checks": {
+        "view_read": true,
+        "covers_geometry": true,
+        "centered": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "view_center": [
+          499.9999995573994,
+          499.999999689986,
+          0.0
+        ],
+        "view_size": 200.99585055337957,
+        "expected_center": [
+          500.0,
+          500.0
+        ],
+        "expected_min_size": 190.0,
+        "view_dir": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.535,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "lisp.execute",
+      "family": "lisp",
+      "title": "命令行执行 LISP（不加载文件）",
+      "ok": true,
+      "duration_s": 7.3,
+      "negative": false,
+      "checks": {
+        "count": true,
+        "type": true,
+        "attr:Center": true,
+        "attr:Radius": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "handle": "7F",
+        "type": "CIRCLE",
+        "object_name": "AcDbCircle",
+        "attributes": {
+          "Center": {
+            "expected": [
+              800.0,
+              0.0,
+              0.0
+            ],
+            "read": [
+              800.0,
+              0.0,
+              0.0
+            ]
+          },
+          "Radius": {
+            "expected": 12.0,
+            "read": 12.0
+          }
+        },
+        "reopen": {
+          "reopened_source": "reopened",
+          "mismatch": {},
+          "reopened_handle": "7F"
+        },
+        "counts_before": {},
+        "counts_memory": {
+          "CIRCLE": 1
+        },
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.549,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "export.dwg",
+      "family": "export",
+      "title": "DWG：文件 + AC10 + 重开一致",
+      "ok": true,
+      "duration_s": 6.63,
+      "negative": false,
+      "checks": {
+        "file": true,
+        "magic": true,
+        "counts": true,
+        "handles": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "file": {
+          "path": "D:\\bililive\\acadkit\\_scratch\\judges_20261021_170252\\export_dwg.dwg",
+          "exists": true,
+          "bytes": 15997,
+          "mtime": 1792573707.0,
+          "fresh": true,
+          "min_bytes": 1
+        },
+        "head": "AC1032",
+        "counts_memory": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "counts_reopened": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "handles_memory": 2,
+        "handles_reopened": 2,
+        "reopened_source": "reopened",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.544,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "export.dxf",
+      "family": "export",
+      "title": "DXF：段 + 族计数 + 重新导入",
+      "ok": true,
+      "duration_s": 9.03,
+      "negative": false,
+      "checks": {
+        "file": true,
+        "sections": true,
+        "parsed": true,
+        "counts": true,
+        "reopen": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "file": {
+          "path": "D:\\bililive\\acadkit\\_scratch\\judges_20261021_170252\\export_dxf.dxf",
+          "exists": true,
+          "bytes": 83003,
+          "mtime": 1792573712.9803433,
+          "fresh": true,
+          "min_bytes": 1
+        },
+        "reader": "ezdxf 1.4.3",
+        "counts_memory": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "families_memory": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "counts_dxf_raw": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "families_dxf": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "sections": [
+          "HEADER",
+          "CLASSES",
+          "TABLES",
+          "BLOCKS",
+          "ENTITIES",
+          "OBJECTS"
+        ],
+        "counts_reimported": {
+          "CIRCLE": 1,
+          "LINE": 1
+        },
+        "limitations": [],
+        "why": "",
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.523,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    },
+    {
+      "id": "export.pdf",
+      "family": "export",
+      "title": "PDF：A3 + 非空白",
+      "ok": true,
+      "duration_s": 7.12,
+      "negative": false,
+      "checks": {
+        "file": true,
+        "header": true,
+        "pages": true,
+        "size_a3": true,
+        "ink": true,
+        "plot_ok": true,
+        "env_restored": true,
+        "env_profile": true,
+        "env_vars": true,
+        "env_documents": true,
+        "env_sv": true,
+        "env_process": true,
+        "env_single_instance": true,
+        "env_no_modal": true
+      },
+      "detail": {
+        "file": {
+          "path": "D:\\bililive\\acadkit\\_scratch\\judges_20261021_170252\\export_pdf.pdf",
+          "exists": true,
+          "bytes": 3580,
+          "mtime": 1792573722.231332,
+          "fresh": true,
+          "min_bytes": 1
+        },
+        "pages": 1,
+        "size_pt": [
+          1191.0,
+          842.0
+        ],
+        "size_mm": [
+          420.2,
+          297.0
+        ],
+        "ops": {
+          "m": 26,
+          "l": 90,
+          "c": 0,
+          "re": 0,
+          "S": 25,
+          "s": 0,
+          "f": 0,
+          "F": 0,
+          "f*": 0,
+          "B": 0,
+          "b": 0,
+          "Tj": 0,
+          "TJ": 0
+        },
+        "decoded_bytes": 1541,
+        "why": "",
+        "device": "DWG To PDF.pc3",
+        "media": "ISO_A3_(420.00_x_297.00_MM)",
+        "plot_warnings": [],
+        "backgroundplot_before": 2,
+        "backgroundplot_after_restore": 2,
+        "elapsed_s": 0.25,
+        "env": {
+          "profile_before": "<<VANILLA>>",
+          "profile_after": "<<VANILLA>>",
+          "documents_before": 1,
+          "documents_after": 1,
+          "sv_before": 0,
+          "sv_after": 0,
+          "process_before": 1,
+          "process_after": 1,
+          "drift": {},
+          "close_elapsed_s": 0.546,
+          "no_modal_limit_s": 10.0
+        }
+      },
+      "notes": []
+    }
+  ]
+}

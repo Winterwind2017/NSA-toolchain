@@ -1,5 +1,11 @@
 # P0 结论：AutoCAD 能不能做成第二个 swkit 内核？
 
+> **注（2026-10-21）**：本文件是 P0 当时的快照（registry 60 条）。
+> P1 全部做完后 registry 为 **62 条 = 50 verified + 8 dead + 4 external**，
+> 内核实现 52 条能力、真机 52/52 通过 —— 以
+> [`P1_PROGRESS.md`](P1_PROGRESS.md) 与 [`registry.yaml`](registry.yaml) 为准；
+> 下面写的"P1 建议"已完成，保留作决策记录。
+
 **能。** 底料比 SolidWorks 起步时更多，但失败模式不同——难点在判据与环境，不在"能不能调"。
 
 ## 一、盘点结果（本机实测，非估算）

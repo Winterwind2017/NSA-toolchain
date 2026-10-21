@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from acadkit import registry                                     # noqa: E402
-from acadkit.judges import JUDGES, by_family, dxfinfo, pdfinfo   # noqa: E402
+from acadkit.judges import dxfinfo, pdfinfo                 # noqa: E402
 from acadkit.judges import block_table as bt                     # noqa: E402
 from acadkit.judges import dim, export, geom                     # noqa: E402
 from acadkit.judges.base import (Drawing, Entity, JudgeError,     # noqa: E402
@@ -495,29 +495,40 @@ def test_table_cells_lost_on_reopen_fails() -> None:
     assert res["detail"]["reopen"]["mismatch"]["cells"]
 
 
-# ── 判据清单与 registry 对得上 ──────────────────────────────────────
-def test_judges_cover_four_families() -> None:
-    assert set(by_family("geom")) >= {"geom.circle", "geom.line", "geom.rect"}
-    assert set(by_family("dim")) >= {"dim.linear", "dim.diametric"}
-    assert set(by_family("export")) >= {"export.dwg", "export.dxf", "export.pdf"}
-    assert set(by_family("block-table")) >= {"block.define",
-                                             "block.insert_with_attributes",
-                                             "table.bom"}
+# ── 能力表与 registry 对得上 ────────────────────────────────────────
+def test_caps_cover_families() -> None:
+    from acadkit import caps
+
+    for fam in ("geom", "text", "dim", "gdt", "symbol", "table", "block",
+                "frame", "layer", "env", "solid", "boolean", "export",
+                "view", "lisp"):
+        assert caps.FAMILIES.get(fam), "族 %s 没有能力" % fam
 
 
-def test_judge_registry_ids_exist_in_registry_yaml() -> None:
+def test_cap_ids_exist_in_registry_yaml() -> None:
+    from acadkit import caps
+
     known = {c["id"] for c in registry.load()["capabilities"]}
-    missing = sorted(set(registry_ids_all()) - known)
-    assert not missing, "判据指向了 registry 里不存在的能力：%r" % missing
+    extra = {c.id for c in caps.CAPS} - known - {"dim.api_missing",
+                                                 "block.short_attributes"}
+    assert not extra, "能力指向了 registry 里不存在的 id：%r" % sorted(extra)
 
 
-def registry_ids_all():
-    out = set()
-    for meta in JUDGES.values():
-        out.update(meta.get("registry") or [])
-    return out
+def test_negative_controls_declared() -> None:
+    from acadkit import caps
 
-
-def test_negative_judges_declared() -> None:
-    neg = {k for k, v in JUDGES.items() if v.get("negative")}
+    neg = {c.id for c in caps.CAPS if c.is_negative or c.expect == "fail"}
     assert neg == {"dim.api_missing", "block.short_attributes"}
+
+
+def test_cap_params_and_cases_are_consistent() -> None:
+    from acadkit import caps
+
+    ids = [c.id for c in caps.CAPS]
+    assert len(ids) == len(set(ids)), "能力 id 有重复"
+    # 参数必须可 JSON 序列化（CLI/MCP 都要传）
+    for cap in caps.CAPS:
+        json.dumps(cap.params, default=str)
+        case = cap.case({"__probe__": 1})
+        assert case.id == cap.id
+        assert callable(case.build) and callable(case.judge)

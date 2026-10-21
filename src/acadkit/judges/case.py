@@ -62,6 +62,20 @@ class CaseRunner:
         self.baseline_doc: Optional[Any] = None
 
     # ── 文档 ────────────────────────────────────────────────────
+    def _phase(self, case_id: str, name: str) -> None:
+        """把当前阶段写到 `workdir/progress.txt`。
+
+        命令卡死时 stdout 可能还在缓冲，这个文件是**唯一可靠的现场**：
+        看最后一行就知道停在 build / save / reopen 哪一步。
+        """
+        try:
+            with open(os.path.join(self.workdir, "progress.txt"), "a",
+                      encoding="utf-8") as fh:
+                fh.write("%s %-28s %s\n"
+                         % (time.strftime("%H:%M:%S"), case_id, name))
+        except Exception:                               # noqa: BLE001
+            pass
+
     def _fresh_app(self) -> Any:
         """重新拿一次 COM 根对象。
 
@@ -198,6 +212,7 @@ class CaseRunner:
     # ── 主流程 ──────────────────────────────────────────────────
     def run(self, case: Case) -> Dict[str, Any]:
         t_start = time.time()
+        self._phase(case.id, "start")
         guard = EnvGuard(self.app, self.temp_dir)
         before_env = guard.before(case.id)
         ctx: Dict[str, Any] = {
@@ -212,19 +227,26 @@ class CaseRunner:
         try:
             doc = self.new_doc(case.id)
             ctx["doc"] = doc
+            self._phase(case.id, "doc")
             before = read.read_drawing(doc, "before")
+            self._phase(case.id, "before-read")
             case.build(doc, ctx)
+            self._phase(case.id, "built")
             memory = read.read_drawing(doc, "memory")
+            self._phase(case.id, "memory-read")
             rb = Readback(before=before, memory=memory)
             dwg = ctx["artifacts"].get("dwg_path") or self._save_dwg(doc, case.id)
             ctx["artifacts"]["dwg_path"] = dwg
+            self._phase(case.id, "saved")
             close_elapsed = max(close_elapsed or 0.0, self._close(doc, "case doc"))
             doc = None
+            self._phase(case.id, "closed")
 
             if case.wants_reopen:
                 reopened, elapsed = self._reopen(dwg, "reopened")
                 rb.reopened = reopened
                 close_elapsed = max(close_elapsed or 0.0, elapsed)
+                self._phase(case.id, "reopened")
 
             if case.wants_dxf:
                 dxf_path = ctx["artifacts"].get("dxf_path")
@@ -233,8 +255,10 @@ class CaseRunner:
                     reimported, elapsed = self._reopen(dxf_path, "dxf-reopened")
                     rb.dxf_reopened = reimported
                     close_elapsed = max(close_elapsed or 0.0, elapsed)
+                    self._phase(case.id, "dxf-reimported")
 
             result = case.judge(rb, ctx)
+            self._phase(case.id, "judged")
         except Exception as exc:                        # noqa: BLE001
             error = "%s: %s" % (type(exc).__name__, exc)
             ctx["notes"].append("build/judge 抛错：" + error)

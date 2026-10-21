@@ -11,7 +11,7 @@ import io
 import os
 from typing import Any, Dict, List, Optional
 
-VALID_STATUS = ("verified", "usable_unjudged", "pending", "dead")
+VALID_STATUS = ("verified", "usable_unjudged", "pending", "dead", "external")
 
 
 def registry_path() -> str:
@@ -124,4 +124,6 @@ def validate(data: Optional[Dict[str, Any]] = None) -> List[str]:
             problems.append("%s 的 status 非法: %r" % (cid, c.get("status")))
         if c.get("status") == "dead" and "替代" not in str(c.get("judge", "")):
             problems.append("%s 是 dead 但没写替代方案" % cid)
+        if c.get("status") == "external" and not str(c.get("judge", "")).strip():
+            problems.append("%s 是 external 但没写原因" % cid)
     return problems

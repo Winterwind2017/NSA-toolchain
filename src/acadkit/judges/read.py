@@ -60,7 +60,7 @@ _DIM_TYPES = ("ROTATEDDIMENSION", "ALIGNEDDIMENSION", "DIAMETRICDIMENSION",
 
 # 每类实体只读这些属性（乱读会大量抛异常，且慢）
 PROPS = {
-    "LINE": ("StartPoint", "EndPoint", "Length", "Angle"),
+    "LINE": ("StartPoint", "EndPoint", "Length", "Angle", "Linetype"),
     "CIRCLE": ("Center", "Radius", "Area", "Circumference"),
     "ARC": ("Center", "Radius", "StartAngle", "EndAngle", "TotalAngle", "Area"),
     "LWPOLYLINE": ("Closed", "Length", "Area", "Coordinates"),
@@ -76,6 +76,10 @@ PROPS = {
                        "XScaleFactor", "YScaleFactor", "HasAttributes"),
     "MULTILEADER": ("TextString", "LeaderType"),
     "ACDBFCF": ("TextString",),
+    "3DSOLID": ("Volume", "Centroid", "SolidType"),
+    "REGION": ("Area", "Centroid"),
+    "SURFACE": ("Area",),
+    "WIPEOUT": (),
 }
 for _t in _DIM_TYPES:
     PROPS[_t] = ("Measurement", "TextPosition", "TextOverride")
@@ -237,6 +241,159 @@ def _read_block_table(doc: Any) -> Dict[str, Dict[str, Any]]:
     return out
 
 
+def _color_value(obj: Any) -> Any:
+    """图层/文字的颜色：可能是 int，也可能是 AcCmColor 对象。"""
+    if obj is None:
+        return None
+    for attr in ("ColorIndex", "RGB"):
+        try:
+            return int(getattr(obj, attr))
+        except Exception:                               # noqa: BLE001
+            continue
+    try:
+        return str(obj)
+    except Exception:                                   # noqa: BLE001
+        return None
+
+
+def _read_named_table(collection: Any, props: tuple,
+                      label: str) -> Dict[str, Dict[str, Any]]:
+    """把 Layers / TextStyles / DimStyles / Layouts 这类命名表读成字典。"""
+    out: Dict[str, Dict[str, Any]] = {}
+    try:
+        n = int(com.retry(lambda: collection.Count, label=label + ".Count"))
+    except Exception:                                   # noqa: BLE001
+        return out
+    for i in range(n):
+        try:
+            item = com.retry(lambda i=i: collection.Item(i), label=label + ".Item")
+            name = str(item.Name)
+        except Exception:                               # noqa: BLE001
+            continue
+        row: Dict[str, Any] = {}
+        for prop in props:
+            try:
+                row[prop] = _get(item, prop, attempts=1)
+            except Exception:                           # noqa: BLE001
+                continue
+        out[name] = row
+    return out
+
+
+_TABLE_PROPS = {
+    "layers": ("Color", "Linetype", "Lineweight", "Plottable", "Freeze", "Lock",
+               "LayerOn"),
+    "textstyles": ("FontFile", "BigFontFile", "Height", "Width", "LastHeight"),
+    "dimstyles": ("DimScale", "DimTxt", "DimAsz"),
+}
+
+
+_META_VARS = ("DIMTXT", "DIMTOL", "DIMTP", "DIMTM", "MEASUREMENT",
+              "CLAYER", "CVPORT", "VIEWSIZE")
+
+
+def _read_meta(doc: Any) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"vars": {}, "view": {}}
+    for name in _META_VARS:
+        val = _call(lambda n=name: doc.GetVariable(n), None, "GetVariable(%s)" % name)
+        if val is None:
+            continue
+        if name == "CLAYER":
+            out["vars"][name] = str(val)
+            continue
+        try:
+            out["vars"][name] = float(val)
+        except (TypeError, ValueError):
+            out["vars"][name] = val
+    for name, key in (("VIEWCTR", "center"), ("VIEWSIZE", "size"),
+                      ("VIEWDIR", "dir")):
+        val = _call(lambda n=name: doc.GetVariable(n), None, "GetVariable(%s)" % name)
+        if key == "size":
+            try:
+                out["view"][key] = float(val)
+            except (TypeError, ValueError):
+                pass
+        else:
+            try:
+                out["view"][key] = [float(x) for x in val]
+            except (TypeError, ValueError):
+                pass
+    return out
+
+
+def _retry_get(obj: Any, attr: str, attempts: int = 3) -> Any:
+    """取属性：AutoCAD 刚打开文档时命名表可能还没就绪，短重试。"""
+    for i in range(attempts):
+        try:
+            return getattr(obj, attr)
+        except Exception:                           # noqa: BLE001
+            if i == attempts - 1:
+                return None
+            time.sleep(0.3)
+    return None
+
+
+def _retry_call(fn: Any, label: str, attempts: int = 3) -> Any:
+    for i in range(attempts):
+        try:
+            return fn()
+        except Exception:                           # noqa: BLE001
+            if i == attempts - 1:
+                return None
+            time.sleep(0.3)
+    return None
+
+
+def read_tables(doc: Any) -> Dict[str, Any]:
+    """读命名表（图层/文字样式/标注样式/布局）。判据用来做"表级"复核。"""
+    out: Dict[str, Any] = {"layers": {}, "textstyles": {}, "dimstyles": {},
+                           "layouts": {}, "active_layer": None,
+                           "active_dimstyle": None}
+    for key, attr in (("layers", "Layers"), ("textstyles", "TextStyles"),
+                      ("dimstyles", "DimStyles"), ("layouts", "Layouts")):
+        try:
+            coll = com.retry(lambda a=attr: getattr(doc, a), label=attr)
+        except Exception:                               # noqa: BLE001
+            continue
+        out[key] = _read_named_table(coll, _TABLE_PROPS.get(key, ()), attr)
+    for key, attr in (("active_layer", "ActiveLayer"),
+                      ("active_dimstyle", "ActiveDimStyle")):
+        try:
+            out[key] = str(getattr(getattr(doc, attr), "Name"))
+        except Exception:                               # noqa: BLE001
+            pass
+    # 每个布局里的视口数（layout.multipage 的判据要用）
+    out["layout_viewports"] = {}
+    layouts = _retry_get(doc, "Layouts")
+    if layouts is not None:
+        try:
+            n_lay = int(layouts.Count)
+        except Exception:                           # noqa: BLE001
+            n_lay = 0
+        for i in range(n_lay):
+            lay = _retry_call(lambda i=i: layouts.Item(i), "Layouts.Item")
+            if lay is None:
+                continue
+            name = str(getattr(lay, "Name", ""))
+            if not name:
+                continue
+            n = 0
+            blk = _retry_get(lay, "Block")
+            if blk is not None:
+                try:
+                    for j in range(int(blk.Count)):
+                        if str(blk.Item(j).ObjectName) == "AcDbViewport":
+                            n += 1
+                except Exception:                   # noqa: BLE001
+                    pass
+            out["layout_viewports"][name] = n
+    # 颜色对象归一化成 int
+    for name, row in out["layers"].items():
+        if "Color" in row:
+            row["Color"] = _color_value(row["Color"])
+    return out
+
+
 def read_drawing(doc: Any, source: str = "memory") -> Drawing:
     """把一个文档读成 :class:`Drawing`。"""
     d = Drawing(source=source, insunits=getvar(doc, "INSUNITS"))
@@ -246,6 +403,8 @@ def read_drawing(doc: Any, source: str = "memory") -> Drawing:
         d.meta["doc_name"] = None
     d.meta["dismassoc"] = getvar(doc, "DIMASSOC")
     d.meta["blocks"] = _read_block_table(doc)
+    d.meta["tables"] = read_tables(doc)
+    d.meta.update(_read_meta(doc))
 
     try:
         ms = com.retry(lambda: doc.ModelSpace, label="ModelSpace")
@@ -279,6 +438,10 @@ def read_drawing(doc: Any, source: str = "memory") -> Drawing:
             attrs[prop] = val
         try:
             attrs["ObjectName"] = str(_get(e, "ObjectName", attempts=1))
+        except Exception:                               # noqa: BLE001
+            pass
+        try:
+            attrs["Layer"] = str(_get(e, "Layer", attempts=1))
         except Exception:                               # noqa: BLE001
             pass
         if t == "BLOCKREFERENCE":

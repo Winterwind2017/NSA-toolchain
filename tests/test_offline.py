@@ -28,7 +28,8 @@ def test_registry_loads_and_validates() -> None:
 
 def test_registry_counts_match_header() -> None:
     c = registry.counts()
-    assert c["total"] == c["verified"] + c["usable_unjudged"] + c["pending"] + c["dead"]
+    assert c["total"] == (c["verified"] + c["usable_unjudged"] + c["pending"]
+                          + c["dead"] + c["external"])
     assert c["verified"] > 0 and c["dead"] > 0
 
 

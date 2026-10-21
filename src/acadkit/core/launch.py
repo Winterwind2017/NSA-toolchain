@@ -47,13 +47,28 @@ def find_acad_exe() -> Optional[str]:
 
 
 def read_profile(app: Any) -> Optional[str]:
-    """读 CPROFILE：先试应用级变量，再退回活动文档。"""
-    for getter in (lambda: app.GetVariable("CPROFILE"),
-                   lambda: app.ActiveDocument.GetVariable("CPROFILE")):
+    """读 CPROFILE：应用级 → 活动文档 → 任一文档，都读不到才返回 None。
+
+    `CPROFILE` 是文档级变量；刚建完文档时 ActiveDocument 代理可能还没就绪，
+    所以这里要短重试（本机实测偶发一次读不到）。
+    """
+    for _ in range(4):
+        for getter in (lambda: app.GetVariable("CPROFILE"),
+                       lambda: app.ActiveDocument.GetVariable("CPROFILE")):
+            try:
+                return str(getter())
+            except Exception:                           # noqa: BLE001
+                continue
         try:
-            return str(getter())
+            docs = app.Documents
+            for i in range(int(docs.Count)):
+                try:
+                    return str(docs.Item(i).GetVariable("CPROFILE"))
+                except Exception:                       # noqa: BLE001
+                    continue
         except Exception:                               # noqa: BLE001
-            continue
+            pass
+        time.sleep(0.5)
     return None
 
 

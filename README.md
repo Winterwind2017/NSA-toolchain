@@ -1,109 +1,150 @@
-# acadkit
+# acadkit — 我自己的 AutoCAD 自动化内核
 
-AutoCAD 2025 自动化内核（库 + CLI + 可选 MCP）。仓库：`Winterwind2017/autocad-agent-kit`。设计与
-[swkit](https://github.com/Winterwind2017/solidworks-agent-kit) 同构：
+> 不是"又一层 MCP 包装"，而是**带判据的工具内核**：每条宣称可用的能力，
+> 都在 `docs/registry.yaml` 登记了真实 API、实测证据，以及——同样重要的——
+> **哪些根本用不了、为什么**。
 
-> **每个能力都必须有可复现的判据；说不清判据的，不许标 verified。**
+一个仓库，三个入口，同一套能力：
 
-当前状态：**P0 完成 + P1 步骤 1、2 完成**（包骨架 + `acadkit status` 环境自检 +
-`judges/` 四族判据与 14 条真机用例，全部跑通）。进度与真机验证记录见
-[`docs/P1_PROGRESS.md`](docs/P1_PROGRESS.md)。
+| 入口 | 用法 | 面向 |
+|---|---|---|
+| Python 库 | `from acadkit import caps; caps.get("geom.circle")` | 写脚本、二次开发 |
+| CLI | `acadkit run --only geom` / `acadkit cap dim.linear --param expected=80` | 手动跑、批处理、排查 |
+| MCP server | `acadkit-mcp`（stdio） | 任意 MCP 客户端（Claude / DSH / 编辑器） |
 
-## 已经能跑的命令
+设计原则一句话：**能力 = 动作 + 判据 + 真机用例 + 文档**。四件套缺一，不许标
+`verified`。
+
+## 为什么不是直接包一层 ActiveX
+
+上游那些"工具清单"式实现，实测下来有一批**看着能用、其实不能**：
+
+- `Solid3D.Boolean(1, other)` 并集把 12000 算成 **4000**（应 10000），
+  `Boolean(3, …)` 直接报"参数 Operation 无效"；
+- `PlotToFile` 返回 True，文件 **0 字节**（`BACKGROUNDPLOT=2` 的锅）；
+- `MLeader.TextString` 赋值不报错、读回**空串**；
+- `-LAYERSTATE` 只要动过图层表就**永久卡在命令提示符**；
+- `ACDBTABLE` 第 0 行是合并标题行，往里写的东西**落盘就没了**。
+
+这些不是"参数没调对"，所以本仓库的做法是：**动作按实测配方重写，判据一律
+从 AutoCAD 读回**（计数/面积/体积/句柄/文件签名），并把结论写进
+[`docs/PITFALLS.md`](docs/PITFALLS.md) 与 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md)。
+
+## 一条命令跑通
 
 ```bash
-export PYTHONPATH=<repo>/src        # 或 pip install -e .
-
-acadkit selftest                    # 离线自检：registry 60 条 + 判据清单
-acadkit registry                    # 能力清单（--status verified / dead / ...）
-acadkit judges                      # 判据清单（四族 / 级别 / registry 覆盖）
-acadkit status                      # 环境自检（**只附加，不启动 AutoCAD**）
-acadkit env-baseline                # 采环境基线 → ~/.acadkit/env_baseline.json
-acadkit env-check                   # 与基线比对（漂移则 rc=5）
-
-python tests/live_judges.py         # 真机 14 例（未运行会自动 /p VANILLA 起，跑完干净退出）
-python -m pytest tests              # 离线测试（不需 AutoCAD）
+python tests/run_all.py          # 离线 78 条 + 文档一致性 + 真机 52 条（约 6–8 分钟）
+python tests/run_all.py --skip-live
 ```
 
-退出码：`0` 通过 · `3` AutoCAD 未运行（只读命令的正常结果）· `4` 环境不合规
-（profile 不是 `<<VANILLA>>` / 多实例）· `5` 环境漂移。
+真机套件会自己用 `acad.exe /p "<<VANILLA>>"` 起 AutoCAD，逐条跑
+"建图 → 读回 → 存盘重开 → 判据 → 环境自检"，跑完 `clean_quit`（进程消失、
+不留 `.sv$`）。
 
-真机已验证：未运行时不启动、运行中能读 profile、基线可采、改一个系统变量能被
-`env-check` 检出并 rc=5、还原后干净、`clean_quit` 能让进程真正消失且不留 `.sv$`。
+<!-- gen:counts:BEGIN -->
+| 指标 | 数字 |
+|---|---|
+| registry 能力总数 | 62 |
+| verified（有判据、真机通过） | 50 |
+| usable_unjudged | 0 |
+| pending | 0 |
+| dead（本机无官方路径） | 8 |
+| external（外部资产 / 未移植） | 4 |
+| 内核实现能力（`caps`） | 52 |
+| caps 覆盖的 registry id | 50 / 62 |
+| 真机用例 | 52 条（含负例 2 条） |
+<!-- gen:counts:END -->
 
-## 判据（P1 步骤 2）
+## 快速开始
 
-`docs/JUDGE_SPEC.md` 的四级判据落成了四族、14 条判据（`src/acadkit/judges/`）：
+```powershell
+pip install -e ".[dxf,mcp]"      # Windows + 已装 AutoCAD 2025（完整版）
 
-| 族 | 判据 | 级别 |
+acadkit selftest                 # 离线自检（registry / caps / 判据）
+acadkit status                   # 环境自检（只附加，不启动 AutoCAD）
+acadkit list                     # 能做什么（族 / 级别 / 状态）
+acadkit run --only geom,dim      # 真机跑两族
+acadkit-mcp                      # MCP（stdio）
+```
+
+MCP 客户端注册示例：
+
+```json
+{ "mcpServers": { "acadkit": { "command": "acadkit-mcp", "args": [] } } }
+```
+
+## 判据：四级，缺一不可
+
+来自 [`docs/JUDGE_SPEC.md`](docs/JUDGE_SPEC.md)：
+
+| 级别 | 内容 | 例子 |
 |---|---|---|
-| `geom` | `geom.circle` / `geom.line` / `geom.rect` | L1–L4 |
-| `dim` | `dim.linear` / `dim.diametric` / `dim.radial` + 负例 `dim.api_missing` | L1–L4 |
-| `export` | `export.dwg` / `export.dxf` / `export.pdf` | L0–L4（pdf 到 L3） |
-| `block-table` | `block.define` / `block.insert_with_attributes` / `table.bom` + 负例 `block.short_attributes` | L1–L4 |
+| L1 | 计数：目标表/类型的数量按预期变化 | 圆 +1 |
+| L2 | 属性读回：关键字段与输入一致 | `Radius=25`、`Measurement=60` |
+| L3 | 几何自洽：用解析值交叉验证 | `Area≈πR²`、`Volume=12000`、`pdf 页数=1` |
+| L4 | 存盘重开：DWG 重开后按句柄再读一遍 | 属性仍一致、计数仍一致 |
 
-三条硬规矩（代码里强制，不靠自觉）：
+硬规矩（代码里强制）：
 
-1. `ok` 只由 `base.verdict()` 用 `all(checks.values())` 算出；`checks` 里有
-   `None` 或空集直接抛 `JudgeError`（空集 `all()` 恒真 = 等于没判）；
-2. `detail` 必须有能人工核对的数字（半径/面积/长度/页数/尺寸/件数）；
+1. `ok` 只在 `judges.base.verdict()` 里由 `all(checks.values())` 算出；
+   `checks` 含 `None` 或空集直接抛 `JudgeError`；
+2. `detail` 必须有能人工核对的数字；
 3. 每条用例**前后各一次**环境自检（profile / 系统变量 / 文档数 / `.sv$` /
-   进程 / 单实例 / 有没有弹模态），不一致即判失败；判据失败保留原始读回值。
+   进程 / 单实例 / 有没有弹模态 / 出图后变量还原）；
+4. 判据是纯函数（吃 `Readback`，不碰 COM），所以同一份代码能用离线构造的
+   读回值证明"它真的会失败"。
 
-判据是纯函数（吃 `Readback`，不碰 COM），所以同一份代码既能被真机用例驱动，
-也能用离线构造的读回值证明"它真的会失败"——**不能失败的判据，通常也证明不了成功**。
-
-## P0 产出（已就绪）
-
-| 文件 | 内容 |
-|---|---|
-| [`docs/registry.yaml`](docs/registry.yaml) | **60 条能力**：后端、状态、判据草案、证据出处 |
-| [`docs/BACKEND_MATRIX.md`](docs/BACKEND_MATRIX.md) | 4 条执行路径（com/lisp/headless/file）× 20 个能力族 |
-| [`docs/JUDGE_SPEC.md`](docs/JUDGE_SPEC.md) | 判据四级 + 按族模板 + 环境自检 + 负面对照 |
-| [`docs/P0_SUMMARY.md`](docs/P0_SUMMARY.md) | 结论：能不能做、工作量、必须定的规矩 |
-| `docs/_extract.json` | 从三处源码抽出的能力清单（机器可读） |
-
-## 结论摘要
-
-| 指标 | 值 |
-|---|---|
-| 能力条目 | 60 |
-| `verified`（判据说得清） | 30 |
-| `usable_unjudged`（可用但缺判据） | 22 |
-| `pending` | 2 |
-| `dead`（官方缺口） | 6 |
-| 后端覆盖 | com 48 / lisp 31 / headless 14 / file 2 / python 1 / csg 1 |
-
-## 三处与 swkit 的本质差异
-
-1. **执行路径不是一条**：com（ActiveX 晚绑定）/ lisp（命令层）/ headless
-   （accoreconsole+ezdxf）/ file。每条能力都要声明后端。
-2. **判据不是体积**：AutoCAD 用"计数 → 属性读回 → 几何自洽 → **重开文件复核**"四级。
-3. **多一层风险：环境污染**。profile（`<<VANILLA>>`）、`TRUSTEDPATHS`、
-   `SECURELOAD`、`.sv$` 残留都会跨会话影响本机。判据必须包含**环境自检**。
-
-## 目录约定（P1 起）
+## 架构
 
 ```
 src/acadkit/
-├─ core/        COM 晚绑定、profile 守卫、clean_quit、错误类型
-├─ backends/    com / lisp / headless / file 路由
-├─ judges/      四级判据实现（按族）
-├─ registry.py  从 docs/registry.yaml 载入
-└─ cli/         子命令（与 MCP 同一批实现）
-tests/          每个能力一条真机用例 + 环境自检
+├─ registry.py    docs/registry.yaml 载入（无 PyYAML 也能跑）
+├─ caps.py        能力表：id → 动作(build/) + 判据(judges/) + 默认参数 + 级别
+├─ live.py        真机执行层（起 CAD / 跑一条或一组 / 收尾 / 看门狗）
+├─ build/         怎么画：参数化动作（geom/text/dim/gdt/symbol/table/block/
+│                 frame/layer/envvars/solid/boolean/view/lisp/export）
+├─ judges/        怎么证明：base(verdict/Readback) + read(COM 读回) +
+│                 generic(实体/计数/命名表/体积) + 各族专用判据
+├─ core/          COM 桥（忙重试/代理刷新/干净退出）+ 启动 + 出图
+├─ cli/main.py    status / env-* / registry / list / cap / run / judges / selftest
+└─ mcp/server.py  MCP：status / list_caps / registry / run_caps
 ```
 
-## 边界
+`tests/live_judges.py` 是 `live.py` 的薄壳；`tests/test_judges.py` 是判据的离线
+测试（正例 + **每条判据都必须能失败**）；`tests/test_docs.py` 防文档漂移。
 
-`acadkit` **不注册第二个 AutoCAD MCP**。与 `autocad-mcp` 的关系是复用其后端，
-对外 CLI 优先；MCP 面与 `autocad-mcp` 二选一（两个 MCP 同连 AutoCAD 会互相抢
-文档与命令队列）。
+## 实测记录
 
-## 运行前提
+- [`docs/PITFALLS.md`](docs/PITFALLS.md) —— 12 类"看着能用其实不能用"的坑；
+- [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) —— dead / external 两张表；
+- [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md) —— 全部能力（自动生成）；
+- [`docs/registry.yaml`](docs/registry.yaml) —— 唯一事实来源；
+- [`docs/P1_PROGRESS.md`](docs/P1_PROGRESS.md) —— 分步真机验证记录。
 
-- AutoCAD **完整版**（非 LT；LT 没有 `vlax-*`/ActiveX）
-- 启动配置必须是 `<<VANILLA>>`（`acad.exe /p "<<VANILLA>>"`），不是 `<<ACADE>>`
-- 单实例运行（多实例会导致 COM 连错文档）
-- 真机判据需要 `pywin32`；DXF 读回优先用 `ezdxf`（`pip install -e ".[dxf]"`，
-  没装会退回内置的最小 group-code 解析器，并在结果的 `reader` 字段里写明）
+## 已知边界
+
+- **标注是非关联的**：COM `AddDimRotated` 不建立与几何的关联，改线不会自动更新
+  `Measurement`（`DIMASSOC=2` 的联动没测）。
+- **表格中文**：默认 `Standard`（txt.shx）下中文单元格可能丢字；本内核用
+  ASCII 内容 + 5 行排法验证。
+- **PDF 只覆盖模型空间单页 A3**；多布局合并（`export.pdf_multipage`）是 dead。
+- **旋转体**（`solid.revolve`）本机不可用；见 UNSUPPORTED。
+- **外部资产类**（Electrical 数据库 / PLC 模板 / P&ID 符号库 / CSG 投影）不随
+  内核分发，标 `external`。
+
+## 开发
+
+```bash
+python scripts/doctor.py            # 换机器自检（远端/SSH/pywin32/AutoCAD/profile）
+python scripts/install_hooks.py     # 装 pre-push（拿不到 SSH 或文档过期就拒推）
+python tools/gen_readme_counts.py   # 重新生成 README 计数 + CAPABILITIES.md
+python tools/gen_unsupported.py     # 重新生成 UNSUPPORTED.md
+```
+
+加能力的标准流程见 [`docs/RECIPES.md`](docs/RECIPES.md)，
+给 agent 的第一页是 [`AGENTS.md`](AGENTS.md)。
+
+## 许可
+
+MIT（[`LICENSE`](LICENSE)）。第三方依赖与商标说明见 [`NOTICE.md`](NOTICE.md)。
+本仓库不隶属于 Autodesk。

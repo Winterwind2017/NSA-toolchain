@@ -160,20 +160,93 @@ python tests/live_judges.py [--only geom,dim] [--keep]
    `com.refresh(app)` 重取代理，失效就再取；同时 `refresh()` **只换真实 COM
    对象**——离线测试用假对象，绝不能因此连上并 Quit 掉用户开着的 AutoCAD。
 
+## ✅ 步骤 3：能力面铺开（52 条能力 + CLI/MCP + 文档 + 打包）
+
+**产出**
+
+```
+src/acadkit/
+├─ caps.py          能力表：id → 动作 + 判据 + 默认参数 + 级别（唯一事实来源之一）
+├─ live.py          真机执行层（起 CAD / 跑一条或一组 / 看门狗 / 干净收尾）
+├─ fit.py           配合代号查表（GB/T 1800.1）
+├─ build/           14 个族的参数化动作（geom/text/dim/gdt/symbol/table/block/
+│                   frame/layer/envvars/solid/boolean/view/lisp/export）
+├─ judges/generic.py  通用判据：新增实体 / 多类型计数 / 命名表 / 体积
+├─ judges/*.py      新增：dim_extra/env/fit/frame/layer/solid/symbol/view
+├─ cli/main.py      新增 list / cap / run，judges 改由 caps 驱动
+└─ mcp/server.py    MCP：status / list_caps / registry / run_caps
+docs/CAPABILITIES.md 自动生成的能力清单（52 条）
+docs/PITFALLS.md    12 类实测坑（从步骤 2 的 8 条扩到 12 类）
+docs/RECIPES.md     加一条能力的标准流程（registry→build→judge→caps→真机→测试）
+docs/UNSUPPORTED.md dead / external 两张表（自动生成）
+scripts/doctor.py   换机器自检（远端/SSH/pywin32/AutoCAD/profile）
+scripts/install_hooks.py + hooks/pre-push  文档与代码不一致就拒推
+tools/gen_readme_counts.py / gen_unsupported.py / gen_regression.py
+examples/e2e_demo.py  一条命令真机演示 9 条能力
+tests/test_docs.py    文档一致性（README 计数 / 能力表 / UNSUPPORTED）
+tests/test_judges_extra.py  新增判据的离线测试（每条都要能失败）
+tests/run_all.py      离线 + 文档 + 真机一条命令
+```
+
+**registry 收敛**：62 条能力 = **50 verified + 8 dead + 4 external**；
+`caps` 覆盖全部 50 条 verified（另含 2 条负例）。
+
+**真机验收**：`python tests/live_judges.py` → **52 / 52 通过**（含负例 2 条），
+总耗时 344.8 s（单例最长 9.0 s），环境自检 365 项全绿；跑前/跑后
+`process_count 0 → 0`、`sv_count 0 → 0`（`clean_quit` 进程真退出）。证据见
+`docs/regression/2026-10-21.md`（由 `tools/gen_regression.py` 从 results.json 生成）。
+
+| 族 | 条数 | 代表判据 |
+|---|---|---|
+| geom | 8 | 圆弧 Center/Radius/起止角；椭圆长短轴+面积；样条控制点；填充面积 |
+| text | 3 | 文字内容/位置/字高；多行文字宽度；文字样式字体文件 |
+| dim | 12 | 对齐/角度/坐标/弧长 Measurement；基线/连续成组；公差 TextOverride；配合表值 |
+| gdt | 1 | `{\Fgdt;n}` 符号码读回 |
+| symbol | 5 | 粗糙度/焊接 线+文字计数；中心线线型；中心标记过圆心；气泡序号 |
+| table | 2 | BOM/网格逐格 + 合计 = 明细之和 |
+| block | 3 | 块定义 Attdef / 插入属性逐 Tag / 负例（少属性必须失败） |
+| frame | 2 | A3 图框面积 + 标题栏 6 属性；布局视口 +1 |
+| layer | 3 | 建层颜色；当前层 + 实体落层；属性级快照→改→恢复 |
+| env | 2 | 系统变量设置/读回/还原；ActiveDimStyle + DIMTXT |
+| solid | 2 | box/cylinder/sphere 体积 = 8000 / 6283.185 / 4188.79；拉伸 12000 |
+| boolean | 4 | union 10000 / subtract 6000 / intersect 2000；SLICE 两块和 = 8000 |
+| view | 1 | ZoomExtents 后 VIEWCTR/VIEWSIZE 包住几何 |
+| lisp | 1 | 命令行内联 LISP 建圆（不加载 .lsp、不碰 TRUSTEDPATHS） |
+| export | 3 | DWG 魔数+句柄；DXF 族直方图+重装；PDF A3+非空白 |
+
+**本步新修的问题**（都已进 `docs/PITFALLS.md`）
+
+1. `AddBox` 的 origin 是**中心**不是角点（由并集体积反推：12000 vs 10000）。
+2. ActiveX `Solid3D.Boolean` 算错（union 4000 / intersect 报参数无效）→
+   改命令行 + 按句柄选择；SUBTRACT 要两组选择集（`h1 "" h2 ""`）。
+3. SLICE 的剖面点若落在盒子边缘（老几何 x=20）会不切分 → 改中心平面 x=0。
+4. `MLeader.TextString` 写不进（赋值不报错、读回空串）→ 气泡改圆+线+文字。
+5. `-LAYERSTATE` 动过图层表后**永久挂起**（SendCommand / LISP command /
+   vl-cmdf 全试过）→ 放弃命名图层状态，改 `layer.snapshot`（属性级）。
+6. `AddRevolvedSolid` 三种轮廓都报"输入无效" → `solid.revolve` 标 dead，
+   `solid.extrude` 单独 verified。
+7. `read_tables` 在刚重开的文档上偶发读空 → 命名表/布局读取加短重试。
+8. `reopen_check` 只支持数值比较，字符串（PatternName/TextString）与点列
+   （多段线 vertices）一律误报 → 新增 `value_same` 统一比较。
+
 ## 已知限制（写进判据之前的边界）
 
 * 标注是**非关联**的：COM `AddDimRotated` 不建立与线的关联，改几何不会自动更新
   `Measurement`，所以 `DIMASSOC=2` 的联动这一条**没测**。
 * 表格单元格的文字样式：默认 `Standard`（txt.shx）下中文即便在非标题行也可能
   丢字；本步只测了 ASCII 内容 + 5 行排法。
-* `dim.fit_code`（GB/T 1800 表值对照）还没有判据，等 `fit_deviation` 移植后再落。
-* `export.pdf` 只覆盖"模型空间 + 单页 A3"；多布局/多页（`export.pdf_multipage`
-  已登记为 dead）没测。
+* `export.pdf` 只覆盖"模型空间 + 单页 A3"；多布局/多页
+  （`export.pdf_multipage` 已登记为 dead）没测。
+* `layer.state`（AutoCAD 命名图层状态）在 COM 下不可交付，替代是
+  `layer.snapshot`（属性级快照，不落盘为命名状态）。
+* `solid.revolve`、`projection.orthographic`、`ae.db`、`plc.build`、`pid.symbol`
+  不在本内核交付范围（见 `docs/UNSUPPORTED.md`）。
 
-## 下一步（P1 剩余）
+## 下一步（P2 候选）
 
-| 步 | 内容 | 估时 |
-|---|---|---|
-| 3 | `verified` 30 条里的前 12 条落成 CLI 子命令（判据已在，CLI 面还没铺开） | 1 天 |
-| 5 | 22 条 `usable_unjudged` 补到 L2 | 1.5 天 |
-| 6 | 标注关联（DIMASSOC=2 联动）、中文表格样式、`fit_code` 判据 | 0.5 天 |
+| 项 | 内容 |
+|---|---|
+| 外部资产 | Electrical 数据库 / PLC 模板 / P&ID 符号库——需要先定"随内核分发"还是"外部依赖" |
+| 投影 | CSG 正交投影引擎（三视图 + 消隐），从 mech_build 移植 |
+| 标注关联 | `DIMASSOC=2` 联动 + 中文表格样式的判据 |
+| 多页 PDF | 自写最小 PDF 合并器（`export.pdf_multipage`） |

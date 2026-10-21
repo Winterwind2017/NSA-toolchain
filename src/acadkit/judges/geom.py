@@ -106,6 +106,28 @@ def judge_line(rb: Readback, *, start=(0.0, 0.0, 0.0), end=(60.0, 0.0, 0.0),
     return verdict(checks, detail, raw)
 
 
+def judge_spline(rb: Readback, *, closed: bool = False,
+                 min_control_points: int = 1) -> Dict[str, Any]:
+    """SPLINE：本机实测 3 个拟合点会得到 5 个控制点（AutoCAD 自动补切向控制点），
+    所以只判"控制点数 >= 输入点数"，不判相等。"""
+    ent = _new_one(rb, "SPLINE")
+    n = num(ent.get("NumberOfControlPoints")) if ent else None
+    re_ok, re_detail = (reopen_check(rb, ent, ("Closed", "NumberOfControlPoints"))
+                        if ent else (False, {"mismatch": {"entity": "没有唯一定位到新样条"}}))
+    checks = {
+        "count": _count_ok(rb, "SPLINE"),
+        "type": bool(ent) and ent.get("ObjectName") == "AcDbSpline",
+        "closed": bool(ent) and bool(ent.get("Closed")) == closed,
+        "control_points": bool(n is not None and n >= min_control_points),
+        "reopen": re_ok,
+    }
+    detail = {"handle": ent.handle if ent else None,
+              "control_points": n,
+              "min_control_points": min_control_points,
+              "reopen": re_detail}
+    return verdict(checks, detail, {"entity": ent.attrs if ent else None})
+
+
 # ── 矩形（闭合 LWPOLYLINE）──────────────────────────────────────────
 def judge_rect(rb: Readback, *, corner1=(0.0, 0.0), corner2=(40.0, 30.0),
                tol: float = 1e-6) -> Dict[str, Any]:

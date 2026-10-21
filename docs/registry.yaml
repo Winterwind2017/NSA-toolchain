@@ -35,447 +35,409 @@ capabilities:
   # ── 基础几何 ───────────────────────────────────────────────
   - id: geom.line
     family: geom
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "autocad-mcp entity.create_line / mech_build spec.geometry"
-    judge: "实体数 +1；读回实体类型=LINE、两端点坐标=输入值；重开文件再读仍一致"
-    evidence: "matrix #1"
-
+    source: "'autocad-mcp entity.create_line / mech_build spec.geometry'"
+    judge: "'实体数 +1；读回实体类型=LINE、两端点坐标=输入值；重开文件再读仍一致'"
+    evidence: "matrix #1；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.circle
     family: geom
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "autocad-mcp entity.create_circle / mech_build"
-    judge: "实体数 +1；读回类型=CIRCLE、Center/Radius 一致；面积≈πR²"
-    evidence: "matrix #1"
-
+    source: "'autocad-mcp entity.create_circle / mech_build'"
+    judge: "'实体数 +1；读回类型=CIRCLE、Center/Radius 一致；面积≈πR²'"
+    evidence: "matrix #1；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.arc
     family: geom
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "autocad-mcp entity.create_arc"
-    judge: "读回类型=ARC、Center/Radius/StartAngle/EndAngle 一致"
-    evidence: "matrix #1"
-
+    source: "'autocad-mcp entity.create_arc'"
+    judge: "'读回类型=ARC、Center/Radius/StartAngle/EndAngle 一致'"
+    evidence: "matrix #1；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.polyline
     family: geom
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "autocad-mcp entity.create_polyline"
-    judge: "读回类型=LWPOLYLINE、顶点数一致、闭合标志一致"
-    evidence: "matrix #2"
-
+    source: "'autocad-mcp entity.create_polyline'"
+    judge: "'读回类型=LWPOLYLINE、顶点数一致、闭合标志一致'"
+    evidence: "matrix #2；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.rect
     family: geom
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "autocad-mcp entity.create_rectangle"
-    judge: "读回为闭合多段线、顶点数=4、对角点一致"
-    evidence: "matrix #2"
-
+    source: "'autocad-mcp entity.create_rectangle'"
+    judge: "'读回为闭合多段线、顶点数=4、对角点一致'"
+    evidence: "matrix #2；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.ellipse
     family: geom
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "autocad-mcp entity.create_ellipse"
-    judge: "读回类型=ELLIPSE、长轴/短轴比一致"
-    evidence: "matrix #2"
-
+    source: "'autocad-mcp entity.create_ellipse'"
+    judge: "'读回类型=ELLIPSE、长轴/短轴比一致'"
+    evidence: "matrix #2；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.spline
     family: geom
-    backend: [com]
-    status: pending
-    source: "ActiveX AddSpline（本机可用，mech_build 未封装）"
-    judge: "读回类型=SPLINE、控制点数=输入点数"
-    evidence: "matrix #2（autocad-mcp 无、本机有）"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'ActiveX AddSpline（本机可用，mech_build 未封装）'"
+    judge: "'读回类型=SPLINE、控制点数=输入点数'"
+    evidence: "matrix #2（autocad-mcp 无、本机有）；P1 真机 2026-10-21（acadkit caps）"
   - id: geom.hatch
     family: geom
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "AddHatch + AppendOuterLoop(VARIANT) + Evaluate"
-    judge: "读回类型=HATCH、面积≈外环面积；Evaluate 后 PatternName 一致"
-    evidence: "matrix #5 / #2.1"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'AddHatch + AppendOuterLoop(VARIANT) + Evaluate'"
+    judge: "'读回类型=HATCH、面积≈外环面积；Evaluate 后 PatternName 一致'"
+    evidence: "matrix #5 / #2.1；P1 真机 2026-10-21（acadkit caps）"
   # ── 文字 ──────────────────────────────────────────────────
   - id: text.single
     family: text
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "AddText / autocad-mcp annotation.create_text"
-    judge: "读回 TextString 完全一致、InsertionPoint 一致、Height 一致"
-    evidence: "matrix #3"
-
+    source: "'AddText / autocad-mcp annotation.create_text'"
+    judge: "'读回 TextString 完全一致、InsertionPoint 一致、Height 一致'"
+    evidence: "matrix #3；P1 真机 2026-10-21（acadkit caps）"
   - id: text.mtext
     family: text
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "AddMText / entity.create_mtext"
-    judge: "读回 TextString 含输入全文（含格式码）、Width 一致"
-    evidence: "matrix #4"
-
+    source: "'AddMText / entity.create_mtext'"
+    judge: "'读回 TextString 含输入全文（含格式码）、Width 一致'"
+    evidence: "matrix #4；P1 真机 2026-10-21（acadkit caps）"
   - id: text.style
     family: text
-    backend: [com]
-    status: usable_unjudged
-    source: "TextStyles.Add + SetFont"
-    judge: "TextStyles 表新增一项、FontFile 读回一致"
-    evidence: "matrix #24"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'TextStyles.Add + SetFont'"
+    judge: "'TextStyles 表新增一项、FontFile 读回一致'"
+    evidence: "matrix #24；P1 真机 2026-10-21（acadkit caps）"
   # ── 标注 ──────────────────────────────────────────────────
   - id: dim.linear
     family: dim
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "AddDimRotated（0°=水平 / π/2=垂直）"
-    judge: "读回类型=ROTATEDDIMENSION、Measurement≈输入长度、TextPosition 在预期侧"
-    evidence: "matrix #6 / #2.1"
-
+    source: "'AddDimRotated（0°=水平 / π/2=垂直）'"
+    judge: "'读回类型=ROTATEDDIMENSION、Measurement≈输入长度、TextPosition 在预期侧'"
+    evidence: "matrix #6 / #2.1；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.aligned
     family: dim
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "AddDimAligned"
-    judge: "读回类型=ALIGNEDDIMENSION、Measurement 一致"
-    evidence: "matrix #7"
-
+    source: "'AddDimAligned'"
+    judge: "'读回类型=ALIGNEDDIMENSION、Measurement 一致'"
+    evidence: "matrix #7；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.diametric
     family: dim
-    backend: [com]
+    backend: [[, c, o, m, ]]
     status: verified
-    source: "AddDimDiametric（autocad-mcp 缺、本机 ActiveX 有）"
-    judge: "读回类型=DIAMETRICDIMENSION、Measurement≈2R"
-    evidence: "matrix #8"
-
+    source: "'AddDimDiametric（autocad-mcp 缺、本机 ActiveX 有）'"
+    judge: "'读回类型=DIAMETRICDIMENSION、Measurement≈2R'"
+    evidence: "matrix #8；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.radial
     family: dim
-    backend: [com]
+    backend: [[, c, o, m, ]]
     status: verified
-    source: "AddDimRadial"
-    judge: "读回类型=RADIALDIMENSION、Measurement≈R"
-    evidence: "matrix #9"
-
+    source: "'AddDimRadial'"
+    judge: "'读回类型=RADIALDIMENSION、Measurement≈R'"
+    evidence: "matrix #9；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.angular
     family: dim
-    backend: [com]
+    backend: [[, c, o, m, ]]
     status: verified
-    source: "AddDimAngular"
-    judge: "读回类型=ANGULARDIMENSION、Measurement(rad)≈输入角度"
-    evidence: "matrix #10"
-
+    source: "'AddDimAngular'"
+    judge: "'读回类型=ANGULARDIMENSION、Measurement(rad)≈输入角度'"
+    evidence: "matrix #10；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.ordinate
     family: dim
-    backend: [com]
+    backend: [[, c, o, m, ]]
     status: verified
-    source: "AddDimOrdinate"
-    judge: "读回类型=ORDINATEDIMENSION、坐标值一致"
-    evidence: "matrix #11"
-
+    source: "'AddDimOrdinate'"
+    judge: "'读回类型=ORDINATEDIMENSION、坐标值一致'"
+    evidence: "matrix #11；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.arc
     family: dim
-    backend: [com]
+    backend: [[, c, o, m, ]]
     status: verified
-    source: "AddDimArc"
-    judge: "读回类型=ARCDIMENSION、Measurement≈R·θ（不含前缀）"
-    evidence: "matrix #12"
-
+    source: "'AddDimArc'"
+    judge: "'读回类型=ARCDIMENSION、Measurement≈R·θ（不含前缀）'"
+    evidence: "matrix #12；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.baseline
     family: dim
-    backend: [com]
-    status: usable_unjudged
-    source: "mech_build dim_baseline（手工排布，非 QDIM）"
-    judge: "同基线多标注 Measurement 递增关系正确、基线端点共线"
-    evidence: "matrix #13"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'mech_build dim_baseline（手工排布，非 QDIM）'"
+    judge: "'同基线多标注 Measurement 递增关系正确、基线端点共线'"
+    evidence: "matrix #13；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.continuous
     family: dim
-    backend: [com]
-    status: usable_unjudged
-    source: "mech_build dim_continuous（手工排布）"
-    judge: "相邻标注首尾相接（前一个终点=后一个起点）、总和≈总长"
-    evidence: "matrix #13"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'mech_build dim_continuous（手工排布）'"
+    judge: "'相邻标注首尾相接（前一个终点=后一个起点）、总和≈总长'"
+    evidence: "matrix #13；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.tolerance
     family: dim
-    backend: [com]
-    status: usable_unjudged
-    source: "DIMTOL/DIMLIM/DIMTP/DIMTM 变量 + mech_build tol(sym|dev|limits|fit)"
-    judge: "标注 Tolerance 字段读回（UpperLimit/LowerLimit 或 TextOverride 含代号）"
-    evidence: "matrix #14 / #2.3"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'DIMTOL/DIMLIM/DIMTP/DIMTM 变量 + mech_build tol(sym|dev|limits|fit)'"
+    judge: "'标注 Tolerance 字段读回（UpperLimit/LowerLimit 或 TextOverride 含代号）'"
+    evidence: "matrix #14 / #2.3；P1 真机 2026-10-21（acadkit caps）"
   - id: dim.fit_code
     family: dim
-    backend: [python]
+    backend: [[, p, y, t, h, o, n, ]]
     status: verified
-    source: "mech_build fit_deviation()：GB/T 1800.1、IT5–IT11、0–500mm、孔 H / 轴 h g f e d"
-    judge: "H7@50 上偏差=+0.025、h6@50 下偏差=-0.016（表值对照）；超范围必须抛错"
-    evidence: "matrix #4.1"
-
+    source: "'mech_build fit_deviation()：GB/T 1800.1、IT5–IT11、0–500mm、孔 H / 轴 h g f e d'"
+    judge: "'H7@50 上偏差=+0.025、h6@50 下偏差=-0.016（表值对照）；超范围必须抛错'"
+    evidence: "matrix #4.1；P1 真机 2026-10-21（acadkit caps）"
   # ── 形位公差 / 符号 ────────────────────────────────────────
   - id: gdt.tolerance
     family: gdt
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "AddTolerance（ACDBFCF）/ entmake tolerance"
-    judge: "实体类型=ACDBFCF 或 TOLERANCE、读回文字含 `{\\Fgdt;` 符号码"
-    evidence: "matrix #15 / #2.4"
-
+    source: "'AddTolerance（ACDBFCF）/ entmake tolerance'"
+    judge: "'实体类型=ACDBFCF 或 TOLERANCE、读回文字含 `{\\Fgdt;` 符号码'"
+    evidence: "matrix #15 / #2.4；P1 真机 2026-10-21（acadkit caps）"
   - id: symbol.roughness
     family: symbol
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "mech_build 自建粗糙度符号（无官方 API）"
-    judge: "组成图元数一致（线+文字）、文字含 Ra 值、块名唯一"
-    evidence: "matrix #19"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'mech_build 自建粗糙度符号（无官方 API）'"
+    judge: "'组成图元数一致（线+文字）、文字含 Ra 值、块名唯一'"
+    evidence: "matrix #19；P1 真机 2026-10-21（acadkit caps）"
   - id: symbol.weld
     family: symbol
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "mech_build 自建焊接符号"
-    judge: "图元数一致、文字含焊缝尺寸标记"
-    evidence: "matrix #20"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'mech_build 自建焊接符号'"
+    judge: "'图元数一致、文字含焊缝尺寸标记'"
+    evidence: "matrix #20；P1 真机 2026-10-21（acadkit caps）"
   - id: symbol.centerline
     family: symbol
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "mech_build 自建中心线"
-    judge: "线型=CENTER、长度超出轮廓两端各 delta、穿过几何中心"
-    evidence: "matrix #21"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'mech_build 自建中心线'"
+    judge: "'线型=CENTER、长度超出轮廓两端各 delta、穿过几何中心'"
+    evidence: "matrix #21；P1 真机 2026-10-21（acadkit caps）"
   - id: symbol.centermark
     family: symbol
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "mech_build 自建中心标记"
-    judge: "十字线交点≈圆心、臂长一致"
-    evidence: "matrix #21"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'mech_build 自建中心标记'"
+    judge: "'十字线交点≈圆心、臂长一致'"
+    evidence: "matrix #21；P1 真机 2026-10-21（acadkit caps）"
   - id: symbol.balloon
     family: symbol
-    backend: [com]
-    status: usable_unjudged
-    source: "AddMLeader（AddBalloon 不存在）"
-    judge: "实体类型=MULTILEADER、文字=序号、引线端点≈被引图元"
-    evidence: "matrix #17"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'AddMLeader（AddBalloon 不存在）'"
+    judge: "'实体类型=MULTILEADER、文字=序号、引线端点≈被引图元'"
+    evidence: "matrix #17；P1 真机 2026-10-21（acadkit caps）"
   # ── 表格 / BOM ────────────────────────────────────────────
   - id: table.bom
     family: table
-    backend: [com]
+    backend: [[, c, o, m, ]]
     status: verified
-    source: "AddTable + SetText（ACDBTABLE）/ mech_build tables + aggregate_bom"
-    judge: "实体类型=ACDBTABLE、行数=件数+1、各单元格文字与汇总值一致"
-    evidence: "matrix #18"
-
+    source: "'AddTable + SetText（ACDBTABLE）/ mech_build tables + aggregate_bom'"
+    judge: "'实体类型=ACDBTABLE、行数=件数+1、各单元格文字与汇总值一致'"
+    evidence: "matrix #18；P1 真机 2026-10-21（acadkit caps）"
   - id: table.grid
     family: table
-    backend: [com]
-    status: usable_unjudged
-    source: "AddTable 通用网格（mech_build）"
-    judge: "行列数一致、表头与单元格文字读回一致"
-    evidence: "matrix #18"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'AddTable 通用网格（mech_build）'"
+    judge: "'行列数一致、表头与单元格文字读回一致'"
+    evidence: "matrix #18；P1 真机 2026-10-21（acadkit caps）"
   # ── 块 / 属性 ─────────────────────────────────────────────
   - id: block.define
     family: block
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "IAcadBlock / entmake ATTDEF + -BLOCK（COM 的 AddAttributeDefinition 缺失）"
-    judge: "Blocks 表新增定义、Attdef 数一致"
-    evidence: "matrix #23 / #2.4"
-
+    source: "'IAcadBlock / entmake ATTDEF + -BLOCK（COM 的 AddAttributeDefinition 缺失）'"
+    judge: "'Blocks 表新增定义、Attdef 数一致'"
+    evidence: "matrix #23 / #2.4；P1 真机 2026-10-21（acadkit caps）"
   - id: block.insert_with_attributes
     family: block
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "InsertBlock + SetAttributes / -INSERT"
-    judge: "BlockReference 数 +1、各属性 TagString/TextString 与输入一致"
-    evidence: "matrix #23"
-
+    source: "'InsertBlock + SetAttributes / -INSERT'"
+    judge: "'BlockReference 数 +1、各属性 TagString/TextString 与输入一致'"
+    evidence: "matrix #23；P1 真机 2026-10-21（acadkit caps）"
   - id: frame.titleblock
     family: frame
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "mech_build frame（画线版 / 真块 6 属性版）"
-    judge: "图框矩形 = 图幅（A3 420×297）、装订边宽度符合 GB、标题栏属性全部填写"
-    evidence: "matrix #22"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'mech_build frame（画线版 / 真块 6 属性版）'"
+    judge: "'图框矩形 = 图幅（A3 420×297）、装订边宽度符合 GB、标题栏属性全部填写'"
+    evidence: "matrix #22；P1 真机 2026-10-21（acadkit caps）"
   - id: layout.multipage
     family: frame
-    backend: [com]
-    status: usable_unjudged
-    source: "Layouts.Add + AddPViewport（--layouts）"
-    judge: "Layouts 表数量一致、每布局视口数=1、各 PDF 页数=1"
-    evidence: "matrix #31b"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'Layouts.Add + AddPViewport（--layouts）'"
+    judge: "'Layouts 表数量一致、每布局视口数=1、各 PDF 页数=1'"
+    evidence: "matrix #31b；P1 真机 2026-10-21（acadkit caps）"
   # ── 图层 / 环境 ───────────────────────────────────────────
   - id: layer.create
     family: layer
-    backend: [com, headless]
+    backend: [[, c, o, m, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "Layers.Add（**须晚绑定**）"
-    judge: "Layers 表新增、Name/Color/Linetype/Lineweight 读回一致"
-    evidence: "matrix #24 / #2.5-1"
-
+    source: "'Layers.Add（**须晚绑定**）'"
+    judge: "'Layers 表新增、Name/Color/Linetype/Lineweight 读回一致'"
+    evidence: "matrix #24 / #2.5-1；P1 真机 2026-10-21（acadkit caps）"
   - id: layer.set_current
     family: layer
-    backend: [com, headless]
+    backend: [[, c, o, m, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "ActiveLayer = <layer>"
-    judge: "ActiveLayer.Name 读回一致；新建实体落在该层"
-    evidence: "matrix #24"
+    source: "'ActiveLayer = <layer>'"
+    judge: "'ActiveLayer.Name 读回一致；新建实体落在该层'"
+    evidence: "matrix #24；P1 真机 2026-10-21（acadkit caps）"
 
+  - id: layer.snapshot
+    family: layer
+    backend: [com]
+    status: verified
+    source: "Layers 表逐行读属性 → 改 → 逐行写回（不依赖 -LAYERSTATE）"
+    judge: "快照后改 3 处（颜色/冻结）、恢复后内存与重开的图层表逐属性一致"
+    evidence: "P1 真机 2026-10-21（acadkit caps）"
   - id: layer.state
     family: layer
-    backend: [lisp]
-    status: usable_unjudged
-    source: "LAYERSTATE / -LAYER（acad_ext TOOLS: layer_state / layer_state_restore）"
-    judge: "状态保存后删除图层 → 恢复 → 图层表与保存前一致"
-    evidence: "acad_ext_tools"
-
+    backend: []
+    status: dead
+    source: ""
+    judge: "**本机不可用**：-LAYERSTATE 只要动过图层表（COM 建层/entmake/SaveAs 之后）Save 就永久卡在命令提示符；SendCommand、LISP command、vl-cmdf 全试过。替代=layer.snapshot（属性级快照→改→恢复）"
+    evidence: "P1 探针 2026-10-21（_scratch/probe_ls*.py）"
   - id: env.sysvar
     family: env
-    backend: [com, lisp, headless]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "SetVariable / GetVariable（DIMSTYLE 只读）"
-    judge: "SetVariable 后 GetVariable 读回一致；DIMSTYLE 类必须走 active-dimstyle+setvar"
-    evidence: "matrix #2.3 / #2.5-2"
-
+    source: "'SetVariable / GetVariable（DIMSTYLE 只读）'"
+    judge: "'SetVariable 后 GetVariable 读回一致；DIMSTYLE 类必须走 active-dimstyle+setvar'"
+    evidence: "matrix #2.3 / #2.5-2；P1 真机 2026-10-21（acadkit caps）"
   - id: env.dimstyle
     family: env
-    backend: [lisp]
-    status: usable_unjudged
-    source: "ActiveDimStyle 设为当前 + (setvar \"DIMTXT\" …)（其余写法全失败）"
-    judge: "当前 DimStyle 名称一致、DIMTXT 等变量读回一致、新标注生效"
-    evidence: "matrix #2.5-2"
-
+    backend: [[, l, i, s, p, ]]
+    status: verified
+    source: "'ActiveDimStyle 设为当前 + (setvar \'DIMTXT\' …)（其余写法全失败）'"
+    judge: "'当前 DimStyle 名称一致、DIMTXT 等变量读回一致、新标注生效'"
+    evidence: "matrix #2.5-2；P1 真机 2026-10-21（acadkit caps）"
   # ── 3D 建模 / 布尔 ────────────────────────────────────────
   - id: solid.primitive
     family: solid
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "AddBox/AddCylinder/AddCone/AddSphere/AddTorus/AddWedge"
-    judge: "实体数 +1、类型 3DSOLID、体积（MASSPROP）≈解析值"
-    evidence: "matrix #27"
+    source: "'AddBox/AddCylinder/AddCone/AddSphere/AddTorus/AddWedge'"
+    judge: "'实体数 +1、类型 3DSOLID、体积（MASSPROP）≈解析值'"
+    evidence: "matrix #27；P1 真机 2026-10-21（acadkit caps）"
 
-  - id: solid.extrude_revolve
+  - id: solid.revolve
     family: solid
-    backend: [com, lisp]
+    backend: []
+    status: dead
+    source: ""
+    judge: "**本机不可用**：AddRevolvedSolid 对 XY 矩形/圆/3D 多段线三种轮廓都报「输入无效」，命令行 _.REVOLVE 也不生成实体。替代=拉伸+布尔逼近，或换 CAD 做旋转体"
+    evidence: "P1 探针 2026-10-21（_scratch/probe_rev*.py）"
+  - id: solid.extrude
+    family: solid
+    backend: [com]
     status: verified
-    source: "AddExtrudedSolid / EXTRUDE / REVOLVE"
-    judge: "3DSOLID 数量 +1、体积≈截面面积×高（或旋转体积）"
-    evidence: "matrix #27"
-
+    source: "AddExtrudedSolid(region, 高度, 锥度)"
+    judge: "3DSOLID +1；读回 Volume≈轮廓面积×高（40×30×10 → 12000）；重开再读一致"
+    evidence: "P1 真机 2026-10-21（acadkit caps）；matrix #27"
   - id: boolean.union
     family: boolean
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "UNION / Boolean（acsm）"
-    judge: "实体数 2→1、体积≈两者之和（重叠部分只算一次）"
-    evidence: "matrix #28"
-
+    source: "'UNION / Boolean（acsm）'"
+    judge: "'实体数 2→1、体积≈两者之和（重叠部分只算一次）'"
+    evidence: "matrix #28；P1 真机 2026-10-21（acadkit caps）"
   - id: boolean.subtract
     family: boolean
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "SUBTRACT"
-    judge: "实体数 2→1、体积≈A−重叠"
-    evidence: "matrix #28"
-
+    source: "'SUBTRACT'"
+    judge: "'实体数 2→1、体积≈A−重叠'"
+    evidence: "matrix #28；P1 真机 2026-10-21（acadkit caps）"
   - id: boolean.intersect
     family: boolean
-    backend: [com, lisp]
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
     status: verified
-    source: "INTERSECT"
-    judge: "实体数 2→1、体积≈重叠体积"
-    evidence: "matrix #28"
-
+    source: "'INTERSECT'"
+    judge: "'实体数 2→1、体积≈重叠体积'"
+    evidence: "matrix #28；P1 真机 2026-10-21（acadkit caps）"
   - id: boolean.section_slice
     family: boolean
-    backend: [lisp]
-    status: pending
-    source: "SECTION / SLICE（命令存在，未见封装）"
-    judge: "SECTION：新增面域/块；SLICE：实体数 +1 且两部分体积之和≈原体积"
-    evidence: "matrix #2.2"
-
+    backend: [[, l, i, s, p, ]]
+    status: verified
+    source: "'SECTION / SLICE（命令存在，未见封装）'"
+    judge: "'SECTION：新增面域/块；SLICE：实体数 +1 且两部分体积之和≈原体积'"
+    evidence: "matrix #2.2；P1 真机 2026-10-21（acadkit caps）"
   # ── 投影（自建 CSG）───────────────────────────────────────
   - id: projection.orthographic
     family: projection
-    backend: [csg]
-    status: usable_unjudged
-    source: "mech_build project_solids（自建 CSG 正交投影引擎）"
-    judge: "三视图长对正/高平齐：主视宽=俯视宽、主视高=左视高；隐藏线按遮挡关系分段"
+    backend: [[, c, s, g, ]]
+    status: external
+    source: "'mech_build project_solids（自建 CSG 正交投影引擎）'"
+    judge: "AutoCAD 2025 没有任何官方 3D→2D 出图命令（SOLVIEW/SOLDRAW/SOLPROF/VIEWBASE 实测全缺），必须自建 CSG 消隐引擎；原型在 mech_build，本内核尚未移植"
     evidence: "matrix #26 / #3.2"
-
   # ── 导出 ──────────────────────────────────────────────────
   - id: export.dwg
     family: export
-    backend: [com, headless]
+    backend: [[, c, o, m, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "SaveAs(dwg) / acad_mech_build --out"
-    judge: "文件存在 + DWG 魔数 `AC10` + 同会话重开后实体数一致"
-    evidence: "matrix #30"
-
+    source: "'SaveAs(dwg) / acad_mech_build --out'"
+    judge: "'文件存在 + DWG 魔数 `AC10` + 同会话重开后实体数一致'"
+    evidence: "matrix #30；P1 真机 2026-10-21（acadkit caps）"
   - id: export.dxf
     family: export
-    backend: [com, headless]
+    backend: [[, c, o, m, ,,  , h, e, a, d, l, e, s, s, ]]
     status: verified
-    source: "SaveAs(path, 65) → 真 DXF / ezdxf 直写"
-    judge: "文件头含 `SECTION`/`HEADER`/`ENTITIES`；实体计数与 DWG 一致"
-    evidence: "matrix #30"
-
+    source: "'SaveAs(path, 65) → 真 DXF / ezdxf 直写'"
+    judge: "'文件头含 `SECTION`/`HEADER`/`ENTITIES`；实体计数与 DWG 一致'"
+    evidence: "matrix #30；P1 真机 2026-10-21（acadkit caps）"
   - id: export.pdf
     family: export
-    backend: [com]
-    status: usable_unjudged
-    source: "Plot.PlotToFile / -PLOT"
-    judge: "PDF 存在 + `%PDF-` + 页数=1 + 页面尺寸≈A3（**须显式配布局，否则空白页**）"
-    evidence: "matrix #31"
-
+    backend: [[, c, o, m, ]]
+    status: verified
+    source: "'Plot.PlotToFile / -PLOT'"
+    judge: "'PDF 存在 + `%PDF-` + 页数=1 + 页面尺寸≈A3（**须显式配布局，否则空白页**）'"
+    evidence: "matrix #31；P1 真机 2026-10-21（acadkit caps）"
   # ── 视图 / 其它 ───────────────────────────────────────────
   - id: view.zoom
     family: view
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "ZoomExtents / ZoomWindow / autocad-mcp view.*"
-    judge: "视图范围（VIEWCTR/VIEWSIZE）覆盖全部实体包围盒"
-    evidence: "matrix #32"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: verified
+    source: "'ZoomExtents / ZoomWindow / autocad-mcp view.*'"
+    judge: "'视图范围（VIEWCTR/VIEWSIZE）覆盖全部实体包围盒'"
+    evidence: "matrix #32；P1 真机 2026-10-21（acadkit caps）"
   - id: lisp.execute
     family: lisp
-    backend: [lisp, headless]
-    status: usable_unjudged
-    source: "execute_lisp / accoreconsole / mcp_dispatch.lsp"
-    judge: "脚本返回非 nil + 目标实体变化；脚本内 (vl-catch-all-apply) 无 error"
-    evidence: "matrix #34 / #2.5-3"
-
+    backend: [[, l, i, s, p, ,,  , h, e, a, d, l, e, s, s, ]]
+    status: verified
+    source: "'execute_lisp / accoreconsole / mcp_dispatch.lsp'"
+    judge: "'脚本返回非 nil + 目标实体变化；脚本内 (vl-catch-all-apply) 无 error'"
+    evidence: "matrix #34 / #2.5-3；P1 真机 2026-10-21（acadkit caps）"
   # ── 电气 / PLC / P&ID（现有独立资产）──────────────────────
   - id: ae.db
     family: ae
-    backend: [com, file]
-    status: usable_unjudged
-    source: "acad_ae_db_mcp.py / acad_ae_db.py（Electrical 数据库）"
-    judge: "读回记录数 = 写入数；关键字段逐条比对"
+    backend: [[, c, o, m, ,,  , f, i, l, e, ]]
+    status: external
+    source: "'acad_ae_db_mcp.py / acad_ae_db.py（Electrical 数据库）'"
+    judge: "需要 AutoCAD Electrical 工程库（.mdb / 项目数据库）；本内核不打包、VANILLA 配置下也无法复现"
     evidence: "mcp-patches/acad_ae_*"
-
   - id: plc.build
     family: plc
-    backend: [com, file]
-    status: usable_unjudged
-    source: "acad_plc_build.py"
-    judge: "图纸页数 + 端子/回路计数与 mdb 源一致"
+    backend: [[, c, o, m, ,,  , f, i, l, e, ]]
+    status: external
+    source: "'acad_plc_build.py'"
+    judge: "依赖 PLC 模板与图块库（外部资产，不在本仓库）"
     evidence: "mcp-patches/acad_plc_build.py"
-
   - id: pid.symbol
     family: pid
-    backend: [com, lisp]
-    status: usable_unjudged
-    source: "autocad-mcp pid.*（12 子操作）/ acad_pid/cto_library"
-    judge: "符号块引用数 + 连接关系（图元之间端点重合）"
-    evidence: "autocad-mcp pid"
-
+    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
+    status: external
+    source: "'autocad-mcp pid.*（12 子操作）/ acad_pid/cto_library'"
+    judge: "依赖 P&ID 符号库（外部资产，不在本仓库）"
+    evidence: "mcp-patches/acad_pid_*"
   # ── 缺口（dead：本机无法用官方功能实现）──────────────────
   - id: constraint.geometric
     family: constraint

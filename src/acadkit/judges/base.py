@@ -176,11 +176,29 @@ def find_in(drawing: Optional[Drawing],
     return None
 
 
+def value_same(a: Any, b: Any, tol: float = 1e-6) -> bool:
+    """通用"读回值是否一致"：数、点、点列、字符串、布尔都能比。
+
+    早先 `reopen_check` 只用 `close()`，于是字符串（PatternName/TextString）
+    和点列（多段线 vertices）一律判不等 —— 三条判据因此误报，已修。
+    """
+    if isinstance(a, (list, tuple)):
+        if a and isinstance(a[0], (list, tuple)):
+            return (isinstance(b, (list, tuple)) and len(a) == len(b)
+                    and all(value_same(x, y, tol) for x, y in zip(a, b)))
+        return pt_close(a, b, tol)
+    if isinstance(a, bool) or isinstance(b, bool):
+        return bool(a) == bool(b)
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return close(a, b, tol)
+    return str(a) == str(b)
+
+
 def reopen_check(rb: Readback, ref: Entity,
                  keys: Tuple[str, ...]) -> Tuple[bool, Dict[str, Any]]:
     """L4 的通用形态：重开后按 handle 找到同一实体，逐个属性比对。
 
-    `keys` 里的属性用 :func:`close`/点坐标比较；没读到的算失败并写进 detail。
+    `keys` 里的属性用 :func:`value_same` 比较；没读到的算失败并写进 detail。
     """
     detail: Dict[str, Any] = {"reopened_source": None, "mismatch": {}}
     if rb.reopened is None:
@@ -195,11 +213,7 @@ def reopen_check(rb: Readback, ref: Entity,
     for key in keys:
         want = ref.get(key)
         got = hit.get(key)
-        if isinstance(want, (list, tuple)) or isinstance(got, (list, tuple)):
-            same = pt_close(want, got)
-        else:
-            same = close(want, got)
-        if not same:
+        if not value_same(want, got):
             ok = False
             detail["mismatch"][key] = [want, got]
     detail["reopened_handle"] = hit.handle
