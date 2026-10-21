@@ -1,0 +1,655 @@
+"""在 NX 进程内执行的能力实现（只在这里碰 NXOpen）。
+
+每个 action 返回 `reads`（宿主侧判据比对的读数）。所有读取都来自
+NX 内部（`MeasureManager`/`GetBodies`/`GetFeatureName`），不看返回值。
+"""
+
+from __future__ import annotations
+
+import os
+import time
+
+import NXOpen
+import NXOpen.Features
+
+
+# ── 基础工具 ──────────────────────────────────────────────────────
+def session():
+    return NXOpen.Session.GetSession()
+
+
+def _close_part(part) -> None:
+    try:
+        part.Close(NXOpen.BasePart.CloseWholeTree.TrueValue,
+                   NXOpen.BasePart.CloseModified.CloseModified, None)
+    except Exception:
+        pass
+
+
+def new_part(name: str):
+    s = session()
+    # 同名部件在同一会话里会冲突，加时间戳
+    unique = "%s_%d" % (name, int(time.time() * 1000) % 100000)
+    part = s.Parts.NewDisplay(unique + ".prt", NXOpen.Part.Units.Millimeters)
+    s.Parts.SetWork(part)
+    return part
+
+
+def _unit(part):
+    return part.UnitCollection.FindObject("MilliMeter")
+
+
+def mass(part, bodies) -> dict:
+    """体积/面积/重心，读自 MeasureManager（不是返回值）。"""
+    mm = part.MeasureManager
+    mb = mm.NewMassProperties([_unit(part)], 0.99, list(bodies))
+    out = {"volume_mm3": float(mb.Volume), "area_mm2": float(mb.Area)}
+    try:
+        c = mb.Centroid
+        out["centroid"] = [float(c.X), float(c.Y), float(c.Z)]
+    except Exception:
+        out["centroid"] = None
+    return out
+
+
+def make_block(part, x, y, z, l, w, h):
+    b = part.Features.CreateBlockFeatureBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.SetOriginAndLengths(NXOpen.Point3d(float(x), float(y), float(z)),
+                              str(l), str(w), str(h))
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    return feat
+
+
+def make_cylinder(part, x, y, z, diameter, height):
+    b = part.Features.CreateCylinderBuilder(NXOpen.Features.Feature.Null)
+    try:
+        types = NXOpen.Features.CylinderBuilder.Types
+        try:
+            b.Type = types.DiameterHeight
+        except Exception:
+            pass
+        b.Diameter.SetFormula(str(diameter))
+        b.Height.SetFormula(str(height))
+        b.Origin = NXOpen.Point3d(float(x), float(y), float(z))
+        b.Direction = NXOpen.Vector3d(0.0, 0.0, 1.0)
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    return feat
+
+
+def _set_boolean(part, feat_a, feat_b, op_name: str):
+    body_a = feat_a.GetBodies()[0]
+    body_b = feat_b.GetBodies()[0]
+    b = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        enum = NXOpen.Features.Feature.BooleanType
+        b.Operation = getattr(enum, op_name)
+        b.Target = body_a
+        try:
+            b.Tools.Add([body_b])
+        except Exception:
+            b.Tools.Add(body_b)
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    return feat
+
+
+def _bodies_of(part) -> list:
+    """按 Tag 去重：布尔之后 Block 特征会指向同一个结果体，不去重会重复计数。"""
+    out, seen = [], set()
+    for f in part.Features:
+        try:
+            bodies = list(f.GetBodies())
+        except Exception:
+            continue
+        for b in bodies:
+            tag = getattr(b, "Tag", None)
+            if tag in seen:
+                continue
+            seen.add(tag)
+            out.append(b)
+    return out
+
+
+def _feat_by_name(part, name):
+    for f in part.Features:
+        try:
+            if str(f.GetFeatureName()) == name:
+                return f
+        except Exception:
+            continue
+    return None
+
+
+def save_reopen(part, path: str):
+    if os.path.exists(path):
+        os.remove(path)
+    part.SaveAs(path)
+    _close_part(part)
+    res = session().Parts.OpenActiveDisplay(path, NXOpen.DisplayPartOption.AllowAdditional)
+    part2 = res[0] if isinstance(res, (tuple, list)) else res
+    session().Parts.SetWork(part2)
+    return part2
+
+
+# ── 能力实现 ──────────────────────────────────────────────────────
+def part_new(params, workdir, rec):
+    part = new_part(params.get("name", "nxkit_part"))
+    reads = {
+        "part_name": str(part.Name),
+        "part_name_ok": str(part.Name).startswith(params.get("name", "nxkit_part")),
+        "units_mm": str(part.PartUnits) in ("1", "Millimeters"),
+        "body_count": 0,
+    }
+    _close_part(part)
+    return reads
+
+
+def block_create(params, workdir, rec):
+    l = float(params.get("length", 100.0))
+    w = float(params.get("width", 50.0))
+    h = float(params.get("height", 20.0))
+    part = new_part("blk")
+    feat = make_block(part, 0, 0, 0, l, w, h)
+    name = str(feat.GetFeatureName())
+    body = feat.GetBodies()[0]
+    reads = {
+        "feature_name": name,
+        "body_count": 1,
+        "faces": len(body.GetFaces()),
+        "edges": len(body.GetEdges()),
+    }
+    reads.update(mass(part, [body]))
+
+    path = os.path.join(workdir, "block.prt")
+    part2 = save_reopen(part, path)
+    f2 = _feat_by_name(part2, name)
+    if f2 is not None:
+        b2 = f2.GetBodies()[0]
+        m2 = mass(part2, [b2])
+        reads["volume_reopened"] = m2["volume_mm3"]
+        reads["area_reopened"] = m2["area_mm2"]
+        reads["faces_reopened"] = len(b2.GetFaces())
+    reads["saved_bytes"] = os.path.getsize(path)
+    _close_part(part2)
+    return reads
+
+
+def block_two(params, workdir, rec):
+    part = new_part("blk2")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_block(part, 0, 0, 0, 20, 20, 20)
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "body_count_direct":
+             int(fa.GetBodies()[0] is not None) + int(fb.GetBodies()[0] is not None)}
+    reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def _boolean(params, workdir, op_name):
+    part = new_part("bool")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_block(part, 0, 0, 0, 20, 20, 20)
+    feat = _set_boolean(part, fa, fb, op_name)
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "result_feature": str(feat.GetFeatureName())}
+    reads.update(mass(part, bodies))
+
+    path = os.path.join(workdir, "bool_%s.prt" % op_name.lower())
+    part2 = save_reopen(part, path)
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        m2 = mass(part2, bodies2)
+        reads["volume_reopened"] = m2["volume_mm3"]
+    reads["saved_bytes"] = os.path.getsize(path)
+    _close_part(part2)
+    return reads
+
+
+def boolean_subtract(params, workdir, rec):
+    return _boolean(params, workdir, "Subtract")
+
+
+def boolean_union(params, workdir, rec):
+    return _boolean(params, workdir, "Unite")
+
+
+def boolean_intersect(params, workdir, rec):
+    return _boolean(params, workdir, "Intersect")
+
+
+def cylinder_create(params, workdir, rec):
+    d = float(params.get("diameter", 40.0))
+    h = float(params.get("height", 30.0))
+    part = new_part("cyl")
+    feat = make_cylinder(part, 0, 0, 0, d, h)
+    body = feat.GetBodies()[0]
+    reads = {"feature_name": str(feat.GetFeatureName()),
+             "body_count": 1,
+             "faces": len(body.GetFaces()),
+             "edges": len(body.GetEdges())}
+    reads.update(mass(part, [body]))
+
+    path = os.path.join(workdir, "cyl.prt")
+    part2 = save_reopen(part, path)
+    bodies2 = _bodies_of(part2)
+    if bodies2:
+        m2 = mass(part2, bodies2)
+        reads["volume_reopened"] = m2["volume_mm3"]
+        reads["area_reopened"] = m2["area_mm2"]
+    reads["saved_bytes"] = os.path.getsize(path)
+    _close_part(part2)
+    return reads
+
+
+def measure_mass(params, workdir, rec):
+    part = new_part("mass")
+    feat = make_block(part, 0, 0, 0,
+                      float(params.get("length", 100.0)),
+                      float(params.get("width", 50.0)),
+                      float(params.get("height", 20.0)))
+    body = feat.GetBodies()[0]
+    reads = mass(part, [body])
+    reads["body_count"] = 1
+    _close_part(part)
+    return reads
+
+
+def body_topo(params, workdir, rec):
+    part = new_part("topo")
+    feat = make_block(part, 0, 0, 0,
+                      float(params.get("length", 100.0)),
+                      float(params.get("width", 50.0)),
+                      float(params.get("height", 20.0)))
+    body = feat.GetBodies()[0]
+    faces = body.GetFaces()
+    edges = body.GetEdges()
+    reads = {"faces": len(faces), "edges": len(edges), "body_count": 1}
+    try:
+        reads["vertices"] = len(body.GetVertices())
+    except Exception:
+        reads["vertices"] = None
+    _close_part(part)
+    return reads
+
+
+def file_roundtrip(params, workdir, rec):
+    part = new_part("rt")
+    feat = make_block(part, 0, 0, 0,
+                      float(params.get("length", 100.0)),
+                      float(params.get("width", 50.0)),
+                      float(params.get("height", 20.0)))
+    name = str(feat.GetFeatureName())
+    body = feat.GetBodies()[0]
+    reads = {"feature_name": name}
+    reads.update(mass(part, [body]))
+
+    path = os.path.join(workdir, "roundtrip.prt")
+    part2 = save_reopen(part, path)
+    reads["saved_bytes"] = os.path.getsize(path)
+    f2 = _feat_by_name(part2, name)
+    reads["feature_reopened"] = f2 is not None
+    if f2 is not None:
+        m2 = mass(part2, [f2.GetBodies()[0]])
+        reads["volume_reopened"] = m2["volume_mm3"]
+        reads["area_reopened"] = m2["area_mm2"]
+    _close_part(part2)
+    return reads
+
+
+def curve_line(params, workdir, rec):
+    import math
+    part = new_part("line")
+    p1 = NXOpen.Point3d(0.0, 0.0, 0.0)
+    p2 = NXOpen.Point3d(float(params.get("dx", 100.0)),
+                        float(params.get("dy", 0.0)),
+                        float(params.get("dz", 0.0)))
+    line = part.Curves.CreateLine(p1, p2)
+    sp, ep = line.StartPoint, line.EndPoint
+    length = math.dist([sp.X, sp.Y, sp.Z], [ep.X, ep.Y, ep.Z])
+    reads = {"length": length,
+             "start": [float(sp.X), float(sp.Y), float(sp.Z)],
+             "end": [float(ep.X), float(ep.Y), float(ep.Z)]}
+    _close_part(part)
+    return reads
+
+
+def curve_arc(params, workdir, rec):
+    import math
+    part = new_part("arc")
+    r = float(params.get("radius", 25.0))
+    arc = part.Curves.CreateArc(NXOpen.Point3d(0.0, 0.0, 0.0),
+                                NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                r, 0.0, 2.0 * math.pi)
+    reads = {"radius": float(arc.Radius),
+             "circumference": 2.0 * math.pi * float(arc.Radius),
+             "start_angle": float(arc.StartAngle),
+             "end_angle": float(arc.EndAngle)}
+    _close_part(part)
+    return reads
+
+
+def attr_string(params, workdir, rec):
+    part = new_part("attr")
+    title = str(params.get("title", "NXKIT_STR"))
+    value = str(params.get("value", "hello-nx"))
+    part.SetAttribute(title, value)
+    reads = {"attr_str": str(part.GetStringAttribute(title))}
+    path = os.path.join(workdir, "attr.prt")
+    part2 = save_reopen(part, path)
+    reads["attr_after_reopen"] = str(part2.GetStringAttribute(title))
+    reads["saved_bytes"] = os.path.getsize(path)
+    _close_part(part2)
+    return reads
+
+
+def attr_int(params, workdir, rec):
+    part = new_part("attr_i")
+    title = str(params.get("title", "NXKIT_INT"))
+    value = int(params.get("value", 42))
+    part.SetAttribute(title, value)
+    reads = {"attr_int": int(part.GetIntegerAttribute(title))}
+    _close_part(part)
+    return reads
+
+
+def extrude_rect(params, workdir, rec):
+    part = new_part("ext")
+    l = float(params.get("length", 100.0))
+    w = float(params.get("width", 50.0))
+    d = float(params.get("distance", 10.0))
+    p = NXOpen.Point3d
+    lines = [
+        part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(l, 0.0, 0.0)),
+        part.Curves.CreateLine(p(l, 0.0, 0.0), p(l, w, 0.0)),
+        part.Curves.CreateLine(p(l, w, 0.0), p(0.0, w, 0.0)),
+        part.Curves.CreateLine(p(0.0, w, 0.0), p(0.0, 0.0, 0.0)),
+    ]
+    secs = part.Sections.CreateSectionsUsingCurves(
+        lines, NXOpen.SectionCollection.LoopOption.Separate,
+        0.0095, 0.01, 0.5)
+    sec = secs[0]
+
+    b = part.Features.CreateExtrudeBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.Section = sec
+        b.Direction = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(float(d))
+        except Exception:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula(str(d))
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads = {"feature_name": str(feat.GetFeatureName()),
+             "body_count": 1,
+             "faces": len(body.GetFaces()),
+             "edges": len(body.GetEdges())}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
+def _identity() -> "NXOpen.Matrix3x3":
+    m = NXOpen.Matrix3x3()
+    for attr, val in (("Xx", 1.0), ("Xy", 0.0), ("Xz", 0.0),
+                      ("Yx", 0.0), ("Yy", 1.0), ("Yz", 0.0),
+                      ("Zx", 0.0), ("Zy", 0.0), ("Zz", 1.0)):
+        try:
+            setattr(m, attr, val)
+        except Exception:
+            pass
+    return m
+
+
+def _make_ref_part(path, kind, size):
+    """造一个基准零件并存盘（装配要按文件路径插组件）。"""
+    part = new_part("ref_" + kind)
+    if kind == "block":
+        make_block(part, 0, 0, 0, size[0], size[1], size[2])
+    else:
+        make_cylinder(part, 0, 0, 0, size[0], size[1])
+    if os.path.exists(path):
+        os.remove(path)
+    part.SaveAs(path)
+    _close_part(part)
+    return path
+
+
+def asm_add_component(params, workdir, rec):
+    a_path = _make_ref_part(os.path.join(workdir, "ref_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "ref_b.prt"), "cyl",
+                            (40.0, 30.0))
+    asm = new_part("asm")
+    comp = asm.ComponentAssembly.AddComponent(
+        a_path, "MODEL", "A", NXOpen.Point3d(0.0, 0.0, 0.0), _identity(), -1)
+    comp1 = comp[0] if isinstance(comp, (tuple, list)) else comp
+    children = asm.ComponentAssembly.RootComponent.GetChildren()
+    reads = {"components": len(children),
+             "component_name": str(comp1.Name) if comp1 is not None else None}
+    _close_part(asm)
+    return reads
+
+
+def asm_two_components(params, workdir, rec):
+    a_path = _make_ref_part(os.path.join(workdir, "ref2_a.prt"), "block",
+                            (100.0, 50.0, 20.0))
+    b_path = _make_ref_part(os.path.join(workdir, "ref2_b.prt"), "cyl",
+                            (40.0, 30.0))
+    asm = new_part("asm2")
+    asm.ComponentAssembly.AddComponent(
+        a_path, "MODEL", "A", NXOpen.Point3d(0.0, 0.0, 0.0), _identity(), -1)
+    asm.ComponentAssembly.AddComponent(
+        b_path, "MODEL", "B", NXOpen.Point3d(150.0, 0.0, 0.0), _identity(), -1)
+    children = asm.ComponentAssembly.RootComponent.GetChildren()
+    reads = {"components": len(children)}
+    model = os.path.join(workdir, "asm2.prt")
+    if os.path.exists(model):
+        os.remove(model)
+    asm.SaveAs(model)
+    reads["saved_bytes"] = os.path.getsize(model)
+    _close_part(asm)
+    return reads
+
+
+def _export(params, workdir, rec, kind):
+    part = new_part("exp")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ext = {"step": ".step", "iges": ".igs"}[kind]
+    path = os.path.join(workdir, "export" + ext)
+    if os.path.exists(path):
+        os.remove(path)
+    s = session()
+    creator = (s.DexManager.CreateStepCreator() if kind == "step"
+               else s.DexManager.CreateIgesCreator())
+    try:
+        creator.OutputFile = path
+        creator.Commit()
+    finally:
+        try:
+            creator.Destroy()
+        except Exception:
+            pass
+    exists = os.path.exists(path)
+    reads = {"export_path": path,
+             "export_bytes": os.path.getsize(path) if exists else 0,
+             "igs": bool(exists and kind == "iges")}
+    if os.path.exists(path):
+        with open(path, "rb") as fh:
+            head = fh.read(64).decode("latin-1", "replace")
+        reads["export_head"] = head.strip()[:12]
+    _close_part(part)
+    return reads
+
+
+def export_step(params, workdir, rec):
+    return _export(params, workdir, rec, "step")
+
+
+def export_iges(params, workdir, rec):
+    return _export(params, workdir, rec, "iges")
+
+
+def drawing_sheet(params, workdir, rec):
+    part = new_part("drw")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    sheets = part.DrawingSheets
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    sheet = sheets.InsertSheet(str(params.get("name", "S1")), ss.A3,
+                               1.0, 1.0, pa.FirstAngle)
+    reads = {"sheet_created": sheet is not None,
+             "sheet_name": str(sheet.Name) if hasattr(sheet, "Name") else None,
+             "sheet_count_now": 1 if sheets.CurrentDrawingSheet is not None else 0}
+    try:
+        reads["sheet_height"] = float(sheet.Height)
+        reads["sheet_width"] = float(sheet.Length)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
+def drawing_base_view(params, workdir, rec):
+    part = new_part("bvw")
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+
+    name = str(params.get("model_view", "Front"))
+    model_view = None
+    for v in part.ModelingViews:
+        if str(v.Name) == name:
+            model_view = v
+            break
+    if model_view is None:
+        model_view = part.ModelingViews.WorkView
+
+    vb = part.DraftingViews.CreateBaseViewBuilder(NXOpen.Drawings.BaseView.Null)
+    try:
+        vb.SelectModelView.SelectedView = model_view
+        try:
+            vb.Scale.ScaleValue = 1.0
+        except Exception:
+            pass
+        view = vb.Commit()
+    finally:
+        try:
+            vb.Destroy()
+        except Exception:
+            pass
+    reads = {"view_created": view is not None,
+             "view_name": str(view.Name) if view is not None else None,
+             "model_view_used": str(model_view.Name)}
+    try:
+        reads["view_scale"] = float(view.Scale)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
+def extrude_ring(params, workdir, rec):
+    """带内孔截面拉伸：外框 100×50，内框 40×20，拉伸 10 → 42000。"""
+    part = new_part("ring")
+    p = NXOpen.Point3d
+    outer = [
+        part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0)),
+        part.Curves.CreateLine(p(100.0, 0.0, 0.0), p(100.0, 50.0, 0.0)),
+        part.Curves.CreateLine(p(100.0, 50.0, 0.0), p(0.0, 50.0, 0.0)),
+        part.Curves.CreateLine(p(0.0, 50.0, 0.0), p(0.0, 0.0, 0.0)),
+    ]
+    inner = [
+        part.Curves.CreateLine(p(30.0, 15.0, 0.0), p(70.0, 15.0, 0.0)),
+        part.Curves.CreateLine(p(70.0, 15.0, 0.0), p(70.0, 35.0, 0.0)),
+        part.Curves.CreateLine(p(70.0, 35.0, 0.0), p(30.0, 35.0, 0.0)),
+        part.Curves.CreateLine(p(30.0, 35.0, 0.0), p(30.0, 15.0, 0.0)),
+    ]
+    secs = part.Sections.CreateSectionsUsingCurves(
+        outer + inner, NXOpen.SectionCollection.LoopOption.SeparateOuter,
+        0.0095, 0.01, 0.5)
+    b = part.Features.CreateExtrudeBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.Section = secs[0]
+        b.Direction = part.Directions.CreateDirection(
+            NXOpen.Point3d(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(10.0)
+        except Exception:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula("10")
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads = {"sections": len(secs),
+             "faces": len(body.GetFaces()),
+             "body_count": 1}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
+ACTIONS = {
+    "part_new": part_new,
+    "block_create": block_create,
+    "block_two": block_two,
+    "boolean_subtract": boolean_subtract,
+    "boolean_union": boolean_union,
+    "boolean_intersect": boolean_intersect,
+    "cylinder_create": cylinder_create,
+    "measure_mass": measure_mass,
+    "body_topo": body_topo,
+    "file_roundtrip": file_roundtrip,
+    "curve_line": curve_line,
+    "curve_arc": curve_arc,
+    "attr_string": attr_string,
+    "attr_int": attr_int,
+    "extrude_rect": extrude_rect,
+    "asm_add_component": asm_add_component,
+    "asm_two_components": asm_two_components,
+    "export_step": export_step,
+    "export_iges": export_iges,
+    "drawing_sheet": drawing_sheet,
+    "drawing_base_view": drawing_base_view,
+    "extrude_ring": extrude_ring,
+}
+
+
+def run(action: str, params: dict, workdir: str, rec: dict) -> dict:
+    fn = ACTIONS.get(action)
+    if fn is None:
+        raise KeyError("未知动作 %r" % action)
+    return fn(params or {}, workdir, rec)

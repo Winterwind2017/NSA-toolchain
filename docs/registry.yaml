@@ -1,0 +1,229 @@
+# 能力登记表（唯一事实来源）
+# verified 必须带 evidence（哪次真机跑、哪些判据通过）
+version: 1
+kernel: nxkit 0.1.0
+engine: NX 2512 (DesigncenterNX2512)
+verified_at: 2026-10-21
+counts:
+  verified: 22
+capabilities:
+  - id: part.new
+    family: part
+    level: L1
+    status: verified
+    action: part_new
+    params: {'name': 'nxkit_part'}
+    expect: {'part_name_ok': True, 'body_count': 0, 'units_mm': True}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, part_name_ok, units_mm]
+  - id: block.create
+    family: solid
+    level: L1–L4
+    status: verified
+    action: block_create
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 100000.0, 'area_mm2': 16000.0}
+    evidence:
+      run: _runs/p2-all
+      checks: [area_mm2, body_count, edges, faces, volume_mm3]
+  - id: block.two_bodies
+    family: solid
+    level: L1–L4
+    status: verified
+    action: block_two
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 2, 'volume_mm3': 108000.0}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, volume_mm3]
+  - id: boolean.subtract
+    family: boolean
+    level: L1–L4
+    status: verified
+    action: boolean_subtract
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 1, 'volume_mm3': 92000.0, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: boolean.union
+    family: boolean
+    level: L1–L4
+    status: verified
+    action: boolean_union
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 1, 'volume_mm3': 100000.0, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: boolean.intersect
+    family: boolean
+    level: L1–L4
+    status: verified
+    action: boolean_intersect
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 1, 'volume_mm3': 8000.0, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: cylinder.create
+    family: solid
+    level: L1–L4
+    status: verified
+    action: cylinder_create
+    params: {'diameter': 40.0, 'height': 30.0}
+    expect: {'body_count': 1, 'faces': 3, 'volume_mm3': 37699.11184307752}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, faces, volume_mm3]
+  - id: measure.mass
+    family: measure
+    level: L3
+    status: verified
+    action: measure_mass
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'volume_mm3': 100000.0, 'area_mm2': 16000.0}
+    evidence:
+      run: _runs/p2-all
+      checks: [area_mm2, volume_mm3]
+  - id: body.topo
+    family: inspect
+    level: L1–L3
+    status: verified
+    action: body_topo
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'faces': 6, 'edges': 12}
+    evidence:
+      run: _runs/p2-all
+      checks: [edges, faces]
+  - id: file.roundtrip
+    family: file
+    level: L4
+    status: verified
+    action: file_roundtrip
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'volume_mm3': 100000.0, 'volume_reopened': 100000.0}
+    evidence:
+      run: _runs/p2-all
+      checks: [volume_mm3, volume_reopened]
+  - id: curve.line
+    family: curve
+    level: L1–L3
+    status: verified
+    action: curve_line
+    params: {'dx': 100.0, 'dy': 0.0, 'dz': 0.0}
+    expect: {'length': 100.0, 'start': [0.0, 0.0, 0.0], 'end': [100.0, 0.0, 0.0]}
+    evidence:
+      run: _runs/p2-all
+      checks: [end, length, start]
+  - id: curve.arc
+    family: curve
+    level: L1–L3
+    status: verified
+    action: curve_arc
+    params: {'radius': 25.0}
+    expect: {'radius': 25.0, 'circumference': 157.07963267948966}
+    evidence:
+      run: _runs/p2-all
+      checks: [circumference, radius]
+  - id: attr.string
+    family: attr
+    level: L2–L4
+    status: verified
+    action: attr_string
+    params: {'title': 'NXKIT_STR', 'value': 'hello-nx'}
+    expect: {'attr_str': 'hello-nx', 'attr_after_reopen': 'hello-nx'}
+    evidence:
+      run: _runs/p2-all
+      checks: [attr_after_reopen, attr_str]
+  - id: attr.int
+    family: attr
+    level: L2
+    status: verified
+    action: attr_int
+    params: {'title': 'NXKIT_INT', 'value': 42}
+    expect: {'attr_int': 42}
+    evidence:
+      run: _runs/p2-all
+      checks: [attr_int]
+  - id: extrude.rect
+    family: feature
+    level: L1–L4
+    status: verified
+    action: extrude_rect
+    params: {'length': 100.0, 'width': 50.0, 'distance': 10.0}
+    expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 50000.0, 'area_mm2': 13000.0}
+    evidence:
+      run: _runs/p2-all
+      checks: [area_mm2, body_count, edges, faces, volume_mm3]
+  - id: asm.add_component
+    family: assembly
+    level: L1–L2
+    status: verified
+    action: asm_add_component
+    params: {}
+    expect: {'components': 1}
+    evidence:
+      run: _runs/p2-all
+      checks: [components]
+  - id: asm.two_components
+    family: assembly
+    level: L1–L4
+    status: verified
+    action: asm_two_components
+    params: {}
+    expect: {'components': 2}
+    evidence:
+      run: _runs/p2-all
+      checks: [components]
+  - id: export.step
+    family: export
+    level: L1–L3
+    status: verified
+    action: export_step
+    params: {}
+    expect: {'export_head': 'ISO-10303-21'}
+    evidence:
+      run: _runs/p2-all
+      checks: [export_head]
+  - id: export.iges
+    family: export
+    level: L1–L3
+    status: verified
+    action: export_iges
+    params: {}
+    expect: {'igs': True}
+    evidence:
+      run: _runs/p2-all
+      checks: [igs]
+  - id: drawing.sheet
+    family: drawing
+    level: L1–L2
+    status: verified
+    action: drawing_sheet
+    params: {'name': 'S1'}
+    expect: {'sheet_created': True, 'sheet_height': 297.0, 'sheet_width': 420.0}
+    evidence:
+      run: _runs/p2-all
+      checks: [sheet_created, sheet_height, sheet_width]
+  - id: drawing.base_view
+    family: drawing
+    level: L1–L3
+    status: verified
+    action: drawing_base_view
+    params: {'model_view': 'Front'}
+    expect: {'view_created': True, 'model_view_used': 'Front'}
+    evidence:
+      run: _runs/p2-all
+      checks: [model_view_used, view_created]
+  - id: extrude.ring
+    family: feature
+    level: L1–L3
+    status: verified
+    action: extrude_ring
+    params: {}
+    expect: {'sections': 1, 'body_count': 1, 'volume_mm3': 42000.0, 'faces': 10}
+    evidence:
+      run: _runs/p2-all
+      checks: [body_count, faces, sections, volume_mm3]
