@@ -35,3 +35,5 @@
 ## external
 
 （暂无。）
+
+| `feature.hole` | H olePackageBuilder 能建；`HolePosition` 是 Section，缺"孔位点"选择规则（ScRuleFactory 无 point 规则） | 需要点选择规则 |
