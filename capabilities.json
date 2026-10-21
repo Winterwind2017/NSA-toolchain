@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 112
+    "verified": 114
   },
-  "generated_at": "2026-10-21T23:42:44",
+  "generated_at": "2026-10-21T23:49:29",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -50,6 +50,7 @@
     "curve.parabola": "L1–L3",
     "cylinder.create": "L1–L4",
     "drawing.base_view": "L1–L3",
+    "drawing.second_sheet": "L1–L2",
     "drawing.sheet": "L1–L2",
     "drawing.sheet_a0": "L1–L2",
     "drawing.sheet_a1": "L1–L2",
@@ -59,6 +60,7 @@
     "drawing.sheet_ansi_b": "L1–L2",
     "drawing.sheet_ansi_c": "L1–L2",
     "drawing.view_isometric": "L1–L2",
+    "drawing.view_scale": "L1–L2",
     "export.acis": "L1–L2",
     "export.iges": "L1–L3",
     "export.parasolid": "L1–L2",
@@ -164,6 +166,7 @@
     "curve.parabola": "solid_modeling",
     "cylinder.create": "solid_modeling",
     "drawing.base_view": "drafting",
+    "drawing.second_sheet": "drafting",
     "drawing.sheet": "drafting",
     "drawing.sheet_a0": "drafting",
     "drawing.sheet_a1": "drafting",
@@ -173,6 +176,7 @@
     "drawing.sheet_ansi_b": "drafting",
     "drawing.sheet_ansi_c": "drafting",
     "drawing.view_isometric": "drafting",
+    "drawing.view_scale": "drafting",
     "export.acis": "gateway",
     "export.iges": "gateway",
     "export.parasolid": "gateway",
@@ -243,6 +247,10 @@
   },
   "pending": [
     {
+      "id": "pattern.body_linear",
+      "reason": "ReferencePoint 是服务 builder，缺配置报 Incorrect object"
+    },
+    {
       "id": "solid.move_body",
       "reason": "ModlMotion DeltaX 设了仍报 Feature has zero parameters"
     },
@@ -309,7 +317,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "ace4bce",
+    "kernel_commit": "8a49e18",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -351,6 +359,7 @@
     "curve.parabola": "curve",
     "cylinder.create": "solid",
     "drawing.base_view": "drawing",
+    "drawing.second_sheet": "drawing",
     "drawing.sheet": "drawing",
     "drawing.sheet_a0": "drawing",
     "drawing.sheet_a1": "drawing",
@@ -360,6 +369,7 @@
     "drawing.sheet_ansi_b": "drawing",
     "drawing.sheet_ansi_c": "drawing",
     "drawing.view_isometric": "drawing",
+    "drawing.view_scale": "drawing",
     "export.acis": "export",
     "export.iges": "export",
     "export.parasolid": "export",
