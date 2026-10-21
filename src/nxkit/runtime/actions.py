@@ -623,7 +623,12 @@ def extrude_ring(params, workdir, rec):
              "faces": len(body.GetFaces()),
              "body_count": 1}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "ring.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -657,7 +662,12 @@ def chamfer_one(params, workdir, rec):
     reads["edges"] = len(bodies[0].GetEdges()) if bodies else 0
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "chamfer.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -686,7 +696,12 @@ def edge_blend_one(params, workdir, rec):
     reads["edges"] = len(bodies[0].GetEdges()) if bodies else 0
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "blend.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -730,7 +745,12 @@ def pattern_linear(params, workdir, rec):
     reads["body_count"] = len(bodies)
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "pattern.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -925,7 +945,12 @@ def solid_cone(params, workdir, rec):
     body = feat.GetBodies()[0]
     reads = {"body_count": 1}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "cone.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -954,7 +979,12 @@ def solid_sphere(params, workdir, rec):
     body = feat.GetBodies()[0]
     reads = {"body_count": 1}
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "sphere.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -997,7 +1027,12 @@ def pattern_grid(params, workdir, rec):
     reads["body_count"] = len(bodies)
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "grid.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1036,7 +1071,12 @@ def pattern_circular(params, workdir, rec):
     reads["body_count"] = len(bodies)
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "circ.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1108,7 +1148,12 @@ def chamfer_multi(params, workdir, rec):
              "faces": len(bodies[0].GetFaces()) if bodies else 0}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "chamfer4.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1177,7 +1222,12 @@ def boolean_two_tools(params, workdir, rec):
     reads = {"body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "bool2.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1203,7 +1253,12 @@ def hole_array(params, workdir, rec):
     reads = {"body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "harray.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1362,7 +1417,12 @@ def sketch_extrude(params, workdir, rec):
              "body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "skext.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1420,7 +1480,12 @@ def sketch_circle_extrude(params, workdir, rec):
     reads = {"sketches": len(list(part.Sketches)), "body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "skcirc.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1568,7 +1633,12 @@ def edge_blend_all(params, workdir, rec):
              "faces": len(bodies[0].GetFaces()) if bodies else 0}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "blendall.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1629,7 +1699,12 @@ def chamfer_edge(params, workdir, rec):
     reads["faces"] = len(bodies[0].GetFaces()) if bodies else 0
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "chamfer2.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1826,7 +1901,12 @@ def feature_hole_csk(params, workdir, rec):
     reads = {"body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "csk.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1870,7 +1950,12 @@ def solid_cone_frustum(params, workdir, rec):
     body = feat.GetBodies()[0]
     reads["body_count"] = 1
     reads.update(mass(part, [body]))
-    _close_part(part)
+    part2 = save_reopen(part, os.path.join(workdir, "frustum.prt"))
+    bodies2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(bodies2)
+    if bodies2:
+        reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+    _close_part(part2)
     return reads
 
 
@@ -1920,7 +2005,16 @@ def asm_four_components(params, workdir, rec):
     return reads
 
 
+def feature_boss(params, workdir, rec):
+    """块顶圆柱凸台 Ø20×10（并集）→ 103141.59。"""
+    part = new_part("boss")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_cylinder(part, 50.0, 25.0, 20.0, 20.0, 10.0)
+    return _volume_after_boolean(part, fa, fb, "Unite", workdir, "boss")
+
+
 ACTIONS = {
+    "feature_boss": feature_boss,
     "asm_nested": asm_nested,
     "asm_four_components": asm_four_components,
     "feature_hole_csk": feature_hole_csk,

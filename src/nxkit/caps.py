@@ -106,21 +106,21 @@ CAPS: tuple[Cap, ...] = (
     Cap("extrude.ring", "feature", "带内孔截面拉伸（外框−内框）", "extrude_ring", "L1–L3",
         params={},
         expect={"sections": 1, "body_count": 1,
-                "volume_mm3": 42000.0, "faces": 10}, reopen=False),
+                "volume_mm3": 42000.0, "faces": 10}, reopen=True),
 
     Cap("feature.chamfer", "feature", "一条边倒角 5 mm", "chamfer_one", "L1–L3",
         params={},
         expect={"body_count": 1, "faces": 7,
-                "volume_mm3": {"min": 98000.0, "max": 100000.0}}, reopen=False),
+                "volume_mm3": {"min": 98000.0, "max": 100000.0}}, reopen=True),
 
     Cap("feature.edge_blend", "feature", "一条边圆角 R5", "edge_blend_one", "L1–L3",
         params={},
         expect={"body_count": 1, "faces": 7,
-                "volume_mm3": {"min": 98000.0, "max": 100000.0}}, reopen=False),
+                "volume_mm3": {"min": 98000.0, "max": 100000.0}}, reopen=True),
 
     Cap("feature.pattern_linear", "feature", "沿 X 阵列 3 个（间距 120）", "pattern_linear", "L1–L3",
         params={},
-        expect={"body_count": 3, "volume_mm3": 300000.0}, reopen=False),
+        expect={"body_count": 3, "volume_mm3": 300000.0}, reopen=True),
 
     Cap("feature.pocket", "feature", "块上挖 40×20 通槽", "feature_pocket", "L1–L3",
         params={}, expect={"body_count": 1, "volume_mm3": 84000.0}, reopen=True),
@@ -145,16 +145,16 @@ CAPS: tuple[Cap, ...] = (
     Cap("solid.cone", "solid", "Ø40×30 圆锥", "solid_cone", "L1–L3",
         params={"diameter": 40.0, "height": 30.0},
         expect={"body_count": 1, "volume_mm3": 12566.370614359172},
-        reopen=False),
+        reopen=True),
     Cap("solid.sphere", "solid", "Ø40 球", "solid_sphere", "L1–L3",
         params={"diameter": 40.0},
         expect={"body_count": 1, "volume_mm3": 33510.32163829112},
-        reopen=False),
+        reopen=True),
 
     Cap("feature.pattern_grid", "feature", "2×2 矩形阵列", "pattern_grid", "L1–L3",
-        params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=False),
+        params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=True),
     Cap("feature.pattern_circular", "feature", "绕 Z 圆周阵列 4 个", "pattern_circular", "L1–L3",
-        params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=False),
+        params={}, expect={"body_count": 4, "volume_mm3": 400000.0}, reopen=True),
 
     Cap("export.step_ap203", "export", "导出 STEP AP203", "export_step_ap203", "L1–L2",
         params={}, expect={"export_ok": True,
@@ -166,14 +166,14 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.chamfer_multi", "feature", "四条边同时倒角 5 mm", "chamfer_multi", "L1–L3",
         params={},
         expect={"body_count": 1, "faces": {"min": 10.0, "max": 12.0},
-                "volume_mm3": {"min": 94000.0, "max": 100000.0}}, reopen=False),
+                "volume_mm3": {"min": 94000.0, "max": 100000.0}}, reopen=True),
 
 
     Cap("boolean.two_tools", "boolean", "一次减去两个工具体", "boolean_two_tools", "L1–L3",
-        params={}, expect={"body_count": 1, "volume_mm3": 84000.0}, reopen=False),
+        params={}, expect={"body_count": 1, "volume_mm3": 84000.0}, reopen=True),
     Cap("feature.hole_array", "feature", "四个 Ø20 通孔阵列", "hole_array", "L1–L3",
         params={}, expect={"body_count": 1,
-                           "volume_mm3": 74867.25849365017}, reopen=False),
+                           "volume_mm3": 74867.25849365017}, reopen=True),
 
 
     Cap("feature.shell", "feature", "块抽壳 2 mm（封闭空腔）", "feature_shell", "L1–L3",
@@ -188,11 +188,11 @@ CAPS: tuple[Cap, ...] = (
 
     Cap("sketch.extrude", "sketch", "草图 4 线拉伸 10 → 50000", "sketch_extrude", "L1–L3",
         params={}, expect={"sketches": 1, "body_count": 1,
-                           "volume_mm3": 50000.0}, reopen=False),
+                           "volume_mm3": 50000.0}, reopen=True),
 
     Cap("sketch.circle_extrude", "sketch", "草图整圆拉伸 30 → 37699.11", "sketch_circle_extrude", "L1–L3",
         params={}, expect={"sketches": 1, "body_count": 1,
-                           "volume_mm3": 37699.11184307752}, reopen=False),
+                           "volume_mm3": 37699.11184307752}, reopen=True),
 
     Cap("feature.pocket_blind", "feature", "盲槽 40×20 深 10", "feature_pocket_blind", "L1–L3",
         params={}, expect={"body_count": 1, "volume_mm3": 92000.0}, reopen=True),
@@ -223,7 +223,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.edge_blend_all", "feature", "全边圆角 R3", "edge_blend_all", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 94000.0, "max": 100000.0}},
-        reopen=False),
+        reopen=True),
 
     Cap("measure.face_single", "measure", "最大面的面积/周长", "measure_face_single", "L3",
         params={}, expect={"face_area_max": 5000.0, "face_perimeter_max": 300.0},
@@ -231,7 +231,7 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.chamfer_edge", "feature", "单边倒角 5 mm（另一条边）", "chamfer_edge", "L1–L3",
         params={}, expect={"body_count": 1, "faces": 7,
                            "volume_mm3": {"min": 98500.0, "max": 100000.0}},
-        reopen=False),
+        reopen=True),
 
 
     Cap("surface.bounded_plane", "surface", "4 条线建有界平面片体", "surface_bounded_plane", "L1–L2",
@@ -263,17 +263,22 @@ CAPS: tuple[Cap, ...] = (
     Cap("feature.hole_csk", "feature", "沉头孔（Ø20 通 + Ø30 深 5）", "feature_hole_csk", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 91700.0, "max": 91800.0}},
-        reopen=False),
+        reopen=True),
     Cap("solid.cone_frustum", "solid", "圆台（底 Ø40 / 顶 Ø20 / 高 30）",
         "solid_cone_frustum", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 21900.0, "max": 22100.0}},
-        reopen=False),
+        reopen=True),
 
     Cap("asm.four_components", "assembly", "装配插 4 个组件", "asm_four_components", "L1–L2",
         params={}, expect={"components": 4}, reopen=False),
     Cap("asm.nested", "assembly", "子装配 + 零件（外层 2 节点）", "asm_nested", "L1–L2",
         params={}, expect={"components": 2}, reopen=False),
+
+    Cap("feature.boss", "feature", "圆柱凸台 Ø20×10（并集）", "feature_boss", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 103000.0, "max": 103300.0}},
+        reopen=True),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
