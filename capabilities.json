@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 130
+    "verified": 134
   },
-  "generated_at": "2026-10-22T00:54:31",
+  "generated_at": "2026-10-22T02:26:56",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -83,6 +83,7 @@
     "feature.edge_blend": "L1–L3",
     "feature.edge_blend_all": "L1–L3",
     "feature.extrude_taper": "L1–L3",
+    "feature.hole": "L1–L3",
     "feature.hole_array": "L1–L3",
     "feature.hole_blind": "L1–L3",
     "feature.hole_csk": "L1–L3",
@@ -95,11 +96,13 @@
     "feature.pocket": "L1–L3",
     "feature.pocket_blind": "L1–L3",
     "feature.revolve": "L1–L3",
+    "feature.rib": "L1–L3",
     "feature.shell": "L1–L3",
     "feature.shell_volume": "L1–L3",
     "feature.spring": "L1–L3",
     "feature.stack_blocks": "L1–L3",
     "feature.sweep": "L1–L3",
+    "feature.sweep_guide": "L1–L3",
     "feature.thicken": "L1–L3",
     "feature.tube": "L1–L3",
     "file.roundtrip": "L4",
@@ -140,6 +143,7 @@
     "solid.scale": "L1–L3",
     "solid.sphere": "L1–L3",
     "solid.split_body": "L1–L3",
+    "solid.trim_body": "L1–L2",
     "surface.bounded_plane": "L1–L2",
     "surface.ruled": "L1–L2",
     "surface.sew": "L1–L2",
@@ -215,6 +219,7 @@
     "feature.edge_blend": "solid_modeling",
     "feature.edge_blend_all": "solid_modeling",
     "feature.extrude_taper": "solid_modeling",
+    "feature.hole": "solid_modeling",
     "feature.hole_array": "solid_modeling",
     "feature.hole_blind": "solid_modeling",
     "feature.hole_csk": "solid_modeling",
@@ -227,11 +232,13 @@
     "feature.pocket": "solid_modeling",
     "feature.pocket_blind": "solid_modeling",
     "feature.revolve": "solid_modeling",
+    "feature.rib": "solid_modeling",
     "feature.shell": "solid_modeling",
     "feature.shell_volume": "solid_modeling",
     "feature.spring": "solid_modeling",
     "feature.stack_blocks": "solid_modeling",
     "feature.sweep": "solid_modeling",
+    "feature.sweep_guide": "solid_modeling",
     "feature.thicken": "solid_modeling",
     "feature.tube": "solid_modeling",
     "file.roundtrip": "gateway",
@@ -272,6 +279,7 @@
     "solid.scale": "solid_modeling",
     "solid.sphere": "solid_modeling",
     "solid.split_body": "solid_modeling",
+    "solid.trim_body": "solid_modeling",
     "surface.bounded_plane": "solid_modeling",
     "surface.ruled": "solid_modeling",
     "surface.sew": "solid_modeling",
@@ -303,10 +311,6 @@
       "reason": "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"
     },
     {
-      "id": "feature.hole",
-      "reason": "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"
-    },
-    {
       "id": "drawing.dimension",
       "reason": "part.Dimensions 的创建签名与视图绑定未验证"
     },
@@ -329,10 +333,6 @@
     {
       "id": "sketch.constant_length",
       "reason": "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"
-    },
-    {
-      "id": "feature.rib",
-      "reason": "part.Features 上没有 CreateRibBuilder"
     },
     {
       "id": "export.dxf",
@@ -424,6 +424,7 @@
     "feature.edge_blend": "feature",
     "feature.edge_blend_all": "feature",
     "feature.extrude_taper": "feature",
+    "feature.hole": "feature",
     "feature.hole_array": "feature",
     "feature.hole_blind": "feature",
     "feature.hole_csk": "feature",
@@ -436,11 +437,13 @@
     "feature.pocket": "feature",
     "feature.pocket_blind": "feature",
     "feature.revolve": "feature",
+    "feature.rib": "feature",
     "feature.shell": "feature",
     "feature.shell_volume": "feature",
     "feature.spring": "feature",
     "feature.stack_blocks": "feature",
     "feature.sweep": "feature",
+    "feature.sweep_guide": "feature",
     "feature.thicken": "feature",
     "feature.tube": "feature",
     "file.roundtrip": "file",
@@ -481,6 +484,7 @@
     "solid.scale": "solid",
     "solid.sphere": "solid",
     "solid.split_body": "solid",
+    "solid.trim_body": "solid",
     "surface.bounded_plane": "surface",
     "surface.ruled": "surface",
     "surface.sew": "surface",
