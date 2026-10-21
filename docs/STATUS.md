@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**138** 条
+- 真机通过能力：**139** 条
 - 其中带 L4（存盘→重开→复测）：**54** 条
-- 未打通（有证据）：**13** 项
+- 未打通（有证据）：**12** 项
 
 ## 按族
 
@@ -14,7 +14,7 @@
 |---|---:|---:|
 | feature | 33 | 29 |
 | sketch | 18 | 2 |
-| drawing | 13 | 0 |
+| drawing | 14 | 0 |
 | attr | 10 | 2 |
 | solid | 10 | 8 |
 | curve | 9 | 0 |
@@ -32,7 +32,6 @@
 | 能力 | 卡在哪里 |
 |---|---|
 | `cam.setup` | `part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder |
-| `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 |
 | `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） |
 | `drawing.section_view` | `CreateSectionViewBuilder(base_view)` 报 `Invalid object type for this operation`；用 `SectionView.Null` 能构造，但 `ParentView` **不可写**、`Commit()` 报 `Null tag not allowed` |

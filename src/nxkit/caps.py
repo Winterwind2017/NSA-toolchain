@@ -46,6 +46,9 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("drawing.dimension", "drawing", "视图上建线性尺寸标注（失败退回直接标注）",
+        "drawing_dimension", "L1–L2", params={},
+        expect={"dimension_created": True}, reopen=False),
     Cap("drawing.projected_view", "drawing", "基础视图 + 投影视图（2 个视图）",
         "drawing_projected_view", "L1–L2", params={},
         expect={"view_count": 2, "projected_ok": True}, reopen=False),

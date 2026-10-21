@@ -14,7 +14,6 @@
 | 能力 | 卡在哪（真机证据） | 依赖 |
 |---|---|---|
 | `feature.chamfer` | `CreateChamferBuilder(...).SmartCollector` 是 **None**，没有可写的边集合；直接 `CommitFeature()` 报 `Referenced edge does not exist` | 需要找到边选择的正确挂点（`SelectEdge`/selection intent） |
-| `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 | 依赖基础视图（已通） |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints`（解算） | 已把整套流程走通：`Positioner.BeginAssemblyConstraints()` → `CreateConstraint(True)` → `ConstraintType=Touch` → 两个 `CreateConstraintReference`（成功，返回 `ConstraintReference`）→ `LoadConstraintGeometry` → `EndAssemblyConstraints()`（返回 None）→ `SolvePostponedConstraints()`（返回 None）。但**两面距离在解算前后都是 10.0**、`GetConstraintStatus()` 恒为 0 → 约束没解算 | 需要交互式约束求解器 |
 | `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 | 需要别的枚举写入口 |

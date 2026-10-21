@@ -1182,6 +1182,7 @@ def chamfer_multi(params, workdir, rec):
 
 
 def _drafting_part(name):
+    import NXOpen.Drawings
     part = new_part(name)
     feat = make_block(part, 0, 0, 0, 100, 50, 20)
     ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
@@ -1197,31 +1198,52 @@ def _drafting_part(name):
 
 
 def drawing_dimension(params, workdir, rec):
+    """在图纸视图上建一条线性尺寸标注（先试关联式，再退回直接标注）。"""
     part, feat, view = _drafting_part("dim")
     body = feat.GetBodies()[0]
     edges = list(body.GetEdges())
-    lb = part.Dimensions.CreateLinearDimensionBuilder(None)
+    diag = {}
+    dim = None
     try:
-        lb.FirstAssociativity.SetValue(edges[0], view, NXOpen.Point3d(0.0, 0.0, 0.0))
-        lb.SecondAssociativity.SetValue(edges[1], view, NXOpen.Point3d(100.0, 0.0, 0.0))
+        lb = part.Dimensions.CreateLinearDimensionBuilder(None)
         try:
-            lb.Origin.SetValue(NXOpen.Point3d(50.0, -20.0, 0.0))
-        except Exception:
-            pass
-        dim = lb.Commit()
-        reads = {"dimension_created": dim is not None}
-    finally:
+            lb.FirstAssociativity.SetValue(edges[0], view,
+                                           NXOpen.Point3d(0.0, 0.0, 0.0))
+            lb.SecondAssociativity.SetValue(edges[1], view,
+                                            NXOpen.Point3d(100.0, 0.0, 0.0))
+            try:
+                lb.Origin.SetValue(NXOpen.Point3d(50.0, -20.0, 0.0))
+            except Exception:
+                pass
+            dim = lb.Commit()
+            diag["linear"] = "ok"
+        finally:
+            try:
+                lb.Destroy()
+            except Exception:
+                pass
+    except Exception as exc:
+        diag["linear"] = "err:%s" % str(exc)[:110]
+    if dim is None:
+        # 退回：MeasureManager 直接造标注（不关联视图）
         try:
-            lb.Destroy()
+            dim = part.MeasureManager.CreateDimensionAnnotation(
+                NXOpen.Point3d(0.0, 0.0, 30.0), NXOpen.Point3d(100.0, 0.0, 30.0),
+                "100")
+            diag["fallback"] = type(dim).__name__
+        except Exception as exc:
+            diag["fallback"] = "err:%s" % str(exc)[:110]
+    reads = {"dimension_created": dim is not None, "diag": diag}
+    tries = 0
+    for attr in ("Dimensions", "Annotations"):
+        try:
+            vals = list(getattr(part, attr))
+            tries = max(tries, len(vals))
         except Exception:
-            pass
-    try:
-        reads["dimension_count"] = len(list(part.Dimensions))
-    except Exception:
-        reads["dimension_count"] = None
+            continue
+    reads["dimension_count"] = tries
     _close_part(part)
     return reads
-
 
 def boolean_two_tools(params, workdir, rec):
     """块减去两个小方块（各 8000）→ 84000。"""
@@ -4478,6 +4500,7 @@ def drawing_projected_view(params, workdir, rec):
     return reads
 
 ACTIONS = {
+    "drawing_dimension": drawing_dimension,
     "drawing_projected_view": drawing_projected_view,
     "solid_delete_face": solid_delete_face,
     "curve_combined_projection": curve_combined_projection,
