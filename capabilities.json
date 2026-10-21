@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 115
+    "verified": 116
   },
-  "generated_at": "2026-10-22T00:00:38",
+  "generated_at": "2026-10-22T00:06:46",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -95,6 +95,7 @@
     "feature.shell_volume": "L1–L3",
     "feature.spring": "L1–L3",
     "feature.stack_blocks": "L1–L3",
+    "feature.sweep": "L1–L3",
     "feature.thicken": "L1–L3",
     "feature.tube": "L1–L3",
     "file.roundtrip": "L4",
@@ -212,6 +213,7 @@
     "feature.shell_volume": "solid_modeling",
     "feature.spring": "solid_modeling",
     "feature.stack_blocks": "solid_modeling",
+    "feature.sweep": "solid_modeling",
     "feature.thicken": "solid_modeling",
     "feature.tube": "solid_modeling",
     "file.roundtrip": "gateway",
@@ -248,6 +250,10 @@
     "surface.bounded_plane": "solid_modeling"
   },
   "pending": [
+    {
+      "id": "sketch.point_on_curve",
+      "reason": "约束能建但几何不动（无 Solve 触发）"
+    },
     {
       "id": "pattern.body_linear",
       "reason": "ReferencePoint 是服务 builder，缺配置报 Incorrect object"
@@ -293,10 +299,6 @@
       "reason": "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"
     },
     {
-      "id": "feature.sweep",
-      "reason": "Commit 报 Unable to approximate guide string"
-    },
-    {
       "id": "feature.rib",
       "reason": "part.Features 上没有 CreateRibBuilder"
     },
@@ -315,7 +317,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "f167572",
+    "kernel_commit": "fff7d50",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -402,6 +404,7 @@
     "feature.shell_volume": "feature",
     "feature.spring": "feature",
     "feature.stack_blocks": "feature",
+    "feature.sweep": "feature",
     "feature.thicken": "feature",
     "feature.tube": "feature",
     "file.roundtrip": "file",

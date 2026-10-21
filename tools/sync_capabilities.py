@@ -35,6 +35,7 @@ GROUP_LABEL = {
 
 # 与 docs/UNSUPPORTED.md 对应：还没打通的能力（技能里"别试这些"用）
 PENDING = [
+    ("sketch.point_on_curve", "约束能建但几何不动（无 Solve 触发）"),
     ("pattern.body_linear", "ReferencePoint 是服务 builder，缺配置报 Incorrect object"),
     ("solid.move_body", "ModlMotion DeltaX 设了仍报 Feature has zero parameters"),
     ("solid.split_body", "工具体要 datum plane，Plane 对象被拒"),
@@ -46,7 +47,6 @@ PENDING = [
     ("asm.constraints", "约束+参考能建，状态停在 NewlyCreated；CreateConstraintReference 参数顺序与文档相反"),
     ("sketch.constraints", "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"),
     ("sketch.constant_length", "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"),
-    ("feature.sweep", "Commit 报 Unable to approximate guide string"),
     ("feature.rib", "part.Features 上没有 CreateRibBuilder"),
     ("export.dxf", "危险：无图纸上下文时 Commit 死循环，勿在 journal 里用"),
     ("drawing.projected_view", "ParentViewBuilder.View 不可写，Commit 报 Null tag not allowed"),
