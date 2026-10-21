@@ -2279,7 +2279,52 @@ def sketch_constraint_kind(params, workdir, rec):
     return reads
 
 
+def sketch_dimension(params, workdir, rec):
+    """草图上给整圆加直径尺寸（值 50）。"""
+    import math
+    part = new_part("skdim")
+    sb = part.Sketches.CreateNewSketchInPlaceBuilder(None)
+    sb.PlaneReference = _xy_plane(part)
+    sketch = sb.Commit()
+    try:
+        sb.Destroy()
+    except Exception:
+        pass
+    sketch.Activate(NXOpen.Sketch.ViewReorient.FalseValue)
+    p = NXOpen.Point3d
+    arc = part.Curves.CreateArc(p(0.0, 0.0, 0.0),
+                                NXOpen.Vector3d(1.0, 0.0, 0.0),
+                                NXOpen.Vector3d(0.0, 1.0, 0.0),
+                                25.0, 0.0, 2.0 * math.pi)
+    sketch.AddGeometry(arc)
+
+    diag = {}
+    dg = NXOpen.Sketch.DimensionGeometry()
+    dg.Geometry = arc
+    dg.HelpPoint = p(25.0, 0.0, 0.0)
+    try:
+        dg.View = None
+    except Exception:
+        pass
+    expr = part.Expressions.Create("nxkit_d1 = 50")
+    diag["expr"] = str(expr.Value)[:20]
+    con = sketch.CreateDiameterDimension(dg, p(40.0, 40.0, 0.0), expr)
+    reads = {"dim_ok": con is not None, "expr_value": float(expr.Value),
+             "diag": diag}
+    try:
+        reads["dim_geometry"] = len(list(con.GetGeometry()))
+    except Exception:
+        reads["dim_geometry"] = None
+    try:
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.FalseValue, True)
+    except Exception:
+        pass
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "sketch_dimension": sketch_dimension,
     "sketch_constraint_kind": sketch_constraint_kind,
     "sketch_constraint": sketch_constraint,
     "attr_double": attr_double,
