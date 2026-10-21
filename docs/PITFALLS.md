@@ -203,3 +203,30 @@ ex.Commit()
 所以脚本里做镜像时，直接用模型上的平面面当镜像平面最省事；
 `NXOpen.Features.DatumPlane` 这个哨兵在本机不存在（`CreateDatumPlaneBuilder` 在，
 但 `DatumPlane.Null` 拿不到）。
+
+## 二十三、判据容差必须按量级给，不能一刀切 0.5
+
+`judges._close` 早期对所有数值用 `ABS_TOL = 0.5`，结果
+`drawing.view_scale` 读回 0.590012、期望 0.5，差 0.09 ≤ 0.5，**判通过**——
+比率类判据等于没有。现在按量级收紧：
+
+| |want| 量级 | 容差 | 适用 |
+|---|---|---|
+| ≥ 100 | 0.5 | 体积（mm³）、面积（mm²） |
+| ≥ 1 | 1e-3 | 尺寸、计数 |
+| < 1 | 1e-6 | 比例、系数 |
+
+收紧后全量重跑仍是 114/114，说明没有别处靠宽容差混过去。
+
+## 二十四、图纸的 Length 是长边、Height 是短边
+
+`DrawingSheet.Length` / `Height` 不是"宽/高"的字面含义：A4 横放时
+`Length = 297`、`Height = 210`。判据写 `height=297, width=210` 会失败，
+正确是 `current_height=210, current_width=297`。
+
+## 二十五、视图比例的 `Numerator/Denominator` 是相对自动缩放的
+
+`vb.Scale.Numerator = 1, Denominator = 2` 之后，`view.Scale` **不是 0.5**，
+而是"自动缩放值的一半"（A3 + 100×50×20 块：0.590012 → 0.295006）。
+所以判据要**自校准**：同一模型建两个视图（自动 + 1:2），比较
+`ratio_scale * 2 ≈ auto_scale`，别硬编码 0.5。

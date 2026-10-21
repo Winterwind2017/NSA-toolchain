@@ -19,7 +19,7 @@
 ```powershell
 git clone git@github.com:Winterwind2017/nxkit.git D:\bililive\_verify\nxkit-clone
 cd D:\bililive\_verify\nxkit-clone
-git log --oneline -1        # 98df998
+git log --oneline -1        # 4a173bd
 $env:PYTHONPATH = "D:\bililive\_verify\nxkit-clone\src"
 ```
 
@@ -27,7 +27,7 @@ $env:PYTHONPATH = "D:\bililive\_verify\nxkit-clone\src"
 
 ```powershell
 python -m pytest -q tests
-# 9 passed in 0.09s
+# 9 passed in 0.07s
 
 python -m nxkit selftest
 # 自检通过：114 条能力，动作与判据齐全，负例都能被拒绝
@@ -42,7 +42,7 @@ python -m nxkit licenses
 
 ```powershell
 python -m nxkit run --workdir D:\bililive\_verify\rundir
-# 114/114 通过  (会话 22.0s, 退出码 1)
+# 114/114 通过  (会话 22.2s, 退出码 1)
 ```
 
 > 注意：`run_journal` 的**退出码是 1**（NX 特性），结果以 `result.json` 为准。
@@ -75,16 +75,16 @@ python tools/check_consistency.py --skill D:\bililive\ww-nx-automation
 | 检查 | 结果 |
 |---|---|
 | 离线测试 | 9 passed |
-| 自检（动作/判据/负例） | 112 条，负例全部被拒 |
+| 自检（动作/判据/负例） | 114 条，负例全部被拒 |
 | 许可扫描 | 4,420 feature，四档齐全 |
-| 真机全量（工作副本） | **112/112**，连跑 2 次均通过 |
-| 真机全量（干净 clone） | **112/112** |
+| 真机全量（工作副本） | **114/114**，连跑 2 次均通过 |
+| 真机全量（干净 clone） | **114/114**（commit 4a173bd，2026-10-21 复跑） |
 | 技能校验 + 测试 | 通过 / 4 passed |
 | 五处数字一致性 | 一致 |
-| L4（存盘→重开→复测） | **52 / 112** |
+| L4（存盘→重开→复测） | **52 / 114** |
 
 ## 7. 结论
 
-- 能力清单可复现：同一 commit、同一环境，冷启动跑出 112/112。
+- 能力清单可复现：同一 commit、同一环境，冷启动跑出 114/114。
 - 没有"只在工作副本里能过"的能力。
 - 没打通的能力全部登记在 `docs/UNSUPPORTED.md`，每条带 NX 返回的错误原文。
