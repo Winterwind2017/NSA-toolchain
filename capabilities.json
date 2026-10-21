@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 118
+    "verified": 120
   },
-  "generated_at": "2026-10-22T00:11:56",
+  "generated_at": "2026-10-22T00:21:30",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -49,6 +49,8 @@
     "curve.line": "L1–L3",
     "curve.parabola": "L1–L3",
     "cylinder.create": "L1–L4",
+    "datum.axis": "L1–L2",
+    "datum.plane": "L1–L2",
     "drawing.base_view": "L1–L3",
     "drawing.second_sheet": "L1–L2",
     "drawing.sheet": "L1–L2",
@@ -169,6 +171,8 @@
     "curve.line": "solid_modeling",
     "curve.parabola": "solid_modeling",
     "cylinder.create": "solid_modeling",
+    "datum.axis": "gateway",
+    "datum.plane": "gateway",
     "drawing.base_view": "drafting",
     "drawing.second_sheet": "drafting",
     "drawing.sheet": "drafting",
@@ -267,10 +271,6 @@
       "reason": "ReferencePoint 是服务 builder，缺配置报 Incorrect object"
     },
     {
-      "id": "solid.move_body",
-      "reason": "ModlMotion DeltaX 设了仍报 Feature has zero parameters"
-    },
-    {
       "id": "solid.delete_body",
       "reason": "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"
     },
@@ -321,7 +321,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "1b1dabf",
+    "kernel_commit": "e548df4",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -362,6 +362,8 @@
     "curve.line": "curve",
     "curve.parabola": "curve",
     "cylinder.create": "solid",
+    "datum.axis": "part",
+    "datum.plane": "part",
     "drawing.base_view": "drawing",
     "drawing.second_sheet": "drawing",
     "drawing.sheet": "drawing",
