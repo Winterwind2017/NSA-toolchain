@@ -44,7 +44,6 @@ PENDING = [
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),
     ("asm.constraints", "装配约束 API 未挖"),
     ("export.dxf", "DxfdwgCreator 需要图纸上下文"),
-    ("sketch.*", "草图创建入口未摸清（CreateNewSketchInPlaceBuilder 有了，激活/落曲线未通）"),
     ("export.stl", "Commit 成功但 0 字节，需要 ExportSelectionBlock"),
     ("export.parasolid", "Commit 报 no valid export objects，需要 ExportSelectionBlock"),
     ("drawing.projected_view", "ProjectedViewBuilder.Parent 只读"),

@@ -82,7 +82,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **41** 条 verified 能力（内核 `nxkit 0.1.0`，commit `5762609`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **44** 条 verified 能力（内核 `nxkit 0.1.0`，commit `e918f9f`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -92,6 +92,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **布尔**（4） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） |
 | **导出**（4） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） |
 | **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
+| **sketch**（3） | `sketch.circle_extrude`（L1–L3） `sketch.extrude`（L1–L3） `sketch.rect`（L1–L2） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
 | **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
 | **测量**（2） | `measure.face_area`（L3） `measure.mass`（L3） |
@@ -112,7 +113,6 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `cae.mesh` | `NXOpen.CAE` 绑定大、解算慢，未开始 |
 | `asm.constraints` | 装配约束 API 未挖 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
-| `sketch.*` | 草图创建入口未摸清（`CreateNewSketchInPlaceBuilder` 有了，激活/落曲线未通） |
 | `export.stl` | `Commit()` 成功但 0 字节，需要 `ExportSelectionBlock` |
 | `export.parasolid` | `Commit()` 报 `no valid export objects`，需要 `ExportSelectionBlock` |
 | `drawing.projected_view` | `ProjectedViewBuilder.Parent` 只读 |
@@ -147,6 +147,14 @@ nxkit cap feature.pocket        # 挖 40×20 通槽：84000
 nxkit cap feature.hole_cyl      # 钻 Ø20 通孔：93716.815
 nxkit cap feature.hole_array    # 四个 Ø20 通孔：74867.26
 nxkit cap feature.shell         # 抽壳 2 mm：29344
+```
+
+### 草图
+
+```bash
+nxkit cap sketch.rect            # XY 平面草图 + 4 条线（自带 2 条参考线）
+nxkit cap sketch.extrude         # 草图 4 线拉伸 10 → 50000
+nxkit cap sketch.circle_extrude  # 草图整圆 R20 拉伸 30 → 37699.11
 ```
 
 ### 布尔
