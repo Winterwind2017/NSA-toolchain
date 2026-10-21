@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 122
+    "verified": 123
   },
-  "generated_at": "2026-10-22T00:31:08",
+  "generated_at": "2026-10-22T00:32:52",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -49,6 +49,7 @@
     "curve.line": "L1–L3",
     "curve.offset": "L1–L2",
     "curve.parabola": "L1–L3",
+    "curve.project": "L1–L2",
     "cylinder.create": "L1–L4",
     "datum.axis": "L1–L2",
     "datum.plane": "L1–L2",
@@ -173,6 +174,7 @@
     "curve.line": "solid_modeling",
     "curve.offset": "solid_modeling",
     "curve.parabola": "solid_modeling",
+    "curve.project": "solid_modeling",
     "cylinder.create": "solid_modeling",
     "datum.axis": "gateway",
     "datum.plane": "gateway",
@@ -329,7 +331,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "922fc10",
+    "kernel_commit": "e11fcab",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -370,6 +372,7 @@
     "curve.line": "curve",
     "curve.offset": "curve",
     "curve.parabola": "curve",
+    "curve.project": "curve",
     "cylinder.create": "solid",
     "datum.axis": "part",
     "datum.plane": "part",
