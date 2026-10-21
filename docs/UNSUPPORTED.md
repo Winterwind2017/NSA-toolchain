@@ -4,7 +4,9 @@
 
 ## dead
 
-（暂无。真机试过失败的会记在这里，附失败证据。）
+| 能力 | 真机证据 |
+|---|---|
+| `cam.setup` | `part.CreateCamSetup("mill_planar"/"mill_contour"/"mill"/"MILL_PLANAR")` **全部返回 None**；`part.CAMSetup` 抛 `Error number: 1345023`；`part.CAMDataManager` 只暴露 2 个曲线 builder（`CreateBlendCurve3dBuilder`/`CreateOffsetCurve3dBuilder`）；`NXOpen.CAM` 能 import 但无 setup 创建器 |
 
 ## pending（按依赖顺序）
 
@@ -14,8 +16,6 @@
 | `feature.hole` | `CreateHolePackageBuilder` 要 `HolePackage.Null` 哨兵，参数未摸清；**通孔已用「圆柱 + 布尔差」实现**（`feature.hole_cyl`） | 依赖点/面 |
 | `drawing.dimension` | `part.Dimensions` 存在，但集合类不在 core stub 里，`CreateHorizontalDimension` 的签名与视图绑定方式未验证 | 依赖基础视图（已通） |
 | `measure.distance` | `MeasureDistance` 没有 `Distance` 属性，`Information()` 返回 `None`；数值在 `CreateFeature()` 产出的 `Measure` 表达式里，未打通 | 依赖 `Measure.CreateFeature` |
-| `cam.setup` | `part.CreateCamSetup("mill_planar")` **返回 None**，随后 `part.CAMSetup` 报 `Current part does not contain valid setup`；试过 `mill_planar`/`mill_contour`/`drill` | 可能要在 CAM 应用上下文里建（`NXOpen.CAM` 域） |
-| `feature.revolve` | `CreateRevolveBuilder` + `Section` + `Axes.CreateAxis` 后 `CommitFeature()` 报 **内存访问违例** | 需要换截面/轴构造方式 |
 | `feature.mirror` | `MirrorFeatureBuilder.Plane` **只读**（只能 `PlaneOption` + `PlaneConstructor`），未找到可写入口 | 需要 PlaneConstructor 用法 |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints` | 只有 `ComponentAssembly.CreateConstraintGroupBuilder` / `Positioner`，约束对象没有创建入口 | 依赖组件（已通） |

@@ -1486,6 +1486,73 @@ def asm_three_components(params, workdir, rec):
     return reads
 
 
+def feature_revolve(params, workdir, rec):
+    """XZ 平面矩形绕 Z 轴转 360°，r=20 h=30 → 37699.11。"""
+    part = new_part("rev")
+    p = NXOpen.Point3d
+    lines = [
+        part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(20.0, 0.0, 0.0)),
+        part.Curves.CreateLine(p(20.0, 0.0, 0.0), p(20.0, 0.0, 30.0)),
+        part.Curves.CreateLine(p(20.0, 0.0, 30.0), p(0.0, 0.0, 30.0)),
+        part.Curves.CreateLine(p(0.0, 0.0, 30.0), p(0.0, 0.0, 0.0)),
+    ]
+    secs = part.Sections.CreateSectionsUsingCurves(
+        lines, NXOpen.SectionCollection.LoopOption.Separate, 0.0095, 0.01, 0.5)
+    b = part.Features.CreateRevolveBuilder(NXOpen.Features.Feature.Null)
+    try:
+        b.Section = secs[0]
+        axis_point = part.Points.CreatePoint(p(0.0, 0.0, 0.0))
+        axis_dir = part.Directions.CreateDirection(
+            p(0.0, 0.0, 0.0), NXOpen.Vector3d(0.0, 0.0, 1.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        b.Axis = part.Axes.CreateAxis(axis_point, axis_dir,
+                                      NXOpen.SmartObject.UpdateOption.WithinModeling)
+        try:
+            b.Limits.StartExtend.Value.SetFormula("0")
+            b.Limits.EndExtend.Value.SetFormula("360")
+        except Exception:
+            b.Limits.StartExtend.SetValue(0.0)
+            b.Limits.EndExtend.SetValue(360.0)
+        feat = b.CommitFeature()
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads = {"body_count": 1, "faces": len(body.GetFaces())}
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
+def edge_blend_all(params, workdir, rec):
+    """块的全部 12 条边圆角 3 mm（判面数与体积区间）。"""
+    part = new_part("blendall")
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    edges = list(body.GetEdges())
+    eb = part.Features.CreateEdgeBlendBuilder(NXOpen.Features.Feature.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleEdgeDumb(edges)
+        sc = part.ScCollectors.CreateCollector()
+        sc.AddRules([rule])
+        eb.AddChainset(sc, "3")
+        eb.CommitFeature()
+    finally:
+        try:
+            eb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies),
+             "faces": len(bodies[0].GetFaces()) if bodies else 0}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
     "part_new": part_new,
     "block_create": block_create,
@@ -1539,6 +1606,8 @@ ACTIONS = {
     "drawing_sheet_size": drawing_sheet_size,
     "drawing_view_named": drawing_view_named,
     "asm_three_components": asm_three_components,
+    "feature_revolve": feature_revolve,
+    "edge_blend_all": edge_blend_all,
 }
 
 

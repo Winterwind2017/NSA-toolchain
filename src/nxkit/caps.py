@@ -215,6 +215,15 @@ CAPS: tuple[Cap, ...] = (
         params={}, expect={"export_ok": True,
                            "export_bytes": {"min": 100.0, "max": 100000000.0}},
         reopen=False),
+
+    Cap("feature.revolve", "feature", "矩形绕 Z 转 360°（圆柱）", "feature_revolve", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 37600.0, "max": 37800.0}},
+        reopen=False),
+    Cap("feature.edge_blend_all", "feature", "全边圆角 R3", "edge_blend_all", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 94000.0, "max": 100000.0}},
+        reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
