@@ -764,13 +764,21 @@ def _extrude_rect_body(part, x, y, w, h, depth):
             pass
 
 
-def _volume_after_boolean(part, fa, fb, op):
+def _volume_after_boolean(part, fa, fb, op, workdir=None, tag=None):
     _set_boolean(part, fa, fb, op)
     bodies = _bodies_of(part)
     reads = {"body_count": len(bodies)}
     if bodies:
         reads.update(mass(part, bodies))
-    _close_part(part)
+    if workdir and tag:
+        part2 = save_reopen(part, os.path.join(workdir, tag + ".prt"))
+        bodies2 = _bodies_of(part2)
+        reads["body_count_reopened"] = len(bodies2)
+        if bodies2:
+            reads["volume_reopened"] = float(mass(part2, bodies2)["volume_mm3"])
+        _close_part(part2)
+    else:
+        _close_part(part)
     return reads
 
 
@@ -779,7 +787,7 @@ def feature_pocket(params, workdir, rec):
     part = new_part("pocket")
     fa = make_block(part, 0, 0, 0, 100, 50, 20)
     fb = _extrude_rect_body(part, 30.0, 15.0, 40.0, 20.0, 20.0)
-    return _volume_after_boolean(part, fa, fb, "Subtract")
+    return _volume_after_boolean(part, fa, fb, "Subtract", workdir, "pocket")
 
 
 def feature_hole_cyl(params, workdir, rec):
@@ -787,7 +795,7 @@ def feature_hole_cyl(params, workdir, rec):
     part = new_part("hole")
     fa = make_block(part, 0, 0, 0, 100, 50, 20)
     fb = make_cylinder(part, 50.0, 25.0, 0.0, 20.0, 20.0)
-    return _volume_after_boolean(part, fa, fb, "Subtract")
+    return _volume_after_boolean(part, fa, fb, "Subtract", workdir, "holecyl")
 
 
 def _dex_export(kind, part, workdir):
@@ -1416,7 +1424,7 @@ def feature_pocket_blind(params, workdir, rec):
     part = new_part("pockb")
     fa = make_block(part, 0, 0, 0, 100, 50, 20)
     fb = _extrude_rect_body(part, 30.0, 15.0, 40.0, 20.0, 10.0)
-    return _volume_after_boolean(part, fa, fb, "Subtract")
+    return _volume_after_boolean(part, fa, fb, "Subtract", workdir, "pocketb")
 
 
 def feature_hole_blind(params, workdir, rec):
@@ -1424,7 +1432,7 @@ def feature_hole_blind(params, workdir, rec):
     part = new_part("holeb")
     fa = make_block(part, 0, 0, 0, 100, 50, 20)
     fb = make_cylinder(part, 50.0, 25.0, 0.0, 20.0, 10.0)
-    return _volume_after_boolean(part, fa, fb, "Subtract")
+    return _volume_after_boolean(part, fa, fb, "Subtract", workdir, "holeb")
 
 
 def drawing_sheet_size(params, workdir, rec):
@@ -1781,7 +1789,79 @@ def inspect_body_type(params, workdir, rec):
     return reads
 
 
+def feature_hole_csk(params, workdir, rec):
+    """沉头孔：Ø20 通孔 + Ø30 深 5 → 91753.32。"""
+    import math
+    part = new_part("csk")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_cylinder(part, 50.0, 25.0, -2.0, 20.0, 24.0)
+    fc = make_cylinder(part, 50.0, 25.0, 15.0, 30.0, 7.0)
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Subtract
+        bb.Target = fa.GetBodies()[0]
+        bb.Tools.Add([fb.GetBodies()[0], fc.GetBodies()[0]])
+        bb.CommitFeature()
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
+def solid_cone_frustum(params, workdir, rec):
+    """圆台：底 Ø40 / 顶 Ø20 / 高 30 → 21991.15。"""
+    part = new_part("frustum")
+    cb = part.Features.CreateConeBuilder(NXOpen.Features.Cone.Null)
+    try:
+        set_top = None
+        for name in ("TopDiameter", "TopDia"):
+            if hasattr(cb, name):
+                try:
+                    getattr(cb, name).SetFormula("20")
+                    set_top = name
+                    break
+                except Exception as exc:
+                    set_top = "err:%s" % str(exc)[:60]
+        for name in ("BottomDiameter", "BaseDiameter", "Diameter"):
+            if hasattr(cb, name):
+                try:
+                    getattr(cb, name).SetFormula("40")
+                    break
+                except Exception:
+                    continue
+        try:
+            cb.Height.SetFormula("30")
+        except Exception:
+            pass
+        try:
+            cb.Origin = NXOpen.Point3d(0.0, 0.0, 0.0)
+            cb.Direction = NXOpen.Vector3d(0.0, 0.0, 1.0)
+        except Exception:
+            pass
+        feat = cb.CommitFeature()
+        reads = {"top_attr": set_top}
+    finally:
+        try:
+            cb.Destroy()
+        except Exception:
+            pass
+    body = feat.GetBodies()[0]
+    reads["body_count"] = 1
+    reads.update(mass(part, [body]))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "feature_hole_csk": feature_hole_csk,
+    "solid_cone_frustum": solid_cone_frustum,
     "inspect_body_type": inspect_body_type,
     "boolean_intersect_two": boolean_intersect_two,
     "part_new": part_new,

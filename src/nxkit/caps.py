@@ -123,10 +123,10 @@ CAPS: tuple[Cap, ...] = (
         expect={"body_count": 3, "volume_mm3": 300000.0}, reopen=False),
 
     Cap("feature.pocket", "feature", "块上挖 40×20 通槽", "feature_pocket", "L1–L3",
-        params={}, expect={"body_count": 1, "volume_mm3": 84000.0}, reopen=False),
+        params={}, expect={"body_count": 1, "volume_mm3": 84000.0}, reopen=True),
     Cap("feature.hole_cyl", "feature", "块上钻 Ø20 通孔", "feature_hole_cyl", "L1–L3",
         params={},
-        expect={"body_count": 1, "volume_mm3": 93716.81495770694}, reopen=False),
+        expect={"body_count": 1, "volume_mm3": 93716.81495770694}, reopen=True),
 
     Cap("export.acis", "export", "导出 ACIS (.sat)", "export_acis", "L1–L2",
         params={}, expect={"export_ok": True,
@@ -195,10 +195,10 @@ CAPS: tuple[Cap, ...] = (
                            "volume_mm3": 37699.11184307752}, reopen=False),
 
     Cap("feature.pocket_blind", "feature", "盲槽 40×20 深 10", "feature_pocket_blind", "L1–L3",
-        params={}, expect={"body_count": 1, "volume_mm3": 92000.0}, reopen=False),
+        params={}, expect={"body_count": 1, "volume_mm3": 92000.0}, reopen=True),
     Cap("feature.hole_blind", "feature", "盲孔 Ø20 深 10", "feature_hole_blind", "L1–L3",
         params={}, expect={"body_count": 1,
-                           "volume_mm3": 96858.40734641021}, reopen=False),
+                           "volume_mm3": 96858.40734641021}, reopen=True),
 
     Cap("drawing.sheet_a4", "drawing", "A4 图纸页（297×210）", "drawing_sheet_size", "L1–L2",
         params={"size": "A4"},
@@ -258,6 +258,16 @@ CAPS: tuple[Cap, ...] = (
     Cap("inspect.body_type", "inspect", "实体/片体判定", "inspect_body_type", "L1–L2",
         params={}, expect={"solid_is_solid": True, "solid_is_sheet": False,
                            "sheet_is_sheet": True, "sheet_is_solid": False},
+        reopen=False),
+
+    Cap("feature.hole_csk", "feature", "沉头孔（Ø20 通 + Ø30 深 5）", "feature_hole_csk", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 91700.0, "max": 91800.0}},
+        reopen=False),
+    Cap("solid.cone_frustum", "solid", "圆台（底 Ø40 / 顶 Ø20 / 高 30）",
+        "solid_cone_frustum", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 21900.0, "max": 22100.0}},
         reopen=False),
 )
 
