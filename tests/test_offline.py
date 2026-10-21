@@ -94,3 +94,27 @@ def test_license_dat_parses() -> None:
     assert info["count"] > 1000
     for need in ("gateway", "solid_modeling", "drafting", "assemblies"):
         assert lic.has(need), need
+
+
+def test_docs_numbers_consistent() -> None:
+    """README / 矩阵 / STATUS / registry 的数字必须与 caps 一致（防文档漂移）。"""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    n = len(caps.CAPS)
+    l4 = sum(1 for c in caps.CAPS if c.reopen)
+
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    assert re.search(r"## 能力（%d 条" % n, readme), "README 条数没跟上"
+
+    matrix = (root / "docs/CAPABILITY_MATRIX.md").read_text(encoding="utf-8")
+    assert ("总计 **%d** 条" % n) in matrix, "矩阵没重新生成"
+    assert ("其中 **%d** 条带 L4" % l4) in matrix
+
+    status = (root / "docs/STATUS.md").read_text(encoding="utf-8")
+    assert ("真机通过能力：**%d**" % n) in status, "STATUS 没重新生成"
+
+    reg = (root / "docs/registry.yaml").read_text(encoding="utf-8")
+    assert ("verified: %d" % n) in reg
+    assert ("L4: %d" % l4) in reg

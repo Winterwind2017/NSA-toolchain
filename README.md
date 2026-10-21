@@ -37,7 +37,7 @@ nxkit run                           # 全部，一次 NX 会话
 `nxkit run` 输出：
 
 ```
-27/27 通过  (会话 13.8s, 退出码 1)
+102/102 通过  (会话 18.6s, 退出码 1)
   PASS block.create           0.19s
   PASS boolean.subtract       0.05s
   ...
@@ -70,7 +70,7 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 git clone <repo> nxkit && cd nxkit
 set PYTHONPATH=%CD%\src
 
-python -m pytest -q tests        # 8 passed（离线：能力登记/判据负例/许可证解析）
+python -m pytest -q tests        # 9 passed（含文档数字一致性）（离线：能力登记/判据负例/许可证解析）
 python -m nxkit selftest         # 100 条能力，动作与判据齐全，负例都能被拒绝
 python -m nxkit licenses         # 本机 4,420 feature，四档齐全
 python -m nxkit run              # 100/100，约 18 s（一次 NX 会话）
@@ -78,7 +78,7 @@ python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 ```
 
 2026-10-21 用**全新 clone** 复跑过：8 passed / selftest 100 / licenses 全绿 /
-真机 100 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
+真机 102 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
 
 ## 现状与差距
 
