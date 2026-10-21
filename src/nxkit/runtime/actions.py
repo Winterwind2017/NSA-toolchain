@@ -1724,7 +1724,33 @@ def curve_parabola(params, workdir, rec):
     return reads
 
 
+def boolean_intersect_two(params, workdir, rec):
+    """块 ∩ 两个错位小方块 → 10×20×20 = 4000。"""
+    part = new_part("int2")
+    fa = make_block(part, 0, 0, 0, 100, 50, 20)
+    fb = make_block(part, 0, 0, 0, 20, 20, 20)
+    fc = make_block(part, 10.0, 0, 0, 20, 20, 20)
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Intersect
+        bb.Target = fa.GetBodies()[0]
+        bb.Tools.Add([fb.GetBodies()[0], fc.GetBodies()[0]])
+        bb.CommitFeature()
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies)}
+    if bodies:
+        reads.update(mass(part, bodies))
+    _close_part(part)
+    return reads
+
+
 ACTIONS = {
+    "boolean_intersect_two": boolean_intersect_two,
     "part_new": part_new,
     "block_create": block_create,
     "block_two": block_two,
@@ -1752,12 +1778,8 @@ ACTIONS = {
     "pattern_linear": pattern_linear,
     "feature_pocket": feature_pocket,
     "feature_hole_cyl": feature_hole_cyl,
-    "export_stl": export_stl,
-    "export_parasolid": export_parasolid,
     "export_acis": export_acis,
     "curve_ellipse": curve_ellipse,
-    "curve_hyperbola": curve_hyperbola,
-    "curve_parabola": curve_parabola,
     "attr_on_body": attr_on_body,
     "measure_face_area": measure_face_area,
     "solid_cone": solid_cone,
@@ -1767,7 +1789,6 @@ ACTIONS = {
     "export_step_ap203": export_step_ap203,
     "attr_on_feature": attr_on_feature,
     "chamfer_multi": chamfer_multi,
-    "drawing_dimension": drawing_dimension,
     "boolean_two_tools": boolean_two_tools,
     "hole_array": hole_array,
     "feature_shell": feature_shell,
@@ -1779,14 +1800,16 @@ ACTIONS = {
     "drawing_sheet_size": drawing_sheet_size,
     "drawing_view_named": drawing_view_named,
     "asm_three_components": asm_three_components,
+    "export_stl": export_stl,
     "feature_revolve": feature_revolve,
     "edge_blend_all": edge_blend_all,
     "measure_face_single": measure_face_single,
     "chamfer_edge": chamfer_edge,
     "surface_bounded_plane": surface_bounded_plane,
     "feature_tube": feature_tube,
+    "curve_hyperbola": curve_hyperbola,
+    "curve_parabola": curve_parabola,
 }
-
 
 def run(action: str, params: dict, workdir: str, rec: dict) -> dict:
     fn = ACTIONS.get(action)

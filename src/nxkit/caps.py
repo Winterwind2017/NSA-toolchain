@@ -249,6 +249,11 @@ CAPS: tuple[Cap, ...] = (
         reopen=False),
     Cap("curve.parabola", "curve", "抛物线（焦准距 20）", "curve_parabola", "L1–L3",
         params={}, expect={"focal_length": 20.0}, reopen=False),
+
+
+    Cap("boolean.intersect_two", "boolean", "一次交两个工具体（交工具并集 12000）",
+        "boolean_intersect_two", "L1–L3",
+        params={}, expect={"body_count": 1, "volume_mm3": 12000.0}, reopen=False),
 )
 
 BY_ID: dict[str, Cap] = {c.id: c for c in CAPS}
