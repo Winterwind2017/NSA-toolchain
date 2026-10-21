@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 56
+    "verified": 58
   },
-  "generated_at": "2026-10-21T21:01:02",
+  "generated_at": "2026-10-21T21:03:23",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.three_components": "L1–L2",
@@ -29,7 +29,9 @@
     "boolean.union": "L1–L4",
     "curve.arc": "L1–L3",
     "curve.ellipse": "L1–L3",
+    "curve.hyperbola": "L1–L3",
     "curve.line": "L1–L3",
+    "curve.parabola": "L1–L3",
     "cylinder.create": "L1–L4",
     "drawing.base_view": "L1–L3",
     "drawing.sheet": "L1–L2",
@@ -117,7 +119,7 @@
     },
     {
       "id": "feature.thicken",
-      "reason": "报 Distance tolerance is too small"
+      "reason": "出 2 个片体或厚度变 3300 mm，语义不对"
     },
     {
       "id": "drawing.projected_view",
@@ -126,7 +128,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "42fd59e",
+    "kernel_commit": "bb4bd15",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -148,7 +150,9 @@
     "boolean.union": "boolean",
     "curve.arc": "curve",
     "curve.ellipse": "curve",
+    "curve.hyperbola": "curve",
     "curve.line": "curve",
+    "curve.parabola": "curve",
     "cylinder.create": "solid",
     "drawing.base_view": "drawing",
     "drawing.sheet": "drawing",
