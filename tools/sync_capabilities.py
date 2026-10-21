@@ -41,7 +41,7 @@ PENDING = [
     ("measure.distance", "MeasureDistance 无 Distance 属性，Information() 返回 None"),
     ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),
-    ("asm.constraints", "ConstraintCollection.CreateConstraint 不存在"),
+    ("asm.constraints", "约束+参考能建，状态停在 NewlyCreated；CreateConstraintReference 参数顺序与文档相反"),
     ("sketch.constraints", "重合/水平/竖直/等长/垂直/固定已通；相切/中点/共线未验证"),
     ("sketch.constant_length", "CreateConstantLengthConstraint 报 Unable to create sketch geometric constraint"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),

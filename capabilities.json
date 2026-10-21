@@ -10,12 +10,13 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 103
+    "verified": 104
   },
-  "generated_at": "2026-10-21T22:54:55",
+  "generated_at": "2026-10-21T23:04:21",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
+    "asm.constraint_refs": "L1–L2",
     "asm.five_components": "L1–L2",
     "asm.four_components": "L1–L2",
     "asm.nested": "L1–L2",
@@ -121,6 +122,7 @@
   "licenses": {
     "asm.add_component": "assemblies",
     "asm.component_names": "assemblies",
+    "asm.constraint_refs": "assemblies",
     "asm.five_components": "assemblies",
     "asm.four_components": "assemblies",
     "asm.nested": "assemblies",
@@ -250,7 +252,7 @@
     },
     {
       "id": "asm.constraints",
-      "reason": "ConstraintCollection.CreateConstraint 不存在"
+      "reason": "约束+参考能建，状态停在 NewlyCreated；CreateConstraintReference 参数顺序与文档相反"
     },
     {
       "id": "sketch.constraints",
@@ -295,7 +297,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "4ef5875",
+    "kernel_commit": "cb89242",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -303,6 +305,7 @@
   "verified": {
     "asm.add_component": "assembly",
     "asm.component_names": "assembly",
+    "asm.constraint_refs": "assembly",
     "asm.five_components": "assembly",
     "asm.four_components": "assembly",
     "asm.nested": "assembly",

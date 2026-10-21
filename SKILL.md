@@ -84,7 +84,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **103** 条 verified 能力（内核 `nxkit 0.1.0`，commit `4ef5875`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **104** 条 verified 能力（内核 `nxkit 0.1.0`，commit `cb89242`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -92,7 +92,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **sketch**（17） | `sketch.circle_extrude`（L1–L3） `sketch.collinear`（L1–L2） `sketch.concentric`（L1–L2） `sketch.constraint`（L1–L2） `sketch.dimension`（L1–L2） `sketch.equal_length`（L1–L2） `sketch.equal_radius`（L1–L2） `sketch.extrude`（L1–L3） `sketch.fixed`（L1–L2） `sketch.horizontal`（L1–L2） `sketch.linear_dim`（L1–L2） `sketch.midpoint`（L1–L2） `sketch.parallel`（L1–L2） `sketch.perpendicular`（L1–L2） `sketch.rect`（L1–L2） `sketch.tangent`（L1–L2） `sketch.vertical`（L1–L2） |
 | **属性**（10） | `attr.count`（L2） `attr.delete`（L2） `attr.double`（L2） `attr.int`（L2） `attr.logical`（L2） `attr.on_body`（L2） `attr.on_face`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） `attr.update`（L2） |
 | **制图**（10） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） `drawing.sheet_a0`（L1–L2） `drawing.sheet_a1`（L1–L2） `drawing.sheet_a2`（L1–L2） `drawing.sheet_a4`（L1–L2） `drawing.sheet_ansi_a`（L1–L2） `drawing.sheet_ansi_b`（L1–L2） `drawing.sheet_ansi_c`（L1–L2） `drawing.view_isometric`（L1–L2） |
-| **装配**（7） | `asm.add_component`（L1–L2） `asm.component_names`（L1–L2） `asm.five_components`（L1–L2） `asm.four_components`（L1–L2） `asm.nested`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
+| **装配**（8） | `asm.add_component`（L1–L2） `asm.component_names`（L1–L2） `asm.constraint_refs`（L1–L2） `asm.five_components`（L1–L2） `asm.four_components`（L1–L2） `asm.nested`（L1–L2） `asm.three_components`（L1–L2） `asm.two_components`（L1–L4） |
 | **布尔**（6） | `boolean.intersect`（L1–L4） `boolean.intersect_two`（L1–L3） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） `boolean.unite_three`（L1–L4） |
 | **导出**（6） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） `export.step_ap214`（L1–L2） `export.stl`（L1–L2） |
 | **实体**（6） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.cone_frustum`（L1–L3） `solid.sphere`（L1–L3） |
@@ -220,6 +220,7 @@ nxkit cap asm.four_components  # 插 4 个
 nxkit cap asm.nested           # 子装配嵌套（外层 2 节点）
 nxkit cap asm.five_components  # 插 5 个
 nxkit cap asm.component_names  # 组件名保留（AAA/BBB/CCC）
+nxkit cap asm.constraint_refs  # 建约束 + 两个面参考（参数顺序反着传）
 ```
 
 ### 制图
