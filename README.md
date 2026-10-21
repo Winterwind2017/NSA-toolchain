@@ -64,6 +64,22 @@ nxkit licenses          # 读 SPLM .dat，看本机有哪些 feature、能力族
 
 `selftest` 会自动做这项预检（读不到 `.dat` 时跳过，不误报）。
 
+## 从零验证（本机实测通过）
+
+```bash
+git clone <repo> nxkit && cd nxkit
+set PYTHONPATH=%CD%\src
+
+python -m pytest -q tests        # 8 passed（离线：能力登记/判据负例/许可证解析）
+python -m nxkit selftest         # 100 条能力，动作与判据齐全，负例都能被拒绝
+python -m nxkit licenses         # 本机 4,420 feature，四档齐全
+python -m nxkit run              # 100/100，约 18 s（一次 NX 会话）
+python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
+```
+
+2026-10-21 用**全新 clone** 复跑过：8 passed / selftest 100 / licenses 全绿 /
+真机 100 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
+
 ## 现状与差距
 
 - `docs/CAPABILITY_MATRIX.md`：族 × 层级 × 许可 × 是否 L4 的完整矩阵（脚本生成）
