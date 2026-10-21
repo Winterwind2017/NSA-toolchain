@@ -3239,7 +3239,51 @@ def feature_spring(params, workdir, rec):
     return reads
 
 
+def boolean_subtract_retain(params, workdir, rec):
+    """求差但保留工具体 → 2 实体，总体积不变（100000）。"""
+    part = new_part("subkeep")
+    base = make_block(part, 0, 0, 0, 100, 50, 20)
+    cb = part.Features.CreateCylinderBuilder(NXOpen.Features.Cylinder.Null)
+    cb.Diameter.SetFormula("20")
+    cb.Height.SetFormula("40")
+    cb.Origin = NXOpen.Point3d(50.0, 25.0, -10.0)
+    cb.BooleanOption.Type = NXOpen.GeometricUtilities.BooleanOperation.BooleanType.Create
+    tool = cb.CommitFeature()
+    cb.Destroy()
+
+    bb = part.Features.CreateBooleanBuilder(NXOpen.Features.BooleanFeature.Null)
+    diag = {}
+    try:
+        bb.Operation = NXOpen.Features.Feature.BooleanType.Subtract
+        bb.Target = base.GetBodies()[0]
+        bb.Tools.Add([tool.GetBodies()[0]])
+        for name, val in (("RetainTool", True), ("RetainTarget", False)):
+            try:
+                setattr(bb, name, val)
+                diag[name] = val
+            except Exception as exc:
+                diag[name] = "err:%s" % str(exc)[:70]
+        bb.CommitFeature()
+        diag["commit"] = "ok"
+    finally:
+        try:
+            bb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "subkeep.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"]) if b2 else None
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "boolean_subtract_retain": boolean_subtract_retain,
     "feature_spring": feature_spring,
     "curve_helix": curve_helix,
     "solid_scale": solid_scale,

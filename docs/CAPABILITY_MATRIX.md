@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **111** 条，全部真机通过；其中 **51** 条带 L4（存盘 → 重开 → 复测）。
+总计 **112** 条，全部真机通过；其中 **52** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -11,9 +11,9 @@
 | attr | 10 | 2 | gateway |
 | drawing | 10 | 0 | drafting |
 | assembly | 8 | 1 | assemblies |
+| boolean | 7 | 7 | solid_modeling |
 | export | 7 | 0 | gateway |
 | solid | 7 | 7 | solid_modeling |
-| boolean | 6 | 6 | solid_modeling |
 | curve | 6 | 0 | solid_modeling |
 | measure | 5 | 2 | gateway |
 | file | 2 | 1 | gateway |
@@ -28,7 +28,7 @@
 | assemblies | 8 |
 | drafting | 10 |
 | gateway | 28 |
-| solid_modeling | 65 |
+| solid_modeling | 66 |
 
 ## 全部能力
 
@@ -37,6 +37,7 @@
 | `part.new` | part | L1 | — | gateway |
 | `block.create` | solid | L1–L4 | 是 | solid_modeling |
 | `block.two_bodies` | solid | L1–L4 | 是 | solid_modeling |
+| `boolean.subtract_retain` | boolean | L1–L3 | 是 | solid_modeling |
 | `boolean.subtract` | boolean | L1–L4 | 是 | solid_modeling |
 | `boolean.union` | boolean | L1–L4 | 是 | solid_modeling |
 | `boolean.intersect` | boolean | L1–L4 | 是 | solid_modeling |
