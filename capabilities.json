@@ -9,13 +9,14 @@
   ],
   "counts": {
     "families": 12,
-    "verified": 27
+    "verified": 30
   },
-  "generated_at": "2026-10-21T20:24:48",
+  "generated_at": "2026-10-21T20:31:02",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.two_components": "L1–L4",
     "attr.int": "L2",
+    "attr.on_body": "L2",
     "attr.string": "L2–L4",
     "block.create": "L1–L4",
     "block.two_bodies": "L1–L4",
@@ -24,10 +25,12 @@
     "boolean.subtract": "L1–L4",
     "boolean.union": "L1–L4",
     "curve.arc": "L1–L3",
+    "curve.ellipse": "L1–L3",
     "curve.line": "L1–L3",
     "cylinder.create": "L1–L4",
     "drawing.base_view": "L1–L3",
     "drawing.sheet": "L1–L2",
+    "export.acis": "L1–L2",
     "export.iges": "L1–L3",
     "export.step": "L1–L3",
     "extrude.rect": "L1–L4",
@@ -72,12 +75,24 @@
     },
     {
       "id": "sketch.*",
-      "reason": "草图创建入口未摸清"
+      "reason": "草图创建入口未摸清（CreateNewSketchInPlaceBuilder 有了，激活/落曲线未通）"
+    },
+    {
+      "id": "export.stl",
+      "reason": "Commit 成功但 0 字节，需要 ExportSelectionBlock"
+    },
+    {
+      "id": "export.parasolid",
+      "reason": "Commit 报 no valid export objects，需要 ExportSelectionBlock"
+    },
+    {
+      "id": "drawing.projected_view",
+      "reason": "ProjectedViewBuilder.Parent 只读"
     }
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "a491f14",
+    "kernel_commit": "9b863ff",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -86,6 +101,7 @@
     "asm.add_component": "assembly",
     "asm.two_components": "assembly",
     "attr.int": "attr",
+    "attr.on_body": "attr",
     "attr.string": "attr",
     "block.create": "solid",
     "block.two_bodies": "solid",
@@ -94,10 +110,12 @@
     "boolean.subtract": "boolean",
     "boolean.union": "boolean",
     "curve.arc": "curve",
+    "curve.ellipse": "curve",
     "curve.line": "curve",
     "cylinder.create": "solid",
     "drawing.base_view": "drawing",
     "drawing.sheet": "drawing",
+    "export.acis": "export",
     "export.iges": "export",
     "export.step": "export",
     "extrude.rect": "feature",

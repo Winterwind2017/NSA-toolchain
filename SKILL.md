@@ -82,18 +82,18 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **27** 条 verified 能力（内核 `nxkit 0.1.0`，commit `a491f14`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **30** 条 verified 能力（内核 `nxkit 0.1.0`，commit `9b863ff`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
 | **特征（拉伸）**（7） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） |
+| **属性**（3） | `attr.int`（L2） `attr.on_body`（L2） `attr.string`（L2–L4） |
 | **布尔**（3） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.union`（L1–L4） |
+| **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
+| **导出**（3） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） |
 | **实体**（3） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
-| **属性**（2） | `attr.int`（L2） `attr.string`（L2–L4） |
-| **曲线**（2） | `curve.arc`（L1–L3） `curve.line`（L1–L3） |
 | **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
-| **导出**（2） | `export.iges`（L1–L3） `export.step`（L1–L3） |
 | **文件**（1） | `file.roundtrip`（L4） |
 | **拓扑检查**（1） | `body.topo`（L1–L3） |
 | **测量**（1） | `measure.mass`（L3） |
@@ -112,7 +112,10 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `cae.mesh` | `NXOpen.CAE` 绑定大、解算慢，未开始 |
 | `asm.constraints` | 装配约束 API 未挖 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
-| `sketch.*` | 草图创建入口未摸清 |
+| `sketch.*` | 草图创建入口未摸清（`CreateNewSketchInPlaceBuilder` 有了，激活/落曲线未通） |
+| `export.stl` | `Commit()` 成功但 0 字节，需要 `ExportSelectionBlock` |
+| `export.parasolid` | `Commit()` 报 `no valid export objects`，需要 `ExportSelectionBlock` |
+| `drawing.projected_view` | `ProjectedViewBuilder.Parent` 只读 |
 <!-- allow:pending:END -->
 
 逐条证据见内核仓库
@@ -167,6 +170,7 @@ nxkit cap drawing.base_view   # Front 基础视图
 ```bash
 nxkit cap export.step   # 文件头 ISO-10303-21
 nxkit cap export.iges   # .igs 落盘
+nxkit cap export.acis   # .sat 落盘
 ```
 
 ### 属性 / 测量

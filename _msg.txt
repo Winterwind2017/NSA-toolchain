@@ -1,1 +1,0 @@
-chore: 同步能力快照到 27 条（chamfer/edge_blend/pattern_linear/pocket/hole_cyl 转正）
