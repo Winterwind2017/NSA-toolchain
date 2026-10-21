@@ -264,6 +264,10 @@ CAPS: tuple[Cap, ...] = (
                            "sheet_count_reopened": 1}, reopen=True),
 
 
+    Cap("feature.spring", "feature", "沿螺旋线做 Ø10 弹簧", "feature_spring", "L1–L3",
+        params={}, expect={"body_count": 1,
+                           "volume_mm3": {"min": 28000.0, "max": 33000.0}},
+        reopen=True),
     Cap("feature.tube", "feature", "沿直线做 Ø20 管（实体）", "feature_tube", "L1–L3",
         params={}, expect={"body_count": 1,
                            "volume_mm3": {"min": 30000.0, "max": 33000.0}},

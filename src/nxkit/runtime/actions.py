@@ -3192,7 +3192,55 @@ def curve_helix(params, workdir, rec):
     return reads
 
 
+def feature_spring(params, workdir, rec):
+    """沿螺旋线做 Ø10 弹簧管（Ø40 螺距 20 三圈）。"""
+    part = new_part("spring")
+    hb = part.Features.CreateHelixBuilder(NXOpen.Features.Helix.Null)
+    diag = {}
+    try:
+        hb.LengthMethod = NXOpen.Features.HelixBuilderLengthMethods.Turns
+        hb.SizeLaw.Value.SetFormula("40")
+        hb.PitchLaw.Value.SetFormula("20")
+        hb.NumberOfTurns = "3"
+        hfeat = hb.CommitFeature()
+    finally:
+        try:
+            hb.Destroy()
+        except Exception:
+            pass
+    helix = list(hfeat.GetEntities())[0]
+    tb = part.Features.CreateTubeBuilder(NXOpen.Features.Tube.Null)
+    try:
+        rule = part.ScRuleFactory.CreateRuleCurveDumb([helix])
+        tb.PathSection.AddToSection([rule], helix, None, None,
+                                    NXOpen.Point3d(0.0, 0.0, 0.0),
+                                    NXOpen.Section.Mode.Create)
+        tb.OuterDiameter.SetFormula("10")
+        tb.Tolerance = 0.01
+        tfeat = tb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+        tfeat = None
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "spring.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"]) if b2 else None
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "feature_spring": feature_spring,
     "curve_helix": curve_helix,
     "solid_scale": solid_scale,
     "feature_mirror_face": feature_mirror_face,
