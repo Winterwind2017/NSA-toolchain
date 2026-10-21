@@ -3548,7 +3548,51 @@ def sketch_constraint_more(params, workdir, rec):
     return reads
 
 
+def solid_split_by_face(params, workdir, rec):
+    """用辅助体的平面面当切分工具体，把块切成两半。"""
+    part = new_part("splitf")
+    target = make_block(part, 0, 0, 0, 100, 50, 20)
+    # 辅助块：100×10×40 立在 y=25..35，用它的 y 面当刀
+    tool_feat = make_block(part, 0, 25, -10, 100, 10, 40)
+    tool_body = tool_feat.GetBodies()[0]
+    knife = [f for f in tool_body.GetFaces()
+             if abs(_face_area(part, [f]) - 4000.0) < 1.0]
+    diag = {"knife_faces": len(knife)}
+    if not knife:
+        raise RuntimeError("辅助体上找不到 100×40 的面")
+    sb = part.Features.CreateSplitBodyBuilder(NXOpen.Features.SplitBody.Null)
+    try:
+        diag["target"] = _put(sb.TargetBody, target.GetBodies()[0])
+        bt = sb.BooleanTool
+        bt.ToolOption = NXOpen.GeometricUtilities.BooleanToolBuilderBooleanToolType.FaceOrPlane
+        fpt = bt.FacePlaneTool
+        rule = part.ScRuleFactory.CreateRuleFaceDumb([knife[0]])
+        fpt.ToolFaces.FaceCollector.AddRules([rule])
+        diag["tool"] = "ToolFaces.FaceCollector"
+        sb.Tolerance = 0.01
+        sb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            sb.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        reads.update(mass(part, bodies))
+    part2 = save_reopen(part, os.path.join(workdir, "splitf.prt"))
+    b2 = _bodies_of(part2)
+    reads["body_count_reopened"] = len(b2)
+    reads["volume_reopened"] = float(mass(part2, b2)["volume_mm3"]) if b2 else None
+    _close_part(part2)
+    return reads
+
+
 ACTIONS = {
+    "solid_split_by_face": solid_split_by_face,
     "sketch_constraint_more": sketch_constraint_more,
     "feature_sweep_arc": feature_sweep_arc,
     "chamfer_angle": chamfer_angle,

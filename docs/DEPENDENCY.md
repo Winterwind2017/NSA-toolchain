@@ -1,7 +1,7 @@
 # 依赖分析与攻击顺序（DEPENDENCY）
 
 > 说明：这份文档回答一个问题——**先攻哪个、后攻哪个，才不会白费一轮**。
-> 生成时间 2026-10-21；能力数 117（L4 53）。
+> 生成时间 2026-10-21；能力数 118（L4 54）。
 
 ## 0. 结论先说
 
@@ -81,7 +81,7 @@ graph LR
   4. sketch.constant_length  ← 单参报错，试配合尺寸
 
 第 2 批（B 级，按'句柄合成难度'）
-  5. solid.split_body        ← 借辅助体的平面面当工具体（镜像的成功经验）
+  5. solid.split_body        ← ✅ 已通（ToolFaces.FaceCollector.AddRules）
   6. feature.hole            ← 借极短线端点当孔位（Section 吃曲线）
   7. solid.move_body         ← Motion 的提交顺序
   8. pattern.body_linear     ← 绕开 ReferencePoint 服务

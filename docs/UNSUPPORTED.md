@@ -35,7 +35,6 @@
 
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报 `Missing target body` | 需要正确的选择集初始化方式 |
 
-| `solid.split_body` | 走到 `BooleanTool.FacePlaneTool.ToolPlane`：该属性**只要 `NXOpen.Plane`**，给 `DatumPlane` 报 `Expecting NXOpen.Plane type, found NXOpen.DatumPlane`；而 `part.Planes.CreateFixedPlane(...)` 给的 Plane 虽能赋值，`Commit` 仍报 `The tool object is missing`；`DatumPlane` 又没有 `.Plane` 可取（只有 Feature/Origin/Normal） | 需要 NX 认的 Plane 句柄 |
 
 | `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX/DeltaY/DeltaZ` 是 **float 属性**（不是表达式），设成 100/0/0 后 `CommitFeature()` 仍报 `Feature has zero parameters` | 需要正确的运动参数提交方式 |
 

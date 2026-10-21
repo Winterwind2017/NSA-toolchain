@@ -4,9 +4,9 @@
 
 ## 数字
 
-- 真机通过能力：**117** 条（一次会话，连跑 2 次全绿）
-- 其中带 L4（存盘→重开→复测）：**53** 条
-- 未打通（有证据）：**15** 项
+- 真机通过能力：**118** 条（一次会话，连跑 2 次全绿）
+- 其中带 L4（存盘→重开→复测）：**54** 条
+- 未打通（有证据）：**14** 项
 
 ## 按族
 
@@ -17,9 +17,9 @@
 | drawing | 12 | 0 |
 | attr | 10 | 2 |
 | assembly | 8 | 1 |
+| solid | 8 | 8 |
 | boolean | 7 | 7 |
 | export | 7 | 0 |
-| solid | 7 | 7 |
 | curve | 6 | 0 |
 | measure | 5 | 2 |
 | file | 2 | 1 |
@@ -42,7 +42,6 @@
 | `sheet_metal.*` | 需要 `adv_sheet_metal_dsgn`（本机有） |
 | `feature.hole` | `CreateHolePackageBuilder(HolePackage.Null)` 能建，`HoleType=Simple`、`GeneralSimpleHoleDiameter/Depth` 都能设；但 `HolePosition` 是个 `Section`，**所有 `AddToSection` 重载都拒绝* |
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能建，成员有 `BodyToDelete`/`BodyToKeep`，但两者**运行时都是 None**（`'NoneType' object has no attribute 'Add'`），`CommitFeature()` 报  |
-| `solid.split_body` | 走到 `BooleanTool.FacePlaneTool.ToolPlane`：该属性**只要 `NXOpen.Plane`**，给 `DatumPlane` 报 `Expecting NXOpen.Plane type, found NXOpen.DatumPlane`；而 `part.Planes.CreateF |
 | `solid.move_body` | `CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)` 能建；`BodyToMove` 是 `ScCollector`（要 `AddRules(CreateRuleBodyDumb([body]))`）；`Motion` 是 `ModlMotion`，`DeltaX |
 | `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `In |
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动** |
