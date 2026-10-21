@@ -22,6 +22,7 @@ dependencies = ["pywin32>=306; sys_platform == 'win32'"]
 [project.optional-dependencies]
 yaml = ["PyYAML>=6"]
 dxf = ["ezdxf>=1.0"]
+pdf = ["pypdf>=4"]
 mcp = ["mcp>=1.0.0"]
 dev = ["pytest>=8", "ezdxf>=1.0", "PyYAML>=6"]
 
@@ -42,3 +43,4 @@ addopts = "-q"
 markers = [
   "live: 需要本机 AutoCAD 的验收测试（默认不跑，见 tests/run_all.py）",
 ]
+

@@ -118,6 +118,47 @@ def judge_dxf(rb: Readback, *, path: str, since: float,
     return verdict(checks, detail, raw)
 
 
+def judge_pdf_multipage(rb: Readback, *, path: str, since: float,
+                        pages: int = 2,
+                        recorded: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """多页 PDF：页数对、每页都是 A3、**每页都有墨**（抓"一页白纸"）。"""
+    recorded = recorded or {}
+    info = file_info(path, since, min_bytes=1)
+    pdf = pdfinfo.parse(path) if info["exists"] else {}
+    detail_pages = pdf.get("pages_detail") or []
+    plots = [p.get("plot") or {} for p in (recorded.get("pages") or [])]
+    checks = {
+        "file": _file_ok(info),
+        "header": str(pdf.get("header") or "").startswith("%PDF-"),
+        "pages": pdf.get("pages") == pages,
+        "page_details": len(detail_pages) == pages,
+        "each_a3": len(detail_pages) == pages and all(
+            pdfinfo.size_matches_a3(p.get("size_pt")) for p in detail_pages),
+        "each_has_ink": len(detail_pages) == pages and all(
+            (p.get("vector_ops") or 0) + (p.get("text_ops") or 0) > 0
+            for p in detail_pages),
+        "merged": bool((recorded.get("merge") or {}).get("ok")),
+        "plots_ok": bool(plots) and all(p.get("ok") for p in plots),
+        "env_restored": bool(plots) and all(
+            p.get("backgroundplot_restored") for p in plots),
+    }
+    detail = {
+        "file": info,
+        "pages": pdf.get("pages"),
+        "pages_detail": detail_pages,
+        "merge": recorded.get("merge"),
+        "layouts": [p.get("layout") for p in (recorded.get("pages") or [])],
+        "plot_devices": [p.get("device") for p in plots],
+        "plot_media": [p.get("media") for p in plots],
+        "plot_warnings": [p.get("warnings") for p in plots],
+        "why": pdf.get("why"),
+    }
+    raw = {"pdf": {k: pdf.get(k) for k in ("header", "pages", "size_pt",
+                                           "pages_detail", "ok", "why")},
+           "recorded": recorded}
+    return verdict(checks, detail, raw)
+
+
 # ── PDF ─────────────────────────────────────────────────────────────
 def judge_pdf(rb: Readback, *, path: str, since: float,
               plot: Optional[Dict[str, Any]] = None,

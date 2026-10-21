@@ -80,6 +80,10 @@ def render() -> str:
     lines += ["", "## external（不属于本内核的交付范围）", "",
               "| 能力 | 族 | 为什么 | 证据 |",
               "|---|---|---|---|"]
+    if not ext:
+        lines.append("| — | — | 当前没有 external：原来的 4 条（Electrical 库 / PLC / "
+                     "P&ID / 投影）已在 2026-10-21 的接口挖掘里转成 verified，"
+                     "见 `CAPABILITIES.md` | — |")
     for c in sorted(ext, key=lambda x: x["id"]):
         lines.append("| `%s` | %s | %s | %s |"
                      % (c["id"], c.get("family", ""),

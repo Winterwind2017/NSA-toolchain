@@ -82,3 +82,69 @@ Quit 掉。
   改它们，忘还原就污染用户配置（本项目踩过三次）。要跑 LISP 用内联
   `(progn ...)`，不需要信任设置。
 - 收尾别用 `Stop-Process -Force`：`%TEMP%\*.sv$` 不清，下次启动弹"图形修复"。
+
+## 9. 表格：中文要挂 TrueType 样式，且第 0 行不能写
+
+| 尝试 | 结果 |
+|---|---|
+| 默认 `Standard`（txt.shx）写中文（非标题行） | 内存里读得到，**落盘重开变空串**（字形缺失，不是编码问题） |
+| 建 `CN` 样式 `SetFont("SimSun", …)` 后 `table.SetCellTextStyle(r, c, "CN")` | ✅ 重开中文完好、样式读回 `CN` |
+| 往第 0 行（合并标题行）第 1..n 列 `SetText` | 落盘后丢（行被合并，副列没有存储） |
+
+**RE 来源**：AutoCAD 类型库 `{4D6C720C-…}` 的 `IAcadTable` 里有
+`SetCellTextStyle` / `GetCellTextStyle` / `SetTextStyle`；这些名字在
+`acdbmgd.dll` 的元数据里也能对上。用 `dir()` 猜是猜不到的。
+
+## 10. 多布局出图：`SetLayoutsToPlot` 不产多页文件
+
+| 调用 | 实测 |
+|---|---|
+| `Plot.SetLayoutsToPlot(["S1","S2"])`（Python list） | `E_INVALIDARG`（0x80070057） |
+| 同上，传 `VARIANT(VT_ARRAY\|VT_BSTR, [...])` | 调用成功 |
+| 再 `PlotToFile(path)` | 返回成功，**文件不存在** |
+| 先 `Plot.StartBatchMode(True)` 再同上 | `PlotToFile` 直接 `E_FAIL` |
+| `-PUBLISH` | GUI / accoreconsole 两处都阻塞（P0 已测） |
+
+结论：多页 PDF 只能**逐布局出单页 + 合并**（`pypdf`，`acadkit[pdf]`）。
+判据要逐页验证（页数、每页 A3、每页 ops>0），否则"第一页有图、第二页白纸"
+会被当成成功。
+
+## 11. 关联标注：六种输入全部失败（外部进程不可达）
+
+`IAcadDimension` 的完整成员（类型库 dump）只有通用实体方法，**没有** assoc API；
+`AddDimRotated` 建的标注天生非关联。实测：
+
+| 输入 | 结果 |
+|---|---|
+| `DIMLINEAR` 三点（(0,0)(60,0)(30,10)） | 建出标注，改线后 `Measurement` 仍 60 |
+| `DIMLINEAR` + `(handent h)`（作为对象） | 卡在 "Select object…" 提示符 |
+| `sssetfirst` 预选 + `DIMLINEAR` | 卡在提示符 |
+| `OSMODE=1` 端点捕捉 + 三点 + `Update()` + `Regen(1)` | 仍 60 |
+| `DIMREASSOCIATE` + 选择集 + 两点 | 命令返回，`Measurement` 仍 60 |
+| `vl-cmdf` 带实体参数的变体 | `SendCommand` 被拒收 / 卡住 |
+
+唯一可行路线是进程内 .NET 插件（NETLOAD）用 `DimensionAssociation`，
+不属于 COM 内核。已登记 `dim.associative` = dead。
+
+## 12. Electrical 元件库：ACE OLEDB 只读可用（不需要启动 ACADE）
+
+`~/Documents/Acade 2025/AeData` 下：
+
+| 库 | 内容 |
+|---|---|
+| `zh-CN/Catalogs/*.mdb`（7 个） | `default_cat`（548 MB）、`footprint_lookup`、`schematic_lookup`、`wd_lang1`（1 表 MATRIX）、`wd_picklist`、`ace_electrical_standards` |
+| `zh-CN/Plc/ace_plc.mdb`（61 MB） | **1196 张表**：每个厂商/系列一张模块表（CODE/POINTS/TYPE/DESCRIPTION + BOX_* 几何），配一张 `_Data`（SEQUENCE/BLOCK/ATTRIBUTES 画法） |
+
+要点：
+
+- 连接串 `Provider=Microsoft.ACE.OLEDB.12.0;Data Source=…;Mode=Read;`；
+- `conn.Execute(sql)` 在晚绑定下返回 **tuple**（recordset, affected），要取 `[0]`；
+- 字段名含空格/括号（`Voltage (V)`、`ENU (English-US)`），SQL 里必须 `[...]`；
+- 读前后对文件做 SHA-256 证明只读（判据 `ae.db` 就是这么判的）。
+
+## 13. 三视图：官方命令全缺，投影只能自建
+
+`SOLVIEW/SOLDRAW/SOLPROF/VIEWBASE/VIEWSECTION/FLATSHOT/-FLATSHOT/EXPORTLAYOUT`
+实测**全不存在**。本内核自建 `src/acadkit/csg.py`：轴对齐 box/cyl → 足迹 +
+隐藏线判定，输出 front/top/left 三视图（可见/隐藏/轴线分层）。判据不信任
+builder，**独立重算**投影再比计数。

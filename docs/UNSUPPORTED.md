@@ -13,8 +13,8 @@
 |---|---|---|---|
 | `block.edit_inplace` | block | BEDIT/ATTSYNC/ATTREDEF/BATTMAN 均不存在。替代：重定义块（Block 表里改定义）+ 重插全部引用 | matrix #2.2 |
 | `constraint.geometric` | constraint | **无替代**：完整版 AutoCAD 也无 GEOMCONSTRAINT/DIMCONSTRAINT/PARAMETERS；参数化只能在 Python 侧做参数驱动重建 | matrix #29 / #3.2 |
+| `dim.associative` | dim | **外部进程不可达**：ActiveX AddDimRotated 建的标注天然非关联（IAcadDimension 无 assoc API）；DIMLINEAR 点选/选对象/预选、DIMREASSOCIATE、OSMODE+REGEN 六种输入都在提示符卡死或 Measurement 不跟随。替代=.NET 插件 NETLOAD 用 DimensionAssociation（进程内），或保持非关联+显式重建 | P1 探针 2026-10-21（_scratch/probe_assoc*.py） |
 | `dim.update` | dim | DIMUPDATE 命令不存在。替代：重建标注（删除后按新尺寸重画）或改标注属性（TextOverride/Measurement） | matrix #2.2 |
-| `export.pdf_multipage` | export | **无官方路径**：-PUBLISH 在 GUI/accoreconsole 两处阻塞；Plot.SetLayoutsToPlot 只产出每布局一个 PDF。替代=装 PDF 合并库或自写最小合并器 | matrix #31c / #3.2 |
 | `interfere` | boolean | INTERFERE 命令不存在。替代：布尔求交（INTERSECT）后看结果体积，>0 即干涉 | matrix #2.2 |
 | `layer.state` | layer | **本机不可用**：-LAYERSTATE 只要动过图层表（COM 建层/entmake/SaveAs 之后）Save 就永久卡在命令提示符；SendCommand、LISP command、vl-cmdf 全试过。替代=layer.snapshot（属性级快照→改→恢复） | P1 探针 2026-10-21（_scratch/probe_ls*.py） |
 | `solid.revolve` | solid | **本机不可用**：AddRevolvedSolid 对 XY 矩形/圆/3D 多段线三种轮廓都报「输入无效」，命令行 _.REVOLVE 也不生成实体。替代=拉伸+布尔逼近，或换 CAD 做旋转体 | P1 探针 2026-10-21（_scratch/probe_rev*.py） |
@@ -24,10 +24,7 @@
 
 | 能力 | 族 | 为什么 | 证据 |
 |---|---|---|---|
-| `ae.db` | ae | 需要 AutoCAD Electrical 工程库（.mdb / 项目数据库）；本内核不打包、VANILLA 配置下也无法复现 | mcp-patches/acad_ae_* |
-| `pid.symbol` | pid | 依赖 P&ID 符号库（外部资产，不在本仓库） | mcp-patches/acad_pid_* |
-| `plc.build` | plc | 依赖 PLC 模板与图块库（外部资产，不在本仓库） | mcp-patches/acad_plc_build.py |
-| `projection.orthographic` | projection | AutoCAD 2025 没有任何官方 3D→2D 出图命令（SOLVIEW/SOLDRAW/SOLPROF/VIEWBASE 实测全缺），必须自建 CSG 消隐引擎；原型在 mech_build，本内核尚未移植 | matrix #26 / #3.2 |
+| — | — | 当前没有 external：原来的 4 条（Electrical 库 / PLC / P&ID / 投影）已在 2026-10-21 的接口挖掘里转成 verified，见 `CAPABILITIES.md` | — |
 
 ## 看着能用、其实不能用的坑（实测）
 

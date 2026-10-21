@@ -33,7 +33,7 @@
 ## 一条命令跑通
 
 ```bash
-python tests/run_all.py          # 离线 78 条 + 文档一致性 + 真机 52 条（约 6–8 分钟）
+python tests/run_all.py          # 离线 87 条 + 文档一致性 + 真机 58 条（约 7–9 分钟）
 python tests/run_all.py --skip-live
 ```
 
@@ -44,15 +44,15 @@ python tests/run_all.py --skip-live
 <!-- gen:counts:BEGIN -->
 | 指标 | 数字 |
 |---|---|
-| registry 能力总数 | 62 |
-| verified（有判据、真机通过） | 50 |
+| registry 能力总数 | 64 |
+| verified（有判据、真机通过） | 56 |
 | usable_unjudged | 0 |
 | pending | 0 |
 | dead（本机无官方路径） | 8 |
-| external（外部资产 / 未移植） | 4 |
-| 内核实现能力（`caps`） | 52 |
-| caps 覆盖的 registry id | 50 / 62 |
-| 真机用例 | 52 条（含负例 2 条） |
+| external（外部资产 / 未移植） | 0 |
+| 内核实现能力（`caps`） | 58 |
+| caps 覆盖的 registry id | 56 / 64 |
+| 真机用例 | 58 条（含负例 2 条） |
 <!-- gen:counts:END -->
 
 ## 快速开始
@@ -123,14 +123,19 @@ src/acadkit/
 
 ## 已知边界
 
-- **标注是非关联的**：COM `AddDimRotated` 不建立与几何的关联，改线不会自动更新
-  `Measurement`（`DIMASSOC=2` 的联动没测）。
-- **表格中文**：默认 `Standard`（txt.shx）下中文单元格可能丢字；本内核用
-  ASCII 内容 + 5 行排法验证。
-- **PDF 只覆盖模型空间单页 A3**；多布局合并（`export.pdf_multipage`）是 dead。
-- **旋转体**（`solid.revolve`）本机不可用；见 UNSUPPORTED。
-- **外部资产类**（Electrical 数据库 / PLC 模板 / P&ID 符号库 / CSG 投影）不随
-  内核分发，标 `external`。
+- **标注是非关联的**（`dim.associative` 为 dead）：ActiveX 建的标注不与几何关联，
+  `IAcadDimension` 也没有 assoc API；六种命令行输入（点选/选对象/预选/OSNAP+REGEN/
+  DIMREASSOCIATE）要么卡在提示符，要么 `Measurement` 不跟随。唯一路线是
+  NETLOAD 一个 .NET 插件用 `DimensionAssociation`（进程内），不在 COM 内核范围。
+- **表格第 0 行是合并标题行**：往它第 1..n 列写文字落盘即丢；中文单元格另需
+  `SetCellTextStyle` 挂 TrueType 样式（`table.chinese` 已验证）。
+- **旋转体**（`solid.revolve`）、**命名图层状态**（`layer.state`）本机不可用；
+  见 [`UNSUPPORTED.md`](docs/UNSUPPORTED.md)。
+- **Electrical / PLC 能力要本机有 AeData**（`~/Documents/Acade 2025/AeData`）：
+  `ae.db` / `plc.build` 只读那 7 个库和 `ace_plc.mdb`，不启动 ACADE；
+  没装 Electrical 元件库时这两条会失败并给出原因。
+- **多页 PDF 用合并**：ActiveX `SetLayoutsToPlot` 产不出多页文件（实测），
+  `export.pdf_multipage` = 逐布局出图 + `pypdf` 合并（`pip install acadkit[pdf]`）。
 
 ## 开发
 

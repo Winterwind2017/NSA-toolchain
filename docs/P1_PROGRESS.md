@@ -242,11 +242,52 @@ tests/run_all.py      离线 + 文档 + 真机一条命令
 * `solid.revolve`、`projection.orthographic`、`ae.db`、`plc.build`、`pid.symbol`
   不在本内核交付范围（见 `docs/UNSUPPORTED.md`）。
 
+## ✅ 步骤 4：接口挖掘（类型库/元数据）把"未解项"收掉 6/7
+
+上一轮留下 3 条限制 + 4 条 external。做法不是硬试，而是**先挖接口面**：
+
+1. 用 `win32com.client.gencache.EnsureModule` 生成 AutoCAD 类型库
+   （`{4D6C720C-0525-4D94-841B-6D5378A564E2}`）的 Python 包装，dump
+   `IAcadTable` / `IAcadDimension` / `IAcadPlot` 的**完整成员表**；
+2. 在 `acdbmgd.dll` / `acmgd.dll` / `AcPublish.arx` 的元数据堆里检索候选名
+   （`SetTextStyle` / `DimensionAssociation` / `SetLayoutsToPlot` / `Publish`）；
+3. 按挖到的名字做最小真机探针，**能过的才写能力**。
+
+> 副作用提醒：`EnsureModule` 会在 `%TEMP%\gen_py` 生成早期绑定缓存，
+> 之后 `GetActiveObject` 返回的是**早期绑定**对象（属性名按类型库大小写，
+> 如 `fontFile` 而非 `FontFile`）。探针完必须删掉缓存，否则内核的晚绑定
+> 假设会被悄悄改掉。本步踩到并已记录。
+
+**结果（6 项转正）**
+
+| 项 | 挖到的路径 | 现状 |
+|---|---|---|
+| 表格中文 | `IAcadTable.SetCellTextStyle(row, col, styleName)` | ✅ `table.chinese`（重开中文完好） |
+| 多页 PDF | `IAcadPlot.SetLayoutsToPlot` 挖到了但**产不出文件**（带 `StartBatchMode` 直接 E_FAIL）→ 逐布局出图 + `pypdf` 合并 | ✅ `export.pdf_multipage`（2 页、每页 A3、每页有墨） |
+| 三视图投影 | 官方命令全缺（负证据）→ 自建 `csg.py`（足迹 + 隐藏线） | ✅ `projection.orthographic` |
+| Electrical 元件库 | `ACE OLEDB 12.0; Mode=Read`（7 库 / 1196 张 PLC 表） | ✅ `ae.db`（哈希前后一致） |
+| PLC 模块图 | 规格取自 `ace_plc.mdb`，图形程序化画（不需要 ACADE 模板） | ✅ `plc.build` |
+| P&ID 符号 | 按 ISA 画法程序化绘制（本机没装符号库） | ✅ `pid.symbol` |
+
+**唯一没解决的：关联标注**（`dim.associative` → dead）。证据：`IAcadDimension`
+没有 assoc 成员；六种命令行输入（三点 DIMLINEAR、实体参数、`sssetfirst` 预选、
+`OSMODE`+`Update`+`Regen`、`DIMREASSOCIATE`、`vl-cmdf` 变体）要么卡在提示符、
+要么 `Measurement` 不跟随。可走的路只剩 NETLOAD 一个 .NET 插件（进程内），
+不在 COM 内核范围。
+
+**registry 收敛（最终）**：64 条 = **56 verified + 8 dead + 0 external**；
+`caps` 58 条（56 registry id + 2 条负例）。
+
+**真机验收（这一轮）**：`python tests/live_judges.py` → **58 / 58 通过**，
+总耗时 384.0 s（单例最长 9.6 s），环境自检 **408 项**全绿；跑后
+`process_count 0 / sv_count 0`。证据：`docs/regression/2026-10-21-re.md`。
+离线测试 87 条（新增 `tests/test_re_caps.py` 9 条，覆盖投影/电气/PLC/P&ID/PDF）。
+
 ## 下一步（P2 候选）
 
 | 项 | 内容 |
 |---|---|
-| 外部资产 | Electrical 数据库 / PLC 模板 / P&ID 符号库——需要先定"随内核分发"还是"外部依赖" |
-| 投影 | CSG 正交投影引擎（三视图 + 消隐），从 mech_build 移植 |
-| 标注关联 | `DIMASSOC=2` 联动 + 中文表格样式的判据 |
-| 多页 PDF | 自写最小 PDF 合并器（`export.pdf_multipage`） |
+| 关联标注 | NETLOAD .NET 插件用 `DimensionAssociation`（进程内），内核侧只留接口 |
+| PLC 图形细节 | `ace_plc.mdb` 的 `_Data` 表（SEQUENCE/BLOCK/ATTRIBUTES）里有厂商画法，可做成更接近 ACADE 的模块图 |
+| 多页 PDF 版式 | 合并器可加图框/页码/目录（现在只保证页数与每页内容） |
+| 参数化约束 | 本机命令缺失 + .NET 独立建组不求解（§504–507 负证据），需要别的 CAD 或外部求解器 |

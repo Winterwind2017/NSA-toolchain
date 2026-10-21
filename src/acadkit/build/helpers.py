@@ -72,8 +72,12 @@ def send(doc: Any, lisp: str, settle: float = 0.35) -> None:
     **不加载 .lsp 文件**：`(load ...)` 受 SECURELOAD/TRUSTEDPATHS 管控，而那两个
     变量是持久化的，探针忘还原就会污染用户的 VANILLA 配置（本项目踩过三次）。
     直接 `SendCommand` 一段 `(progn ...)` 不需要任何信任设置。
+
+    `RPC_E_CALL_REJECTED` 说明 AutoCAD 正忙、命令**还没被执行**，重试是安全的；
+    实测预选对象后紧接着发命令必被拒收。
     """
-    doc.SendCommand(lisp.rstrip() + "\n")
+    com.retry(lambda: doc.SendCommand(lisp.rstrip() + "\n"),
+              attempts=20, delay=0.5, label="SendCommand")
     time.sleep(settle)
 
 

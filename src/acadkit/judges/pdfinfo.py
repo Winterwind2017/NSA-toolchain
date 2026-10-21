@@ -91,10 +91,68 @@ def parse(path: str) -> Dict[str, Any]:
         out["why"] = "没有页（/Type /Page 计数为 0）"
     elif out["size_pt"] is None:
         out["why"] = "读不到 MediaBox"
-    elif out["vector_ops"] == 0 and out["text_ops"] == 0:
-        out["why"] = "空白页（解压后无任何线条/文字操作符）"
     else:
-        out["ok"] = True
+        details = pages_detail(data)
+        out["pages_detail"] = details
+        per_page_ink = bool(details) and all(
+            (d["vector_ops"] + d["text_ops"]) > 0 for d in details)
+        if (out["vector_ops"] == 0 and out["text_ops"] == 0) and not per_page_ink:
+            out["why"] = "空白页（解压后无任何线条/文字操作符）"
+        else:
+            out["ok"] = True
+    out.setdefault("pages_detail", pages_detail(data))
+    return out
+
+
+_OBJ_RE = re.compile(rb"(\d+)\s+0\s+obj\b(.*?)\bendobj", re.S)
+
+
+def pages_detail(data: bytes) -> List[Dict[str, Any]]:
+    """逐页的 MediaBox 与绘图操作符（用来抓"多页里有一页是白纸"）。
+
+    只处理经典 xref（AutoCAD 出的 PDF 就是）；对象流读不到就返回空列表，
+    判据会把"读不到"当失败而不是成功。
+    """
+    objs = {int(m.group(1)): m.group(2) for m in _OBJ_RE.finditer(data)}
+    out: List[Dict[str, Any]] = []
+    for num, body in objs.items():
+        if not re.search(rb"/Type\s*/Page\b(?!s)", body):
+            continue
+        box = re.search(
+            rb"/MediaBox\s*\[\s*(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s*\]",
+            body)
+        size = None
+        if box:
+            x0, y0, x1, y1 = (float(v) for v in box.groups())
+            size = [abs(x1 - x0), abs(y1 - y0)]
+        # /Contents 可能是单引用或数组
+        content_nums: List[int] = []
+        cm = re.search(rb"/Contents\s+(\[[^\]]*\]|\d+\s+0\s+R)", body)
+        if cm:
+            content_nums = [int(x) for x in re.findall(rb"(\d+)\s+0\s+R", cm.group(1))]
+        blob = b""
+        for cn in content_nums:
+            cbody = objs.get(cn, b"")
+            sm = re.search(rb"stream\r?\n(.*?)\r?\nendstream", cbody, re.S)
+            if not sm:
+                continue
+            raw = sm.group(1)
+            if b"/Filter" in cbody:
+                try:
+                    blob += zlib.decompress(raw)
+                except zlib.error:
+                    try:
+                        blob += zlib.decompressobj().decompress(raw)
+                    except zlib.error:
+                        pass
+            else:
+                blob += raw          # 未压缩的内容流（手工构造/某些打印机驱动）
+        ops = _ops(blob)
+        vec = sum(ops[k] for k in ("m", "l", "c", "re", "S", "s", "f", "F",
+                                   "f*", "B", "b"))
+        out.append({"object": num, "size_pt": size, "ops": ops,
+                    "vector_ops": vec, "text_ops": ops["Tj"] + ops["TJ"],
+                    "decoded_bytes": len(blob)})
     return out
 
 

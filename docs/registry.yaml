@@ -161,6 +161,14 @@ capabilities:
     source: "'AddDimArc'"
     judge: "'读回类型=ARCDIMENSION、Measurement≈R·θ（不含前缀）'"
     evidence: "matrix #12；P1 真机 2026-10-21（acadkit caps）"
+
+  - id: dim.associative
+    family: dim
+    backend: []
+    status: dead
+    source: ""
+    judge: "**外部进程不可达**：ActiveX AddDimRotated 建的标注天然非关联（IAcadDimension 无 assoc API）；DIMLINEAR 点选/选对象/预选、DIMREASSOCIATE、OSMODE+REGEN 六种输入都在提示符卡死或 Measurement 不跟随。替代=.NET 插件 NETLOAD 用 DimensionAssociation（进程内），或保持非关联+显式重建"
+    evidence: "P1 探针 2026-10-21（_scratch/probe_assoc*.py）"
   - id: dim.baseline
     family: dim
     backend: [[, c, o, m, ]]
@@ -240,6 +248,14 @@ capabilities:
     source: "'AddTable + SetText（ACDBTABLE）/ mech_build tables + aggregate_bom'"
     judge: "'实体类型=ACDBTABLE、行数=件数+1、各单元格文字与汇总值一致'"
     evidence: "matrix #18；P1 真机 2026-10-21（acadkit caps）"
+
+  - id: table.chinese
+    family: table
+    backend: [com]
+    status: verified
+    source: "AcadTable.SetCellTextStyle(row, col, styleName) + CN（SimSun）文字样式"
+    judge: "3×2 表 5 个中文单元格（含标题行）内存与重开逐格一致；样式读回 CN"
+    evidence: "P1 真机 2026-10-21（acadkit caps）；RE：IAcadTable.SetCellTextStyle（类型库 {4D6C720C-...} dump）"
   - id: table.grid
     family: table
     backend: [[, c, o, m, ]]
@@ -374,11 +390,11 @@ capabilities:
   # ── 投影（自建 CSG）───────────────────────────────────────
   - id: projection.orthographic
     family: projection
-    backend: [[, c, s, g, ]]
-    status: external
-    source: "'mech_build project_solids（自建 CSG 正交投影引擎）'"
-    judge: "AutoCAD 2025 没有任何官方 3D→2D 出图命令（SOLVIEW/SOLDRAW/SOLPROF/VIEWBASE 实测全缺），必须自建 CSG 消隐引擎；原型在 mech_build，本内核尚未移植"
-    evidence: "matrix #26 / #3.2"
+    backend: [python, com]
+    status: verified
+    source: "自建 CSG 正交投影（src/acadkit/csg.py）：box/cyl 足迹 + 隐藏线判定，三视图分层绘制"
+    judge: "独立重算投影：可见/隐藏/轴线三段计数逐项相等；主视 100×30、俯视 100×60、左视 60×30；重开计数不变"
+    evidence: "P1 真机 2026-10-21（acadkit caps）；官方命令全缺的负证据见 matrix #2.2"
   # ── 导出 ──────────────────────────────────────────────────
   - id: export.dwg
     family: export
@@ -419,25 +435,25 @@ capabilities:
   # ── 电气 / PLC / P&ID（现有独立资产）──────────────────────
   - id: ae.db
     family: ae
-    backend: [[, c, o, m, ,,  , f, i, l, e, ]]
-    status: external
-    source: "'acad_ae_db_mcp.py / acad_ae_db.py（Electrical 数据库）'"
-    judge: "需要 AutoCAD Electrical 工程库（.mdb / 项目数据库）；本内核不打包、VANILLA 配置下也无法复现"
-    evidence: "mcp-patches/acad_ae_*"
+    backend: [com]
+    status: verified
+    source: "ADODB + Microsoft.ACE.OLEDB.12.0（Mode=Read）读 AeData/zh-CN/Catalogs/*.mdb"
+    judge: "只读打开 wd_lang1.mdb：表数≥1、MATRIX 行数>0、样例非空；读前后文件 SHA-256 相同（证明没写）"
+    evidence: "P1 真机 2026-10-21（acadkit caps）；AeData 2025 本机 7 库 / 1196 张 PLC 表"
   - id: plc.build
     family: plc
-    backend: [[, c, o, m, ,,  , f, i, l, e, ]]
-    status: external
-    source: "'acad_plc_build.py'"
-    judge: "依赖 PLC 模板与图块库（外部资产，不在本仓库）"
-    evidence: "mcp-patches/acad_plc_build.py"
+    backend: [file, com]
+    status: verified
+    source: "ace_plc.mdb 模块规格（CODE/POINTS/TYPE/DESCRIPTION）+ 程序化画模块框/点表/端子"
+    judge: "规格来自库（表名/CODE 读回一致）；LINE=CIRCLE=点数、TEXT=点数+2、模块框 1；重开文字不变"
+    evidence: "P1 真机 2026-10-21（acadkit caps）"
   - id: pid.symbol
     family: pid
-    backend: [[, c, o, m, ,,  , l, i, s, p, ]]
-    status: external
-    source: "'autocad-mcp pid.*（12 子操作）/ acad_pid/cto_library'"
-    judge: "依赖 P&ID 符号库（外部资产，不在本仓库）"
-    evidence: "mcp-patches/acad_pid_*"
+    backend: [com]
+    status: verified
+    source: "按 ISA 画法程序化绘制（闸阀 bowtie / 离心泵 / 仪表气泡），不依赖外部图块库"
+    judge: "LINE=14、CIRCLE=2、TEXT=3，且 HV-01/P-01/PI-01 三个位号逐字读回；重开一致"
+    evidence: "P1 真机 2026-10-21（acadkit caps）"
   # ── 缺口（dead：本机无法用官方功能实现）──────────────────
   - id: constraint.geometric
     family: constraint
@@ -449,12 +465,11 @@ capabilities:
 
   - id: export.pdf_multipage
     family: export
-    backend: []
-    status: dead
-    source: ""
-    judge: "**无官方路径**：-PUBLISH 在 GUI/accoreconsole 两处阻塞；Plot.SetLayoutsToPlot 只产出每布局一个 PDF。替代=装 PDF 合并库或自写最小合并器"
-    evidence: "matrix #31c / #3.2"
-
+    backend: [com, file]
+    status: verified
+    source: "逐布局 PlotToFile ×2 → pypdf 合并（acadkit[pdf]）"
+    judge: "合并后页数=2、每页 A3、每页 vector/text ops>0（抓一页白纸）、两次出图 BACKGROUNDPLOT 均已还原"
+    evidence: "P1 真机 2026-10-21（acadkit caps）；SetLayoutsToPlot/StartBatchMode 不产文件的负证据见 PITFALLS"
   - id: view.projection_builtin
     family: view
     backend: []

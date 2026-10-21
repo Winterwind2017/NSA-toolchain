@@ -18,6 +18,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+from .build import ae as b_ae
 from .build import block_table as b_bt
 from .build import boolean as b_bool
 from .build import dim as b_dim
@@ -28,11 +29,14 @@ from .build import gdt as b_gdt
 from .build import geom as b_geom
 from .build import layer as b_layer
 from .build import lisp as b_lisp
+from .build import pid as b_pid
+from .build import projection as b_proj
 from .build import solid as b_solid
 from .build import symbol as b_sym
 from .build import table as b_table
 from .build import text as b_text
 from .build import view as b_view
+from .judges import ae as j_ae
 from .judges import block_table as j_bt
 from .judges import dim as j_dim
 from .judges import dim_extra as j_dx
@@ -43,6 +47,8 @@ from .judges import frame as j_frame
 from .judges import generic as j_g
 from .judges import geom as j_geom
 from .judges import layer as j_layer
+from .judges import pid as j_pid
+from .judges import projection as j_proj
 from .judges import solid as j_solid
 from .judges import symbol as j_sym
 from .judges import view as j_view
@@ -326,6 +332,12 @@ def _cap_table_block_frame() -> List[Cap]:
                     "4,0": "TOTAL", "4,2": "5"},
                 sum_column=2, detail_rows=(2, 3), total_row=4),
             {}),
+        Cap("table.chinese", "table", "中文表格：CN 样式 + 重开不丢字", "L1–L4",
+            b_table.build_cn_table,
+            lambda rb, ctx: j_bt.judge_table(
+                rb, rows=3, cols=2,
+                cells=_P(ctx, "cells") or b_table.CN_CELLS),
+            {"style": "CN", "font": "SimSun"}),
         Cap("block.define", "block", "块定义 + 属性定义", "L1–L4",
             b_bt.build_block_define,
             lambda rb, ctx: j_bt.judge_block_define(
@@ -436,6 +448,12 @@ def _cap_view_lisp() -> List[Cap]:
             lambda rb, ctx: j_view.judge_zoom(
                 rb, center=_P(ctx, "center"), radius=float(_P(ctx, "radius"))),
             {"center": (500.0, 500.0), "radius": 100.0}, wants_reopen=False),
+        Cap("projection.orthographic", "view",
+            "三视图投影：CSG→front/top/left（可见/隐藏/轴线分层）", "L1–L4",
+            b_proj.build_projection,
+            lambda rb, ctx: j_proj.judge_projection(
+                rb, recorded=_A(ctx, "projection", {})),
+            {}),
         Cap("lisp.execute", "lisp", "命令行执行 LISP（不加载文件）", "L1–L4",
             b_lisp.build_lisp_circle,
             lambda rb, ctx: j_g.judge_new_entity(
@@ -443,6 +461,20 @@ def _cap_view_lisp() -> List[Cap]:
                 expected={"Center": list(_P(ctx, "center")) + [0.0],
                           "Radius": _P(ctx, "radius")}),
             {"center": (800.0, 0.0), "radius": 12.0}),
+        Cap("pid.symbol", "pid", "P&ID 符号：闸阀/泵/仪表气泡（程序化画）", "L1–L4",
+            b_pid.build_pid_symbols,
+            lambda rb, ctx: j_pid.judge_pid(rb, recorded=_A(ctx, "pid", {})),
+            {}),
+        Cap("ae.db", "ae", "Electrical 元件库：只读打开 + 数表数行 + 哈希不变",
+            "L0–L2",
+            b_ae.build_ae_db,
+            lambda rb, ctx: j_ae.judge_ae_db(_A(ctx, "ae_db", {})),
+            {}, wants_reopen=False),
+        Cap("plc.build", "plc", "PLC 模块图：规格取自 ace_plc.mdb + 程序化绘制",
+            "L1–L4",
+            b_ae.build_plc_module,
+            lambda rb, ctx: j_ae.judge_plc(rb, recorded=_A(ctx, "plc", {})),
+            {}),
     ]
 
 
@@ -464,6 +496,13 @@ def _cap_export() -> List[Cap]:
             lambda rb, ctx: j_export.judge_pdf(
                 rb, path=_A(ctx, "pdf_path"), since=ctx["started"],
                 plot=_A(ctx, "plot")),
+            {}),
+        Cap("export.pdf_multipage", "export",
+            "多页 PDF：逐布局出图 + 合并（每页 A3 且有墨）", "L0–L3",
+            b_export.build_pdf_multipage,
+            lambda rb, ctx: j_export.judge_pdf_multipage(
+                rb, path=_A(ctx, "pdf_path"), since=ctx["started"],
+                pages=2, recorded=_A(ctx, "multipage", {})),
             {}),
     ]
 

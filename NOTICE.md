@@ -9,6 +9,7 @@
 |---|---|---|
 | [pywin32](https://github.com/mhammond/pywin32) | PSF-2.0 | 晚绑定 COM（生产依赖） |
 | [ezdxf](https://github.com/mozman/ezdxf) | MIT | DXF 读回判据（可选，`acadkit[dxf]`） |
+| [pypdf](https://github.com/py-pdf/pypdf) | BSD-3-Clause | 多页 PDF 合并（可选，`acadkit[pdf]`） |
 | [mcp](https://github.com/modelcontextprotocol/python-sdk) | MIT | MCP server（可选，`acadkit[mcp]`） |
 | [pytest](https://github.com/pytest-dev/pytest) | MIT | 测试（`dev`） |
 
@@ -26,3 +27,4 @@
 `docs/` 里的数字（体积、面积、页数、时间）全部来自本机 AutoCAD 2025 +
 `<<VANILLA>>` 配置的实测记录；`docs/regression/` 下的 JSON 是原始证据，
 未做手改。
+
