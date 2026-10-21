@@ -46,6 +46,13 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("drawing.projected_view", "drawing", "基础视图 + 投影视图（2 个视图）",
+        "drawing_projected_view", "L1–L2", params={},
+        expect={"view_count": 2, "projected_ok": True}, reopen=False),
+    Cap("solid.delete_face", "solid", "删孔面愈合（93716.8 → 100000 / 6 面）",
+        "solid_delete_face", "L1–L2", params={},
+        expect={"hole_ok": True, "body_count": 1, "faces": 6,
+                "volume_mm3": {"min": 99990.0, "max": 100010.0}}, reopen=False),
     Cap("curve.combined_projection", "curve", "两条曲线组合投影（空间直线 50 mm）",
         "curve_combined_projection", "L1–L2", params={},
         expect={"entity_count": 1, "start_x": 0.0, "start_y": 0.0,

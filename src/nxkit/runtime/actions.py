@@ -4365,7 +4365,121 @@ def curve_combined_projection(params, workdir, rec):
     _close_part(part)
     return reads
 
+def solid_delete_face(params, workdir, rec):
+    """删孔面愈合：先打 Ø20 通孔，再删圆柱面，体积回到 100000。"""
+    part = new_part("dfce")
+    p = NXOpen.Point3d
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    faces = [f for f in body.GetFaces()
+             if abs(float(part.MeasureManager.NewFaceProperties(
+                 _unit(part), _unit(part), 0.99, [f]).Area) - 5000.0) < 1.0]
+    diag = {}
+    hole_ok = False
+    for face in faces:
+        hb = part.Features.CreateHoleFeatureBuilder(NXOpen.Features.Hole.Null)
+        try:
+            hb.SetSimpleHole(p(50.0, 25.0, 20.0), True, face, "20")
+            hb.SetDepth("20")
+            hb.SetDiameter("20")
+            hb.PlacementFace = face
+            hb.SetTargetBody(body)
+            hb.CommitFeature()
+            hole_ok = True
+            break
+        except Exception as exc:
+            diag.setdefault("hole_try", []).append(str(exc)[:50])
+        finally:
+            try:
+                hb.Destroy()
+            except Exception:
+                pass
+    reads = {"hole_ok": hole_ok, "diag": diag}
+    if hole_ok:
+        reads["volume_with_hole"] = round(mass(part, [body])["volume_mm3"], 3)
+    cyl = None
+    ft = NXOpen.Face.FaceType
+    for f in body.GetFaces():
+        try:
+            if f.SolidFaceType == ft.Cylindrical:
+                cyl = f
+                break
+        except Exception:
+            continue
+    if cyl is None:
+        diag["cyl"] = "not found"
+    else:
+        dfb = part.Features.CreateDeleteFaceBuilder(NXOpen.Features.DeleteFace.Null)
+        try:
+            dfb.FaceCollector.AddRules([part.ScRuleFactory.CreateRuleFaceDumb([cyl])])
+            dfb.CapOption = dfb.CapOptionValues.FaceOrPlane
+            dfb.CommitFeature()
+            diag["commit"] = "ok"
+        except Exception as exc:
+            diag["commit"] = "err:%s" % str(exc)[:120]
+        finally:
+            try:
+                dfb.Destroy()
+            except Exception:
+                pass
+    bodies = _bodies_of(part)
+    reads["body_count"] = len(bodies)
+    if bodies:
+        reads.update(mass(part, bodies))
+        reads["faces"] = len(list(bodies[0].GetFaces()))
+    _close_part(part)
+    return reads
+
+def drawing_projected_view(params, workdir, rec):
+    """基础视图 + 投影视图（ORTHO@2），图纸上共 2 个视图。"""
+    import NXOpen.Drawings
+    part = new_part("pvw")
+    p = NXOpen.Point3d
+    make_block(part, 0, 0, 0, 100, 50, 20)
+    ss = NXOpen.Drawings.DrawingSheet.StandardSheetSize
+    pa = NXOpen.Drawings.DrawingSheet.ProjectionAngleType
+    sheet = part.DrawingSheets.InsertSheet("S1", ss.A3, 1.0, 1.0, pa.FirstAngle)
+    mv = None
+    for v in part.ModelingViews:
+        if str(v.Name) == "Front":
+            mv = v
+            break
+    vb = part.DraftingViews.CreateBaseViewBuilder(NXOpen.Drawings.BaseView.Null)
+    diag = {}
+    try:
+        vb.SelectModelView.SelectedView = mv
+        base = vb.Commit()
+        diag["base"] = str(base.Name)
+    finally:
+        try:
+            vb.Destroy()
+        except Exception:
+            pass
+    proj = None
+    try:
+        proj = sheet.SheetDraftingViews.CreateProjectedView(
+            base, p(150.0, 150.0, 0.0))
+        diag["projected"] = str(proj.Name)
+    except Exception as exc:
+        diag["projected"] = "err:%s" % str(exc)[:120]
+    names = []
+    try:
+        names = [str(v.Name) for v in part.DraftingViews]
+    except Exception as exc:
+        diag["views"] = str(exc)[:60]
+    reads = {"view_count": len(names), "views": names, "diag": diag}
+    if proj is not None:
+        reads["projected_ok"] = True
+        try:
+            reads["scale"] = round(float(proj.Scale), 4)
+        except Exception:
+            pass
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "drawing_projected_view": drawing_projected_view,
+    "solid_delete_face": solid_delete_face,
     "curve_combined_projection": curve_combined_projection,
     "surface_offset": surface_offset,
     "feature_hole": feature_hole,

@@ -1,6 +1,6 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **136** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
+总计 **138** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
@@ -8,10 +8,10 @@
 |---|---:|---:|---|
 | feature | 33 | 29 | solid_modeling |
 | sketch | 18 | 2 | solid_modeling |
-| drawing | 12 | 0 | drafting |
+| drawing | 13 | 0 | drafting |
 | attr | 10 | 2 | gateway |
+| solid | 10 | 8 | solid_modeling |
 | curve | 9 | 0 | solid_modeling |
-| solid | 9 | 8 | solid_modeling |
 | assembly | 8 | 1 | assemblies |
 | boolean | 7 | 7 | solid_modeling |
 | export | 7 | 0 | gateway |
@@ -26,14 +26,16 @@
 | license | 能力数 |
 |---|---:|
 | assemblies | 8 |
-| drafting | 12 |
+| drafting | 13 |
 | gateway | 35 |
-| solid_modeling | 81 |
+| solid_modeling | 82 |
 
 ## 全部能力
 
 | id | 族 | 层级 | L4 | 许可 |
 |---|---|---|---|---|
+| `drawing.projected_view` | drawing | L1–L2 | — | drafting |
+| `solid.delete_face` | solid | L1–L2 | — | solid_modeling |
 | `curve.combined_projection` | curve | L1–L2 | — | solid_modeling |
 | `surface.offset` | surface | L1–L2 | — | solid_modeling |
 | `feature.hole` | feature | L1–L3 | — | solid_modeling |
