@@ -9,9 +9,9 @@
   ],
   "counts": {
     "families": 13,
-    "verified": 44
+    "verified": 48
   },
-  "generated_at": "2026-10-21T20:45:37",
+  "generated_at": "2026-10-21T20:47:33",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.two_components": "L1–L4",
@@ -32,6 +32,8 @@
     "cylinder.create": "L1–L4",
     "drawing.base_view": "L1–L3",
     "drawing.sheet": "L1–L2",
+    "drawing.sheet_a4": "L1–L2",
+    "drawing.view_isometric": "L1–L2",
     "export.acis": "L1–L2",
     "export.iges": "L1–L3",
     "export.step": "L1–L3",
@@ -42,11 +44,13 @@
     "feature.chamfer_multi": "L1–L3",
     "feature.edge_blend": "L1–L3",
     "feature.hole_array": "L1–L3",
+    "feature.hole_blind": "L1–L3",
     "feature.hole_cyl": "L1–L3",
     "feature.pattern_circular": "L1–L3",
     "feature.pattern_grid": "L1–L3",
     "feature.pattern_linear": "L1–L3",
     "feature.pocket": "L1–L3",
+    "feature.pocket_blind": "L1–L3",
     "feature.shell": "L1–L3",
     "file.roundtrip": "L4",
     "measure.face_area": "L3",
@@ -89,7 +93,11 @@
     },
     {
       "id": "asm.constraints",
-      "reason": "装配约束 API 未挖"
+      "reason": "约束对象没有创建入口"
+    },
+    {
+      "id": "sketch.constraints",
+      "reason": "Sketch.ConstraintGeometry 没有创建入口"
     },
     {
       "id": "export.dxf",
@@ -110,7 +118,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "e918f9f",
+    "kernel_commit": "1ce347f",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -135,6 +143,8 @@
     "cylinder.create": "solid",
     "drawing.base_view": "drawing",
     "drawing.sheet": "drawing",
+    "drawing.sheet_a4": "drawing",
+    "drawing.view_isometric": "drawing",
     "export.acis": "export",
     "export.iges": "export",
     "export.step": "export",
@@ -145,11 +155,13 @@
     "feature.chamfer_multi": "feature",
     "feature.edge_blend": "feature",
     "feature.hole_array": "feature",
+    "feature.hole_blind": "feature",
     "feature.hole_cyl": "feature",
     "feature.pattern_circular": "feature",
     "feature.pattern_grid": "feature",
     "feature.pattern_linear": "feature",
     "feature.pocket": "feature",
+    "feature.pocket_blind": "feature",
     "feature.shell": "feature",
     "file.roundtrip": "file",
     "measure.face_area": "measure",

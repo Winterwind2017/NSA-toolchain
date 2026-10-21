@@ -82,19 +82,19 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **44** 条 verified 能力（内核 `nxkit 0.1.0`，commit `e918f9f`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **48** 条 verified 能力（内核 `nxkit 0.1.0`，commit `1ce347f`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **特征（拉伸）**（12） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.shell`（L1–L3） |
+| **特征（拉伸）**（14） | `extrude.rect`（L1–L4） `extrude.ring`（L1–L3） `feature.chamfer`（L1–L3） `feature.chamfer_multi`（L1–L3） `feature.edge_blend`（L1–L3） `feature.hole_array`（L1–L3） `feature.hole_blind`（L1–L3） `feature.hole_cyl`（L1–L3） `feature.pattern_circular`（L1–L3） `feature.pattern_grid`（L1–L3） `feature.pattern_linear`（L1–L3） `feature.pocket`（L1–L3） `feature.pocket_blind`（L1–L3） `feature.shell`（L1–L3） |
 | **实体**（5） | `block.create`（L1–L4） `block.two_bodies`（L1–L4） `cylinder.create`（L1–L4） `solid.cone`（L1–L3） `solid.sphere`（L1–L3） |
 | **属性**（4） | `attr.int`（L2） `attr.on_body`（L2） `attr.on_feature`（L2） `attr.string`（L2–L4） |
 | **布尔**（4） | `boolean.intersect`（L1–L4） `boolean.subtract`（L1–L4） `boolean.two_tools`（L1–L3） `boolean.union`（L1–L4） |
+| **制图**（4） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） `drawing.sheet_a4`（L1–L2） `drawing.view_isometric`（L1–L2） |
 | **导出**（4） | `export.acis`（L1–L2） `export.iges`（L1–L3） `export.step`（L1–L3） `export.step_ap203`（L1–L2） |
 | **曲线**（3） | `curve.arc`（L1–L3） `curve.ellipse`（L1–L3） `curve.line`（L1–L3） |
 | **sketch**（3） | `sketch.circle_extrude`（L1–L3） `sketch.extrude`（L1–L3） `sketch.rect`（L1–L2） |
 | **装配**（2） | `asm.add_component`（L1–L2） `asm.two_components`（L1–L4） |
-| **制图**（2） | `drawing.base_view`（L1–L3） `drawing.sheet`（L1–L2） |
 | **测量**（2） | `measure.face_area`（L3） `measure.mass`（L3） |
 | **文件**（1） | `file.roundtrip`（L4） |
 | **拓扑检查**（1） | `body.topo`（L1–L3） |
@@ -111,7 +111,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `measure.distance` | `MeasureDistance` 没有 `.Distance`，`Information()` 返回 `None` |
 | `cam.setup` | `part.CreateCamSetup("mill_planar")` 返回 `None`，`CAMSetup` 报 `no valid setup` |
 | `cae.mesh` | `NXOpen.CAE` 绑定大、解算慢，未开始 |
-| `asm.constraints` | 装配约束 API 未挖 |
+| `asm.constraints` | 约束对象没有创建入口 |
+| `sketch.constraints` | `ConstraintGeometry` 没有创建入口 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
 | `export.stl` | `Commit()` 成功但 0 字节，需要 `ExportSelectionBlock` |
 | `export.parasolid` | `Commit()` 报 `no valid export objects`，需要 `ExportSelectionBlock` |
@@ -146,6 +147,8 @@ nxkit cap feature.pattern_circular # 圆周阵列 4 个：实体 4，体积 4000
 nxkit cap feature.pocket        # 挖 40×20 通槽：84000
 nxkit cap feature.hole_cyl      # 钻 Ø20 通孔：93716.815
 nxkit cap feature.hole_array    # 四个 Ø20 通孔：74867.26
+nxkit cap feature.hole_blind    # 盲孔 Ø20 深 10：96858.41
+nxkit cap feature.pocket_blind  # 盲槽 40×20 深 10：92000
 nxkit cap feature.shell         # 抽壳 2 mm：29344
 ```
 
@@ -178,6 +181,8 @@ nxkit cap asm.two_components   # 插 2 个并存盘
 ```bash
 nxkit cap drawing.sheet       # A3 图纸（297×420）
 nxkit cap drawing.base_view   # Front 基础视图
+nxkit cap drawing.sheet_a4    # A4：210×297
+nxkit cap drawing.view_isometric # 等轴测视图 Isometric@1
 ```
 
 ### 导出
