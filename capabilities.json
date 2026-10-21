@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 117
+    "verified": 118
   },
-  "generated_at": "2026-10-22T00:09:26",
+  "generated_at": "2026-10-22T00:11:56",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -130,6 +130,7 @@
     "solid.cone_frustum": "L1–L3",
     "solid.scale": "L1–L3",
     "solid.sphere": "L1–L3",
+    "solid.split_body": "L1–L3",
     "surface.bounded_plane": "L1–L2"
   },
   "licenses": {
@@ -249,6 +250,7 @@
     "solid.cone_frustum": "solid_modeling",
     "solid.scale": "solid_modeling",
     "solid.sphere": "solid_modeling",
+    "solid.split_body": "solid_modeling",
     "surface.bounded_plane": "solid_modeling"
   },
   "pending": [
@@ -267,10 +269,6 @@
     {
       "id": "solid.move_body",
       "reason": "ModlMotion DeltaX 设了仍报 Feature has zero parameters"
-    },
-    {
-      "id": "solid.split_body",
-      "reason": "工具体要 datum plane，Plane 对象被拒"
     },
     {
       "id": "solid.delete_body",
@@ -323,7 +321,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "62f38a8",
+    "kernel_commit": "1b1dabf",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -445,6 +443,7 @@
     "solid.cone_frustum": "solid",
     "solid.scale": "solid",
     "solid.sphere": "solid",
+    "solid.split_body": "solid",
     "surface.bounded_plane": "surface"
   }
 }

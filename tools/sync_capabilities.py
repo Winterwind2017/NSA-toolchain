@@ -39,7 +39,6 @@ PENDING = [
     ("sketch.point_on_curve", "约束能建但几何不动（无 Solve 触发）"),
     ("pattern.body_linear", "ReferencePoint 是服务 builder，缺配置报 Incorrect object"),
     ("solid.move_body", "ModlMotion DeltaX 设了仍报 Feature has zero parameters"),
-    ("solid.split_body", "工具体要 datum plane，Plane 对象被拒"),
     ("solid.delete_body", "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"),
     ("feature.hole", "HolePackageBuilder 要 HolePackage.Null 哨兵，参数未摸清（通孔用 hole_cyl）"),
     ("drawing.dimension", "part.Dimensions 的创建签名与视图绑定未验证"),
