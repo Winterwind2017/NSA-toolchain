@@ -8,10 +8,10 @@
     "status"
   ],
   "counts": {
-    "families": 13,
-    "verified": 54
+    "families": 14,
+    "verified": 55
   },
-  "generated_at": "2026-10-21T20:53:52",
+  "generated_at": "2026-10-21T20:58:03",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.three_components": "L1–L2",
@@ -66,7 +66,8 @@
     "sketch.extrude": "L1–L3",
     "sketch.rect": "L1–L2",
     "solid.cone": "L1–L3",
-    "solid.sphere": "L1–L3"
+    "solid.sphere": "L1–L3",
+    "surface.bounded_plane": "L1–L2"
   },
   "pending": [
     {
@@ -111,7 +112,11 @@
     },
     {
       "id": "export.parasolid",
-      "reason": "SetArray 后仍报 no valid export objects"
+      "reason": "四种方式全报 no valid export objects"
+    },
+    {
+      "id": "feature.thicken",
+      "reason": "报 Distance tolerance is too small"
     },
     {
       "id": "drawing.projected_view",
@@ -120,7 +125,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "b8544a3",
+    "kernel_commit": "65255e2",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -179,6 +184,7 @@
     "sketch.extrude": "sketch",
     "sketch.rect": "sketch",
     "solid.cone": "solid",
-    "solid.sphere": "solid"
+    "solid.sphere": "solid",
+    "surface.bounded_plane": "surface"
   }
 }

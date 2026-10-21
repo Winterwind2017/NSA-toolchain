@@ -82,7 +82,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 nxkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **54** 条 verified 能力（内核 `nxkit 0.1.0`，commit `b8544a3`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
+共 **55** 条 verified 能力（内核 `nxkit 0.1.0`，commit `65255e2`，引擎 NX 2512）。完整状态：`nxkit list`；单条跑：`nxkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
@@ -99,6 +99,7 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | **文件**（1） | `file.roundtrip`（L4） |
 | **拓扑检查**（1） | `body.topo`（L1–L3） |
 | **部件**（1） | `part.new`（L1） |
+| **surface**（1） | `surface.bounded_plane`（L1–L2） |
 <!-- gen:capabilities:END -->
 
 ## 还没打通（别重复试）
@@ -115,7 +116,8 @@ nxkit run                          # 全部，一次 NX 会话（约 15 s）
 | `feature.chamfer_angle` | `ChamferBuilder.Option`/`AngleExp` 赋值无效 |
 | `sketch.constraints` | `ConstraintGeometry` 没有创建入口 |
 | `export.dxf` | `DxfdwgCreator` 需要图纸上下文 |
-| `export.parasolid` | `SetArray([body])` 后仍报 `no valid export objects` |
+| `export.parasolid` | 四种方式全报 `no valid export objects` |
+| `feature.thicken` | 报 `Distance tolerance is too small` |
 | `drawing.projected_view` | `ProjectedViewBuilder.Parent` 只读 |
 <!-- allow:pending:END -->
 
@@ -158,6 +160,7 @@ nxkit cap feature.chamfer_edge  # 另一条边倒角：面 7
 ### 草图
 
 ```bash
+nxkit cap surface.bounded_plane  # 4 条线围成有界平面片体
 nxkit cap sketch.rect            # XY 平面草图 + 4 条线（自带 2 条参考线）
 nxkit cap sketch.extrude         # 草图 4 线拉伸 10 → 50000
 nxkit cap sketch.circle_extrude  # 草图整圆 R20 拉伸 30 → 37699.11

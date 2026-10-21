@@ -45,7 +45,8 @@ PENDING = [
     ("sketch.constraints", "Sketch.ConstraintGeometry 没有创建入口"),
     ("feature.chamfer_angle", "ChamferBuilder.Option/AngleExp 赋值无效"),
     ("export.dxf", "DxfdwgCreator 需要图纸上下文"),
-    ("export.parasolid", "SetArray 后仍报 no valid export objects"),
+    ("export.parasolid", "四种方式全报 no valid export objects"),
+    ("feature.thicken", "报 Distance tolerance is too small"),
     ("drawing.projected_view", "ProjectedViewBuilder.Parent 只读"),
 ]
 
