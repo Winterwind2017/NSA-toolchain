@@ -4864,7 +4864,96 @@ def curve_bridge(params, workdir, rec):
     _close_part(part)
     return reads
 
+def feature_text(params, workdir, rec):
+    """三维文字：在块顶面放 "NXTEST"，产出 6 条字母轮廓 Spline。
+
+    关键：TextBuilder 需要一个坐标系对象，而
+    CoordinateSystemCollection.CreateCoordinateSystem 的第三参是 **bool is_temporary**，
+    不是 SmartObject.UpdateOption（之前一直报 overload 不匹配就是这个）。
+    """
+    part = new_part("txt")
+    p = NXOpen.Point3d
+    blk = make_block(part, 0, 0, 0, 100, 50, 20)
+    face = list(blk.GetBodies()[0].GetFaces())[0]
+    mtx = NXOpen.Matrix3x3()
+    mtx.Xx, mtx.Xy, mtx.Xz = 1.0, 0.0, 0.0
+    mtx.Yx, mtx.Yy, mtx.Yz = 0.0, 1.0, 0.0
+    mtx.Zx, mtx.Zy, mtx.Zz = 0.0, 0.0, 1.0
+    cs = part.CoordinateSystems.CreateCoordinateSystem(
+        p(0.0, 0.0, 20.0), mtx, True)
+    diag = {"cs": "ok"}
+    tb = part.Features.CreateTextBuilder(NXOpen.Features.Text.Null)
+    feat = None
+    try:
+        tb.TextString = "NXTEST"
+        tb.PlanarFrame.CoordinateSystem = cs
+        tb.PlacementFaces.AddRules(
+            [part.ScRuleFactory.CreateRuleFaceDumb([face])])
+        feat = tb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            tb.Destroy()
+        except Exception:
+            pass
+    ents = []
+    try:
+        ents = list(feat.GetEntities()) if feat is not None else []
+    except Exception:
+        pass
+    bodies = _bodies_of(part)
+    reads = {"entity_count": len(ents), "body_count": len(bodies), "diag": diag}
+    reads["ent_types"] = sorted({type(e).__name__ for e in ents})
+    _close_part(part)
+    return reads
+
+def solid_move_body(params, workdir, rec):
+    """移动实体：块沿 +X 平移 100（重心 50 → 150）。
+
+    关键：MoveBodyBuilder + ModlMotion 的 **Distance** 模式才动：
+    Option=Distance + DistanceVector=Direction + DistanceValue.SetFormula。
+    DeltaXyz 模式即使 CommitFeature 成功也是空操作（重心不变）。
+    """
+    part = new_part("mvbody")
+    p = NXOpen.Point3d
+    feat = make_block(part, 0, 0, 0, 100, 50, 20)
+    body = feat.GetBodies()[0]
+    diag = {}
+    b = part.Features.CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)
+    try:
+        b.BodyToMove.AddRules([part.ScRuleFactory.CreateRuleBodyDumb([body])])
+        diag["body"] = "ok"
+        m = b.Motion
+        m.Option = NXOpen.GeometricUtilities.ModlMotionOptions.Distance
+        d = part.Directions.CreateDirection(
+            p(0.0, 0.0, 0.0), NXOpen.Vector3d(1.0, 0.0, 0.0),
+            NXOpen.SmartObject.UpdateOption.WithinModeling)
+        m.DistanceVector = d
+        m.DistanceValue.SetFormula("100")
+        diag["mode"] = "Distance +X 100"
+        b.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            b.Destroy()
+        except Exception:
+            pass
+    bodies = _bodies_of(part)
+    reads = {"body_count": len(bodies), "diag": diag}
+    if bodies:
+        m2 = mass(part, bodies)
+        reads.update(m2)
+        reads["centroid_x"] = m2["centroid"][0]
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "solid_move_body": solid_move_body,
+    "feature_text": feature_text,
     "curve_bridge": curve_bridge,
     "curve_intersection": curve_intersection,
     "export_dwg": export_dwg,

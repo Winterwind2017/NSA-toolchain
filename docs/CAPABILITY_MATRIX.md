@@ -1,17 +1,17 @@
 # 能力矩阵（自动生成，勿手改）
 
-总计 **144** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
+总计 **146** 条，全部真机通过；其中 **54** 条带 L4（存盘 → 重开 → 复测）。
 
 ## 按族
 
 | family | 能力数 | 其中 L4 | 需要许可 |
 |---|---:|---:|---|
-| feature | 33 | 29 | solid_modeling |
+| feature | 34 | 29 | solid_modeling |
 | sketch | 18 | 2 | solid_modeling |
 | drawing | 14 | 0 | drafting |
 | curve | 11 | 0 | solid_modeling |
+| solid | 11 | 8 | solid_modeling |
 | attr | 10 | 2 | gateway |
-| solid | 10 | 8 | solid_modeling |
 | export | 9 | 0 | gateway |
 | assembly | 8 | 1 | assemblies |
 | boolean | 7 | 7 | solid_modeling |
@@ -28,12 +28,14 @@
 | assemblies | 8 |
 | drafting | 14 |
 | gateway | 37 |
-| solid_modeling | 85 |
+| solid_modeling | 87 |
 
 ## 全部能力
 
 | id | 族 | 层级 | L4 | 许可 |
 |---|---|---|---|---|
+| `solid.move_body` | solid | L1–L3 | — | solid_modeling |
+| `feature.text` | feature | L1–L2 | — | solid_modeling |
 | `curve.bridge` | curve | L1–L2 | — | solid_modeling |
 | `curve.intersection` | curve | L1–L2 | — | solid_modeling |
 | `export.dwg` | export | L1–L3 | — | gateway |

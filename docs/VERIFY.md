@@ -40,7 +40,7 @@ python -m nxkit licenses
 
 ```powershell
 python -m nxkit run --workdir D:\bililive\_verify3\runs\full
-# 144/144 通过  (会话 19.5s, 退出码 1)（干净 clone 实测）
+# 146/146 通过  (会话 19.5s, 退出码 1)（干净 clone 实测）
 ```
 
 > 注意：`run_journal` 的**退出码是 1**（NX 特性），结果以 `result.json` 为准。
@@ -54,7 +54,7 @@ python tools/check_skill.py --check
 python -m pytest -q tests
 # 4 passed
 python tools/sync_capabilities.py
-# verified: 144 | pending: 17 | cli: 7
+# verified: 146 | pending: 17 | cli: 7
 ```
 
 ## 5. 数字一致性

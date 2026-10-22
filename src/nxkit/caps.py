@@ -46,6 +46,13 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("solid.move_body", "solid", "移动实体：+X 平移 100（重心 50→150）",
+        "solid_move_body", "L1–L3", params={},
+        expect={"body_count": 1, "volume_mm3": 100000.0,
+                "centroid_x": {"min": 149.5, "max": 150.5}}, reopen=False),
+    Cap("feature.text", "feature", "三维文字 NXTEST（6 条字母 Spline）", "feature_text",
+        "L1–L2", params={},
+        expect={"entity_count": 6, "body_count": 1}, reopen=False),
     Cap("curve.bridge", "curve", "两曲线桥接（StartObject.Value/EndObject.Value）",
         "curve_bridge", "L1–L2", params={},
         expect={"entity_count": 1, "start_xy": [0.0, 0.0],

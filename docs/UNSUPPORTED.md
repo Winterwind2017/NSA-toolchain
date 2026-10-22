@@ -25,10 +25,9 @@
 （暂无。）
 
 
-| `solid.delete_body` | `BodyToDelete` 构造出来是 `None`；赋一个 `ScCollector` 后 `CommitFeature()` 返回成功但**体仍在**（`removed=0`）→ 空操作。**部分覆盖**：`solid.delete_face`（删面愈合）/ `solid.trim_body` / `boolean.subtract` 能交付大部分「去掉一块几何」的需求，但「整删除一个体」仍缺 | 空操作 |
+| `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能构造，但 **`BodyToDelete` 与 `BodyToKeep` 两个 collector 运行时都是 `None`**（喂 `AddRules` 报 `NoneType has no attribute AddRules`）；直接 `CommitFeature()` 报 `Missing target body.`。**部分覆盖**：`solid.delete_face`（删面愈合）/ `solid.trim_body` / `boolean.subtract` 可交付大部分「去掉一块几何」的需求 | 服务对象未初始化 |
 
 
-| `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） | 需 UI 上下文 |
 
 
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） | 需要正确的求解触发方式 |
@@ -40,4 +39,3 @@
 
 
 | `sheet_metal.flange` | `SilhouetteFlangeBuilder`：`BaseCurves`(Section) 与 `BaseFaces`(scCollector) 都能喂，`ReferenceVector` 也接受 Direction，但方向取 (0,0,1) 报 `Unable to project base curves to base faces.`，取 (0,1,0)/(1,0,0) 报 `Unable to create silhouette flange with given reference vector.` | 需要交互式选面/选向 |
-| `feature.text` | `TextBuilder.TextString` 可设、`PlacementFaces` 可喂，但 `PlanarFrame.CoordinateSystem` 无入口：`CoordinateSystemCollection.CreateCoordinateSystem` 的参数签名对不上（`No overload matches these arguments`），Commit 恒报 `Reference coordinate system undefined.` | 需要 UI 里的坐标系 |

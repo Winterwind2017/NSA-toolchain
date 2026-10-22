@@ -291,3 +291,21 @@ pb.CommitFeature()                           # → 3 个体，体积 300000
 教训：一个"族"里有多个 builder 时，别在第一个上死磕；先列出
 `Create*Pattern*Builder` 的全部入口（Python 绑定里还有 PatternGeometry /
 PatternFace / PatternFaceFeature / CombinePattern），逐个试哪个接受你的输入。
+
+## 十八、移动实体：MoveBody 的 DeltaXyz 是空操作，Distance 才动
+
+```python
+b = part.Features.CreateMoveBodyBuilder(NXOpen.Features.MoveBody.Null)   # 哨兵是 MoveBody
+b.BodyToMove.AddRules([part.ScRuleFactory.CreateRuleBodyDumb([body])])
+
+# 空操作：CommitFeature() 成功，但重心一点没变
+m.Option = ModlMotionOptions.DeltaXyz; m.DeltaXc.SetFormula("100")
+
+# 真的动：重心 50 → 150
+m.Option = ModlMotionOptions.Distance
+m.DistanceVector = part.Directions.CreateDirection(..., +X, ...)
+m.DistanceValue.SetFormula("100")
+```
+
+`ModlMotionDelta` 的成员是 `ReferenceWcsWorkPart` 之类（参考坐标系），不是 XYZ 分量。
+判据必须读重心/体积，不能只看 Commit 是否报错。
