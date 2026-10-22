@@ -55,6 +55,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **错误定位（行）** | `build.locate_error_line` | 前缀二分：`k` 通过、`k+1` 失败 → 第 `k+1` 行 |
 | **标签导入** | `label.import_xml` | `Instances/Configuration/GlobalVars` + 唯一行号 |
 | **程序新建（XML）** | `program.import_xml` | `Program` + `Resource/ProgramInstance`，且删掉 `<Vars>` |
+| **程序+功能块（XML）** | `program.import_fb` | `Program` 必须在 `FunctionBlock` 之前；FB 删 `<Parameters>` |
 | 批量 | `batch.projects` | 同会话连续粘贴变体 + `工程 → 另存为` |
 | L4 | `project.reopen` | 存盘 → 关工程 → 重开 → `N步` 仍在 |
 
@@ -71,6 +72,8 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | 源码读回 | `*_STDB.db` 的 `StBlocks.data` | 与贴进去的**逐字相同**（比较时去空白） |
 | 程序清单 | `Progress.txt` 的 `程序(xxx)` | 出现新程序名，数量 +1 |
 | 标签导入 | `LabelData` | 出现 `LBL_A/B/C`（54→75 行） |
+| 局部标签 / FB 变量 | `LabelData` 的 `ColumnID=2` | 出现 `LocBool`/`FB_Bool` 等 |
+| 功能块建出来 | 多一份 `*_STDB.db` + FB 变量名 | 正文与变量都在（FB 不进 `程序(...)` 清单） |
 
 ## 4. 别踩这些坑（每条都真实踩过）
 
@@ -106,6 +109,12 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     `save_as` 应**菜单优先**：`工程 → 另存为(A)` → 填 cid=1148 → 点 cid=1。
 21. **上一轮进程没退干净会"卡在已有实例"**：窗口在、菜单不响应。
     每条能力之间 `taskkill /IM GXW3.exe /T`。
+22. **`Program` 必须排在 `FunctionBlock` 之前**：顺序反了整份导入被**静默忽略**
+    （0 错、连程序都不建、`Progress.txt` 只剩 `ProgPou`）。
+23. **功能块要删 `<Parameters>`**（它引用样例变量 `fb1_*`），`Vars` 只留一块；
+    FB 的样例变量没有 `VariableLineNumber`，补唯一行号更稳。
+24. **功能块不会出现在 `程序(...)` 清单里**：判定它建出来靠"多一份 STDB（正文）"
+    + "`LabelData` 里有它的变量名"。
 
 ## 5. 明确不做
 

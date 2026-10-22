@@ -1,4 +1,5 @@
-docs: 补 5 条 UI 层坑（Alt 用 PostMessage / Ctrl 用 SendInput / 折叠窗口 / 菜单优先存盘 / 残留进程）
+feat: 同步 gxkit 0.5 —— 17 条能力（新增 program.import_fb）
 
-这一轮 16 条能力连跑两次 16/16（1929.0s / 1911.4s），
-SKILL.md 的坑清单从 17 条补到 21 条。
+补三条坑：Program 必须排在 FunctionBlock 之前（反了整份导入被静默忽略）、
+功能块要删 <Parameters>、功能块不进 Progress 的「程序(...)」清单。
+判据表补「局部标签/FB 变量」与「FB 建出来」两行。

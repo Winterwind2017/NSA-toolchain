@@ -1,16 +1,16 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.4.0",
-  "kernel_commit": "bc35bbc",
+  "kernel_version": "0.5.0",
+  "kernel_commit": "bd5ec9e",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 16,
+    "verified": 17,
     "families": 5,
-    "pending": 6
+    "pending": 7
   },
   "verified": {
     "project.new": {
@@ -97,6 +97,26 @@
         "program_count": {
           "min": 2.0,
           "max": 50.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.import_fb": {
+      "family": "program",
+      "level": "L3",
+      "title": "用 XML 建程序+功能块（带局部标签）",
+      "action": "program_import_fb",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "body_found": true,
+        "fb_body_found": true,
+        "locals_found": 2,
+        "fb_vars_found": 2,
+        "new_sources": {
+          "min": 1.0,
+          "max": 10.0
         },
         "errors": 0
       },
@@ -282,7 +302,8 @@
     "program": [
       "program.paste_st",
       "program.read_st",
-      "program.import_xml"
+      "program.import_xml",
+      "program.import_fb"
     ],
     "label": [
       "label.import_xml"
@@ -299,7 +320,8 @@
     "build.error_message": "编译器原话：转换结果面板是自绘视图，读不到文本",
     "label.non_bool": "WORD/DINT 标签导入未验证（只验证了 BOOL）",
     "project.check": "工程校验是两工程比对，不是校验本工程",
-    "program.import_fb": "带 FB/FUN/局部标签的程序未验证（删掉 Vars 才建成功）",
+    "program.import_fb_instance": "程序正文里实例化功能块未验证",
+    "datatype.import": "结构体 DataTypeDecl 未验证",
     "online.write": "需要真实 PLC；用户口径只做离线",
     "ladder.write": "梯形图编辑器是自绘控件，无法程序化写网络"
   }

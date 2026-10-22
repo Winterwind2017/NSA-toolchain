@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **16** 条已验证能力（内核 `gxkit 0.4.0`，commit `bc35bbc`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **17** 条已验证能力（内核 `gxkit 0.5.0`，commit `bd5ec9e`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -10,6 +10,7 @@
 | `program.paste_st` | program | L1–L3 | 把 ST 代码粘进编辑器并转换 |
 | `program.read_st` | program | L1–L2 | 从 .gx3 读回 ST 源码（逐字比对） |
 | `program.import_xml` | program | L2–L3 | 用 XML 新建程序（另起一个 PrgGen） |
+| `program.import_fb` | program | L3 | 用 XML 建程序+功能块（带局部标签） |
 | `inspect.source_map` | inspect | L2 | 步→源码坐标（Row/Col/StrLen） |
 | `inspect.devices` | inspect | L1–L2 | 读 FX5U 系统软元件模板 |
 | `inspect.mil` | inspect | L2 | 读编译后的 IL 文本 |
@@ -28,6 +29,7 @@
 | `build.error_message` | 编译器原话：转换结果面板是自绘视图，读不到文本 |
 | `label.non_bool` | WORD/DINT 标签导入未验证（只验证了 BOOL） |
 | `project.check` | 工程校验是两工程比对，不是校验本工程 |
-| `program.import_fb` | 带 FB/FUN/局部标签的程序未验证（删掉 Vars 才建成功） |
+| `program.import_fb_instance` | 程序正文里实例化功能块未验证 |
+| `datatype.import` | 结构体 DataTypeDecl 未验证 |
 | `online.write` | 需要真实 PLC；用户口径只做离线 |
 | `ladder.write` | 梯形图编辑器是自绘控件，无法程序化写网络 |

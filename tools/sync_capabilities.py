@@ -18,7 +18,8 @@ PENDING = [
     ("build.error_message", "编译器原话：转换结果面板是自绘视图，读不到文本"),
     ("label.non_bool", "WORD/DINT 标签导入未验证（只验证了 BOOL）"),
     ("project.check", "工程校验是两工程比对，不是校验本工程"),
-    ("program.import_fb", "带 FB/FUN/局部标签的程序未验证（删掉 Vars 才建成功）"),
+    ("program.import_fb_instance", "程序正文里实例化功能块未验证"),
+    ("datatype.import", "结构体 DataTypeDecl 未验证"),
     ("online.write", "需要真实 PLC；用户口径只做离线"),
     ("ladder.write", "梯形图编辑器是自绘控件，无法程序化写网络"),
 ]
@@ -43,7 +44,7 @@ def main() -> int:
     snap = {
         "skill": "ww-gxworks-automation",
         "kernel": "gxkit",
-        "kernel_version": "0.4.0",
+        "kernel_version": "0.5.0",
         "kernel_commit": kit_commit(),
         "engine": "GX Works3 1.117.0.1",
         "cpu": "FX5U",
