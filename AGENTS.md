@@ -21,17 +21,18 @@ NX 的坑和 AutoCAD 一样：调用返回对象/True 不代表几何变了。�
 ```bash
 python -m nxkit selftest          # 离线（不需要 NX）
 python -m nxkit run --only solid  # 真机一族
-python -m nxkit run               # 全部 114 条，一次会话 ~22 s
+python -m nxkit run               # 全部 146 条，一次会话 ~47 s
 python -m nxkit licenses          # 本机 SPLM 许可覆盖
+python tools/lint_scripts.py      # 一次性脚本先编译体检（见 §7）
 ```
 
-复现口径见 `docs/VERIFY.md`（干净 clone → 9 测试 → selftest → licenses →
-真机 114/114 → 技能校验 → 五处数字一致；连续三次无抖动）。
+复现口径见 `docs/VERIFY.md`（干净 clone → 11 测试 → selftest → licenses →
+真机 146/146 → 技能校验 → 五处数字一致）。
 
 ## 4. 会话与超时
 
-- 一次 `run_journal` 会话约 22 s（能力增多线性变慢）；**批量能力放在一个 job 里**，
-  不要一条一起进程。
+- 一次 `run_journal` 会话约 47 s（能力增多线性变慢；DXF/DWG 的翻译器启动各占 ~17 s）；
+  **批量能力放在一个 job 里**，不要一条起一个进程。
 - `session.run` 默认 300 s 超时；超时会 `taskkill /T` 掉 `run_journal` 与 `ugraf`。
 - `run_journal` 成功时也可能返回退出码 1 —— **以 `result.json` 为准**。
 
@@ -53,8 +54,14 @@ python -m nxkit licenses          # 本机 SPLM 许可覆盖
 - `SaveAs` 目标已存在会抛 `File already exists`，先删。
 - 重开用 `parts.OpenActiveDisplay(path, DisplayPartOption.AllowAdditional)`，
   返回值是 tuple（取 `[0]`）。
-- 危险接口（**别调**）：`CreateDxfdwgCreator().Commit()` 死循环；
+- 危险接口（**别调**）：`CreateDxfdwgCreator().Commit()` 在 journal 里是空操作（不设
+  `SettingsFile` 时还会死循环），DXF/DWG 请走 `NXBIN\dxfdwg.exe` CLI；
   `ComponentPositioner.EstablishNetwork()` 直接崩 journal 会话。
+- **只读属性不等于只读**：`BridgeCurveBuilder.StartObject` / `IntersectionCurveBuilder.FirstFace` /
+  `SectionViewBuilder.ParentView` 这些属性本身不可赋值，但 `SelectObject`/`ScCollector`
+  包着的对象可写（`.Value` / `.AddRules`）。遇到 `property not writable` 先看 `type(prop).__name__`。
+- 移动实体只有 `Motion.Option = Distance`（`DistanceVector` + `DistanceValue`）会真的动；
+  `DeltaXyz` 模式 Commit 成功但几何不动。
 - 选择集三种形态要分清：`SelectObject`（`.Value = obj`）、
   `SelectObjectList`（`.Add([obj])`）、`ScCollector`（`.AddRules([rule])`）；
   传错就是 `No overload matches` 或 `NoneType has no attribute`。
@@ -73,3 +80,19 @@ python -m nxkit licenses          # 本机 SPLM 许可覆盖
 `README.md` 的能力计数、`docs/registry.yaml`、`docs/UNSUPPORTED.md` 必须与
 `src/nxkit/caps.py` 一致；提交前跑 `python -m nxkit selftest` 与
 `python -m pytest tests -q`。
+
+## 7. 写一次性脚本前先 lint
+
+生成文档、批量探针这类一次性脚本（仓库根的 `_*.py`）在 2026-10-22 一天内
+**五次**因为"中文字符串里用了 ASCII 引号"而 SyntaxError，脚本没跑、文档没更新，
+几十分钟后才发现。现在有工具兜底：
+
+```bash
+python tools/lint_scripts.py            # 编译仓库根 _*.py + tools/*.py
+python tools/lint_scripts.py --all      # 再加上 tests/ 与 src/
+python tools/lint_scripts.py x.py       # 单个文件
+```
+
+失败时会指出行号，并在「中文 + ASCII 引号」这种形态上直接给出提示（改用「」）。
+新增/修改一次性脚本后、执行前先过一遍这个工具。
+
