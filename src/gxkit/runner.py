@@ -24,6 +24,7 @@ def run(workdir: str | pathlib.Path, only: str | None = None,
     for cap in sel:
         project = str(wd / ("%s.gx3" % cap.id.replace(".", "_")))
         ctx = {"workdir": wd, "project": project, "code": code, "session": None}
+        ctx.update(cap.params or {})
         t0 = time.time()
         err: list[str] = []
         reads: dict = {}

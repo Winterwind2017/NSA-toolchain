@@ -29,7 +29,7 @@ def main() -> int:
     m = re.search(r"verified: (\d+)", reg)
     if not m or int(m.group(1)) != n:
         problems.append("registry 的 verified 不是 %d" % n)
-    if "共 %d 条" % n not in verify and "%d/6" % n not in verify:
+    if not any(k in verify for k in ("共 %d 条" % n, "%d 条能力" % n, "%d/%d" % (n, n))):
         problems.append("VERIFY 里没有 %d 条" % n)
     for cid in re.findall(r"`([a-z][a-z0-9_.]*)`", status):
         if cid not in ids and "." in cid and not cid.startswith(("project.", "program.",
@@ -37,9 +37,11 @@ def main() -> int:
                                                                 "online.", "ladder.",
                                                                 "cam.", "cae.")):
             problems.append("STATUS 引用了不存在的能力：%s" % cid)
-    for cid in re.findall(r"`([a-z][a-z0-9_.]*)`", unsup):
-        if cid in ids:
-            problems.append("UNSUPPORTED 里写了已实现的能力：%s" % cid)
+    # 只把"表格第一列的 id"当作申报项；正文里提到已实现能力（比如说明绕过办法）不算错
+    for line in unsup.splitlines():
+        mm = re.match(r"\|\s*`([a-z][a-z0-9_.]*)`", line)
+        if mm and mm.group(1) in ids:
+            problems.append("UNSUPPORTED 的表格里写了已实现的能力：%s" % mm.group(1))
 
     if problems:
         print("一致性检查失败：")

@@ -95,6 +95,7 @@ def read_progress(gx3: str | pathlib.Path) -> dict:
     stages = re.findall(r"^(.*?)\.\.\.\r?\nError:(\d+),Warning:(\d+)", text, re.M)
     out["stages"] = [{"stage": s.strip(), "errors": int(e), "warnings": int(w)}
                      for s, e, w in stages]
+    out["failed_stages"] = [x["stage"] for x in out["stages"] if x["errors"] > 0]
     m = re.search(r"错误：(\d+)、警告：(\d+)", text)
     if m:
         out["errors"], out["warnings"] = int(m.group(1)), int(m.group(2))
@@ -262,14 +263,28 @@ class Session:
         time.sleep(1)
         return {"title": self.title(), "combos": {str(k): v for k, v in state.items()}}
 
-    def save_as(self, path: str | pathlib.Path) -> dict:
+    def save_as(self, path: str | pathlib.Path, via_menu: bool = False) -> dict:
+        """存到指定路径。
+
+        via_menu=True 时走 `工程 → 另存为(A)`，**即使工程已有路径也会弹对话框**——
+        批量场景必须用这个，否则 Ctrl+S 会静默存回旧路径。
+        """
         path = pathlib.Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists():
             path.unlink()
         self._focus()
-        chord("ctrl", "s", 0.8)
-        time.sleep(3.5)
+        if via_menu:
+            alt_letter("p")
+            time.sleep(0.6)
+            opened = uia.invoke_menu_item("另存为")
+            time.sleep(3.5)
+            if not opened:
+                chord("ctrl", "s", 0.8)
+                time.sleep(3.5)
+        else:
+            chord("ctrl", "s", 0.8)
+            time.sleep(3.5)
         dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
         if not dlg:
             # 已经有路径的工程按 Ctrl+S 是静默保存，不弹对话框；退化成直接保存并校验
@@ -313,12 +328,25 @@ class Session:
                 "mtime": p.stat().st_mtime if p.exists() else None}
 
     # ---------- 程序内容 ----------
+    def _ensure_main(self) -> dict:
+        """每次动作前重取主窗（窗口可能被重建或缩成小尺寸）。"""
+        w = main_window(self.proc.pid, 20.0)
+        if not w:
+            raise RuntimeError("找不到 GX Works3 主窗口")
+        if w["area"] < 200000:
+            from .win import activate
+            activate(w["hwnd"])
+            time.sleep(0.8)
+            w = main_window(self.proc.pid, 10.0) or w
+        self.main = w
+        return w
+
     def paste_st(self, code: str, clear_first: bool = True) -> dict:
         """点进 ST 编辑区（按窗口比例定位），全选后粘贴。"""
         if not self.main:
             raise RuntimeError("会话未启动")
+        w = self._ensure_main()
         self._focus()
-        w = next((x for x in windows(self.proc.pid) if x["hwnd"] == self.main["hwnd"]), None)
         L, T, R, B = w["rect"]
         x = L + int((R - L) * 0.45)
         y = T + int((B - T) * 0.45)
@@ -389,3 +417,85 @@ class Session:
                 return True
         self.dismiss(rounds=2)
         return path.name in (self.title() or "")
+
+    # ---------- 检查类 ----------
+    def program_check(self, check_all_programs: bool = True,
+                      wait_s: float = 25.0) -> dict:
+        """`工具 → 程序检查` → 执行 → 读判定文本（"程序检查已完成。无错误。"）。
+
+        前提：工程已经全部转换过，否则会弹"程序中存在未转换的梯形图…请执行转换"。
+        """
+        from .uia import automation
+
+        self._ensure_main()
+        self._focus()
+        alt_letter("t")
+        time.sleep(0.7)
+        opened = uia.invoke_menu_item("程序检查")
+        if not opened:
+            return {"opened": False, "verdict": None, "errors": None}
+        time.sleep(4.5)
+        dlg = next((w for w in self.dialogs() if "程序检查" in w["title"]), None)
+        if not dlg:
+            return {"opened": False, "verdict": None, "errors": None}
+
+        if check_all_programs:
+            btn = uia.button(dlg["hwnd"], ("将全部程序作为对象",))
+            if btn:
+                from .win import click
+                click(btn[1], btn[2])
+
+        from .win import click
+        run = uia.button(dlg["hwnd"], ("执行",))
+        if not run:
+            return {"opened": True, "verdict": None, "errors": None}
+        click(run[1], run[2])
+
+        verdict = None
+        t0 = time.time()
+        while time.time() - t0 < wait_s:
+            time.sleep(2)
+            for name in _uia_names(dlg["hwnd"]):
+                if "程序检查已完成" in name or "检查已完成" in name:
+                    verdict = name
+                    break
+            if verdict:
+                break
+            if not any(w["hwnd"] == dlg["hwnd"] for w in self.dialogs()):
+                break
+
+        close = uia.button(dlg["hwnd"], ("关闭",))
+        if close:
+            click(close[1], close[2])
+            time.sleep(1.5)
+        self.dismiss(rounds=2)
+        errors = None
+        if verdict:
+            import re as _re
+            m = _re.search(r"(\d+)\s*(?:件|处)", verdict)
+            if m:
+                errors = int(m.group(1))
+            elif "无错误" in verdict:
+                errors = 0
+        return {"opened": True, "verdict": verdict, "errors": errors,
+                "clean": bool(verdict and "无错误" in verdict)}
+
+
+def _uia_names(hwnd: int, limit: int = 2500) -> list[str]:
+    from .uia import automation
+
+    out = []
+    try:
+        auto, _UIA = automation()
+        el = uia.element(hwnd)
+        items = el.FindAll(4, auto.CreateTrueCondition())   # 4 = Descendants
+        for i in range(min(items.Length, limit)):
+            try:
+                t = (items.GetElement(i).CurrentName or "").strip()
+                if t:
+                    out.append(t)
+            except Exception:
+                continue
+    except Exception:
+        return out
+    return out

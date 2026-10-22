@@ -1,11 +1,11 @@
-version: 1
-kernel: gxkit 0.1.0
+version: 2
+kernel: gxkit 0.2.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 6
+  verified: 9
 capabilities:
 - id: project.new
   family: project
@@ -37,6 +37,24 @@ capabilities:
   status: verified
   action: build_convert_all
   expect: {"errors": 0, "warnings": 0, "stages": {"min": 3.0, "max": 100.0}}
+- id: build.program_check
+  family: build
+  level: L2–L3
+  status: verified
+  action: build_program_check
+  expect: {"opened": true, "clean": true, "check_errors": 0}
+- id: build.error_detail
+  family: build
+  level: L2–L3
+  status: verified
+  action: build_error_detail
+  expect: {"errors": {"min": 1.0, "max": 999.0}, "failed_stage_count": {"min": 1.0, "max": 6.0}}
+- id: batch.projects
+  family: build
+  level: L3
+  status: verified
+  action: batch_projects
+  expect: {"items": 3, "clean_items": 3, "distinct_sizes": 3}
 - id: project.reopen
   family: project
   level: L4
