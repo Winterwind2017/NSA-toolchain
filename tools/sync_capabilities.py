@@ -38,7 +38,6 @@ PENDING = [
     ("feature.revolve_datum", "RevolveBuilder.Axis 只认 NXOpen.Axis，DatumAxis 被拒"),
     ("sketch.slope", "报 Unable to create sketch geometric constraint"),
     ("sketch.point_on_curve", "约束能建但几何不动（无 Solve 触发）"),
-    ("pattern.body_linear", "ReferencePoint 是服务 builder，缺配置报 Incorrect object"),
     ("solid.delete_body", "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"),
     ("cam.setup", "dead: 模板名全返回 None、CAMSetup 抛 1345023、CAMDataManager 只有曲线 builder"),
     ("cae.mesh", "NXOpen.CAE 绑定大、解算慢，未开始"),

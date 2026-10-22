@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 144
   },
-  "generated_at": "2026-10-22T08:11:37",
+  "generated_at": "2026-10-22T08:20:31",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -319,10 +319,6 @@
       "reason": "约束能建但几何不动（无 Solve 触发）"
     },
     {
-      "id": "pattern.body_linear",
-      "reason": "ReferencePoint 是服务 builder，缺配置报 Incorrect object"
-    },
-    {
       "id": "solid.delete_body",
       "reason": "BodyToDelete/BodyToKeep 运行时是 None，Commit 报 Missing target body"
     },
@@ -353,7 +349,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "166aeb7",
+    "kernel_commit": "3237a64",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
