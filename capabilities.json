@@ -1,16 +1,16 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.1.0",
-  "kernel_commit": "5f262ca",
+  "kernel_version": "0.2.0",
+  "kernel_commit": "21c0bc3",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 6,
+    "verified": 9,
     "families": 4,
-    "pending": 5
+    "pending": 6
   },
   "verified": {
     "project.new": {
@@ -82,6 +82,47 @@
       },
       "reopen": false
     },
+    "build.program_check": {
+      "family": "build",
+      "level": "L2–L3",
+      "title": "程序检查：读「无错误」判定文本",
+      "action": "build_program_check",
+      "expect": {
+        "opened": true,
+        "clean": true,
+        "check_errors": 0
+      },
+      "reopen": false
+    },
+    "build.error_detail": {
+      "family": "build",
+      "level": "L2–L3",
+      "title": "故意写错：定位错在哪个编译阶段",
+      "action": "build_error_detail",
+      "expect": {
+        "errors": {
+          "min": 1.0,
+          "max": 999.0
+        },
+        "failed_stage_count": {
+          "min": 1.0,
+          "max": 6.0
+        }
+      },
+      "reopen": false
+    },
+    "batch.projects": {
+      "family": "build",
+      "level": "L3",
+      "title": "同会话批量出 3 个工程（各自 0 错）",
+      "action": "batch_projects",
+      "expect": {
+        "items": 3,
+        "clean_items": 3,
+        "distinct_sizes": 3
+      },
+      "reopen": false
+    },
     "project.reopen": {
       "family": "project",
       "level": "L4",
@@ -110,11 +151,15 @@
       "program.paste_st"
     ],
     "build": [
-      "build.convert_all"
+      "build.convert_all",
+      "build.program_check",
+      "build.error_detail",
+      "batch.projects"
     ]
   },
   "pending": {
-    "project.check": "工程校验结果面板没有稳定读回口",
+    "build.error_line": "行级错误定位：转换结果面板无可读文本，Progress.txt 只到阶段级",
+    "project.check": "工程校验是两工程比对，不是校验本工程",
     "label.import_xml": "XML 导入能进全局标签，但样例结构体有 1 个 Error",
     "program.read_st": ".gx3 里 _Project.txc 是二进制，程序体在 .w3pa",
     "online.write": "需要真实 PLC；用户口径只做离线",
