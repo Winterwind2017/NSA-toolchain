@@ -1,10 +1,12 @@
-feat: gxkit 0.3 —— 三条新方向（离线读数 / 行级定位 / 标签导入），15 条能力
+fix: 加固三条易抖动的路径（粘贴/存盘/标签导入），15 条真机 15/15
 
-1) 离线读数层 src/gxkit/inspect.py：STDB.StBlocks.data 是 ST 源码明文（program.read_st 逐字比对）、
-   StepInfo.T_SourcePos 给步→源码坐标（inspect.source_map）、MilDB.MIL 给编译 IL（inspect.mil）、
-   DC.DEVICE_DATA 给软元件模板（inspect.devices）、LabelData 给标签。缓存按 (mtime,size) 失效。
-2) 行级定位 build.locate_error_line：编译失败没有步也就没有坐标，改用前缀二分
-   （lines[0:k] 通过、k+1 失败 → 第 k+1 行），8 行第 5 行坏行 4 次转换命中。
-3) 标签导入 label.import_xml：GlobalVars 必须放 Instances/Configuration 下（放错静默忽略），
-   变量要克隆样例整条并改唯一行号（否则只进第一条），实测 54→75 行、LBL_A/B/C 全在、0 错。
-4) batch 判据从「大小不同」改成「读回源码逐字匹配」，修掉一次 distinct_sizes=2 的假阳性。
+1) paste：新增 _paste_until_steps —— 粘贴后必须看到标题 N步，否则重贴（最多 3 次）。
+   踩过：Ctrl+A/Ctrl+V 偶尔没落焦点，于是 convert 得到“空程序 1 错”，下游全错。
+2) save：Ctrl+S 之后改为**等 mtime 变化**（最多 3 次、12 s），并在 _saved_program 里
+   用读回的 ST 源码做最终确认。踩过：4 s 就返回，偶发文件没更新、读回来还是 ";”。
+3) save_as：整体重试包装（3 次），失败先关掉当前对话框再重新发起。
+   踩过：壳对话框还没画完就去找，报“另存为对话框里没有文件名输入框”。
+4) label.import_xml：用“读回来的标签数”当后置条件，不达标就再导一次。
+5) build.locate_error_line：读到 save_as 实际写成的路径（遇到占用会改名），
+   修掉一次 found_line=7 的错误结论。
+6) batch：判据从“大小不同”改成“读回源码逐字匹配”。

@@ -58,8 +58,7 @@ def project_meta(ctx: dict) -> dict:
 
 def program_paste_st(ctx: dict) -> dict:
     s, _ = _new_and_save(ctx)
-    s.paste_st(ctx.get("code") or ST_CODE)
-    s.convert_all()
+    _paste_until_steps(s, ctx.get("code") or ST_CODE)
     prog = read_progress(ctx["project"])
     return {"steps": s.steps(), "convert_errors": prog.get("errors"),
             "title": s.title()}
@@ -67,8 +66,7 @@ def program_paste_st(ctx: dict) -> dict:
 
 def build_convert_all(ctx: dict) -> dict:
     s, _ = _new_and_save(ctx)
-    s.paste_st(ctx.get("code") or ST_CODE)
-    s.convert_all()
+    _paste_until_steps(s, ctx.get("code") or ST_CODE)
     s.save()
     prog = read_progress(ctx["project"])
     return {"errors": prog.get("errors"), "warnings": prog.get("warnings"),
@@ -78,8 +76,7 @@ def build_convert_all(ctx: dict) -> dict:
 def build_program_check(ctx: dict) -> dict:
     """已转换工程 → 工具·程序检查 → 执行 → 读判定文本。"""
     s, _ = _new_and_save(ctx)
-    s.paste_st(ctx.get("code") or ST_CODE)
-    s.convert_all()
+    _paste_until_steps(s, ctx.get("code") or ST_CODE)
     s.save()
     res = s.program_check()
     prog = read_progress(ctx["project"])
@@ -98,9 +95,7 @@ def build_error_detail(ctx: dict) -> dict:
     再贴坏代码；保存后若 `Progress.txt` 还没更新，就再转换/保存一轮。
     """
     s, _ = _new_and_save(ctx)
-    s.paste_st(ST_CODE)
-    s.convert_all()
-    good_steps = s.steps()
+    good_steps = _paste_until_steps(s, ST_CODE)
 
     s.paste_st(ctx.get("code") or BAD_ST_CODE)
     s.convert_all()
@@ -171,8 +166,7 @@ def batch_projects(ctx: dict) -> dict:
 
 def project_reopen(ctx: dict) -> dict:
     s, _ = _new_and_save(ctx)
-    s.paste_st(ctx.get("code") or ST_CODE)
-    s.convert_all()
+    _paste_until_steps(s, ctx.get("code") or ST_CODE)
     s.save()
     before = s.steps()
     s.close()
@@ -209,9 +203,12 @@ def build_locate_error_line(ctx: dict) -> dict:
         s.paste_st("\r\n".join(lines[:k]))
         s.convert_all(wait_s=8.0)
         tmp = base.with_name("probe_%d.gx3" % k)   # 每轮换文件：旧的那个还被 GX Works3 占着
-        s.save_as(tmp, via_menu=True)
-        errs = read_progress(tmp).get("errors")
-        calls.append({"k": k, "errors": errs})
+        info = s.save_as(tmp, via_menu=True)
+        # 关键：save_as 遇到占用会改名，必须读它真正写成的路径，
+        # 否则读到的是上一轮的旧文件（由此得过 found_line=7 的错误结论）
+        actual = pathlib.Path(info.get("path") or tmp)
+        errs = read_progress(actual).get("errors")
+        calls.append({"k": k, "errors": errs, "file": actual.name})
         return bool(errs)
 
     lo, hi = 1, len(lines)
@@ -235,13 +232,37 @@ def build_locate_error_line(ctx: dict) -> dict:
 
 
 # ---------- 纯离线：只读 .gx3 ----------
+def _paste_until_steps(s, code: str, attempts: int = 3) -> int | None:
+    """粘贴并转换，直到标题出现 N步（粘贴偶尔没落焦点，必须重试）。"""
+    steps = None
+    for i in range(attempts):
+        s.paste_st(code)
+        s.convert_all()
+        steps = s.steps()
+        if steps:
+            return steps
+        s._focus()
+        time.sleep(1.5)
+    return steps
+
+
+def _norm_src(text: str) -> str:
+    return text.replace("\r\n", "\n").strip()
+
+
 def _saved_program(ctx: dict) -> tuple[object, str]:
-    """建工程 → 粘贴 → 转换 → 保存，返回 (session, 源码)。"""
+    """建工程 → 粘贴（带步数校验）→ 转换 → 保存并**读回确认**，返回 (session, 源码)。"""
+    from . import inspect as I
+
     code = ctx.get("code") or ST_CODE
     s, _ = _new_and_save(ctx)
-    s.paste_st(code)
-    s.convert_all()
-    s.save()
+    for attempt in range(2):
+        _paste_until_steps(s, code)
+        s.save()
+        if _norm_src(I.st_source(ctx["project"])) == _norm_src(code):
+            break
+        s.convert_all()
+        s.save()
     return s, code
 
 
@@ -301,14 +322,22 @@ def label_import_xml(ctx: dict) -> dict:
 
     s, _ = _new_and_save(ctx)
     before = len(I.read_labels(ctx["project"]))
-    xml = xmlgen.write(pathlib.Path(ctx["project"]).with_name("labels.xml"))
-    imp = s.import_xml(xml)
-    s.convert_all()
-    s.save()
-    prog = read_progress(ctx["project"])
-    labels = I.read_labels(ctx["project"])
-    names = {r["value"] for r in labels if isinstance(r["value"], str)}
     wanted = [item["name"] for item in xmlgen.DEFAULT_LABELS]
+    imp = {}
+    labels = []
+    # 导入偶尔没落地（确认框没点到/被别的提示挡住）：用“读回来的标签数”当后置条件重试
+    for attempt in range(2):
+        xml = xmlgen.write(
+            pathlib.Path(ctx["project"]).with_name("labels_%d.xml" % attempt))
+        imp = s.import_xml(xml)
+        s.convert_all()
+        s.save()
+        labels = I.read_labels(ctx["project"])
+        names = {r["value"] for r in labels if isinstance(r["value"], str)}
+        if sum(1 for n in wanted if n in names) >= len(wanted):
+            break
+    prog = read_progress(ctx["project"])
+    names = {r["value"] for r in labels if isinstance(r["value"], str)}
     return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
             "labels_before": before, "labels_after": len(labels),
             "labels_found": sum(1 for n in wanted if n in names),

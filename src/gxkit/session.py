@@ -202,7 +202,7 @@ class Session:
     # ---------- 工程 ----------
     def new_project(self, series: int = 3, model: int = 0, lang: int = 1) -> dict:
         h = None
-        for attempt in range(3):
+        for attempt in range(4):
             self._focus()
             # 先试菜单（工程 → 新建），再退回 Ctrl+N：某些启动状态下 Ctrl+N 不响应
             invoked = False
@@ -214,7 +214,7 @@ class Session:
                 invoked = False
             if not invoked:
                 chord("ctrl", "n", 0.8)
-            time.sleep(4.5 + attempt * 2)
+            time.sleep(5.0 + attempt * 2.5)
             dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
             if dlg:
                 h = dlg["hwnd"]
@@ -239,7 +239,7 @@ class Session:
         time.sleep(1)
         return {"title": self.title(), "combos": {str(k): v for k, v in state.items()}}
 
-    def save_as(self, path: str | pathlib.Path, via_menu: bool = False) -> dict:
+    def _save_as_once(self, path: str | pathlib.Path, via_menu: bool = False) -> dict:
         """存到指定路径。
 
         via_menu=True 时走 `工程 → 另存为(A)`，**即使工程已有路径也会弹对话框**——
@@ -269,7 +269,12 @@ class Session:
         else:
             chord("ctrl", "s", 0.8)
             time.sleep(3.5)
-        dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
+        dlg = None
+        for _ in range(3):                      # 对话框可能还没画完，重试几次
+            dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
+            if dlg:
+                break
+            time.sleep(1.5)
         if not dlg:
             # 已经有路径的工程按 Ctrl+S 是静默保存，不弹对话框；退化成直接保存并校验
             self.dismiss(rounds=2)
@@ -279,7 +284,12 @@ class Session:
                     "exists": path.exists(),
                     "bytes": path.stat().st_size if path.exists() else 0,
                     "silent": True}
-        edits = _find_by_cid(dlg["hwnd"], CID_FILENAME, cls="Edit")
+        edits = []
+        for _ in range(4):
+            edits = _find_by_cid(dlg["hwnd"], CID_FILENAME, cls="Edit")
+            if edits:
+                break
+            time.sleep(1.2)
         if not edits:
             raise RuntimeError("另存为对话框里没有文件名输入框")
         u32.SendMessageW(edits[0], 0x000C, 0, ctypes.c_wchar_p(str(path)))   # WM_SETTEXT
@@ -299,17 +309,47 @@ class Session:
         return {"path": str(path), "readback": readback, "exists": path.exists(),
                 "bytes": path.stat().st_size if path.exists() else 0}
 
-    def save(self) -> dict:
-        self._focus()
-        chord("ctrl", "s", 0.8)
-        time.sleep(4)
-        self.dismiss(rounds=3)
-        time.sleep(1)
-        if not self.project:
-            return {"saved": False}
-        p = pathlib.Path(self.project)
-        return {"saved": True, "bytes": p.stat().st_size if p.exists() else 0,
-                "mtime": p.stat().st_mtime if p.exists() else None}
+    def save_as(self, path: str | pathlib.Path, via_menu: bool = False,
+                attempts: int = 3) -> dict:
+        """另存为：失败就关掉当前对话框、重新发起，最多 attempts 次。
+
+        踩过：壳对话框偶尔还没画完就被找（报“没有文件名输入框”），
+        也可能是别的小提示框占了 #32770 —— 所以重试要**重新发起保存**。
+        """
+        last: Exception | None = None
+        for i in range(attempts):
+            try:
+                return self._save_as_once(path, via_menu)
+            except RuntimeError as exc:
+                last = exc
+                self.dismiss(rounds=2)
+                time.sleep(1.5)
+                self._focus()
+        raise last or RuntimeError("另存为失败")
+
+    def save(self, wait_s: float = 12.0) -> dict:
+        """保存并**确认真的写盘了**（mtime 变了才算）。
+
+        踩过：Ctrl+S 之后 4 s 就返回，偶发工程文件没更新（读回来还是空程序）。
+        """
+        target = pathlib.Path(self.project) if self.project else None
+        before = target.stat().st_mtime_ns if target and target.exists() else None
+        for attempt in range(3):
+            self._focus()
+            chord("ctrl", "s", 0.8)
+            t0 = time.time()
+            while time.time() - t0 < wait_s:
+                time.sleep(1)
+                self.dismiss(rounds=2)
+                if target and target.exists() and target.stat().st_mtime_ns != before:
+                    break
+            if target and target.exists() and target.stat().st_mtime_ns != before:
+                break
+        after = target.stat().st_mtime_ns if target and target.exists() else None
+        return {"saved": bool(target and target.exists()),
+                "changed": before != after,
+                "bytes": target.stat().st_size if target and target.exists() else 0,
+                "mtime": target.stat().st_mtime if target and target.exists() else None}
 
     # ---------- 程序内容 ----------
     def _ensure_main(self) -> dict:
