@@ -32,7 +32,7 @@
 
 | `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） | 需 UI 上下文 |
 
-| `pattern.body_linear` | `CreatePatternBodyBuilder(PatternBody.Null)` 能建，`SelectBody.Value = body` 也接受；但 `ReferencePoint` 是 `PatternReferencePointServiceBuilder`（不是选择集），不设它 Commit 报 `Incorrect object for this operation` | 需要正确的参考点服务配置 |
+| `pattern.body_linear` | 7 轮尝试已到最深：`SelectBody.Value` **读回确认选上了**（`GetValue()` 返回 Body）、`PatternDefinition.PatternType=Linear` 可设、`XSpacing`（`DistancePatternSpacing`）的 `NCopies=3` / `PitchDistance=150` 可设、`XDirection` 给 Direction 可设、`XSelection.Value` 给边可设、`ReferencePoint.Point` 给 Point 也可设。结果只有两种：显式给 Point 时报 `Each patterned body must be face coincident with another patterned body.`，其余组合一律 `Incorrect object for this operation.` | 需要交互式阵列定义 |
 
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） | 需要正确的求解触发方式 |
 
@@ -40,10 +40,8 @@
 
 | `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** | 用 `part.Axes.CreateAxis(point, dir)` 即可 |
 
-| `curve.intersection` | `FirstFace/SecondFace` 只读，`FirstSet/SecondSet` 收对象但 Commit 报 `No objects for intersection curve`；用**组合投影**替代已打通（`curve.combined_projection`） | 已被替代 |
 
 
-| `curve.bridge` | `BridgeCurveBuilder.StartObject/EndObject` **不可写**，直接 `CommitFeature()` 报 `Cannot create bridge.`（与 curve.intersection 同类） | 需要选择对象的正确入口 |
 
 | `sheet_metal.flange` | `SilhouetteFlangeBuilder`：`BaseCurves`(Section) 与 `BaseFaces`(scCollector) 都能喂，`ReferenceVector` 也接受 Direction，但方向取 (0,0,1) 报 `Unable to project base curves to base faces.`，取 (0,1,0)/(1,0,0) 报 `Unable to create silhouette flange with given reference vector.` | 需要交互式选面/选向 |
 | `feature.text` | `TextBuilder.TextString` 可设、`PlacementFaces` 可喂，但 `PlanarFrame.CoordinateSystem` 无入口：`CoordinateSystemCollection.CreateCoordinateSystem` 的参数签名对不上（`No overload matches these arguments`），Commit 恒报 `Reference coordinate system undefined.` | 需要 UI 里的坐标系 |

@@ -46,6 +46,16 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("curve.bridge", "curve", "两曲线桥接（StartObject.Value/EndObject.Value）",
+        "curve_bridge", "L1–L2", params={},
+        expect={"entity_count": 1, "start_xy": [0.0, 0.0],
+                "end_xy": [60.0, 20.0],
+                "length": {"min": 63.0, "max": 63.5}}, reopen=False),
+    Cap("curve.intersection", "curve", "两片体交线（0..100 直线，Tolerance>0）",
+        "curve_intersection", "L1–L2", params={},
+        expect={"entity_count": 1, "start_x": 0.0, "start_y": 0.0,
+                "end_x": {"min": 99.5, "max": 100.5},
+                "length": {"min": 99.5, "max": 100.5}}, reopen=False),
     Cap("export.dwg", "export", "DWG 导出（翻译器 CLI，m=ugtodwg）", "export_dwg",
         "L1–L3", params={},
         expect={"dwg_head_ok": True, "log_wrote": True,

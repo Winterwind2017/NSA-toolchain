@@ -4741,7 +4741,132 @@ def export_dwg(params, workdir, rec):
     _close_part(part)
     return reads
 
+def curve_intersection(params, workdir, rec):
+    """两片体求交线：z=0 平面 × y=0 平面 → 沿 X 的直线（0..100）。
+
+    关键：FirstFace/SecondFace 是 ScCollector（AddRules 喂面），且必须
+    Tolerance > 0，否则 Commit 报 "Distance Tolerance cannot be zero."
+    """
+    part = new_part("icur")
+    p = NXOpen.Point3d
+
+    def mk(pts):
+        lines = [part.Curves.CreateLine(pts[i], pts[(i + 1) % 4]) for i in range(4)]
+        bp = part.Features.CreateBoundedPlaneBuilder(NXOpen.Features.BoundedPlane.Null)
+        try:
+            bp.BoundingCurves.AddToSection(
+                [part.ScRuleFactory.CreateRuleCurveDumb(lines)], lines[0],
+                None, None, pts[0], NXOpen.Section.Mode.Create)
+            bp.CommitFeature()
+        finally:
+            try:
+                bp.Destroy()
+            except Exception:
+                pass
+        return [b for b in _bodies_of(part) if b.IsSheetBody][-1]
+
+    s1 = mk([p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0),
+             p(100.0, 60.0, 0.0), p(0.0, 60.0, 0.0)])
+    s2 = mk([p(0.0, 0.0, 0.0), p(100.0, 0.0, 0.0),
+             p(100.0, 0.0, 60.0), p(0.0, 0.0, 60.0)])
+    f1 = list(s1.GetFaces())[0]
+    f2 = list(s2.GetFaces())[0]
+    icb = part.Features.CreateIntersectionCurveBuilder(
+        NXOpen.Features.IntersectionCurve.Null)
+    diag = {}
+    feat = None
+    try:
+        icb.FirstFace.AddRules([part.ScRuleFactory.CreateRuleFaceDumb([f1])])
+        icb.SecondFace.AddRules([part.ScRuleFactory.CreateRuleFaceDumb([f2])])
+        icb.Tolerance = 0.01
+        feat = icb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            icb.Destroy()
+        except Exception:
+            pass
+    ents = []
+    try:
+        ents = list(feat.GetEntities()) if feat is not None else []
+    except Exception:
+        pass
+    reads = {"entity_count": len(ents), "diag": diag}
+    if ents:
+        sp = ents[0].StartPoint
+        ep = ents[0].EndPoint
+        reads["start_x"] = round(float(sp.X), 3)
+        reads["start_y"] = round(float(sp.Y), 3)
+        reads["end_x"] = round(float(ep.X), 3)
+        reads["length"] = round(((float(ep.X) - float(sp.X)) ** 2 +
+                                (float(ep.Y) - float(sp.Y)) ** 2 +
+                                (float(ep.Z) - float(sp.Z)) ** 2) ** 0.5, 3)
+    _close_part(part)
+    return reads
+
+def curve_bridge(params, workdir, rec):
+    """桥接曲线：两条平行线的近端之间建 bridge。
+
+    关键：StartObject/EndObject 属性只读，但它们返回的 SelectObject
+    可以直接写 .Value —— 这一条此前被漏掉，误判成"入口只读"。
+    """
+    part = new_part("brg")
+    p = NXOpen.Point3d
+    c1 = part.Curves.CreateLine(p(0.0, 0.0, 0.0), p(50.0, 0.0, 0.0))
+    c2 = part.Curves.CreateLine(p(60.0, 20.0, 0.0), p(100.0, 20.0, 0.0))
+    bcb = part.Features.CreateBridgeCurveBuilder(NXOpen.Features.BridgeCurve.Null)
+    diag = {}
+    feat = None
+    try:
+        bcb.StartObject.Value = c1
+        bcb.EndObject.Value = c2
+        diag["inputs"] = "ok"
+        feat = bcb.CommitFeature()
+        diag["commit"] = "ok"
+    except Exception as exc:
+        diag["commit"] = "err:%s" % str(exc)[:130]
+    finally:
+        try:
+            bcb.Destroy()
+        except Exception:
+            pass
+    ents = []
+    try:
+        ents = list(feat.GetEntities()) if feat is not None else []
+    except Exception:
+        pass
+    reads = {"entity_count": len(ents), "diag": diag}
+    if ents:
+        ent = ents[0]
+        sp = ep = None
+        # 桥接曲线是 Spline：没有 StartPoint；GetDefiningPoints 可能只有 [None]，
+        # 真正可用的是 Get3DPoles()（首末极点即端点）
+        for getter in ("Get3DPoles", "GetPoles", "GetDefiningPoints"):
+            if not hasattr(ent, getter):
+                continue
+            try:
+                pts = [q for q in list(getattr(ent, getter)()) if q is not None]
+            except Exception:
+                continue
+            if len(pts) >= 2:
+                sp, ep = pts[0], pts[-1]
+                break
+        if sp is None and hasattr(ent, "StartPoint"):
+            sp, ep = ent.StartPoint, ent.EndPoint
+        if sp is not None and ep is not None:
+            sx, sy = float(sp.X), float(sp.Y)
+            ex, ey = float(ep.X), float(ep.Y)
+            reads["start_xy"] = [round(sx, 2), round(sy, 2)]
+            reads["end_xy"] = [round(ex, 2), round(ey, 2)]
+            reads["length"] = round(((ex - sx) ** 2 + (ey - sy) ** 2) ** 0.5, 3)
+    _close_part(part)
+    return reads
+
 ACTIONS = {
+    "curve_bridge": curve_bridge,
+    "curve_intersection": curve_intersection,
     "export_dwg": export_dwg,
     "export_dxf": export_dxf,
     "surface_midsurface": surface_midsurface,
