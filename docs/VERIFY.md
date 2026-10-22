@@ -1,7 +1,7 @@
 # 全量验证记录（VERIFY）
 
 > 目的：任何人在干净机器上，能按下面这几条命令复现"146 条真机通过"。
-> 最近复跑：2026-10-22 09:00（Asia/Shanghai），干净 clone @ `dc50239`。
+> 最近复跑：2026-10-22 09:00（Asia/Shanghai），干净 clone @ `3922a76`。
 
 ## 0. 环境
 
@@ -19,7 +19,7 @@
 ```powershell
 git clone git@github.com:Winterwind2017/nxkit.git D:\bililive\_verify3\clone
 cd D:\bililive\_verify3\clone
-git log --oneline -1        # dc50239
+git log --oneline -1        # 3922a76
 $env:PYTHONPATH = "D:\bililive\_verify3\clone\src"
 ```
 
