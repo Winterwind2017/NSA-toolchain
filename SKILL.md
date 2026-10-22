@@ -76,7 +76,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | 标签导入 | `LabelData` | 出现 `LBL_A/B/C`（54→75 行） |
 | 局部标签 / FB 变量 | `LabelData` 的 `ColumnID=2` | 出现 `LocBool`/`FB_Bool` 等 |
 | 功能块建出来 | 多一份 `*_STDB.db` + FB 变量名 | 正文与变量都在（FB 不进 `程序(...)` 清单） |
-| 结构体建出来 | **UIA 导航树**（`uia.find_names`） | 出现 `StructGen …`（`.gx3` 里没有明文） |
+| 结构体建出来 | **UIA 导航树**（uia.py 的 find_names） | 出现 `StructGen …`（`.gx3` 里没有明文） |
 
 ## 4. 别踩这些坑（每条都真实踩过）
 
