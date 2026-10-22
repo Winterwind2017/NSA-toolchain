@@ -38,4 +38,4 @@
 
 
 
-| `sheet_metal.flange` | `SilhouetteFlangeBuilder`：`BaseCurves`(Section) 与 `BaseFaces`(scCollector) 都能喂，`ReferenceVector` 也接受 Direction，但方向取 (0,0,1) 报 `Unable to project base curves to base faces.`，取 (0,1,0)/(1,0,0) 报 `Unable to create silhouette flange with given reference vector.` | 需要交互式选面/选向 |
+| `sheet_metal.flange` | 三条路都试过：① `SilhouetteFlangeBuilder`（`BaseCurves` 是 Section、`BaseFaces` 是 ScCollector、`ReferenceVector` 可给 Direction）——方向 (0,0,1) 报 `Unable to project base curves to base faces.`，(0,1,0)/(1,0,0) 报 `Unable to create silhouette flange with given reference vector.`；② `part.Features.SheetmetalManager.CreateAdvancedFlangeBuilder(SheetMetal.AdvancedFlange.Null)` 能构造，`Faces`/`Edges`/`Length=20`/`Angle=90` 都设得上，但**任何一个边**都报 `The edges must be tangent continuous.`（试了顶面 4 条边全部如此）；③ `CreateBendFeatureBuilder` 没有可用的哨兵类（`SheetMetal.Bend` 不存在）。根因：Python 绑定里没有「钣金基体/Tab」创建器，普通实体不被识别为钣金件 | 缺基体特征 |
