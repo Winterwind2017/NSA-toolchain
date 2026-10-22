@@ -46,6 +46,11 @@ class Cap:
 
 
 CAPS: tuple[Cap, ...] = (
+    Cap("export.dwg", "export", "DWG 导出（翻译器 CLI，m=ugtodwg）", "export_dwg",
+        "L1–L3", params={},
+        expect={"dwg_head_ok": True, "log_wrote": True,
+                "dwg_bytes": {"min": 8000.0, "max": 5000000.0},
+                "dwg_lines": {"min": 1.0, "max": 100000.0}}, reopen=False),
     Cap("export.dxf", "export", "DXF 导出（翻译器 CLI，约 190 KB）", "export_dxf",
         "L1–L3", params={},
         expect={"dxf_head_ok": True, "log_wrote": True,

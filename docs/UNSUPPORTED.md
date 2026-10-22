@@ -7,7 +7,6 @@
 | 能力 | 真机证据 |
 |---|---|
 | `cam.setup` | `part.CreateCamSetup(...)` 四种模板名全返回 None；`part.CAMSetup` 抛 1345023；`CAMDataManager` 只有 2 个曲线 builder |
-| `export.dwg`（未验证） | 与 DXF 同一条翻译器 CLI，只需把 `m=ugtodxf` 换成 `m=ugtodwg`；DXF 已用该路径打通（见 `export.dxf`）。DWG 尚未单独跑过，故不登记 | 待验证 |
 | `DxfdwgCreator.Commit()`（旧路径） | journal 里**静默空操作**：不设 `SettingsFile` 时死循环；设了之后 `Commit()` 立刻返回但不写任何文件（连翻译器 log 都不产生）。已改用翻译器 CLI（`NXBIN` 下的 `dxfdwg.exe`） | 已替代 |
 
 ## pending（按依赖顺序）
