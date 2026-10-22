@@ -12,7 +12,7 @@
     "families": 14,
     "verified": 144
   },
-  "generated_at": "2026-10-22T08:20:31",
+  "generated_at": "2026-10-22T08:25:09",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -307,10 +307,6 @@
   },
   "pending": [
     {
-      "id": "feature.revolve_datum",
-      "reason": "RevolveBuilder.Axis 只认 NXOpen.Axis，DatumAxis 被拒"
-    },
-    {
       "id": "sketch.slope",
       "reason": "报 Unable to create sketch geometric constraint"
     },
@@ -349,7 +345,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "3237a64",
+    "kernel_commit": "d84e867",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
