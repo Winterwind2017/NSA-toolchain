@@ -55,6 +55,41 @@ def windows(pid: int, visible_only: bool = True) -> list[dict]:
     return sorted(out, key=lambda w: w["area"], reverse=True)
 
 
+def ensure_size(hwnd: int, min_area: int = 300000,
+                size: tuple[int, int] = (1280, 900)) -> dict:
+    """把主窗拉到可用尺寸。**GX Works3 会以 135x37 的"折叠"状态启动**，
+    这种状态下菜单栏根本不在（UIA 找到 0 个菜单项），`Ctrl+N` 也不会弹新建对话框，
+    表现为"新建工程对话框没出现"，很容易误判成软件坏了。
+
+    窗口句柄可能已经失效（进程刚退出/重开），那种情况返回 `invalid=True`，
+    调用方应当重新取主窗而不是在这里抛异常——踩过：这里的 `pywintypes.error 1400`
+    让整个 run 卡在第一项上 30 分钟。
+    """
+    def _rect():
+        import win32gui
+        r = win32gui.GetWindowRect(hwnd)
+        return r[2] - r[0], r[3] - r[1]
+
+    try:
+        w, h = _rect()
+    except Exception:
+        return {"w": 0, "h": 0, "area": 0, "restored": False, "invalid": True}
+    if w * h >= min_area:
+        return {"w": w, "h": h, "area": w * h, "restored": False}
+    u32.ShowWindow(hwnd, 9)                      # SW_RESTORE
+    time.sleep(0.6)
+    # 还原后仍偏小就直接摆到固定尺寸（有些会话记得上次的折叠尺寸）
+    try:
+        w, h = _rect()
+        if w * h < min_area:
+            u32.MoveWindow(hwnd, 60, 40, size[0], size[1], True)
+            time.sleep(0.6)
+        w, h = _rect()
+    except Exception:
+        return {"w": 0, "h": 0, "area": 0, "restored": True, "invalid": True}
+    return {"w": w, "h": h, "area": w * h, "restored": True}
+
+
 def main_window(pid: int, timeout_s: float = 120.0) -> dict | None:
     """等主窗口。注意：窗口可能以最小化/很小尺寸出现，不能只按面积筛。"""
     import win32gui
@@ -65,9 +100,8 @@ def main_window(pid: int, timeout_s: float = 120.0) -> dict | None:
         if cands:
             best = max(cands, key=lambda w: w["area"])
             if best["area"] < 100000:
-                # 最小化或异常尺寸：还原后再量一次
-                u32.ShowWindow(best["hwnd"], 9)     # SW_RESTORE
-                time.sleep(0.8)
+                # 最小化或"折叠"尺寸：还原 + 必要时改成固定尺寸
+                ensure_size(best["hwnd"])
                 again = [w for w in windows(pid) if w["hwnd"] == best["hwnd"]]
                 if again:
                     best = again[0]
@@ -193,3 +227,61 @@ def activate(hwnd: int, settle: float = 0.5) -> bool:
         time.sleep(0.3)
     time.sleep(settle)
     return u32.GetForegroundWindow() == hwnd
+
+
+def kill_stray(image: str = "GXW3.exe", settle_s: float = 1.5) -> int:
+    """杀掉上次没退干净的 GX Works3（只杀我们自己在用的这个进程名）。
+
+    踩过：一条能力跑完如果进程还活着，下一次启动会停在"已有实例"的状态，
+    新建工程对话框永远不弹（表现为连续几条能力全挂在 new_project）。
+    """
+    import subprocess
+    try:
+        out = subprocess.run(["taskkill", "/F", "/IM", image, "/T"],
+                             capture_output=True, text=True, timeout=30)
+        killed = 0 if out.returncode != 0 else 1
+    except Exception:
+        killed = 0
+    time.sleep(settle_s)
+    return killed
+
+
+# ---------- 直接投递按键（比 SendInput 可靠） ----------
+# 踩过：keybd_event 发出的 Alt+P 在一些状态下根本到不了窗口（菜单不弹、
+# Ctrl+N 也不弹新建对话框），但同样的组合用 PostMessage 投递到主窗 2/2 都成功。
+WM_SYSKEYDOWN, WM_SYSKEYUP = 0x0104, 0x0105
+WM_KEYDOWN, WM_KEYUP = 0x0100, 0x0101
+
+
+def post_key(hwnd: int, vk: int, up: bool = False, syskey: bool = False) -> None:
+    import win32api
+    msg = (WM_SYSKEYUP if syskey else WM_KEYUP) if up else (
+        WM_SYSKEYDOWN if syskey else WM_KEYDOWN)
+    win32api.PostMessage(hwnd, msg, vk, 0x00000001 if up else 0x00000001)
+
+
+def post_alt_letter(hwnd: int, letter: str, settle: float = 0.6) -> None:
+    """Alt+字母 打开菜单；用 PostMessage 投递，不依赖前台焦点是否"刚好在框架"。"""
+    import win32api
+    import win32con
+    win32api.PostMessage(hwnd, WM_SYSKEYDOWN, win32con.VK_MENU, 0x20000001)
+    time.sleep(0.1)
+    win32api.PostMessage(hwnd, WM_SYSKEYDOWN, ord(letter.upper()), 0x201E0001)
+    time.sleep(0.15)
+    win32api.PostMessage(hwnd, WM_SYSKEYUP, ord(letter.upper()), 0xE01E0001)
+    time.sleep(0.05)
+    win32api.PostMessage(hwnd, WM_SYSKEYUP, win32con.VK_MENU, 0xC0000001)
+    time.sleep(settle)
+
+
+def post_ctrl_key(hwnd: int, letter: str, settle: float = 0.8) -> None:
+    """Ctrl+字母；同样走 PostMessage。"""
+    import win32api
+    import win32con
+    win32api.PostMessage(hwnd, WM_KEYDOWN, win32con.VK_CONTROL, 0x001D0001)
+    time.sleep(0.05)
+    win32api.PostMessage(hwnd, WM_KEYDOWN, ord(letter.upper()), 0x001E0001)
+    time.sleep(0.08)
+    win32api.PostMessage(hwnd, WM_KEYUP, ord(letter.upper()), 0xC01E0001)
+    win32api.PostMessage(hwnd, WM_KEYUP, win32con.VK_CONTROL, 0xC01D0001)
+    time.sleep(settle)

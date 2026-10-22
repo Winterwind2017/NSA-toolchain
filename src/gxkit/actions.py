@@ -25,15 +25,47 @@ def _boot(ctx: dict, project: str | None = None) -> Session:
 
 
 def _new_and_save(ctx: dict) -> tuple[Session, dict]:
-    s = _boot(ctx)
-    s.new_project(**NEW)
-    saved = s.save_as(ctx["project"])
-    return s, saved
+    """起会话 → 新建工程 → 另存为。新建失败就**重开会话**再来一次。
+
+    踩过：刚杀完 GX Works3 立刻启动时，`Ctrl+N` 偶尔不弹对话框；
+    重试 4 次仍不行，重开会话比继续等更可靠。
+    """
+    last: Exception | None = None
+    for attempt in range(2):
+        s = _boot(ctx)
+        try:
+            s.new_project(**NEW)
+            saved = s.save_as(ctx["project"])
+            return s, saved
+        except RuntimeError as exc:
+            last = exc
+            try:
+                s.close()
+            except Exception:
+                pass
+            time.sleep(6 + attempt * 4)
+    raise last or RuntimeError("新建工程失败")
+
+
+def _new_project(ctx: dict) -> tuple[Session, dict]:
+    """新建工程；对话框没弹出来就**重开会话**再试（冷启动时偶发）。"""
+    last: Exception | None = None
+    for attempt in range(2):
+        s = _boot(ctx)
+        try:
+            return s, s.new_project(**NEW)
+        except RuntimeError as exc:
+            last = exc
+            try:
+                s.close()
+            except Exception:
+                pass
+            time.sleep(8 + attempt * 4)
+    raise last or RuntimeError("新建工程失败")
 
 
 def project_new(ctx: dict) -> dict:
-    s = _boot(ctx)
-    proj = s.new_project(**NEW)
+    s, proj = _new_project(ctx)
     title = proj.get("title") or ""
     return {"has_window": bool(title), "is_st": "ST" in title, "title": title,
             "startup_s": ctx.get("startup")}
@@ -92,20 +124,30 @@ def build_error_detail(ctx: dict) -> dict:
     """故意写错 → 转换 → 从 Progress.txt 读出"错在哪个阶段、错几个"。
 
     光有坏代码还不够：得先证明"粘贴这条通路是通的"（好代码能转出 N步），
-    再贴坏代码；保存后若 `Progress.txt` 还没更新，就再转换/保存一轮。
+    再贴坏代码。坏代码是否真的落地，用**读回的源码**确认（曾出现贴了没落地、
+    转换仍然 0 错，于是误报"没有错误"）。
     """
+    from . import inspect as I
+
+    bad = ctx.get("code") or BAD_ST_CODE
     s, _ = _new_and_save(ctx)
     good_steps = _paste_until_steps(s, ST_CODE)
 
-    s.paste_st(ctx.get("code") or BAD_ST_CODE)
-    s.convert_all()
-    s.save()
-
-    prog = read_progress(ctx["project"])
-    if prog.get("errors") is None:
+    prog: dict = {}
+    for attempt in range(3):
+        s.paste_st(bad)
         s.convert_all()
         s.save()
         prog = read_progress(ctx["project"])
+        if I.source_matches(ctx["project"], bad) and prog.get("errors"):
+            break
+        if prog.get("errors") is None:
+            s.convert_all()
+            s.save()
+            prog = read_progress(ctx["project"])
+            if prog.get("errors"):
+                break
+        time.sleep(1.5)
 
     failed = prog.get("failed_stages") or []
     return {"errors": prog.get("errors"), "warnings": prog.get("warnings"),
@@ -113,14 +155,14 @@ def build_error_detail(ctx: dict) -> dict:
             "failed_stage": failed[0] if failed else None,
             "stages": len(prog.get("stages") or []),
             "good_steps": good_steps,
+            "bad_landed": I.source_matches(ctx["project"], bad),
             "progress_found": prog.get("found")}
 
 
 def batch_projects(ctx: dict) -> dict:
     """同一会话里连做 N 个工程（粘贴不同参数 → 转换 → 菜单另存为）。"""
     count = int(ctx.get("batch_count") or 3)
-    s = _boot(ctx)
-    s.new_project(**NEW)
+    s, _ = _new_project(ctx)
     base = pathlib.Path(ctx["project"]).with_name("batch_base.gx3")
     s.save_as(base)
 

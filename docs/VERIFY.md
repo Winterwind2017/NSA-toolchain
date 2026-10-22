@@ -55,6 +55,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-22 | **15/15（v0.3，加固完成后第二次）** | 1714.1 s |
 | 2026-10-22 | 15/16（v0.4，二分读不到结果被当成通过） | 1876.2 s |
 | 2026-10-22 | **16/16（v0.4，新增 program.import_xml）** | 1833.0 s |
+| 2026-10-22 | **16/16（v0.4，输入/存盘改为菜单优先 + PostMessage）** | 1929.0 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -96,3 +97,15 @@ ew_sources | 1（多出一套 STDB） |
 
 另：program.read_st 与 inspect.* 改成**遍历全部 *_STDB.db / *_StepInfo.db / *_MilDB.db**，
 因为每个程序一套 SQLite；只读第一个会把导入的程序看漏。
+
+## v0.4 的 UI 加固（这一轮踩的坑最多）
+
+| 现象 | 根因 | 修法 |
+|---|---|---|
+| 新建工程对话框没出现（连跑 5 次） | 窗口以 135×37 折叠启动，菜单栏不存在 | nsure_size() 还原并 MoveWindow 到 1280×900 |
+| 整个 run 卡在第一项 30 分钟 | 句柄失效后 GetWindowRect 抛 rror 1400 | nsure_size 返回 invalid，_focus 重新取主窗 |
+| Alt+P 时灵时不灵 | SendInput 的 Alt 组合到不了窗口 | 改成 PostMessage(WM_SYSKEYDOWN) 投递 |
+| Ctrl+S 反而不生效 | PostMessage 的 Ctrl 被 MFC 加速键忽略 | Ctrl 系列回到 SendInput |
+| project.save 文件不存在 | 新建工程后 Ctrl+S 不弹另存为 | save_as 菜单优先：工程 → 另存为(A) |
+| 后面的能力连续挂在 
+ew_project | 上一轮 GXW3 没退干净，新实例"已有实例" | 每条能力前 	askkill /IM GXW3.exe /T |

@@ -15,7 +15,10 @@ import time
 import zipfile
 
 from . import uia
-from .win import (VK, activate, alt_letter, chord, click, close_window, key,
+from .win import (
+    ensure_size,
+    key,VK, activate, alt_letter, chord, click, close_window, key,
+    post_alt_letter, post_ctrl_key,
                   main_window, set_clipboard, tap, windows)
 
 EXE = r"D:\Program Files (x86)\MELSOFT\GPPW3\GXW3.exe"
@@ -134,6 +137,19 @@ class Session:
         """返回是否真的拿到了前台焦点（拿不到就别发按键，否则一切"没反应"）。"""
         if not self.main:
             return False
+        # 先保证窗口是"展开"状态：折叠成 135x37 时菜单栏不存在，Ctrl+N 也不弹窗
+        try:
+            size = ensure_size(self.main["hwnd"])
+            if size.get("invalid"):
+                # 句柄失效：重新取主窗，取不到就当没焦点
+                fresh = main_window(self.proc.pid, timeout_s=15)
+                if not fresh:
+                    return False
+                self.main = fresh
+            elif size.get("restored"):
+                self.main = {**self.main, "area": size["area"]}
+        except Exception:
+            pass
         ok = activate(self.main["hwnd"])
         self.log.append({"action": "focus", "ok": ok})
         return ok
@@ -200,21 +216,67 @@ class Session:
         return False
 
     # ---------- 工程 ----------
+    def _alt(self, letter: str) -> None:
+        """Alt+字母：优先 PostMessage（可靠），失败再退 SendInput。"""
+        if self.main:
+            try:
+                post_alt_letter(self.main["hwnd"], letter)
+                return
+            except Exception:
+                pass
+        alt_letter(letter)
+
+    def _ctrl(self, letter: str, settle: float = 0.8) -> None:
+        """Ctrl+字母：用 SendInput。
+
+        实测：PostMessage 投递的 Ctrl+S / Ctrl+N 会被 MFC 的加速键表忽略
+        （Alt+字母 反而必须用 PostMessage），所以这里分工明确：
+        Alt 系列走 PostMessage，Ctrl 系列走真实按键。
+        """
+        chord("ctrl", letter, settle)
+
+    def _click_canvas(self) -> None:
+        """点一下文档区中心，把焦点从导航栏/下拉框挪开。
+
+        踩过：焦点在导航栏的"全部"下拉框里时，Alt+P 会被控件吃掉，
+        菜单不弹、Ctrl+N 也不弹对话框——表现为"新建工程对话框没出现"。
+        """
+        if not self.main:
+            return
+        import win32gui
+        from .win import click
+        try:
+            r = win32gui.GetWindowRect(self.main["hwnd"])
+        except Exception:
+            return
+        click(r[0] + int((r[2] - r[0]) * 0.7), r[1] + int((r[3] - r[1]) * 0.55),
+              settle=0.4)
+
     def new_project(self, series: int = 3, model: int = 0, lang: int = 1) -> dict:
         h = None
-        for attempt in range(4):
+        seen: list[str] = []
+        for attempt in range(5):
             self._focus()
+            self._click_canvas()
             # 先试菜单（工程 → 新建），再退回 Ctrl+N：某些启动状态下 Ctrl+N 不响应
             invoked = False
             try:
-                alt_letter("p")
+                self._alt("p")
                 time.sleep(0.6)
                 invoked = uia.invoke_menu_item("新建(N)")
             except Exception:
                 invoked = False
             if not invoked:
-                chord("ctrl", "n", 0.8)
+                # 菜单还开着的话会把 Ctrl+N 吃掉，先按 ESC 关掉再发
+                key("esc")
+                time.sleep(0.4)
+                self._focus()
+                self._ctrl("n", 0.8)
             time.sleep(5.0 + attempt * 2.5)
+            for w in self.dialogs():
+                title = (w.get("title") or "").strip()
+                if title and title not in seen:
+                    seen.append(title)
             dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
             if dlg:
                 h = dlg["hwnd"]
@@ -222,7 +284,8 @@ class Session:
             self.dismiss(rounds=2)
             time.sleep(1)
         if not h:
-            raise RuntimeError("新建工程对话框没出现（已重试 3 次）")
+            raise RuntimeError("新建工程对话框没出现（已重试 5 次；出现过的对话框=%s）"
+                               % seen)
         combos = {}
         for cid in (CID_SERIES, CID_MODEL, CID_RUNMODE, CID_LANG):
             hs = _find_by_cid(h, cid)
@@ -258,16 +321,14 @@ class Session:
                         path = alt
                         break
         self._focus()
-        if via_menu:
-            alt_letter("p")
-            time.sleep(0.6)
-            opened = uia.invoke_menu_item("另存为")
-            time.sleep(3.5)
-            if not opened:
-                chord("ctrl", "s", 0.8)
-                time.sleep(3.5)
-        else:
-            chord("ctrl", "s", 0.8)
+        # 菜单优先：实测 `Ctrl+S` 在新建工程后经常**不弹**另存为对话框
+        # （焦点还在某个控件里），而 `工程 → 另存为(A)`（PostMessage+UIA）稳定弹出。
+        self._alt("p")
+        time.sleep(0.6)
+        opened = uia.invoke_menu_item("另存为(A)") or uia.invoke_menu_item("另存为")
+        time.sleep(3.0)
+        if not opened:
+            self._ctrl("s", 0.8)
             time.sleep(3.5)
         dlg = None
         for _ in range(3):                      # 对话框可能还没画完，重试几次
@@ -336,7 +397,7 @@ class Session:
         before = target.stat().st_mtime_ns if target and target.exists() else None
         for attempt in range(3):
             self._focus()
-            chord("ctrl", "s", 0.8)
+            self._ctrl("s", 0.8)
             t0 = time.time()
             while time.time() - t0 < wait_s:
                 time.sleep(1)
@@ -402,7 +463,7 @@ class Session:
         path = pathlib.Path(path)
         self._ensure_main()
         self._focus()
-        alt_letter("p")
+        self._alt("p")
         time.sleep(0.7)
         if not uia.invoke_menu_item("导入文件"):
             return {"opened": False, "reason": "菜单项没找到"}
@@ -458,7 +519,7 @@ class Session:
         before = self.title() or ""
         if "工程未设置" in before or before.strip() == "MELSOFT GX Works3":
             return {"closed": False, "reason": "no project", "title": before}
-        alt_letter("p")
+        self._alt("p")
         time.sleep(0.6)
         ok = uia.invoke_menu_item("关闭(C)")
         time.sleep(3)
@@ -470,7 +531,7 @@ class Session:
         """Ctrl+O 打开工程，等标题里出现文件名。"""
         path = pathlib.Path(path)
         self._focus()
-        chord("ctrl", "o", 0.8)
+        self._ctrl("o", 0.8)
         time.sleep(3.5)
         dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
         if not dlg:
@@ -508,7 +569,7 @@ class Session:
 
         self._ensure_main()
         self._focus()
-        alt_letter("t")
+        self._alt("t")
         time.sleep(0.7)
         opened = uia.invoke_menu_item("程序检查")
         if not opened:

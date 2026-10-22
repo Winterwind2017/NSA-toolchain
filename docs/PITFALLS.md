@@ -196,3 +196,39 @@ Project/Instances/Configuration/Resource/ProgramInstance[@name, @typeName="pou",
 
 `program.import_xml` 第一版"判据没过就再导一次"，结果工程里出现 `PrgGen` 和 `PrgGen_2`
 （GX Works3 自动改名）。导入是**非幂等**操作：判据错了要修判据，不要重试导入。
+
+## 二十、Alt 系列用 PostMessage，Ctrl 系列必须用 SendInput
+
+这一条是**用半晚上换来的**，两个方向都反直觉：
+
+- `Alt+P` 用 `keybd_event/SendInput` 时，**有时候根本到不了窗口**（菜单不弹、
+  接着 Ctrl+N 也不弹新建对话框，看起来像"软件坏了"）。改成
+  `PostMessage(hwnd, WM_SYSKEYDOWN, VK_MENU ...)` + `WM_SYSKEYDOWN('P')` 之后 **2/2 稳定**。
+- 反过来，`PostMessage` 投递的 `Ctrl+S` / `Ctrl+N` 会被 MFC 的加速键表**忽略**，
+  必须用真实按键（`SendInput`）。
+
+所以 `Session._alt()` 走 PostMessage，`Session._ctrl()` 走 SendInput。
+
+## 二十一、窗口会以 135×37 "折叠"启动
+
+这种状态下菜单栏**根本不存在**（UIA 找不到菜单项），`Ctrl+N` 也不弹对话框。
+`ensure_size()` 会 `SW_RESTORE`，仍偏小就 `MoveWindow` 到 1280×900。
+另外这个句柄可能**已经失效**（`GetWindowRect` 抛 `pywintypes.error 1400`）——
+踩过：这个异常让整个 run 卡在第一项上 30 分钟。现在 `ensure_size` 返回 `invalid=True`，
+`_focus()` 会重新取主窗。
+
+## 二十二、`Ctrl+S` 在新建工程后经常不弹"另存为"
+
+焦点还在某个控件里的时候，`Ctrl+S` 静默失败、不弹对话框，于是"存盘"变成空操作
+（文件根本不存在）。现在 `save_as()` **菜单优先**：
+
+```
+工程(P) ─ Alt+P(PostMessage) → UIA invoke 「另存为(A)」 → #32770 出现 → 填 cid=1148 → 点 cid=1
+```
+
+失败才退回 `Ctrl+S`。
+
+## 二十三、上一轮进程没退干净，下一轮会"卡在已有实例"
+
+每条能力之间会 `taskkill /IM GXW3.exe /T`（`win.kill_stray()`）。
+否则下一条启动后停在"已有实例"状态：窗口在、菜单不响应、新建工程对话框永远不弹。

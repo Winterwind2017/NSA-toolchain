@@ -10,6 +10,7 @@ import traceback
 from . import caps as caps_mod
 from .actions import ACTIONS
 from .judges import judge
+from .win import kill_stray
 
 
 def run(workdir: str | pathlib.Path, only: str | None = None,
@@ -22,6 +23,7 @@ def run(workdir: str | pathlib.Path, only: str | None = None,
     rows = []
     t_all = time.time()
     for cap in sel:
+        kill_stray()          # 上一条若没退干净，下一次启动会卡在"已有实例"
         project = str(wd / ("%s.gx3" % cap.id.replace(".", "_")))
         ctx = {"workdir": wd, "project": project, "code": code, "session": None}
         ctx.update(cap.params or {})
