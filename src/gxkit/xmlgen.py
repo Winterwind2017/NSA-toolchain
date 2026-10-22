@@ -352,3 +352,120 @@ def write_fb_program(path: str | pathlib.Path, program_name: str, st_code: str,
 if __name__ == "__main__":
     out = write(pathlib.Path(r"D:\bililive\gxkit\_runs\labels\labels.xml"))
     print("written:", out, out.stat().st_size)
+
+
+DEFAULT_STRUCT_MEMBERS = [
+    {"name": "M_Bool", "type": "BOOL", "init": "FALSE"},
+    {"name": "M_Word", "type": "WORD", "init": "0"},
+]
+
+
+def build_struct_program(program_name: str, st_code: str,
+                         struct_name: str = "StructGen",
+                         members: list[dict] | None = None,
+                         locals_: list[dict] | None = None,
+                         sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+    """建"结构体 + 用它的程序"的 XML。
+
+    结构体形态照抄样例 `Struct1`：
+        DataTypeDecl[@name]
+          Documentation
+          AddData/DataTypeProperties
+          UserDefinedTypeSpec[@type="StructTypeSpec"]
+            Member[@name] × N   （每个 Member 带 Type/TypeName，可选 InitialValue）
+    顺序：`Program` 在前，`DataTypeDecl` 在后（和 FunctionBlock 一样，类型必须在程序之后）。
+    """
+    # members=None 表示"保留样例成员原样"——删/改成员会让整份导入被丢弃（实测）
+    locals_ = locals_ or DEFAULT_LOCALS
+
+    tree = build_program(program_name, st_code, locals_=locals_, sample=sample)
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+
+    src_gn = ET.parse(str(sample)).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
+    src_struct = next(d for d in src_gn.findall(_q("DataTypeDecl"))
+                      if d.get("name") == "Struct1")
+    tpl_member = src_struct.find(_q("UserDefinedTypeSpec")).find(_q("Member"))
+
+    st_el = copy.deepcopy(src_struct)
+    st_el.set("name", struct_name)
+    spec = st_el.find(_q("UserDefinedTypeSpec"))
+    if members is not None:
+        for old in spec.findall(_q("Member")):
+            spec.remove(old)
+    for idx, item in enumerate(members or [], start=1):
+        mem = copy.deepcopy(tpl_member)
+        mem.set("name", item["name"])
+        for ln in mem.iter(_q("VariableLineNumber")):
+            ln.set("number", str(idx))
+        for ct in mem.iter(_q("CommentText")):
+            ct.text = item.get("comment") or item["name"]
+        for tn in mem.iter(_q("TypeName")):
+            tn.text = item.get("type", "BOOL")
+        for sv in mem.iter(_q("SimpleValue")):
+            sv.set("value", item.get("init", "FALSE"))
+        spec.append(mem)
+    gn.append(st_el)          # ← 类型放在程序之后
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def write_struct_program(path: str | pathlib.Path, program_name: str, st_code: str,
+                         struct_name: str = "StructGen",
+                         members: list[dict] | None = None,
+                         locals_: list[dict] | None = None,
+                         sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    build_struct_program(program_name, st_code, struct_name=struct_name,
+                         members=members, locals_=locals_,
+                         sample=sample).write(
+        p, encoding="utf-8", xml_declaration=True)
+    return p
+
+
+def build_fb_instance(program_name: str, st_code: str,
+                      fb_name: str = "FBInst",
+                      inst_name: str = "InstFB",
+                      fb_body: str = "FB_Bool := NOT FB_Bool;",
+                      locals_: list[dict] | None = None,
+                      fb_locals: list[dict] | None = None,
+                      sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+    """建"功能块 + 程序里声明它的实例并调用"的 XML。
+
+    程序侧多一个 `<Variable name="InstFB"><Type><TypeName>FBInst</TypeName></Type></Variable>`，
+    正文里调用它（`InstFB();`）。
+    """
+    locals_ = locals_ or DEFAULT_LOCALS
+    tree = build_fb_program(program_name, st_code, fb_name=fb_name, fb_body=fb_body,
+                            locals_=locals_, fb_locals=fb_locals, sample=sample)
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+    prog = next(p for p in gn.findall(_q("Program")) if p.get("name") == program_name)
+    vars_el = prog.find(_q("Vars"))
+    tpl_var = vars_el.find(_q("Variable"))
+    inst = copy.deepcopy(tpl_var)
+    inst.set("name", inst_name)
+    for tn in inst.iter(_q("TypeName")):
+        tn.text = fb_name
+    _ensure_line_number(inst, len(locals_) + 1)
+    vars_el.append(inst)
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def write_fb_instance(path: str | pathlib.Path, program_name: str, st_code: str,
+                      fb_name: str = "FBInst", inst_name: str = "InstFB",
+                      fb_body: str | None = None,
+                      locals_: list[dict] | None = None,
+                      fb_locals: list[dict] | None = None,
+                      sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    kwargs = {}
+    if fb_body is not None:
+        kwargs["fb_body"] = fb_body
+    build_fb_instance(program_name, st_code, fb_name=fb_name, inst_name=inst_name,
+                      locals_=locals_, fb_locals=fb_locals, sample=sample,
+                      **kwargs).write(p, encoding="utf-8", xml_declaration=True)
+    return p

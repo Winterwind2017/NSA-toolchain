@@ -187,3 +187,33 @@ def test_build_fb_program_shape() -> None:
     for holder in (fb, prog):
         nums = [e.get('number') for e in holder.iter('{%s}VariableLineNumber' % ns)]
         assert len(nums) == len(set(nums)) == 2, (holder.tag, nums)
+
+
+def test_build_struct_program_shape() -> None:
+    """结构体在程序之后；members=None 时保留样例成员（改成员会让整份导入被丢弃）。"""
+    tree = xmlgen.build_struct_program('PrgStruct', 'LocBool := NOT LocBool;', 'StructGen',
+                                       members=None, locals_=[{'name': 'LocBool', 'type': 'BOOL'}])
+    ns = xmlgen.NS
+    gn = tree.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    tags = [c.tag.replace('{%s}' % ns, '') for c in list(gn)]
+    assert tags.index('Program') < tags.index('DataTypeDecl')
+    dt = gn.find('{%s}DataTypeDecl' % ns)
+    assert dt.get('name') == 'StructGen'
+    members = dt.find('{%s}UserDefinedTypeSpec' % ns).findall('{%s}Member' % ns)
+    assert len(members) == 4, 'members=None 应保留样例的 4 个成员'
+
+
+def test_build_fb_instance_shape() -> None:
+    tree = xmlgen.build_fb_instance('PrgFB', 'InstFB();', 'FBInst', 'InstFB',
+                                    fb_body='FB_Bool := NOT FB_Bool;')
+    ns = xmlgen.NS
+    gn = tree.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    prog = gn.find('{%s}Program' % ns)
+    types = {}
+    for var in prog.find('{%s}Vars' % ns).findall('{%s}Variable' % ns):
+        tn = var.find('{%s}Type' % ns).find('{%s}TypeName' % ns)
+        types[var.get('name')] = tn.text
+    assert types.get('InstFB') == 'FBInst'
+    # 实例变量也要有唯一行号
+    nums = [e.get('number') for e in prog.iter('{%s}VariableLineNumber' % ns)]
+    assert len(nums) == len(set(nums))

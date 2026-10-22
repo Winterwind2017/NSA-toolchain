@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.5.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.6.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**17** 条
+- 真机通过能力：**19** 条
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -27,6 +27,13 @@
 | `program.read_st` | **从 `.gx3` 读回 ST 源码** | `StBlocks.data` 与贴进去的逐字相同 |
 | `program.import_xml` | **用 XML 新建程序（PrgGen）** | 编译日志出现 `程序(PrgGen)` + 正文进 STDB + 0 错 |
 | `program.import_fb` | **用 XML 建程序 + 功能块（带局部标签）** | `PrgFB` 进程序清单、两段正文进 STDB、4 个局部标签进 `LabelData`、0 错 |
+| `program.import_fb_instance` | **建功能块并在程序里声明实例、调用** | `程序(FBInst)`+`程序(PrgFB)`、正文含 `InstFB();`、类型列出现 `FBInst`、0 错 |
+
+### 结构体
+
+| id | 做什么 | 判据来源 |
+|---|---|---|
+| `datatype.import` | **用 XML 建结构体** | UIA 导航树出现 `StructGen …`、程序照常导入、0 错 |
 
 ### 编译与检查
 
@@ -52,7 +59,7 @@
 |---|---|---|
 | `label.import_xml` | 导入全局标签 XML | `LabelData` 里出现 `LBL_A/B/C`（54→75 行） |
 
-## 四层判据
+## 五层判据
 
 1. **文件层**：`.gx3` 存在、大小、`!!Config.xml` 的机型。
 2. **源码层**：`StBlocks.data` 就是 ST 原文；`T_SourcePos` 给步→源码坐标。
@@ -64,5 +71,5 @@
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 17/17，约 35 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 19/19，约 40 分钟
 ```

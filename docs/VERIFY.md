@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"17 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"19 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：17 条能力，动作与判据齐全
+# 自检通过：19 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 15 passed
+# 17 passed
 
-# 3) 真机全量（约 35 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 40 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -59,6 +59,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **16/16（v0.4，同一份代码第二次）** | 1911.4 s |
 | 2026-10-23 | **17/17（v0.5，新增 program.import_fb）** | 2045.0 s |
 | 2026-10-23 | **17/17（v0.5，同一份代码第二次）** | 2047.8 s |
+| 2026-10-23 | **19/19（v0.6，新增功能块实例 + 结构体）** | 2344.3 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -131,3 +132,17 @@ ew_sources | 2（多出程序与功能块各一套 STDB） |
 2. 功能块要**删掉 <Parameters>**，Vars 只留一块；
 3. 功能块不会出现在 Progress.txt 的 程序(...) 清单里——判定它建出来靠
    “多一份 STDB（正文）”+“LabelData 里有它的变量名”。
+
+## v0.6 新增两条
+
+| 能力 | 读数 |
+|---|---|
+| program.import_fb_instance | programs=[FBInst, ProgPou, PrgFB]、ody_found、b_body_found、instance_type_seen（类型列出现 FBInst）、
+ew_sources=2、0 错 |
+| datatype.import | program_created（PrgStruct）、struct_node_seen（导航树 StructGen タイトル Struct1）、labels 54→70、0 错 |
+
+这一轮最值钱的教训：
+1. **结构体的 <Member> 不能重建**——自己拼成员会让整份导入被静默丢弃；
+2. **结构体类型的变量**能落库但 局部标签定义检查 报错，所以结构体的判据改用
+   **UIA 导航树**（.gx3 里根本没有结构体明文）；
+3. 导入"静默什么都没进"时可以重试，**一旦目标程序出现就绝不能重试**（非幂等）。

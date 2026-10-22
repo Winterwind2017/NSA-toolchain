@@ -137,3 +137,38 @@ def texts(hwnd: int) -> list[str]:
 
 def settle(seconds: float = 0.6) -> None:
     time.sleep(seconds)
+
+
+def find_names(hwnd: int, needle: str, max_nodes: int = 6000) -> list[str]:
+    """在窗口的 UIA 树里找名字含 
+eedle 的节点。
+
+    用途：结构体 / 功能块 这类对象在 .gx3 里搜不到明文（二进制/压缩），
+    但**导航树里看得见**（实测：导入结构体后出现 StructGen タイトル Struct1）。
+    """
+    from comtypes.client import CreateObject
+    import comtypes.gen.UIAutomationClient as UIA  # noqa: F401
+
+    auto = CreateObject(UIA.CUIAutomation)
+    root = auto.ElementFromHandle(hwnd)
+    walker = auto.RawViewWalker
+    stack = [root]
+    found: list[str] = []
+    walked = 0
+    while stack and walked < max_nodes:
+        el = stack.pop()
+        walked += 1
+        try:
+            name = el.CurrentName
+        except Exception:
+            continue
+        if name and needle in name:
+            found.append(name)
+        try:
+            child = walker.GetFirstChildElement(el)
+            while child:
+                stack.append(child)
+                child = walker.GetNextSiblingElement(child)
+        except Exception:
+            pass
+    return found

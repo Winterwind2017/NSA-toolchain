@@ -13,6 +13,7 @@ FAMILY_LICENSE = {
     "build": "GX Works3",
     "inspect": "GX Works3",
     "label": "GX Works3",
+    "datatype": "GX Works3",
 }
 
 
@@ -60,6 +61,18 @@ CAPS: tuple[Cap, ...] = (
                 "fb_body_found": True, "locals_found": 2, "fb_vars_found": 2,
                 "new_sources": {"min": 1.0, "max": 10.0}, "errors": 0},
         reopen=False),
+    Cap("program.import_fb_instance", "program", "用 XML 建功能块实例并调用",
+        "program_import_fb_instance", "L3",
+        params={"program_name": "PrgFB", "fb_name": "FBInst", "inst_name": "InstFB"},
+        expect={"imported": True, "program_created": True, "body_found": True,
+                "fb_body_found": True, "instance_type_seen": True,
+                "new_sources": {"min": 1.0, "max": 10.0}, "errors": 0},
+        reopen=False),
+    Cap("datatype.import", "datatype", "用 XML 建结构体（并用变量读回）",
+        "datatype_import", "L3",
+        params={"program_name": "PrgStruct", "struct_name": "StructGen"},
+        expect={"imported": True, "program_created": True, "struct_node_seen": True,
+                "errors": 0}, reopen=False),
     Cap("inspect.source_map", "inspect", "步→源码坐标（Row/Col/StrLen）", "inspect_source_map",
         "L2", params={}, expect={"steps": {"min": 2.0, "max": 500.0},
                                   "rows": {"min": 2.0, "max": 500.0},

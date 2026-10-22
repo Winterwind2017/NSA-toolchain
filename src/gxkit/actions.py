@@ -488,6 +488,106 @@ def program_import_fb(ctx: dict) -> dict:
             "errors": prog.get("errors")}
 
 
+def _import_verified(s, ctx: dict, xml_path, name: str, attempts: int = 2) -> dict:
+    """导入 XML，并在"什么都没进"时重试。
+
+    导入有静默失败（对话框确认没落到、整份被忽略）：工程里**一点变化都没有**。
+    这种情况重试是安全的——因为上一次确实什么都没写进去。
+    只要检测到目标程序出现，就绝不重试（导入非幂等，重试会得到 xxx_2）。
+    """
+    from . import inspect as I
+
+    base_names = I.program_names(ctx["project"])
+    base_sources = len(I.st_sources(ctx["project"]))
+    info: dict = {}
+    for attempt in range(attempts):
+        info = s.import_xml(xml_path)
+        for _ in range(3):
+            s.convert_all(wait_s=12.0)
+            s.save()
+            if read_progress(ctx["project"]).get("found"):
+                break
+        names = I.program_names(ctx["project"])
+        sources = len(I.st_sources(ctx["project"]))
+        if name in names or sources > base_sources:
+            info["attempts"] = attempt + 1
+            return info
+        time.sleep(1.5)
+    info["attempts"] = attempts
+    return info
+
+
+def datatype_import(ctx: dict) -> dict:
+    """用 XML 建结构体（StructGen），并用**导航树**把它读回来确认。
+
+    为什么不用"结构体类型的变量"当判据：实测 S1 : StructGen 会让
+    局部标签(PrgS4)定义检查中 报 1 个错（结构体标签需要成员级软元件分配），
+    而结构体本身是进得去的。所以判据改成 UIA 导航树里出现 StructGen。
+    """
+    from . import xmlgen
+    from . import inspect as I
+    from . import uia
+
+    s, _ = _new_and_save(ctx)
+    base_labels = len(I.read_labels(ctx["project"]))
+    xml = xmlgen.write_struct_program(
+        pathlib.Path(ctx["project"]).with_name("struct.xml"),
+        ctx.get("program_name") or "PrgStruct", ctx.get("code") or "LocBool := NOT LocBool;",
+        ctx.get("struct_name") or "StructGen",
+        members=None,          # None = 保留样例成员原样（改成员会让整份导入被丢弃）
+        locals_=[{"name": "LocBool", "type": "BOOL"}])
+    imp = _import_verified(s, ctx, xml, ctx.get("program_name") or "PrgStruct")
+    names = I.program_names(ctx["project"])
+    nodes = []
+    try:
+        nodes = uia.find_names(s.main["hwnd"], ctx.get("struct_name") or "StructGen")
+    except Exception:
+        nodes = []
+    prog = read_progress(ctx["project"])
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "attempts": imp.get("attempts"),
+            "program_created": "PrgStruct" in names,
+            "programs": names,
+            "struct_node_seen": bool(nodes),
+            "struct_nodes": nodes[:3],
+            "labels_before": base_labels,
+            "labels_after": len(I.read_labels(ctx["project"])),
+            "errors": prog.get("errors")}
+
+
+def program_import_fb_instance(ctx: dict) -> dict:
+    """建功能块 + 程序里声明其实例并调用（InstFB();）。"""
+    from . import xmlgen
+    from . import inspect as I
+
+    code = ctx.get("code") or "InstFB();"
+    fb_code = ctx.get("fb_code") or "FB_Bool := NOT FB_Bool;"
+    s, _ = _new_and_save(ctx)
+    base_sources = len(I.st_sources(ctx["project"]))
+    xml = xmlgen.write_fb_instance(
+        pathlib.Path(ctx["project"]).with_name("fbinst.xml"),
+        ctx.get("program_name") or "PrgFB", code,
+        ctx.get("fb_name") or "FBInst", ctx.get("inst_name") or "InstFB",
+        fb_body=fb_code,
+        locals_=[{"name": "LocBool", "type": "BOOL"}])
+    imp = _import_verified(s, ctx, xml, ctx.get("program_name") or "PrgFB")
+    names = I.program_names(ctx["project"])
+    labels = I.read_labels(ctx["project"])
+    types = [r["value"] for r in labels
+             if r.get("column_id") == 3 and isinstance(r.get("value"), str)]
+    flat = "".join(I.flat(v) for v in I.st_sources(ctx["project"]).values())
+    prog = read_progress(ctx["project"])
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "attempts": imp.get("attempts"),
+            "program_created": "PrgFB" in names,
+            "programs": names,
+            "body_found": I.flat(code) in flat,
+            "fb_body_found": I.flat(fb_code) in flat,
+            "instance_type_seen": (ctx.get("fb_name") or "FBInst") in types,
+            "new_sources": len(I.st_sources(ctx["project"])) - base_sources,
+            "errors": prog.get("errors")}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -496,6 +596,8 @@ ACTIONS = {
     "program_read_st": program_read_st,
     "program_import_xml": program_import_xml,
     "program_import_fb": program_import_fb,
+    "program_import_fb_instance": program_import_fb_instance,
+    "datatype_import": datatype_import,
     "inspect_source_map": inspect_source_map,
     "inspect_devices": inspect_devices,
     "inspect_mil": inspect_mil,
