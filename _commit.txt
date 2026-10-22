@@ -1,4 +1,4 @@
-feat: 同步 gxkit 0.4 —— 16 条能力（新增 program.import_xml）
+docs: 补 5 条 UI 层坑（Alt 用 PostMessage / Ctrl 用 SendInput / 折叠窗口 / 菜单优先存盘 / 残留进程）
 
-补上四条坑：每个程序一套 SQLite、XML 建程序要 Program+ProgramInstance 且删 Vars、
-导入非幂等、程序体比较要去空白。SKILL.md 判据表加"程序清单"。
+这一轮 16 条能力连跑两次 16/16（1929.0s / 1911.4s），
+SKILL.md 的坑清单从 17 条补到 21 条。

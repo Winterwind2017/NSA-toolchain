@@ -96,6 +96,16 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     还要**删掉 `<Vars>`**，否则引用 FBPou1/Struct1/TIMER 等不存在的类型。
 16. **导入是非幂等的**：判据没过不要重导，会建出 `PrgGen_2`；先修判据。
 17. **程序体比较要"去空白"**：导入后源码会多一个空行（`\r\n\r\n`）。
+18. **Alt 系列用 PostMessage，Ctrl 系列用 SendInput**。反直觉但实测如此：
+    `SendInput` 的 `Alt+P` 有时到不了窗口（菜单不弹、新建对话框不出现）；
+    而 `PostMessage` 的 `Ctrl+S`/`Ctrl+N` 会被 MFC 加速键表忽略。
+19. **窗口会以 135×37 "折叠"启动**：这种状态菜单栏不存在，`Ctrl+N` 也不弹窗。
+    要 `SW_RESTORE` + `MoveWindow` 到 1280×900；句柄失效时 `GetWindowRect`
+    会抛 `error 1400`，必须当作"重新取主窗"而不是异常。
+20. **`Ctrl+S` 新建工程后经常不弹"另存为"**：存盘会变空操作（文件不存在）。
+    `save_as` 应**菜单优先**：`工程 → 另存为(A)` → 填 cid=1148 → 点 cid=1。
+21. **上一轮进程没退干净会"卡在已有实例"**：窗口在、菜单不响应。
+    每条能力之间 `taskkill /IM GXW3.exe /T`。
 
 ## 5. 明确不做
 
