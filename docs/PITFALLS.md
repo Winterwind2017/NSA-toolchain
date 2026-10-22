@@ -248,3 +248,46 @@ ex.Commit()
 而是"自动缩放值的一半"（A3 + 100×50×20 块：0.590012 → 0.295006）。
 所以判据要**自校准**：同一模型建两个视图（自动 + 1:2），比较
 `ratio_scale * 2 ≈ auto_scale`，别硬编码 0.5。
+
+## 十六、只读属性返回的选择对象是可写的（一次性误判了 3 条能力）
+
+`BridgeCurveBuilder.StartObject` / `IntersectionCurveBuilder.FirstFace` /
+`SectionViewBuilder.ParentView` 这类属性**本身**不可赋值：
+
+```python
+bcb.StartObject = c1          # AttributeError: not writable  ← 我卡在这里很久
+bcb.StartObject.Value = c1    # ✅ 属性只读，但它包着的 SelectObject/ScCollector 可写
+```
+
+同理：
+- `icb.FirstFace` / `SecondFace` 是 **ScCollector** → `AddRules([CreateRuleFaceDumb([face])])`；
+- 交线还要求 `icb.Tolerance > 0`，否则 `Distance Tolerance cannot be zero.`；
+- 桥接产物是 **Spline**，没有 `StartPoint`；`GetDefiningPoints()` 返回 `[None]`，
+  要用 **`Get3DPoles()`**（首末极点即端点）。
+
+→ 结论：遇到 "property not writable" 先看 `type(prop).__name__`，是
+`SelectObject`/`ScCollector`/`Section` 就改成写它的 `.Value` / `.AddRules` / `AddToSection`。
+
+## 十七、"实体阵列"走错了 builder（PatternBody → PatternFeature）
+
+`PatternBodyBuilder` 在 journal 里两条路都死：显式给 `ReferencePoint.Point` 报
+`Each patterned body must be face coincident with another patterned body.`，
+不给则 `Incorrect object for this operation.`
+
+换成 **`PatternFeatureBuilder`（阵列特征）** 就能真出几何：
+
+```python
+pb = part.Features.CreatePatternFeatureBuilder(PatternFeature.Null)
+pb.FeatureList.Add([block_feature])          # 是 SelectObjectList
+pd = pb.PatternService                       # 注意：它本身就是 PatternDefinition
+pd.PatternType = PatternDefinitionPatternEnum.Linear
+xsp = pd.RectangularDefinition.XSpacing      # DistancePatternSpacing
+xsp.SpaceType = PatternSpacingSpacingType.Pitch
+xsp.NCopies.SetFormula("3")
+xsp.PitchDistance.SetFormula("150")
+pb.CommitFeature()                           # → 3 个体，体积 300000
+```
+
+教训：一个"族"里有多个 builder 时，别在第一个上死磕；先列出
+`Create*Pattern*Builder` 的全部入口（Python 绑定里还有 PatternGeometry /
+PatternFace / PatternFaceFeature / CombinePattern），逐个试哪个接受你的输入。

@@ -32,7 +32,6 @@
 
 | `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） | 需 UI 上下文 |
 
-| `pattern.body_linear` | 7 轮尝试已到最深：`SelectBody.Value` **读回确认选上了**（`GetValue()` 返回 Body）、`PatternDefinition.PatternType=Linear` 可设、`XSpacing`（`DistancePatternSpacing`）的 `NCopies=3` / `PitchDistance=150` 可设、`XDirection` 给 Direction 可设、`XSelection.Value` 给边可设、`ReferencePoint.Point` 给 Point 也可设。结果只有两种：显式给 Point 时报 `Each patterned body must be face coincident with another patterned body.`，其余组合一律 `Incorrect object for this operation.` | 需要交互式阵列定义 |
 
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） | 需要正确的求解触发方式 |
 

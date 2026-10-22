@@ -89,7 +89,8 @@
 
 | 原本要 | 改用 | 能力 id |
 |---|---|---|
-| 交线 `curve.intersection` | 两条曲线组合投影 | `curve.combined_projection` |
+| 交线 `curve.intersection` | 已直接打通（ScCollector + Tolerance） | `curve.intersection` |
+| 实体阵列 `PatternBody` | 换 `PatternFeatureBuilder`（阵列特征） | `feature.pattern_linear` |
 | 片体偏置 `OffsetSurfaceBuilder` | `VariableOffsetBuilder` | `surface.offset` |
 | 删实体 `delete_body` | 删面愈合 | `solid.delete_face` |
 | 投影视图 builder | `SheetDraftingViews.CreateProjectedView` | `drawing.projected_view` |
