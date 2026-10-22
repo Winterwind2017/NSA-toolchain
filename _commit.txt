@@ -1,0 +1,4 @@
+feat: 同步 gxkit 0.3 —— 15 条能力（源码读回 / 步-源码映射 / IL / 软元件 / 行级定位 / 标签导入）
+
+新增：program.read_st、inspect.source_map、inspect.devices、inspect.mil、
+build.locate_error_line、label.import_xml；SKILL.md 补上 13 条坑与「明确不做」清单。

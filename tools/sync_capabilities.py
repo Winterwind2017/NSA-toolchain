@@ -15,10 +15,10 @@ sys.path.insert(0, str(KIT / "src"))
 from gxkit import caps  # noqa: E402
 
 PENDING = [
-    ("build.error_line", "行级错误定位：转换结果面板无可读文本，Progress.txt 只到阶段级"),
+    ("build.error_message", "编译器原话：转换结果面板是自绘视图，读不到文本"),
+    ("label.non_bool", "WORD/DINT 标签导入未验证（只验证了 BOOL）"),
     ("project.check", "工程校验是两工程比对，不是校验本工程"),
-    ("label.import_xml", "XML 导入能进全局标签，但样例结构体有 1 个 Error"),
-    ("program.read_st", ".gx3 里 _Project.txc 是二进制，程序体在 .w3pa"),
+    ("program.import_xml", "自拼的最小 <Program> 不建程序；程序体走编辑器粘贴"),
     ("online.write", "需要真实 PLC；用户口径只做离线"),
     ("ladder.write", "梯形图编辑器是自绘控件，无法程序化写网络"),
 ]
@@ -43,7 +43,7 @@ def main() -> int:
     snap = {
         "skill": "ww-gxworks-automation",
         "kernel": "gxkit",
-        "kernel_version": "0.2.0",
+        "kernel_version": "0.3.0",
         "kernel_commit": kit_commit(),
         "engine": "GX Works3 1.117.0.1",
         "cpu": "FX5U",

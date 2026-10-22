@@ -1,15 +1,15 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.2.0",
-  "kernel_commit": "21c0bc3",
+  "kernel_version": "0.3.0",
+  "kernel_commit": "fd388bd",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 9,
-    "families": 4,
+    "verified": 15,
+    "families": 5,
     "pending": 6
   },
   "verified": {
@@ -67,6 +67,103 @@
       },
       "reopen": false
     },
+    "program.read_st": {
+      "family": "program",
+      "level": "L1–L2",
+      "title": "从 .gx3 读回 ST 源码（逐字比对）",
+      "action": "program_read_st",
+      "expect": {
+        "matches": true,
+        "readback_chars": {
+          "min": 10.0,
+          "max": 20000.0
+        },
+        "lines": {
+          "min": 2.0,
+          "max": 500.0
+        }
+      },
+      "reopen": false
+    },
+    "inspect.source_map": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "步→源码坐标（Row/Col/StrLen）",
+      "action": "inspect_source_map",
+      "expect": {
+        "steps": {
+          "min": 2.0,
+          "max": 500.0
+        },
+        "rows": {
+          "min": 2.0,
+          "max": 500.0
+        },
+        "snippets": {
+          "min": 2.0,
+          "max": 500.0
+        }
+      },
+      "reopen": false
+    },
+    "inspect.devices": {
+      "family": "inspect",
+      "level": "L1–L2",
+      "title": "读 FX5U 系统软元件模板",
+      "action": "inspect_devices",
+      "expect": {
+        "device_rows": {
+          "min": 2900.0,
+          "max": 3000.0
+        },
+        "device_types": {
+          "min": 2.0,
+          "max": 20.0
+        },
+        "commented": {
+          "min": 100.0,
+          "max": 5000.0
+        }
+      },
+      "reopen": false
+    },
+    "inspect.mil": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "读编译后的 IL 文本",
+      "action": "inspect_mil",
+      "expect": {
+        "mil_rows": {
+          "min": 1.0,
+          "max": 20.0
+        },
+        "op_count": {
+          "min": 3.0,
+          "max": 1000.0
+        },
+        "mil_chars": {
+          "min": 50.0,
+          "max": 100000.0
+        }
+      },
+      "reopen": false
+    },
+    "label.import_xml": {
+      "family": "label",
+      "level": "L2–L3",
+      "title": "导入全局标签 XML 并读回",
+      "action": "label_import_xml",
+      "expect": {
+        "imported": true,
+        "labels_found": 3,
+        "errors": 0,
+        "labels_after": {
+          "min": 60.0,
+          "max": 200.0
+        }
+      },
+      "reopen": false
+    },
     "build.convert_all": {
       "family": "build",
       "level": "L1–L3",
@@ -111,6 +208,20 @@
       },
       "reopen": false
     },
+    "build.locate_error_line": {
+      "family": "build",
+      "level": "L3",
+      "title": "二分法定位坏行（前缀问编译器）",
+      "action": "build_locate_error_line",
+      "expect": {
+        "found_line": 5,
+        "iterations": {
+          "min": 1.0,
+          "max": 6.0
+        }
+      },
+      "reopen": false
+    },
     "batch.projects": {
       "family": "build",
       "level": "L3",
@@ -119,7 +230,8 @@
       "expect": {
         "items": 3,
         "clean_items": 3,
-        "distinct_sizes": 3
+        "distinct_sources": 3,
+        "content_match": 3
       },
       "reopen": false
     },
@@ -145,23 +257,31 @@
       "project.reopen"
     ],
     "inspect": [
-      "project.meta"
+      "project.meta",
+      "inspect.source_map",
+      "inspect.devices",
+      "inspect.mil"
     ],
     "program": [
-      "program.paste_st"
+      "program.paste_st",
+      "program.read_st"
+    ],
+    "label": [
+      "label.import_xml"
     ],
     "build": [
       "build.convert_all",
       "build.program_check",
       "build.error_detail",
+      "build.locate_error_line",
       "batch.projects"
     ]
   },
   "pending": {
-    "build.error_line": "行级错误定位：转换结果面板无可读文本，Progress.txt 只到阶段级",
+    "build.error_message": "编译器原话：转换结果面板是自绘视图，读不到文本",
+    "label.non_bool": "WORD/DINT 标签导入未验证（只验证了 BOOL）",
     "project.check": "工程校验是两工程比对，不是校验本工程",
-    "label.import_xml": "XML 导入能进全局标签，但样例结构体有 1 个 Error",
-    "program.read_st": ".gx3 里 _Project.txc 是二进制，程序体在 .w3pa",
+    "program.import_xml": "自拼的最小 <Program> 不建程序；程序体走编辑器粘贴",
     "online.write": "需要真实 PLC；用户口径只做离线",
     "ladder.write": "梯形图编辑器是自绘控件，无法程序化写网络"
   }
