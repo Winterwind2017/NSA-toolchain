@@ -13,11 +13,9 @@
 
 | 能力 | 卡在哪（真机证据） | 依赖 |
 |---|---|---|
-| `feature.chamfer` | `CreateChamferBuilder(...).SmartCollector` 是 **None**，没有可写的边集合；直接 `CommitFeature()` 报 `Referenced edge does not exist` | 需要找到边选择的正确挂点（`SelectEdge`/selection intent） |
 | `cae.mesh` | `NXOpen.CAE` 绑定 16 MB，起解算耗时长 | 许可证 `simulation`（本机有） |
 | `asm.constraints`（解算） | 已把整套流程走通：`Positioner.BeginAssemblyConstraints()` → `CreateConstraint(True)` → `ConstraintType=Touch` → 两个 `CreateConstraintReference`（成功，返回 `ConstraintReference`）→ `LoadConstraintGeometry` → `EndAssemblyConstraints()`（返回 None）→ `SolvePostponedConstraints()`（返回 None）。但**两面距离在解算前后都是 10.0**、`GetConstraintStatus()` 恒为 0 → 约束没解算 | 需要交互式约束求解器 |
-| `feature.chamfer_angle` | `ChamferBuilder.Option` / `AngleExp` 赋值后读回仍是默认（对称偏移），角度模式设不上；对称倒角已由 `feature.chamfer_edge` 覆盖 | 需要别的枚举写入口 |
-| `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸） | 需要正确签名 |
+| `sketch.constant_length` | `CreateConstantLengthConstraint(geom)` 报 `Unable to create sketch geometric constraint`（可能要配表达式/尺寸）。**语义相近但不等于**：`sketch.equal_length` 做的是「两线等长」，constant length 是「单条曲线长度锁定」 | 需要正确签名 |
 | `sketch.constraints`（其余类型） | 重合/水平/竖直/等长/垂直/固定 已通；相切、中点、共线等未逐个验证 | 逐步加 |
 | `drawing.section_view` | `CreateSectionViewBuilder(base_view)` 报 `Invalid object type for this operation`；用 `SectionView.Null` 能构造，但 `ParentView` **不可写**、`Commit()` 报 `Null tag not allowed` | 需要剖切线先建（`SpecifySectionLineBuilder`）且父视图入口不可写 |
 
@@ -27,7 +25,7 @@
 （暂无。）
 
 
-| `solid.delete_body` | `BodyToDelete` 构造出来是 `None`；赋一个 `ScCollector` 后 `CommitFeature()` 返回成功，但**体仍在**（`removed=0`）→ 空操作。删面（`solid.delete_face`）已打通，可作为替代 | 空操作 |
+| `solid.delete_body` | `BodyToDelete` 构造出来是 `None`；赋一个 `ScCollector` 后 `CommitFeature()` 返回成功但**体仍在**（`removed=0`）→ 空操作。**部分覆盖**：`solid.delete_face`（删面愈合）/ `solid.trim_body` / `boolean.subtract` 能交付大部分「去掉一块几何」的需求，但「整删除一个体」仍缺 | 空操作 |
 
 
 | `solid.move_body` | `ModlMotion` 参数全设上、两个 Commit 都成功但几何不动；`FreeTransformerBuilder`/`MeshTransformerBuilder` 只吃**面/曲线/点**，没有目标体入口（Commit 报 `Missing target body.`） | 需 UI 上下文 |
@@ -37,7 +35,6 @@
 
 | `sketch.slope` / `sketch.constant_angle` / `sketch.constant_length` | 三个 API 都能调，但一律返回 `Unable to create sketch geometric constraint.`（同族的 normal / tangent / parallel 都能建）→ 这几个类型可能在 journal 下不可用 | 需要 UI 上下文或前置条件 |
 
-| `feature.revolve_datum` | `RevolveBuilder.Axis` 只认 `NXOpen.Axis`：给 `DatumAxis` 报 `Expecting NXOpen.Axis type, found NXOpen.DatumAxis`。所以"基准特征当几何输入"这个范式**只对 Face/Plane 成立，对 Axis 不成立** | 用 `part.Axes.CreateAxis(point, dir)` 即可 |
 
 
 
