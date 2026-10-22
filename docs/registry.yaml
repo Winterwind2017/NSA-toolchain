@@ -1,0 +1,45 @@
+version: 1
+kernel: gxkit 0.1.0
+engine: GX Works3 1.117.0.1
+cpu: FX5U
+lang: ST
+scope: offline
+counts:
+  verified: 6
+capabilities:
+- id: project.new
+  family: project
+  level: L1
+  status: verified
+  action: project_new
+  expect: {"has_window": true, "is_st": true}
+- id: project.save
+  family: project
+  level: L1–L2
+  status: verified
+  action: project_save
+  expect: {"exists": true, "bytes": {"min": 300000.0, "max": 5000000.0}, "unit": "FX5U"}
+- id: project.meta
+  family: inspect
+  level: L1–L2
+  status: verified
+  action: project_meta
+  expect: {"unit": "FX5U", "zip_entries": {"min": 50.0, "max": 500.0}, "has_config": true}
+- id: program.paste_st
+  family: program
+  level: L1–L3
+  status: verified
+  action: program_paste_st
+  expect: {"steps": {"min": 2.0, "max": 200.0}}
+- id: build.convert_all
+  family: build
+  level: L1–L3
+  status: verified
+  action: build_convert_all
+  expect: {"errors": 0, "warnings": 0, "stages": {"min": 3.0, "max": 100.0}}
+- id: project.reopen
+  family: project
+  level: L4
+  status: verified
+  action: project_reopen
+  expect: {"reopened": true, "steps": {"min": 2.0, "max": 200.0}}
