@@ -54,6 +54,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | 错误定位（阶段） | `build.error_detail` | `Progress.txt` 的 `failed_stages` |
 | **错误定位（行）** | `build.locate_error_line` | 前缀二分：`k` 通过、`k+1` 失败 → 第 `k+1` 行 |
 | **标签导入** | `label.import_xml` | `Instances/Configuration/GlobalVars` + 唯一行号 |
+| **程序新建（XML）** | `program.import_xml` | `Program` + `Resource/ProgramInstance`，且删掉 `<Vars>` |
 | 批量 | `batch.projects` | 同会话连续粘贴变体 + `工程 → 另存为` |
 | L4 | `project.reopen` | 存盘 → 关工程 → 重开 → `N步` 仍在 |
 
@@ -67,7 +68,8 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | 编译结果 | `ConvertData/Progress.txt` | `错误：0、警告：0` |
 | 失败阶段 | 同上 `failed_stages` | 至少一个阶段 errors>0 |
 | 程序检查 | 对话框 UIA | `程序检查已完成。无错误。` |
-| 源码读回 | `StBlocks.data` | 与贴进去的**逐字相同** |
+| 源码读回 | `*_STDB.db` 的 `StBlocks.data` | 与贴进去的**逐字相同**（比较时去空白） |
+| 程序清单 | `Progress.txt` 的 `程序(xxx)` | 出现新程序名，数量 +1 |
 | 标签导入 | `LabelData` | 出现 `LBL_A/B/C`（54→75 行） |
 
 ## 4. 别踩这些坑（每条都真实踩过）
@@ -87,6 +89,13 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 11. **保存偶发不落地**：`Ctrl+S` 之后要等 **mtime 变化**，并用读回源码确认。
 12. **`save_as` 遇到文件被占用会改名**：后续读取要用它返回的 `path`，不能用你传进去的名字。
 13. **行级错误是"二分推断"**：编译器不给行号，`转换结果` 面板是自绘视图读不到。
+14. **每个程序一套 SQLite**（STDB/StepInfo/MilDB）：只读第一个会漏掉别的程序，
+    表现为"导入成功却读不到源码"。
+15. **XML 建程序要两处同时存在**：`Types/GlobalNamespace/Program` +
+    `Instances/Configuration/Resource/ProgramInstance`（同名）；
+    还要**删掉 `<Vars>`**，否则引用 FBPou1/Struct1/TIMER 等不存在的类型。
+16. **导入是非幂等的**：判据没过不要重导，会建出 `PrgGen_2`；先修判据。
+17. **程序体比较要"去空白"**：导入后源码会多一个空行（`\r\n\r\n`）。
 
 ## 5. 明确不做
 
