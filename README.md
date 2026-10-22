@@ -37,7 +37,7 @@ nxkit run                           # 全部，一次 NX 会话
 `nxkit run` 输出：
 
 ```
-146/146 通过  (会话 21.5s, 退出码 1)
+146/146 通过  (会话 47.9s, 退出码 1)
   PASS block.create           0.19s
   PASS boolean.subtract       0.05s
   ...
@@ -74,12 +74,12 @@ python -m pytest -q tests        # 9 passed（离线：登记/判据负例/许�
 python -m nxkit selftest         # 102 条能力，动作与判据齐全，负例都能被拒绝
 python -m nxkit licenses         # 本机 4,420 feature，四档齐全
 python tools\check_consistency.py  # 五处数字一致（README/矩阵/STATUS/registry/快照）
-python -m nxkit run              # 145/145，约 18 s（一次 NX 会话）
+python -m nxkit run              # 146/146，约 47 s（一次 NX 会话；DXF/DWG 翻译器占 34 s）
 python -m nxkit run --only solid,part   # 快速冒烟，约 15 s
 ```
 
 2026-10-21 用**全新 clone** 复跑过：9 passed / selftest 102 / licenses 全绿 /
-真机 145 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
+真机 146 条全过；技能仓库 clone 后 `check_skill.py --check` 与 4 个测试同样通过。
 
 ## 现状与差距
 
