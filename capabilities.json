@@ -10,9 +10,9 @@
   ],
   "counts": {
     "families": 14,
-    "verified": 144
+    "verified": 146
   },
-  "generated_at": "2026-10-22T08:25:09",
+  "generated_at": "2026-10-22T08:34:47",
   "levels": {
     "asm.add_component": "L1–L2",
     "asm.component_names": "L1–L2",
@@ -110,6 +110,7 @@
     "feature.stack_blocks": "L1–L3",
     "feature.sweep": "L1–L3",
     "feature.sweep_guide": "L1–L3",
+    "feature.text": "L1–L2",
     "feature.thicken": "L1–L3",
     "feature.tube": "L1–L3",
     "file.roundtrip": "L4",
@@ -148,6 +149,7 @@
     "solid.cone": "L1–L3",
     "solid.cone_frustum": "L1–L3",
     "solid.delete_face": "L1–L2",
+    "solid.move_body": "L1–L3",
     "solid.scale": "L1–L3",
     "solid.sphere": "L1–L3",
     "solid.split_body": "L1–L3",
@@ -256,6 +258,7 @@
     "feature.stack_blocks": "solid_modeling",
     "feature.sweep": "solid_modeling",
     "feature.sweep_guide": "solid_modeling",
+    "feature.text": "solid_modeling",
     "feature.thicken": "solid_modeling",
     "feature.tube": "solid_modeling",
     "file.roundtrip": "gateway",
@@ -294,6 +297,7 @@
     "solid.cone": "solid_modeling",
     "solid.cone_frustum": "solid_modeling",
     "solid.delete_face": "solid_modeling",
+    "solid.move_body": "solid_modeling",
     "solid.scale": "solid_modeling",
     "solid.sphere": "solid_modeling",
     "solid.split_body": "solid_modeling",
@@ -345,7 +349,7 @@
   ],
   "provenance": {
     "engine": "NX 2512",
-    "kernel_commit": "d84e867",
+    "kernel_commit": "6e28647",
     "kernel_repo": "https://github.com/Winterwind2017/nxkit",
     "nxkit_version": "0.1.0"
   },
@@ -447,6 +451,7 @@
     "feature.stack_blocks": "feature",
     "feature.sweep": "feature",
     "feature.sweep_guide": "feature",
+    "feature.text": "feature",
     "feature.thicken": "feature",
     "feature.tube": "feature",
     "file.roundtrip": "file",
@@ -485,6 +490,7 @@
     "solid.cone": "solid",
     "solid.cone_frustum": "solid",
     "solid.delete_face": "solid",
+    "solid.move_body": "solid",
     "solid.scale": "solid",
     "solid.sphere": "solid",
     "solid.split_body": "solid",
