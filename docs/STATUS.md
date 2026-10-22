@@ -62,5 +62,5 @@
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 15/15，约 20 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 15/15，约 28.5 分钟
 ```
