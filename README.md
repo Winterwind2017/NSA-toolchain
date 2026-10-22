@@ -27,7 +27,7 @@
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest                       # 离线自检（不需要 GX Works3）
 python -m gxkit caps                           # 列能力
-python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部（约 7–8 分钟）
+python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部（约 24 分钟）
 python -m gxkit run --only project.save        # 只跑一条
 python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编译日志
 ```
@@ -43,9 +43,26 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编�
 | **编译结果** | `.gx3` 里 `ConvertData/Progress.txt`（纯文本：`错误：0、警告：0`） |
 | 错在哪个阶段 | 同上，逐阶段的 `Error/Warning`（`failed_stages`） |
 | **程序检查判定** | `工具 → 程序检查` 执行后对话框的 UIA 文本：`程序检查已完成。无错误。` |
+| **ST 源码** | `*_STDB.db` 的 `StBlocks.data`（就是原文，可逐字比对） |
+| 步→源码坐标 | `*_StepInfo.db` 的 `T_SourcePos`（`Row=,Col=,StrLen=`） |
+| 编译 IL | `*_MilDB.db` 的 `MIL.data`（`op=` 指令流） |
+| 软元件模板 | `*_DC.db` 的 `DEVICE_DATA`（FX5U 2935 行 + 注释） |
+| 标签 | `LabelData.db`（`LabelTbl`/`RowTbl`/`ColumnDataTbl`） |
 
 `Progress.txt` 是这套内核最有价值的判据：**编译 0 错 0 警是硬事实**，不依赖任何界面抓取。
 `程序检查` 是第二层：它在编译通过之后继续查指令用法、双线圈、软元件/标签一致性。
+`StBlocks.data` 是意外之喜：程序源码在 `.gx3` 里是**明文**，所以"读回校验"可以做到逐字比对。
+
+## 行级错误怎么来的（不是编译器原话）
+
+编译失败时 `T_Step` 是空的（没有步就没有源码坐标），编译器也不给行号。所以用**前缀二分**问编译器：
+
+```
+lines[0:k] 通过、lines[0:k+1] 失败  →  第 k+1 行就是坏行
+```
+
+8 行程序、坏行注入在第 5 行 → 4 次转换就定位到第 5 行（`k=8 失败 / k=4 通过 / k=6 失败 / k=5 失败`）。
+这是**推断**，不是编译器原文；原文那条路（`转换结果` 面板）是自绘视图，读不到。
 
 ## 批量
 
@@ -58,7 +75,9 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编�
 ```
 src/gxkit/win.py       Win32 底层（窗口/点击/按键/剪贴板/前台激活）
 src/gxkit/uia.py       UIA 薄封装（菜单项、按钮定位）
-src/gxkit/session.py   GX Works3 会话（新建/另存/粘贴/转换/进度解析）
+src/gxkit/session.py   GX Works3 会话（新建/另存/粘贴/转换/程序检查/XML 导入）
+src/gxkit/inspect.py   **离线读 .gx3**（源码/步/IL/软元件/标签）
+src/gxkit/xmlgen.py    生成全局标签的 IEC 61131-10 XML（以官方样例为骨架）
 src/gxkit/actions.py   每条能力的动作
 src/gxkit/caps.py      能力表（唯一事实来源）
 src/gxkit/judges.py    判据
@@ -72,5 +91,6 @@ docs/STATUS.md         当前状态
 
 - 只能离线（不写入 PLC）；在线能力需要真实 PLC 或模拟器，未做
 - UI 是日文版；菜单/控件 id 依赖日文界面，换语言需重建映射
-- 每条能力 ~10 s 启动 + 操作，全套 ~7–8 分钟
-- 梯形图内容不走 XML（XML 导入只稳定支持全局标签），程序体用编辑器粘贴
+- 每条能力 ~10 s 启动 + 操作，全套 **~24 分钟**（15 条）
+- 行级错误是"前缀二分推断"，不是编译器原文（面板读不到）
+- 梯形图内容不走 XML；程序体用编辑器粘贴，全局标签走 XML 导入（仅验证 BOOL）

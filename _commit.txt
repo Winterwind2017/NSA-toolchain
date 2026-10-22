@@ -1,0 +1,10 @@
+feat: gxkit 0.3 —— 三条新方向（离线读数 / 行级定位 / 标签导入），15 条能力
+
+1) 离线读数层 src/gxkit/inspect.py：STDB.StBlocks.data 是 ST 源码明文（program.read_st 逐字比对）、
+   StepInfo.T_SourcePos 给步→源码坐标（inspect.source_map）、MilDB.MIL 给编译 IL（inspect.mil）、
+   DC.DEVICE_DATA 给软元件模板（inspect.devices）、LabelData 给标签。缓存按 (mtime,size) 失效。
+2) 行级定位 build.locate_error_line：编译失败没有步也就没有坐标，改用前缀二分
+   （lines[0:k] 通过、k+1 失败 → 第 k+1 行），8 行第 5 行坏行 4 次转换命中。
+3) 标签导入 label.import_xml：GlobalVars 必须放 Instances/Configuration 下（放错静默忽略），
+   变量要克隆样例整条并改唯一行号（否则只进第一条），实测 54→75 行、LBL_A/B/C 全在、0 错。
+4) batch 判据从「大小不同」改成「读回源码逐字匹配」，修掉一次 distinct_sizes=2 的假阳性。

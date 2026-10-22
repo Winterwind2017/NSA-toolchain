@@ -53,10 +53,15 @@
 | R1 | `.gx3` 解包（Config.xml / SQLite / Progress.txt） | — | ✅ |
 | R2 | 逐阶段错误归属（`failed_stages`） | R1 | ✅ |
 | R3 | 程序检查判定（UIA 文本） | P3 + D1 | ✅ |
+| R4 | **源码读回**（`StBlocks.data` 是明文） | R1 | ✅ |
+| R5 | **步→源码坐标**（`T_SourcePos`）与 IL（`MIL.data`） | R1 + P3 | ✅ |
+| R6 | 软元件模板（`DEVICE_DATA`） | R1 | ✅ |
 | B1 | 同会话批量（改代码 + 菜单另存为） | P3 + R1 | ✅ |
+| B2 | **行级定位（前缀二分）** | P3 + R1 | ✅ |
+| B3 | 全局标签导入（XML） | P1 + R1 | ✅（仅 BOOL） |
 | L4 | 存盘 → 关工程 → 重开 → 步数仍在 | P3 + R1 | ✅ |
-| P4 | 行级错误定位（转换结果面板） | 面板不可读 | ❌ 见 UNSUPPORTED |
-| P5 | 全局标签/结构体（走 XML 导入） | P1 | 待做 |
+| P4 | 编译器原话（错误消息文本） | 面板不可读 | ❌ 见 UNSUPPORTED |
+| P5 | WORD/DINT 标签 | 类型相关未验证 | ⚠️ 见 UNSUPPORTED |
 | P6 | 在线（写入 PLC / 监视） | 硬件 | 不做（用户口径：只离线） |
 
 ## 4. 顺序判据（以后加能力时照这个走）
@@ -69,10 +74,24 @@
 ## 5. 三条新增能力是怎么定的
 
 - `build.program_check`：`工具 → 程序检查` 执行后，对话框 UIA 里出现
-  `程序检查已完成。\n无错误。` —— 这是**软件自己给的判定**，比谁的推断都硬。
-  前置条件是工程已转换（否则弹"程序中存在未转换的梯形图…请执行转换"）。
-- `build.error_detail`：行级错误没有可读口（`转换结果` 面板只有自绘视图），
-  但 `Progress.txt` 的每个阶段都有独立 `Error/Warning`，于是把能力定在
-  **阶段级归属**：`failed_stages = ["程序(ProgPou)转换中"]`。
+  `程序检查已完成。\n无错误。` —— 这是**软件自己给的判定**。
+- `build.error_detail` / `build.locate_error_line`：错误消息没有可读口，
+  但"有 N 个错误"这个事实可以反复问。阶段级用 `Progress.txt`，
+  行级用**前缀二分**（`lines[0:k]` 通过、`k+1` 失败 → 第 `k+1` 行）。
 - `batch.projects`：同会话"再新建工程"必然漂移（见 PITFALLS 十一），
-  但"同一工程连续改代码 + `工程 → 另存为`"是稳的，于是批量按这个做。
+  但"同一工程连续改代码 + `工程 → 另存为`"是稳的。
+
+## 6. 离线读数层（v0.3 新增，完全不碰界面）
+
+`src/gxkit/inspect.py` 只做 ZIP + SQLite，因此可以当"动作层"的独立判据：
+
+| 读取器 | 数据源 | 用途 |
+|---|---|---|
+| `st_source` | `*_STDB.db` `StBlocks.data` | 程序源码**明文**，逐字比对 |
+| `steps_with_source` | `*_StepInfo.db` `T_Step` + `T_SourcePos` | 每个 MIL 步来自源码哪一段 |
+| `read_mil` | `*_MilDB.db` `MIL.data` | 编译后的 IL（`op=`） |
+| `read_devices` | `*_DC.db` `DEVICE_DATA`/`COMMENT_DATA` | FX5U 系统软元件模板 |
+| `read_labels` | `LabelData.db` | 标签名/注释（判 XML 导入是否生效） |
+
+**注意缓存**：解包结果按 `(mtime_ns, size)` 缓存；工程被重存后必须重新解，
+否则会读到导入前的旧数据（踩过：导入标签后仍读到 54 行）。

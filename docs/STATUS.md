@@ -1,37 +1,66 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.2.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.3.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**9** 条
-- 一条能力一个干净会话（启动约 10 s）；`batch.projects` 是唯一在同会话内连做的能力
+- 真机通过能力：**15** 条
+- 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
 ## 能力
 
-| id | family | level | 做什么 | 判据来源 |
-|---|---|---|---|---|
-| `project.new` | project | L1 | 新建 FX5U+ST 工程 | 标题含 `[PRG] [ST]` |
-| `project.save` | project | L1–L2 | 另存为 `.gx3`（含读回） | 文件存在 + `!!Config.xml` 的 `Unit` |
-| `project.meta` | inspect | L1–L2 | 解包读 Config/条目数 | ZIP 条目 + Config |
-| `program.paste_st` | program | L1–L3 | ST 代码粘进编辑器 | 标题 `N步` + 编译错误数 |
-| `build.convert_all` | build | L1–L3 | 全部转换 | `Progress.txt` 的 `错误：0、警告：0` |
-| `build.program_check` | build | L2–L3 | 程序检查（指令/双线圈/软元件） | 对话框 UIA 文本 `程序检查已完成。无错误。` |
-| `build.error_detail` | build | L2–L3 | 故意写错 → 定位错在哪个编译阶段 | `Progress.txt` 的 `failed_stages` |
-| `batch.projects` | build | L3 | 同会话连出 3 个工程（变体长度不同） | 3 个文件都存在 + 各自 0 错 + 3 个不同大小 |
-| `project.reopen` | project | L4 | 存盘→关→重开→步数仍在 | 标题文件名 + `N步` |
+### 工程与存盘
 
-## 三个判据层
+| id | 做什么 | 判据来源 |
+|---|---|---|
+| `project.new` | 新建 FX5U+ST 工程 | 标题含 `[PRG] [ST]` |
+| `project.save` | 另存为 `.gx3`（含读回） | 文件存在 + `!!Config.xml` 的 `Unit` |
+| `project.meta` | 解包读 Config/条目数 | ZIP 条目 + Config |
+| `project.reopen` | 存盘→关→重开→步数仍在（L4） | 标题文件名 + `N步` |
+
+### 程序
+
+| id | 做什么 | 判据来源 |
+|---|---|---|
+| `program.paste_st` | ST 代码粘进编辑器 | 标题 `N步` |
+| `program.read_st` | **从 `.gx3` 读回 ST 源码** | `StBlocks.data` 与贴进去的逐字相同 |
+
+### 编译与检查
+
+| id | 做什么 | 判据来源 |
+|---|---|---|
+| `build.convert_all` | 全部转换 | `Progress.txt` 的 `错误：0、警告：0` |
+| `build.program_check` | 程序检查（指令/双线圈/软元件） | UIA 文本 `程序检查已完成。无错误。` |
+| `build.error_detail` | 定位错在哪个编译阶段 | `Progress.txt` 的 `failed_stages` |
+| `build.locate_error_line` | **二分法定位坏行** | 前缀 `k` 通过、`k+1` 失败 → 第 `k+1` 行 |
+| `batch.projects` | 同会话连出 3 个工程 | 3 个文件都在 + 各自 0 错 + 大小各不相同 |
+
+### 离线读数（纯 ZIP/SQLite，不碰界面）
+
+| id | 做什么 | 判据来源 |
+|---|---|---|
+| `inspect.source_map` | 每个 MIL 步 → 源码坐标 | `T_SourcePos` 的 `Row/Col/StrLen` |
+| `inspect.mil` | 编译后的 IL 文本 | `MilDB.MIL.data` 的 `op=` 个数 |
+| `inspect.devices` | FX5U 系统软元件模板 | `DEVICE_DATA` 2935 行 + 注释 |
+
+### 标签
+
+| id | 做什么 | 判据来源 |
+|---|---|---|
+| `label.import_xml` | 导入全局标签 XML | `LabelData` 里出现 `LBL_A/B/C`（54→75 行） |
+
+## 四层判据
 
 1. **文件层**：`.gx3` 存在、大小、`!!Config.xml` 的机型。
-2. **编译层**：`ConvertData/Progress.txt` 的逐阶段 `Error/Warning`，以及 `failed_stages`。
-3. **软件层**：`工具 → 程序检查` 执行后的判定文本（UIA 可读）。
+2. **源码层**：`StBlocks.data` 就是 ST 原文；`T_SourcePos` 给步→源码坐标。
+3. **编译层**：`Progress.txt` 的逐阶段 `Error/Warning` 与 `failed_stages`。
+4. **软件层**：`工具 → 程序检查` 的判定文本（UIA 可读）。
 
 ## 复现
 
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 9/9，约 13 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 15/15，约 20 分钟
 ```

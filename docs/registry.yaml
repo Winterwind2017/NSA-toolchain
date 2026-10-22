@@ -1,11 +1,11 @@
-version: 2
-kernel: gxkit 0.2.0
+version: 3
+kernel: gxkit 0.3.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 9
+  verified: 15
 capabilities:
 - id: project.new
   family: project
@@ -31,6 +31,36 @@ capabilities:
   status: verified
   action: program_paste_st
   expect: {"steps": {"min": 2.0, "max": 200.0}}
+- id: program.read_st
+  family: program
+  level: L1–L2
+  status: verified
+  action: program_read_st
+  expect: {"matches": true, "readback_chars": {"min": 10.0, "max": 20000.0}, "lines": {"min": 2.0, "max": 500.0}}
+- id: inspect.source_map
+  family: inspect
+  level: L2
+  status: verified
+  action: inspect_source_map
+  expect: {"steps": {"min": 2.0, "max": 500.0}, "rows": {"min": 2.0, "max": 500.0}, "snippets": {"min": 2.0, "max": 500.0}}
+- id: inspect.devices
+  family: inspect
+  level: L1–L2
+  status: verified
+  action: inspect_devices
+  expect: {"device_rows": {"min": 2900.0, "max": 3000.0}, "device_types": {"min": 2.0, "max": 20.0}, "commented": {"min": 100.0, "max": 5000.0}}
+- id: inspect.mil
+  family: inspect
+  level: L2
+  status: verified
+  action: inspect_mil
+  expect: {"mil_rows": {"min": 1.0, "max": 20.0}, "op_count": {"min": 3.0, "max": 1000.0}, "mil_chars": {"min": 50.0, "max": 100000.0}}
+- id: label.import_xml
+  family: label
+  level: L2–L3
+  status: verified
+  action: label_import_xml
+  expect: {"imported": true, "labels_found": 3, "errors": 0, "labels_after": {"min": 60.0, "max": 200.0}}
 - id: build.convert_all
   family: build
   level: L1–L3
@@ -49,6 +79,12 @@ capabilities:
   status: verified
   action: build_error_detail
   expect: {"errors": {"min": 1.0, "max": 999.0}, "failed_stage_count": {"min": 1.0, "max": 6.0}}
+- id: build.locate_error_line
+  family: build
+  level: L3
+  status: verified
+  action: build_locate_error_line
+  expect: {"found_line": 5, "iterations": {"min": 1.0, "max": 6.0}}
 - id: batch.projects
   family: build
   level: L3

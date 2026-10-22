@@ -80,41 +80,17 @@ def _set_combo(dlg: int, combo: int, cid: int, index: int) -> None:
 
 
 def read_progress(gx3: str | pathlib.Path) -> dict:
-    """解析工程里的 ConvertData/Progress.txt（编译日志，纯文本，最可靠的判据）。"""
-    p = pathlib.Path(gx3)
-    out = {"found": False, "errors": None, "warnings": None, "stages": [], "raw": ""}
-    if not p.exists():
-        return out
-    with zipfile.ZipFile(p) as z:
-        names = [n for n in z.namelist() if n.endswith("Progress.txt")]
-        if not names:
-            return out
-        text = z.read(names[0]).decode("utf-8", "replace")
-    out["found"] = True
-    out["raw"] = text[-2000:]
-    stages = re.findall(r"^(.*?)\.\.\.\r?\nError:(\d+),Warning:(\d+)", text, re.M)
-    out["stages"] = [{"stage": s.strip(), "errors": int(e), "warnings": int(w)}
-                     for s, e, w in stages]
-    out["failed_stages"] = [x["stage"] for x in out["stages"] if x["errors"] > 0]
-    m = re.search(r"错误：(\d+)、警告：(\d+)", text)
-    if m:
-        out["errors"], out["warnings"] = int(m.group(1)), int(m.group(2))
-    return out
+    """解析编译日志（实现放在 inspect 里，这里只做转发，避免两份逻辑漂移）。"""
+    from .inspect import read_progress as _rp
+
+    return _rp(gx3)
 
 
 def read_config(gx3: str | pathlib.Path) -> dict:
-    """读 .gx3 里的 !!Config.xml（Unit / UnitId / Title）。"""
-    p = pathlib.Path(gx3)
-    out = {}
-    if not p.exists():
-        return out
-    with zipfile.ZipFile(p) as z:
-        raw = z.read("!!Config.xml").decode("utf-8-sig", "replace")
-    for attr in ("Unit", "UnitId", "Title", "SecurityVersion"):
-        m = re.search(r'%s="([^"]*)"' % attr, raw)
-        if m:
-            out[attr] = m.group(1)
-    return out
+    """读 `.gx3` 的 `!!Config.xml`（实现放在 inspect 里）。"""
+    from .inspect import read_config as _rc
+
+    return _rc(gx3)
 
 
 class Session:
@@ -272,7 +248,15 @@ class Session:
         path = pathlib.Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists():
-            path.unlink()
+            try:
+                path.unlink()
+            except PermissionError:
+                # GX Works3 还开着这个工程，文件被占用：换一个名字存
+                for i in range(1, 100):
+                    alt = path.with_name(path.stem + "_%d" % i + path.suffix)
+                    if not alt.exists():
+                        path = alt
+                        break
         self._focus()
         if via_menu:
             alt_letter("p")
@@ -371,6 +355,61 @@ class Session:
         t = self.title() or ""
         m = re.search(r"(\d+)步", t)
         return int(m.group(1)) if m else None
+
+    # ---------- XML 导入 ----------
+    def import_xml(self, path: str | pathlib.Path, wait_s: float = 90.0) -> dict:
+        """`工程 → 导入文件 → IEC61131-10 XML格式`，并点掉"确定吗？"和完成提示。"""
+        path = pathlib.Path(path)
+        self._ensure_main()
+        self._focus()
+        alt_letter("p")
+        time.sleep(0.7)
+        if not uia.invoke_menu_item("导入文件"):
+            return {"opened": False, "reason": "菜单项没找到"}
+        time.sleep(1.2)
+        if not uia.invoke_menu_item("IEC61131-10"):
+            return {"opened": False, "reason": "子菜单项没找到"}
+        time.sleep(4.5)
+        dlg = next((w for w in self.dialogs() if w["class"] == "#32770"), None)
+        if not dlg:
+            return {"opened": False, "reason": "文件对话框没出现"}
+        edits = _find_by_cid(dlg["hwnd"], CID_FILENAME, cls="Edit")
+        if not edits:
+            return {"opened": False, "reason": "文件名输入框没找到"}
+        u32.SendMessageW(edits[0], 0x000C, 0, ctypes.c_wchar_p(str(path)))
+        time.sleep(0.6)
+        buf = ctypes.create_unicode_buffer(1024)
+        u32.SendMessageW(edits[0], 0x000D, 1024, ctypes.byref(buf))
+        btns = _find_by_cid(dlg["hwnd"], CID_SAVE_BTN, cls="Button")
+        if not btns:
+            return {"opened": False, "reason": "打开按钮没找到"}
+        import win32con
+        import win32gui as wg
+        wg.SendMessage(btns[0], win32con.BM_CLICK, 0, 0)
+        time.sleep(6)
+
+        # "读取指定文件的内容。确定吗？" → 是(Y)
+        from .win import click
+        conf = next((w for w in self.dialogs()
+                     if w["class"].startswith("WindowsForms10.Window")), None)
+        confirmed = False
+        if conf:
+            btn = uia.button(conf["hwnd"], ("是",))
+            if btn:
+                click(btn[1], btn[2])
+                confirmed = True
+                time.sleep(2)
+
+        # 等 "导入XML文件..." 进度结束
+        t0 = time.time()
+        while time.time() - t0 < wait_s:
+            if not any("XML" in w["title"] for w in self.dialogs()):
+                break
+            time.sleep(1)
+        self.dismiss(rounds=3)
+        time.sleep(1)
+        return {"opened": True, "confirmed": confirmed, "readback": buf.value,
+                "seconds": round(time.time() - t0, 1)}
 
     # ---------- 工程开关（同一会话内切换） ----------
     def close_project(self) -> dict:

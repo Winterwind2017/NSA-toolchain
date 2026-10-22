@@ -147,10 +147,26 @@ def batch_projects(ctx: dict) -> dict:
         items.append({"index": i, "exists": bool(info.get("exists")),
                       "bytes": info.get("bytes") or 0,
                       "errors": prog.get("errors"), "steps": s.steps()})
+    # 反证"内容真的换了"：读回每份工程的 ST 源码，跟目标代码逐字比
+    from . import inspect as I
+
+    def norm(t: str) -> str:
+        return t.replace("\r\n", "\n").strip()
+
+    sources = []
+    matched = 0
+    for i, code in enumerate(codes):
+        path = pathlib.Path(ctx["project"]).with_name("batch_%d.gx3" % i)
+        got = I.st_source(path) if path.exists() else ""
+        sources.append(norm(got))
+        if got and norm(got) == norm(code):
+            matched += 1
     clean = [x for x in items if x["exists"] and x["errors"] == 0]
     return {"items": len(items), "clean_items": len(clean),
             "seconds": round(time.time() - t0, 1),
-            "distinct_sizes": len({x["bytes"] for x in items})}
+            "distinct_sizes": len({x["bytes"] for x in items}),
+            "distinct_sources": len(set(sources)),
+            "content_match": matched}
 
 
 def project_reopen(ctx: dict) -> dict:
@@ -167,14 +183,152 @@ def project_reopen(ctx: dict) -> dict:
             "steps_before": before, "steps": s2.steps(), "title": title}
 
 
+def build_locate_error_line(ctx: dict) -> dict:
+    """二分法定位"哪一行编译失败"。
+
+    编译失败时 `T_Step` 是空的（没有步就没有源码坐标），编译器也不给行号，
+    能拿到的事实只有"这段代码有 N 个错误"。于是用**前缀二分**去问编译器：
+
+        前缀 lines[0:k] 通过、lines[0:k+1] 失败 → 第 k+1 行就是坏行
+
+    前提是"错在前缀里就会一直错"，这对编译错误成立。
+    """
+    bad_line = int(ctx.get("bad_line") or 5)
+    total = int(ctx.get("total_lines") or 8)
+    pool = ["B0 := NOT B0;", "W0 := W0 + 1;", "W1 := W0 + 2;", "B1 := B0 AND X0;",
+            "B2 := ;", "W2 := W1 * 2;", "B3 := NOT B1;", "W3 := W2 + 3;"]
+    lines = list(pool[:total])
+    if bad_line <= total:
+        lines[bad_line - 1] = "B2 := ;"
+
+    s, _ = _new_and_save(ctx)
+    base = pathlib.Path(ctx["project"]).with_name("probe")
+    calls: list[dict] = []
+
+    def fails(k: int) -> bool:
+        s.paste_st("\r\n".join(lines[:k]))
+        s.convert_all(wait_s=8.0)
+        tmp = base.with_name("probe_%d.gx3" % k)   # 每轮换文件：旧的那个还被 GX Works3 占着
+        s.save_as(tmp, via_menu=True)
+        errs = read_progress(tmp).get("errors")
+        calls.append({"k": k, "errors": errs})
+        return bool(errs)
+
+    lo, hi = 1, len(lines)
+    found = None
+    if fails(hi):
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if fails(mid):
+                hi = mid
+            else:
+                lo = mid + 1
+        found = lo
+    return {"found_line": found, "expected_line": bad_line,
+            "total_lines": len(lines), "iterations": len(calls),
+            "history": calls,
+            "line_text": lines[found - 1] if found else None}
+
+
+# ACTIONS 表放在文件末尾（新动作函数定义在下面）
+
+
+
+# ---------- 纯离线：只读 .gx3 ----------
+def _saved_program(ctx: dict) -> tuple[object, str]:
+    """建工程 → 粘贴 → 转换 → 保存，返回 (session, 源码)。"""
+    code = ctx.get("code") or ST_CODE
+    s, _ = _new_and_save(ctx)
+    s.paste_st(code)
+    s.convert_all()
+    s.save()
+    return s, code
+
+
+def program_read_st(ctx: dict) -> dict:
+    """把 ST 源码从保存后的 `.gx3` 里读回来，跟贴进去的逐字节比。"""
+    from . import inspect as I
+
+    s, code = _saved_program(ctx)
+    got = I.st_source(ctx["project"])
+    norm = lambda t: t.replace("\r\n", "\n").strip()          # noqa: E731
+    return {"readback_chars": len(got), "lines": len(got.splitlines()),
+            "matches": norm(got) == norm(code),
+            "steps": len(I.read_steps(ctx["project"])),
+            "title_steps": s.steps()}
+
+
+def inspect_source_map(ctx: dict) -> dict:
+    """每个 MIL 步 → 源码坐标（Row/Col/StrLen）与片段。"""
+    from . import inspect as I
+
+    s, _ = _saved_program(ctx)
+    steps = I.steps_with_source(ctx["project"])
+    rows = [x.get("row") for x in steps if x.get("row")]
+    with_snippet = [x for x in steps if x.get("snippet")]
+    return {"steps": len(steps), "rows": len(set(rows)),
+            "max_row": max(rows) if rows else 0,
+            "snippets": len(with_snippet),
+            "first_snippet": with_snippet[0]["snippet"] if with_snippet else None}
+
+
+def inspect_devices(ctx: dict) -> dict:
+    """FX5U 系统软元件模板（2935 行）+ 注释条数。"""
+    from . import inspect as I
+
+    s, _ = _new_and_save(ctx)
+    dev = I.read_devices(ctx["project"])
+    return {"device_rows": dev["rows"], "device_types": len(dev["types"]),
+            "commented": dev["commented"], "unit": I.read_config(ctx["project"]).get("Unit")}
+
+
+def inspect_mil(ctx: dict) -> dict:
+    """编译后的 IL 文本：op 个数、指令条数随源码行数增长。"""
+    from . import inspect as I
+
+    s, _ = _saved_program(ctx)
+    mil = I.read_mil(ctx["project"])
+    text = mil[0]["data"] if mil else ""
+    return {"mil_rows": len(mil), "mil_chars": len(text),
+            "op_count": text.count("op="),
+            "steps": len(I.read_steps(ctx["project"]))}
+
+
+def label_import_xml(ctx: dict) -> dict:
+    """导入"只有全局标签"的 XML，并从 LabelData 读回确认标签真的进了工程。"""
+    from . import xmlgen
+    from . import inspect as I
+
+    s, _ = _new_and_save(ctx)
+    before = len(I.read_labels(ctx["project"]))
+    xml = xmlgen.write(pathlib.Path(ctx["project"]).with_name("labels.xml"))
+    imp = s.import_xml(xml)
+    s.convert_all()
+    s.save()
+    prog = read_progress(ctx["project"])
+    labels = I.read_labels(ctx["project"])
+    names = {r["value"] for r in labels if isinstance(r["value"], str)}
+    wanted = [item["name"] for item in xmlgen.DEFAULT_LABELS]
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "labels_before": before, "labels_after": len(labels),
+            "labels_found": sum(1 for n in wanted if n in names),
+            "errors": prog.get("errors"), "stages": len(prog.get("stages") or [])}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
     "project_meta": project_meta,
     "program_paste_st": program_paste_st,
+    "program_read_st": program_read_st,
+    "inspect_source_map": inspect_source_map,
+    "inspect_devices": inspect_devices,
+    "inspect_mil": inspect_mil,
     "build_convert_all": build_convert_all,
     "build_program_check": build_program_check,
     "build_error_detail": build_error_detail,
     "batch_projects": batch_projects,
+    "label_import_xml": label_import_xml,
+    "build_locate_error_line": build_locate_error_line,
     "project_reopen": project_reopen,
 }
