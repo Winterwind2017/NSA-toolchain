@@ -1,0 +1,123 @@
+{
+  "skill": "ww-gxworks-automation",
+  "kernel": "gxkit",
+  "kernel_version": "0.1.0",
+  "kernel_commit": "5f262ca",
+  "engine": "GX Works3 1.117.0.1",
+  "cpu": "FX5U",
+  "lang": "ST",
+  "scope": "offline",
+  "counts": {
+    "verified": 6,
+    "families": 4,
+    "pending": 5
+  },
+  "verified": {
+    "project.new": {
+      "family": "project",
+      "level": "L1",
+      "title": "新建 FX5U + ST 工程",
+      "action": "project_new",
+      "expect": {
+        "has_window": true,
+        "is_st": true
+      },
+      "reopen": false
+    },
+    "project.save": {
+      "family": "project",
+      "level": "L1–L2",
+      "title": "另存为 .gx3（含读回校验）",
+      "action": "project_save",
+      "expect": {
+        "exists": true,
+        "bytes": {
+          "min": 300000.0,
+          "max": 5000000.0
+        },
+        "unit": "FX5U"
+      },
+      "reopen": false
+    },
+    "project.meta": {
+      "family": "inspect",
+      "level": "L1–L2",
+      "title": "解包 .gx3：Config.xml + 条目数",
+      "action": "project_meta",
+      "expect": {
+        "unit": "FX5U",
+        "zip_entries": {
+          "min": 50.0,
+          "max": 500.0
+        },
+        "has_config": true
+      },
+      "reopen": false
+    },
+    "program.paste_st": {
+      "family": "program",
+      "level": "L1–L3",
+      "title": "把 ST 代码粘进编辑器并转换",
+      "action": "program_paste_st",
+      "expect": {
+        "steps": {
+          "min": 2.0,
+          "max": 200.0
+        }
+      },
+      "reopen": false
+    },
+    "build.convert_all": {
+      "family": "build",
+      "level": "L1–L3",
+      "title": "全部转换：从 Progress.txt 读错误数",
+      "action": "build_convert_all",
+      "expect": {
+        "errors": 0,
+        "warnings": 0,
+        "stages": {
+          "min": 3.0,
+          "max": 100.0
+        }
+      },
+      "reopen": false
+    },
+    "project.reopen": {
+      "family": "project",
+      "level": "L4",
+      "title": "存盘→重开→步数仍在（L4）",
+      "action": "project_reopen",
+      "expect": {
+        "reopened": true,
+        "steps": {
+          "min": 2.0,
+          "max": 200.0
+        }
+      },
+      "reopen": true
+    }
+  },
+  "families": {
+    "project": [
+      "project.new",
+      "project.save",
+      "project.reopen"
+    ],
+    "inspect": [
+      "project.meta"
+    ],
+    "program": [
+      "program.paste_st"
+    ],
+    "build": [
+      "build.convert_all"
+    ]
+  },
+  "pending": {
+    "project.check": "工程校验结果面板没有稳定读回口",
+    "label.import_xml": "XML 导入能进全局标签，但样例结构体有 1 个 Error",
+    "program.read_st": ".gx3 里 _Project.txc 是二进制，程序体在 .w3pa",
+    "online.write": "需要真实 PLC；用户口径只做离线",
+    "ladder.write": "梯形图编辑器是自绘控件，无法程序化写网络"
+  }
+}
