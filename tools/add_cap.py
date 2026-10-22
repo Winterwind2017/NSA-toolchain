@@ -7,6 +7,10 @@
 - 字典键插到 `ACTIONS = {\\n` 之后
 - Cap 条目插到 `CAPS: tuple[Cap, ...] = (\\n` 之后
 
+**cap id 必须唯一**：插入前先查 `caps.py` 里有没有同 id 的 `Cap(...)`，
+有就直接拒绝。2026-10-22 加 `feature.pattern_linear` 时没这道检查，
+撞上了已存在的同名能力，产生 145 条 / 144 唯一，连带 pytest 与技能快照全红。
+
 用法：
     python tools/add_cap.py spec.json
 
@@ -23,6 +27,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -46,6 +51,17 @@ def main(path: str) -> int:
     if not func_src.lstrip().startswith("def "):
         raise SystemExit("func_file 必须是纯函数源码（以 def 开头）")
 
+    # cap id 唯一性：先从 cap 片段里抠出 id，再查 caps.py 里有没有同 id
+    m = re.search(r'Cap\(\s*"([^"]+)"', cap_src)
+    if not m:
+        raise SystemExit("cap 片段里找不到 Cap(\"<id>\", ...)，拒绝修改")
+    cid = m.group(1)
+    if not re.match(r"^[a-z][a-z0-9_.]*$", cid):
+        raise SystemExit(f"cap id 格式不对（应是小写点分）：{cid}")
+    caps_now = CAPS.read_text(encoding="utf-8")
+    if f'Cap("{cid}"' in caps_now:
+        raise SystemExit(f"cap id 已存在，拒绝重复登记：{cid}")
+
     t = ACTIONS.read_text(encoding="utf-8")
     if f"def {fname}(" in t:
         raise SystemExit(f"动作函数已存在：{fname}")
@@ -62,6 +78,8 @@ def main(path: str) -> int:
     if CAPS_ANCHOR not in s:
         raise SystemExit("找不到 CAPS 锚点，拒绝修改")
     s = s.replace(CAPS_ANCHOR, CAPS_ANCHOR + cap_src, 1)
+    if s.count(f'Cap("{cid}"') != 1:
+        raise SystemExit(f"写入后 cap id 不唯一（{s.count(f'Cap(\"{cid}\")')} 处）：{cid}")
     CAPS.write_text(s, encoding="utf-8")
 
     py = sys.executable
