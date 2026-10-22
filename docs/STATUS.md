@@ -37,7 +37,7 @@
 | `drawing.section_view` | `CreateSectionViewBuilder(base_view)` 报 `Invalid object type for this operation`；用 `SectionView.Null` 能构造，但 `ParentView` **不可写**、`Commit()` 报 `Null tag not allowed` |
 | `solid.delete_body` | `CreateDeleteBodyBuilder(DeleteBody.Null)` 能构造，但 **`BodyToDelete` 与 `BodyToKeep` 两个 collector 运行时都是 `None`**（喂 `AddRules` 报 `NoneType has no attribute AddRules`）；直接 `CommitFeature( |
 | `sketch.point_on_curve` | 约束能建（`CreatePointOnCurveConstraint` + `ConstraintGeometry.PointType=StartVertex` 都接受），但 `Sketch` 没有 `Solve()`，`Deactivate(view, UpdateLevel.Model)` 之后几何**没有移动**（端点仍在 y=10） |
-| `sheet_metal.flange` | `SilhouetteFlangeBuilder`：`BaseCurves`(Section) 与 `BaseFaces`(scCollector) 都能喂，`ReferenceVector` 也接受 Direction，但方向取 (0,0,1) 报 `Unable to project base curves to base faces.`，取 (0,1, |
+| `sheet_metal.flange` | 三条路都试过：① `SilhouetteFlangeBuilder`（`BaseCurves` 是 Section、`BaseFaces` 是 ScCollector、`ReferenceVector` 可给 Direction）——方向 (0,0,1) 报 `Unable to project base curves to base faces.`，(0, |
 
 ## 相关文档
 
