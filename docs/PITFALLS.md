@@ -159,3 +159,40 @@ lines[0:k] 通过、lines[0:k+1] 失败  →  第 k+1 行是坏行
 
 用户口径是"只做离线"。`在线(O)` 菜单里的写入/读取/监视需要真实 PLC 或内置模拟器，
 未验证，不当成能力。
+
+## 十六、"每个程序一套 SQLite"——只读第一个会漏掉整个程序
+
+`.gx3` 里不是一份 `*_STDB.db`，而是**每个程序一份**（STDB / StepInfo / MilDB 各一套）。
+一开始 `_db()` 只 `sorted(glob)[0]`，于是：
+
+- `program.read_st` 读到的永远是 `ProgPou`（空程序 `;`）；
+- 导入 XML 建出的 `PrgGen` **明明在工程里**，却读不到它的源码；
+- 结果是"导入成功但读不到"这种假失败。
+
+改成遍历全部 `*_STDB.db` 之后，`PrgGen` 的源码（UTF-16LE 存的 TEXT）才露出来。
+顺带：StepInfo 的 `BlockID` 是 `{GUID}`、STDB 的 `id` 是 `_guid/<guid>`，
+要靠 `_block_key()` 归一化（去 `_guid/`、去花括号、小写）才能把"步"和"源码"对上。
+
+## 十七、XML 建程序：要 Resource/ProgramInstance，还要删 Vars
+
+`<Program>` 单独存在**不会**建出程序；必须同时在
+
+```
+Project/Instances/Configuration/Resource/ProgramInstance[@name, @typeName="pou", @evaluationOrder]
+```
+
+里声明一个同名实例（样例里 `Program1` ↔ `Resource name="Main"`）。
+
+第二件事：样例的 `Program1` 带 `<Vars>`，引用 `FBPou1`/`Struct1`/`TIMER` 等类型，
+把这些类型删掉后必须**把 `<Vars>` 一起删掉**，否则导入报错/不建程序。
+正文只用设备软元件（`B0`/`W0`）就干净了。
+
+## 十八、程序体比较要"去空白"
+
+导入后的源码会多出空行（实测 `B0 := NOT B0;\r\n\r\nW0 := W0 + 1;`），
+直接字符串相等会判失败。比较时统一 `"".join(text.split())`（去掉所有空白）。
+
+## 十九、导入别重试——它会真的再建一个程序
+
+`program.import_xml` 第一版"判据没过就再导一次"，结果工程里出现 `PrgGen` 和 `PrgGen_2`
+（GX Works3 自动改名）。导入是**非幂等**操作：判据错了要修判据，不要重试导入。

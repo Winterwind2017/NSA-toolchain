@@ -140,3 +140,25 @@ def test_xmlgen_shape() -> None:
     # 行号必须唯一，否则只会导入第一条
     numbers = [e.get("number") for e in gv.iter("{%s}VariableLineNumber" % ns)]
     assert len(numbers) == len(set(numbers)) == 3
+
+
+def test_build_program_shape() -> None:
+    tree = xmlgen.build_program('PrgGen', 'B0 := NOT B0;')
+    ns = xmlgen.NS
+    root = tree.getroot()
+    gn = root.find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    progs = gn.findall('{%s}Program' % ns)
+    assert [p.get('name') for p in progs] == ['PrgGen']
+    assert not progs[0].findall('{%s}Vars' % ns), '必须删掉 Vars，否则引用不存在的类型'
+    assert not gn.findall('{%s}FunctionBlock' % ns)
+    assert not gn.findall('{%s}DataTypeDecl' % ns)
+
+    cfg = root.find('{%s}Instances' % ns).find('{%s}Configuration' % ns)
+    res = cfg.find('{%s}Resource' % ns)
+    inst = res.find('{%s}ProgramInstance' % ns)
+    assert inst.get('name') == 'PrgGen'
+    assert inst.get('typeName') == 'pou'
+
+
+def test_flat_and_source_matches() -> None:
+    assert I.flat('B0 := NOT B0;\r\n\r\nW0 := W0 + 1;') == 'B0:=NOTB0;W0:=W0+1;'

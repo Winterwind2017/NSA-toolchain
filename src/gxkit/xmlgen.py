@@ -97,6 +97,73 @@ def write(path: str | pathlib.Path, labels: list[dict] | None = None,
     return p
 
 
+def build_program(program_name: str, st_code: str,
+                  sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+    """用样例骨架造一个"只有 ST 程序"的文档，用来让 GX Works3 **建出新程序**。
+
+    实测要点（缺一条就不建程序）：
+      * `Types/GlobalNamespace/Program` 保留样例的结构（Documentation/AddData/MainBody），
+        但**删掉全部 `<Vars>`** —— 否则会引用 FBPou1/Struct1/TIMER 等不存在的类型；
+      * `Instances/Configuration/Resource` 里要有
+        `<ProgramInstance name="<同名>" typeName="pou" evaluationOrder="1"/>`，
+        程序名两边必须一致；
+      * `MainBody` 只留一个 `BodyContent xsi:type="ST"`，正文用设备软元件（B0/W0），
+        不要引用局部标签。
+    """
+    tree = ET.parse(str(sample))
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+
+    src_prog = next(p for p in gn.findall(_q("Program")) if p.get("name") == "Program1")
+    prog = copy.deepcopy(src_prog)
+    for ch in list(gn):
+        if ch.tag == _q("Program") or ch.tag in (
+                _q("FunctionBlock"), _q("Function"), _q("DataTypeDecl")):
+            gn.remove(ch)
+
+    prog.set("name", program_name)
+    for vars_el in prog.findall(_q("Vars")):
+        prog.remove(vars_el)
+    body = prog.find(_q("MainBody"))
+    if body is None:
+        body = ET.SubElement(prog, _q("MainBody"))
+    bcs = body.findall(_q("BodyContent"))
+    for extra in bcs[1:]:
+        body.remove(extra)
+    if bcs:
+        bcs[0].find(_q("ST")).text = st_code
+    else:
+        bc = ET.SubElement(body, _q("BodyContent"), {"{%s}type" % XSI: "ST"})
+        ET.SubElement(bc, _q("ST")).text = st_code
+    gn.append(prog)
+
+    cfg = root.find(_q("Instances")).find(_q("Configuration"))
+    res_src = next(r for r in cfg.findall(_q("Resource")) if r.get("name") == "Main")
+    for ch in list(cfg):
+        cfg.remove(ch)
+    res = copy.deepcopy(res_src)
+    for ch in list(res):
+        if ch.tag != _q("ProgramInstance"):
+            res.remove(ch)
+    inst = res.find(_q("ProgramInstance"))
+    inst.set("name", program_name)
+    inst.set("typeName", "pou")
+    inst.set("evaluationOrder", "1")
+    cfg.append(res)
+
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def write_program(path: str | pathlib.Path, program_name: str, st_code: str,
+                  sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    build_program(program_name, st_code, sample).write(
+        p, encoding="utf-8", xml_declaration=True)
+    return p
+
+
 if __name__ == "__main__":
     out = write(pathlib.Path(r"D:\bililive\gxkit\_runs\labels\labels.xml"))
     print("written:", out, out.stat().st_size)

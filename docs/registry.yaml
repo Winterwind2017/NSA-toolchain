@@ -1,11 +1,11 @@
-version: 3
-kernel: gxkit 0.3.0
+version: 4
+kernel: gxkit 0.4.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 15
+  verified: 16
 capabilities:
 - id: project.new
   family: project
@@ -37,6 +37,12 @@ capabilities:
   status: verified
   action: program_read_st
   expect: {"matches": true, "readback_chars": {"min": 10.0, "max": 20000.0}, "lines": {"min": 2.0, "max": 500.0}}
+- id: program.import_xml
+  family: program
+  level: L2–L3
+  status: verified
+  action: program_import_xml
+  expect: {"imported": true, "program_created": true, "body_found": true, "program_count": {"min": 2.0, "max": 50.0}, "errors": 0}
 - id: inspect.source_map
   family: inspect
   level: L2
@@ -90,7 +96,7 @@ capabilities:
   level: L3
   status: verified
   action: batch_projects
-  expect: {"items": 3, "clean_items": 3, "distinct_sizes": 3}
+  expect: {"items": 3, "clean_items": 3, "distinct_sources": 3, "content_match": 3}
 - id: project.reopen
   family: project
   level: L4

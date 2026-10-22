@@ -200,14 +200,26 @@ def build_locate_error_line(ctx: dict) -> dict:
     calls: list[dict] = []
 
     def fails(k: int) -> bool:
-        s.paste_st("\r\n".join(lines[:k]))
-        s.convert_all(wait_s=8.0)
-        tmp = base.with_name("probe_%d.gx3" % k)   # 每轮换文件：旧的那个还被 GX Works3 占着
-        info = s.save_as(tmp, via_menu=True)
-        # 关键：save_as 遇到占用会改名，必须读它真正写成的路径，
-        # 否则读到的是上一轮的旧文件（由此得过 found_line=7 的错误结论）
-        actual = pathlib.Path(info.get("path") or tmp)
-        errs = read_progress(actual).get("errors")
+        """前缀 k 行是否编译失败。拿不到编译结果就重试，绝不把"没读到"当成"通过"。"""
+        errs = None
+        prog: dict = {}
+        actual = None
+        for attempt in range(3):
+            s.paste_st("\r\n".join(lines[:k]))
+            s.convert_all(wait_s=8.0)
+            # 每轮换文件名：GX Works3 还占着上一个；attempt 也进名字，避免 save_as 改名后撞车
+            tmp = base.with_name("probe_%d_%d.gx3" % (k, attempt))
+            info = s.save_as(tmp, via_menu=True)
+            actual = pathlib.Path(info.get("path") or tmp)
+            prog = read_progress(actual)
+            if prog.get("found") and prog.get("errors") is not None:
+                errs = prog["errors"]
+                break
+            time.sleep(1.5)
+        if errs is None:
+            raise RuntimeError("前缀 %d 行没拿到编译结果（文件=%s, silent=%s）"
+                               % (k, getattr(actual, "name", None),
+                                  None if actual is None else actual.exists()))
         calls.append({"k": k, "errors": errs, "file": actual.name})
         return bool(errs)
 
@@ -259,7 +271,7 @@ def _saved_program(ctx: dict) -> tuple[object, str]:
     for attempt in range(2):
         _paste_until_steps(s, code)
         s.save()
-        if _norm_src(I.st_source(ctx["project"])) == _norm_src(code):
+        if I.source_matches(ctx["project"], code):
             break
         s.convert_all()
         s.save()
@@ -271,10 +283,11 @@ def program_read_st(ctx: dict) -> dict:
     from . import inspect as I
 
     s, code = _saved_program(ctx)
-    got = I.st_source(ctx["project"])
-    norm = lambda t: t.replace("\r\n", "\n").strip()          # noqa: E731
-    return {"readback_chars": len(got), "lines": len(got.splitlines()),
-            "matches": norm(got) == norm(code),
+    sources = I.st_sources(ctx["project"])
+    best = max(sources.values(), key=len) if sources else ""
+    return {"readback_chars": len(best), "lines": len(best.splitlines()),
+            "matches": I.source_matches(ctx["project"], code),
+            "sources": len(sources),
             "steps": len(I.read_steps(ctx["project"])),
             "title_steps": s.steps()}
 
@@ -344,12 +357,59 @@ def label_import_xml(ctx: dict) -> dict:
             "errors": prog.get("errors"), "stages": len(prog.get("stages") or [])}
 
 
+def _flat(text: str) -> str:
+    """去掉全部空白，用来比较"代码是否真的进了工程"（导入会改写换行/空行）。"""
+    return "".join(str(text).split())
+
+
+def program_import_xml(ctx: dict) -> dict:
+    """用 XML 建一个新程序（PrgGen），并读回确认：程序名进了列表、正文进了 STDB、0 错。
+
+    注意只导入**一次**：导入会真的建程序，若判据误判而重试，会建出 PrgGen_2。
+    """
+    from . import xmlgen
+    from . import inspect as I
+
+    code = ctx.get("code") or "B0 := NOT B0;\r\nW0 := W0 + 1;"
+    s, _ = _new_and_save(ctx)
+    base_steps = len(I.read_steps(ctx["project"]))
+    base_sources = len(I.st_sources(ctx["project"]))
+
+    name = ctx.get("program_name") or "PrgGen"
+    xml = xmlgen.write_program(
+        pathlib.Path(ctx["project"]).with_name("prog.xml"), name, code)
+    imp = s.import_xml(xml)
+
+    # 导入后必须真的转换过，Progress.txt 才会出现程序清单；
+    # 导入进度条刚消失就按 F4 有时会“转了个空”，所以按 Progress 是否存在重试
+    for _ in range(3):
+        s.convert_all(wait_s=12.0)
+        s.save()
+        if read_progress(ctx["project"]).get("found"):
+            break
+
+    names = I.program_names(ctx["project"])
+    sources = I.st_sources(ctx["project"])
+    flat = "".join(_flat(t) for t in sources.values())
+    prog = read_progress(ctx["project"])
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "program_created": name in names,
+            "program_count": len(names),
+            "names": names,
+            "body_found": _flat(code) in flat,
+            "st_sources": len(sources),
+            "steps_added": len(I.read_steps(ctx["project"])) - base_steps,
+            "new_sources": len(sources) - base_sources,
+            "errors": prog.get("errors")}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
     "project_meta": project_meta,
     "program_paste_st": program_paste_st,
     "program_read_st": program_read_st,
+    "program_import_xml": program_import_xml,
     "inspect_source_map": inspect_source_map,
     "inspect_devices": inspect_devices,
     "inspect_mil": inspect_mil,

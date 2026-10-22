@@ -21,7 +21,8 @@ import zipfile
 
 __all__ = [
     "unpack", "read_config", "read_progress", "read_st_blocks", "read_steps",
-    "read_mil", "read_devices", "read_labels", "st_source", "steps_with_source",
+    "read_mil", "read_devices", "read_labels", "st_source", "st_sources",
+    "steps_with_source", "program_names",
 ]
 
 _TMP: dict[str, tuple[tuple[int, int], pathlib.Path]] = {}
@@ -51,11 +52,39 @@ def _materials(gx3: str | pathlib.Path) -> pathlib.Path:
 
 
 def _db(gx3, suffix: str) -> sqlite3.Connection | None:
+    dbs = _dbs(gx3, suffix)
+    return dbs[0] if dbs else None
+
+
+def _dbs(gx3, suffix: str) -> list[sqlite3.Connection]:
+    """每个程序一套 STDB/StepInfo/MilDB —— 必须全部读，不能只读第一个。
+
+    实测：新建工程只有 ProgPou 一套；导入 XML 建出 PrgGen 后多出一套
+    （`22bade8c81709adb_STDB.db` 里就是导入程序的源码）。
+    """
     d = _materials(gx3)
-    hits = sorted(d.glob("*" + suffix))
-    if not hits:
-        return None
-    return sqlite3.connect(str(hits[0]))
+    out: list[sqlite3.Connection] = []
+    for hit in sorted(d.glob("*" + suffix)):
+        try:
+            out.append(sqlite3.connect(str(hit)))
+        except sqlite3.Error:
+            continue
+    return out
+
+
+def _as_text(value) -> str:
+    """SQLite 里可能是 TEXT，也可能是 BLOB（XML 导入的程序常见 UTF-16LE）。"""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    raw = bytes(value)
+    for enc in ("utf-16-le", "utf-8"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("latin-1", "replace")
 
 
 def unpack(gx3: str | pathlib.Path) -> dict:
@@ -106,57 +135,111 @@ def read_progress(gx3: str | pathlib.Path) -> dict:
 
 
 def read_st_blocks(gx3: str | pathlib.Path) -> list[dict]:
-    """ST 源码块：`StBlocks(id, pos, data)` —— data 就是源码原文。"""
-    con = _db(gx3, "_STDB.db")
-    if con is None:
-        return []
-    try:
-        rows = con.execute(
-            "select id, pos, data from StBlocks order by pos").fetchall()
-    except sqlite3.Error:
-        return []
-    finally:
-        con.close()
-    return [{"id": r[0], "pos": r[1], "text": r[2] or ""} for r in rows]
+    """全部程序的 ST 源码块。**每个程序一套 `*_STDB.db`**，必须逐个读。
+
+    返回项：`{id, pos, text, db}`，`db` 是该 STDB 的文件名（用来区分程序）。
+    """
+    out: list[dict] = []
+    for path in sorted(_materials(gx3).glob("*_STDB.db")):
+        try:
+            con = sqlite3.connect(str(path))
+            rows = con.execute(
+                "select id, pos, data from StBlocks order by pos").fetchall()
+        except sqlite3.Error:
+            continue
+        finally:
+            try:
+                con.close()          # type: ignore[possibly-undefined]
+            except Exception:
+                pass
+        for r in rows:
+            out.append({"id": r[0], "pos": r[1], "text": _as_text(r[2]),
+                        "db": path.name})
+    return out
+
+
+def st_sources(gx3: str | pathlib.Path) -> dict[str, str]:
+    """按 STDB 文件分组的源码：`{db_name: text}`（每个程序一条）。"""
+    out: dict[str, str] = {}
+    for b in read_st_blocks(gx3):
+        out.setdefault(b["db"], "")
+        out[b["db"]] += b["text"]
+    return out
 
 
 def st_source(gx3: str | pathlib.Path) -> str:
-    """把全部 ST 块拼成一份源码（通常只有一块）。"""
-    return "\r\n".join(b["text"].rstrip("\r\n") for b in read_st_blocks(gx3))
+    """全部程序的源码拼成一份（多程序时用于"包含在某处"的判断）。"""
+    return "\n".join(t for t in st_sources(gx3).values() if t.strip())
+
+
+def flat(text: str) -> str:
+    """去掉全部空白（导入会改写换行/空行，比较时用这个口径）。"""
+    return "".join(str(text).split())
+
+
+def source_matches(gx3: str | pathlib.Path, code: str) -> bool:
+    """工程里是否存在内容等于 code 的程序正文（忽略空白差异）。"""
+    want = flat(code)
+    return any(flat(v) == want for v in st_sources(gx3).values() if v.strip())
+
+
+def program_names(gx3: str | pathlib.Path) -> list[str]:
+    """程序名：从编译日志的阶段名里取（软件自己列出来的）。"""
+    names = []
+    for st in read_progress(gx3).get("stages", []):
+        m = re.match(r"程序\((.+?)\)", st["stage"])
+        if m and m.group(1) not in names:
+            names.append(m.group(1))
+    return names
 
 
 def read_steps(gx3: str | pathlib.Path) -> list[dict]:
-    """步信息：每步的 MIL 号、大小，以及源码坐标 Row/Col/StrLen。"""
-    con_step = _db(gx3, "_StepInfo.db")
-    if con_step is None:
-        return []
-    src: dict[tuple[str, int], dict] = {}
-    try:
-        for block, mil, pos in con_step.execute(
-                "select BlockID, MilID, SourcePosition from T_SourcePos"):
-            m = re.match(r"Row=(\d+),Col=(\d+),StrLen=(\d+)", pos or "")
-            src[(block, mil)] = ({"row": int(m.group(1)), "col": int(m.group(2)),
-                                  "strlen": int(m.group(3))} if m else {})
-        steps = []
-        for pos, macro, block, mil, size in con_step.execute(
-                "select Pos, ElementIDMacroFB, BlockID, MilID, StepSize from T_Step "
-                "order by MilID"):
-            info = {"block": block, "mil": mil, "step_size": size, "pos": pos}
-            info.update(src.get((block, mil), {}))
-            steps.append(info)
-    except sqlite3.Error:
-        return []
-    finally:
-        con_step.close()
+    """步信息：每步的 MIL 号、大小，以及源码坐标 Row/Col/StrLen（每个程序一套）。"""
+    steps: list[dict] = []
+    for path in sorted(_materials(gx3).glob("*_StepInfo.db")):
+        try:
+            con = sqlite3.connect(str(path))
+            src: dict[tuple[str, int], dict] = {}
+            for block, mil, pos in con.execute(
+                    "select BlockID, MilID, SourcePosition from T_SourcePos"):
+                m = re.match(r"Row=(\d+),Col=(\d+),StrLen=(\d+)", pos or "")
+                src[(block, mil)] = ({"row": int(m.group(1)), "col": int(m.group(2)),
+                                      "strlen": int(m.group(3))} if m else {})
+            for pos, macro, block, mil, size in con.execute(
+                    "select Pos, ElementIDMacroFB, BlockID, MilID, StepSize from T_Step "
+                    "order by MilID"):
+                info = {"block": block, "mil": mil, "step_size": size, "pos": pos,
+                        "db": path.name}
+                info.update(src.get((block, mil), {}))
+                steps.append(info)
+        except sqlite3.Error:
+            continue
+        finally:
+            try:
+                con.close()          # type: ignore[possibly-undefined]
+            except Exception:
+                pass
     return steps
 
 
+def _block_key(block_id: str) -> str:
+    """`_guid/xxxx`（STDB）与 `{XXXX}`（StepInfo）归一化后可比。"""
+    b = (block_id or "").strip()
+    if b.lower().startswith("_guid/"):
+        b = b[6:]
+    return b.strip("{}").lower()
+
+
 def steps_with_source(gx3: str | pathlib.Path) -> list[dict]:
-    """步 + 该步对应的源码片段（按 Row/Col/StrLen 切）。"""
-    lines = st_source(gx3).splitlines()
+    """步 + 该步对应的源码片段（按 Row/Col/StrLen 切，按块 id 找到对应程序）。"""
+    texts: dict[str, str] = {}
+    for b in read_st_blocks(gx3):
+        texts[_block_key(b["id"])] = b["text"]
     out = []
     for st in read_steps(gx3):
         row, col, ln = st.get("row"), st.get("col"), st.get("strlen")
+        text = texts.get(_block_key(st.get("block", "")), "")
+        lines = text.splitlines()
         snippet = ""
         if row and col and ln and 1 <= row <= len(lines):
             line = lines[row - 1]
@@ -168,17 +251,24 @@ def steps_with_source(gx3: str | pathlib.Path) -> list[dict]:
 
 
 def read_mil(gx3: str | pathlib.Path) -> list[dict]:
-    """编译后的 IL 文本（`MIL.data`，形如 `V1:10:...op=...`）。"""
-    con = _db(gx3, "_MilDB.db")
-    if con is None:
-        return []
-    try:
-        rows = con.execute("select id, pos, data, ConvTarget from MIL").fetchall()
-    except sqlite3.Error:
-        return []
-    finally:
-        con.close()
-    return [{"id": r[0], "pos": r[1], "data": r[2] or "", "target": r[3]} for r in rows]
+    """编译后的 IL 文本（每个程序一套 `*_MilDB.db`）。"""
+    out: list[dict] = []
+    for path in sorted(_materials(gx3).glob("*_MilDB.db")):
+        try:
+            con = sqlite3.connect(str(path))
+            rows = con.execute(
+                "select id, pos, data, ConvTarget from MIL").fetchall()
+        except sqlite3.Error:
+            continue
+        finally:
+            try:
+                con.close()          # type: ignore[possibly-undefined]
+            except Exception:
+                pass
+        for r in rows:
+            out.append({"id": r[0], "pos": r[1], "data": _as_text(r[2]),
+                        "target": r[3], "db": path.name})
+    return out
 
 
 def read_devices(gx3: str | pathlib.Path, limit: int = 50) -> dict:

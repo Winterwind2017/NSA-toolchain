@@ -43,7 +43,8 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编�
 | **编译结果** | `.gx3` 里 `ConvertData/Progress.txt`（纯文本：`错误：0、警告：0`） |
 | 错在哪个阶段 | 同上，逐阶段的 `Error/Warning`（`failed_stages`） |
 | **程序检查判定** | `工具 → 程序检查` 执行后对话框的 UIA 文本：`程序检查已完成。无错误。` |
-| **ST 源码** | `*_STDB.db` 的 `StBlocks.data`（就是原文，可逐字比对） |
+| **ST 源码** | **每个程序一套** `*_STDB.db`，`StBlocks.data` 就是原文（可逐字比对） |
+| 程序清单 | `Progress.txt` 里的 `程序(xxx)` 阶段名（软件自己列的） |
 | 步→源码坐标 | `*_StepInfo.db` 的 `T_SourcePos`（`Row=,Col=,StrLen=`） |
 | 编译 IL | `*_MilDB.db` 的 `MIL.data`（`op=` 指令流） |
 | 软元件模板 | `*_DC.db` 的 `DEVICE_DATA`（FX5U 2935 行 + 注释） |
@@ -52,6 +53,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编�
 `Progress.txt` 是这套内核最有价值的判据：**编译 0 错 0 警是硬事实**，不依赖任何界面抓取。
 `程序检查` 是第二层：它在编译通过之后继续查指令用法、双线圈、软元件/标签一致性。
 `StBlocks.data` 是意外之喜：程序源码在 `.gx3` 里是**明文**，所以"读回校验"可以做到逐字比对。
+而且**一个程序一套 SQLite**（STDB/StepInfo/MilDB 各一份），所以"工程里几个程序"可以直接数出来。
 
 ## 行级错误怎么来的（不是编译器原话）
 

@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"15 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"16 条能力全过"。
 
 ## 环境
 
@@ -18,14 +18,14 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：15 条能力，动作与判据齐全
+# 自检通过：16 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 12 passed
+# 14 passed
 
-# 3) 真机全量（约 24 分钟；每条能力一个干净会话）
-python -m gxkit run --workdir D:\bililive\gxkit\_runs\w1
+# 3) 真机全量（约 31 分钟；每条能力一个干净会话）
+python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
 ## 单条验证
@@ -53,6 +53,8 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-22 | 14/15（v0.3，内容判据后仍有一次存盘未落地） | 1476.6 s |
 | 2026-10-22 | **15/15（v0.3，加固完成）** | 1712.1 s |
 | 2026-10-22 | **15/15（v0.3，加固完成后第二次）** | 1714.1 s |
+| 2026-10-22 | 15/16（v0.4，二分读不到结果被当成通过） | 1876.2 s |
+| 2026-10-22 | **16/16（v0.4，新增 program.import_xml）** | 1833.0 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -75,3 +77,22 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | `inspect.mil` | 80.9 s | `mil_rows=1`、`op_count=4`、`mil_chars≈120` |
 | `label.import_xml` | 99.5 s | `labels_before=54` → `labels_after=75`、`labels_found=3`、`errors=0` |
 | `build.locate_error_line` | 215.3 s | `found_line=5`（注入在 5）、`iterations=4`，历史 `k=8 失败 / k=4 通过 / k=6 失败 / k=5 失败` |
+
+## v0.4 新增一条：program.import_xml（用 XML 建程序）
+
+| 读数 | 值 |
+|---|---|
+| program_count | 2（ProgPou + PrgGen） |
+| ody_found | True（源码进 *_STDB.db，UTF-16LE 存的 TEXT，比较时去空白） |
+| steps_added | 5 |
+| 
+ew_sources | 1（多出一套 STDB） |
+| rrors | 0 |
+
+关键三步（缺一不建程序）：
+1. Types/GlobalNamespace/Program（名称 = 新程序名）；
+2. Instances/Configuration/Resource/ProgramInstance 同名实例；
+3. **删掉 <Vars>**（否则引用 FBPou1/Struct1/TIMER 等不存在的类型）。
+
+另：program.read_st 与 inspect.* 改成**遍历全部 *_STDB.db / *_StepInfo.db / *_MilDB.db**，
+因为每个程序一套 SQLite；只读第一个会把导入的程序看漏。
