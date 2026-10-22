@@ -232,3 +232,29 @@ Project/Instances/Configuration/Resource/ProgramInstance[@name, @typeName="pou",
 
 每条能力之间会 `taskkill /IM GXW3.exe /T`（`win.kill_stray()`）。
 否则下一条启动后停在"已有实例"状态：窗口在、菜单不响应、新建工程对话框永远不弹。
+
+## 二十四、XML 里 Program 必须排在 FunctionBlock 前面
+
+把 <FunctionBlock> 插到 <Program> 之前，整份导入会被**静默忽略**：
+导入"成功"、0 错、工程里连程序都没建、Progress.txt 只有 ProgPou。
+把它挪到后面，同样的内容立刻生效（程序(PrgFB) 出现、FB 正文进 STDB）。
+
+样例的顺序就是 Documentation, AddData, Program..., FunctionBlock..., Function, DataTypeDecl，
+**照抄顺序**比自己排更保险。
+
+## 二十五、功能块要删掉 <Parameters>
+
+样例的 FB 带 <Parameters>（Inout/Input/Output 四组），里面引用 b1_vio 之类的样例变量。
+保留它、同时把 Vars 换成自己的变量 → 整份导入同样被静默忽略。
+删掉 <Parameters>、Vars 只留一块（private），就正常了。
+
+另外 FB 的样例变量只有 VariableComments、没有 VariableLineNumber，
+补一个唯一行号更稳（_ensure_line_number）。
+
+## 二十六、功能块不会出现在 Progress.txt 的"程序(...)"清单里
+
+program_names() 只能抓到 程序(PrgFB)；功能块**没有独立条目**。
+判定 FB 是否建出来要看两处：
+* 多出一份 *_STDB.db，内容是 FB 的正文；
+* LabelData 里出现 FB 的变量名（如 FB_Bool）。
+

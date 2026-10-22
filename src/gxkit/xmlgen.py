@@ -72,8 +72,7 @@ def build(labels: list[dict] | None = None,
     for idx, item in enumerate(labels, start=1):
         var = copy.deepcopy(template)
         var.set("name", item["name"])
-        for ln in var.iter(_q("VariableLineNumber")):
-            ln.set("number", str(idx))
+        _ensure_line_number(var, idx)
         for ct in var.iter(_q("CommentText")):
             ct.text = item.get("comment") or item["name"]
         for rt in var.iter(_q("RemarkText")):
@@ -98,6 +97,7 @@ def write(path: str | pathlib.Path, labels: list[dict] | None = None,
 
 
 def build_program(program_name: str, st_code: str,
+                  locals_: list[dict] | None = None,
                   sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
     """用样例骨架造一个"只有 ST 程序"的文档，用来让 GX Works3 **建出新程序**。
 
@@ -122,8 +122,13 @@ def build_program(program_name: str, st_code: str,
             gn.remove(ch)
 
     prog.set("name", program_name)
-    for vars_el in prog.findall(_q("Vars")):
+    vars_tpl = prog.findall(_q("Vars"))
+    for vars_el in list(vars_tpl):
         prog.remove(vars_el)
+    if locals_ and vars_tpl:
+        # 局部标签：必须在 MainBody 之前（XSD 顺序），每个变量带唯一行号
+        body_pos = list(prog).index(prog.find(_q("MainBody")))
+        prog.insert(body_pos, _make_vars(vars_tpl[0], locals_, start_line=1))
     body = prog.find(_q("MainBody"))
     if body is None:
         body = ET.SubElement(prog, _q("MainBody"))
@@ -156,10 +161,190 @@ def build_program(program_name: str, st_code: str,
 
 
 def write_program(path: str | pathlib.Path, program_name: str, st_code: str,
+                  locals_: list[dict] | None = None,
                   sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    build_program(program_name, st_code, sample).write(
+    build_program(program_name, st_code, locals_=locals_, sample=sample).write(
+        p, encoding="utf-8", xml_declaration=True)
+    return p
+
+
+DEFAULT_LOCALS = [
+    {"name": "LocBool", "type": "BOOL", "init": "FALSE"},
+    {"name": "LocWord", "type": "WORD", "init": "0"},
+]
+
+DEFAULT_FB_LOCALS = [
+    {"name": "FB_Bool", "type": "BOOL", "init": "FALSE"},
+    {"name": "FB_Word", "type": "WORD", "init": "0"},
+]
+
+
+ADD_NS = "http://www.mitsubishielectric.com/xml/"
+
+
+def _ensure_line_number(var, number: int) -> None:
+    """保证变量带唯一的 <VariableLineNumber>；没有就补一个。
+
+    功能块的样例变量只带 VariableComments，没有行号——补上更稳（也便于测试断言）。
+    """
+    found = list(var.iter(_q("VariableLineNumber")))
+    if found:
+        for ln in found:
+            ln.set("number", str(number))
+        return
+    data_name = ADD_NS + "VariableLineNumber"
+    add = var.find(_q("AddData"))
+    if add is None:
+        add = ET.Element(_q("AddData"))
+        type_el = var.find(_q("Type"))
+        idx = list(var).index(type_el) if type_el is not None else len(var)
+        var.insert(idx, add)
+    data = ET.SubElement(add, _q("Data"),
+                         {"name": data_name, "handleUnknown": "implementation"})
+    ET.SubElement(data, _q("VariableLineNumber"), {"number": str(number)})
+
+
+def _make_vars(template_vars, items: list[dict], tag: str = "Vars",
+               start_line: int = 1):
+    """克隆样例的 `<Vars>` 容器与 `<Variable>`，换成我们的名字/类型/唯一行号。"""
+    tpl_var = template_vars.find(_q("Variable"))
+    if tpl_var is None:
+        raise RuntimeError("样例里没有可克隆的 Variable")
+    vars_el = copy.deepcopy(template_vars)
+    for old in vars_el.findall(_q("Variable")):
+        vars_el.remove(old)
+    for idx, item in enumerate(items, start=start_line):
+        var = copy.deepcopy(tpl_var)
+        var.set("name", item["name"])
+        _ensure_line_number(var, idx)
+        for ct in var.iter(_q("CommentText")):
+            ct.text = item.get("comment") or item["name"]
+        for rt in var.iter(_q("RemarkText")):
+            rt.text = item.get("remark") or (item["name"] + " remark")
+        for tn in var.iter(_q("TypeName")):
+            tn.text = item.get("type", "BOOL")
+        sv = var.find(_q("InitialValue"))
+        if sv is not None and item.get("init") is not None:
+            for simple in sv.iter(_q("SimpleValue")):
+                simple.set("value", item["init"])
+        vars_el.append(var)
+    return vars_el
+
+
+def build_fb_program(program_name: str, st_code: str,
+                     fb_name: str = "FBGen",
+                     fb_body: str = "FB_Bool := NOT FB_Bool;\r\nFB_Word := FB_Word + 1;",
+                     locals_: list[dict] | None = None,
+                     fb_locals: list[dict] | None = None,
+                     sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+    """建一套"带局部标签的程序 + 一个功能块"的 XML。
+
+    实测出来的必要条件（每条都是**静默**失败——导入"成功"、工程里什么都没有）：
+
+      1. **顺序**：`Program` 必须在 `FunctionBlock` **之前**。
+         （把 FB 插到 Program 前面时，整份文档被忽略，连程序都不建。）
+      2. 功能块要**删掉 `<Parameters>`**：它声明 Inout/Input/Output 并引用样例里的
+         `fb1_*` 变量，留着会让整份导入失效。
+      3. 功能块的 `<Vars>` 只留**一块**（private），换自己的变量；
+         每块里每个 `<Variable>` 的 `VariableLineNumber` 必须唯一。
+      4. `Instances/Configuration/Resource/ProgramInstance` **只给程序**，功能块不是实例。
+      5. 变量类型只用基础类型（BOOL/WORD/INT…）；引用不存在的 FB/结构体同样会失败。
+    """
+    locals_ = locals_ or DEFAULT_LOCALS
+    fb_locals = fb_locals or DEFAULT_FB_LOCALS
+
+    tree = ET.parse(str(sample))
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+
+    # 只留 Documentation + AddData，其它类型/程序全部重建
+    for ch in list(gn):
+        if ch.tag.replace("{%s}" % NS, "") not in ("Documentation", "AddData"):
+            gn.remove(ch)
+
+    src_root = ET.parse(str(sample)).getroot()
+    src_gn = src_root.find(_q("Types")).find(_q("GlobalNamespace"))
+    src_prog = next(p for p in src_gn.findall(_q("Program")) if p.get("name") == "Program1")
+    src_fb = next(f for f in src_gn.findall(_q("FunctionBlock"))
+                  if f.get("name") == "FBPou1")
+
+    # ---- 程序（带局部标签）----
+    prog = copy.deepcopy(src_prog)
+    prog.set("name", program_name)
+    prog_vars_tpl = prog.findall(_q("Vars"))[0]
+    for old in prog.findall(_q("Vars")):
+        prog.remove(old)
+    # Vars 必须插在 MainBody 之前（XSD 顺序）
+    body_pos = list(prog).index(prog.find(_q("MainBody")))
+    prog.insert(body_pos, _make_vars(prog_vars_tpl, locals_, start_line=1))
+    body = prog.find(_q("MainBody"))
+    bcs = body.findall(_q("BodyContent"))
+    for extra in bcs[1:]:
+        body.remove(extra)
+    if bcs:
+        bcs[0].find(_q("ST")).text = st_code
+    else:
+        bc = ET.SubElement(body, _q("BodyContent"), {"{%s}type" % XSI: "ST"})
+        ET.SubElement(bc, _q("ST")).text = st_code
+    gn.append(prog)          # ← 先程序
+
+    # ---- 功能块（在程序之后）----
+    fb = copy.deepcopy(src_fb)
+    fb.set("name", fb_name)
+    for ch in list(fb):                       # ① 去掉 Parameters
+        if ch.tag == _q("Parameters"):
+            fb.remove(ch)
+    fb_vars_blocks = fb.findall(_q("Vars"))
+    fb_vars_tpl = fb_vars_blocks[0]
+    for v in fb_vars_blocks:                  # ② Vars 只留一块
+        fb.remove(v)
+    fb_body_el = fb.find(_q("MainBody"))
+    fb.insert(list(fb).index(fb_body_el),
+              _make_vars(fb_vars_tpl, fb_locals, start_line=1))
+    fb_bcs = fb_body_el.findall(_q("BodyContent"))
+    for extra in fb_bcs[1:]:
+        fb_body_el.remove(extra)
+    if fb_bcs:
+        fb_bcs[0].find(_q("ST")).text = fb_body
+    else:
+        bc = ET.SubElement(fb_body_el, _q("BodyContent"), {"{%s}type" % XSI: "ST"})
+        ET.SubElement(bc, _q("ST")).text = fb_body
+    gn.append(fb)            # ← 后功能块
+
+    # ---- 实例：只给程序 ----
+    cfg = root.find(_q("Instances")).find(_q("Configuration"))
+    res_src = next(r for r in cfg.findall(_q("Resource")) if r.get("name") == "Main")
+    for ch in list(cfg):
+        cfg.remove(ch)
+    res = copy.deepcopy(res_src)
+    for ch in list(res):
+        if ch.tag != _q("ProgramInstance"):
+            res.remove(ch)
+    inst = res.find(_q("ProgramInstance"))
+    inst.set("name", program_name)
+    inst.set("typeName", "pou")
+    inst.set("evaluationOrder", "1")
+    cfg.append(res)
+
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def write_fb_program(path: str | pathlib.Path, program_name: str, st_code: str,
+                     fb_name: str = "FBGen", fb_body: str | None = None,
+                     locals_: list[dict] | None = None,
+                     fb_locals: list[dict] | None = None,
+                     sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    kwargs = {}
+    if fb_body is not None:
+        kwargs["fb_body"] = fb_body
+    build_fb_program(program_name, st_code, fb_name=fb_name,
+                     locals_=locals_, fb_locals=fb_locals,
+                     sample=sample, **kwargs).write(
         p, encoding="utf-8", xml_declaration=True)
     return p
 

@@ -27,7 +27,7 @@
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest                       # 离线自检（不需要 GX Works3）
 python -m gxkit caps                           # 列能力
-python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部（约 24 分钟）
+python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部（约 35 分钟）
 python -m gxkit run --only project.save        # 只跑一条
 python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编译日志
 ```
@@ -48,7 +48,8 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编�
 | 步→源码坐标 | `*_StepInfo.db` 的 `T_SourcePos`（`Row=,Col=,StrLen=`） |
 | 编译 IL | `*_MilDB.db` 的 `MIL.data`（`op=` 指令流） |
 | 软元件模板 | `*_DC.db` 的 `DEVICE_DATA`（FX5U 2935 行 + 注释） |
-| 标签 | `LabelData.db`（`LabelTbl`/`RowTbl`/`ColumnDataTbl`） |
+| 标签 | `LabelData.db`（`LabelTbl`/`RowTbl`/`ColumnDataTbl`；名字在 `ColumnID=2`） |
+| 功能块 | FB 的正文同样落在一份 `*_STDB.db` 里（没有独立的 FB 清单，靠正文与局部标签判定） |
 
 `Progress.txt` 是这套内核最有价值的判据：**编译 0 错 0 警是硬事实**，不依赖任何界面抓取。
 `程序检查` 是第二层：它在编译通过之后继续查指令用法、双线圈、软元件/标签一致性。
@@ -93,6 +94,6 @@ docs/STATUS.md         当前状态
 
 - 只能离线（不写入 PLC）；在线能力需要真实 PLC 或模拟器，未做
 - UI 是日文版；菜单/控件 id 依赖日文界面，换语言需重建映射
-- 每条能力 ~10 s 启动 + 操作，全套 **~24 分钟**（15 条）
+- 每条能力 ~10 s 启动 + 操作，全套 **~35 分钟**（17 条）
 - 行级错误是"前缀二分推断"，不是编译器原文（面板读不到）
 - 梯形图内容不走 XML；程序体用编辑器粘贴，全局标签走 XML 导入（仅验证 BOOL）

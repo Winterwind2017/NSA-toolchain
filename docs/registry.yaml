@@ -1,11 +1,11 @@
-version: 4
-kernel: gxkit 0.4.0
+version: 5
+kernel: gxkit 0.5.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 16
+  verified: 17
 capabilities:
 - id: project.new
   family: project
@@ -43,6 +43,12 @@ capabilities:
   status: verified
   action: program_import_xml
   expect: {"imported": true, "program_created": true, "body_found": true, "program_count": {"min": 2.0, "max": 50.0}, "errors": 0}
+- id: program.import_fb
+  family: program
+  level: L3
+  status: verified
+  action: program_import_fb
+  expect: {"imported": true, "program_created": true, "body_found": true, "fb_body_found": true, "locals_found": 2, "fb_vars_found": 2, "new_sources": {"min": 1.0, "max": 10.0}, "errors": 0}
 - id: inspect.source_map
   family: inspect
   level: L2

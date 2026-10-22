@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.4.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.5.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**16** 条
+- 真机通过能力：**17** 条
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -26,6 +26,7 @@
 | `program.paste_st` | ST 代码粘进编辑器 | 标题 `N步` |
 | `program.read_st` | **从 `.gx3` 读回 ST 源码** | `StBlocks.data` 与贴进去的逐字相同 |
 | `program.import_xml` | **用 XML 新建程序（PrgGen）** | 编译日志出现 `程序(PrgGen)` + 正文进 STDB + 0 错 |
+| `program.import_fb` | **用 XML 建程序 + 功能块（带局部标签）** | `PrgFB` 进程序清单、两段正文进 STDB、4 个局部标签进 `LabelData`、0 错 |
 
 ### 编译与检查
 
@@ -63,5 +64,5 @@
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 16/16，约 30 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 17/17，约 35 分钟
 ```

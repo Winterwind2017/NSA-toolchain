@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"16 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"17 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：16 条能力，动作与判据齐全
+# 自检通过：17 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 14 passed
+# 15 passed
 
-# 3) 真机全量（约 31 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 35 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -57,6 +57,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-22 | **16/16（v0.4，新增 program.import_xml）** | 1833.0 s |
 | 2026-10-22 | **16/16（v0.4，输入/存盘改为菜单优先 + PostMessage）** | 1929.0 s |
 | 2026-10-23 | **16/16（v0.4，同一份代码第二次）** | 1911.4 s |
+| 2026-10-23 | **17/17（v0.5，新增 program.import_fb）** | 2045.0 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -110,3 +111,22 @@ ew_sources | 1（多出一套 STDB） |
 | project.save 文件不存在 | 新建工程后 Ctrl+S 不弹另存为 | save_as 菜单优先：工程 → 另存为(A) |
 | 后面的能力连续挂在 
 ew_project | 上一轮 GXW3 没退干净，新实例"已有实例" | 每条能力前 	askkill /IM GXW3.exe /T |
+
+## v0.5 新增一条：program.import_fb（程序 + 功能块 + 局部标签）
+
+| 读数 | 值 |
+|---|---|
+| program_count / 
+ames | 2 / ["ProgPou","PrgFB"] |
+| ody_found / b_body_found | true / true |
+| locals_found / b_vars_found | 2 / 2（LocBool、LocWord、FB_Bool、FB_Word） |
+| labels_before → after | 54 → 76 |
+| 
+ew_sources | 2（多出程序与功能块各一套 STDB） |
+| rrors | 0 |
+
+三条关键规则（都是**静默失败**换来的）：
+1. Program 必须排在 FunctionBlock **之前**，否则整份导入被忽略；
+2. 功能块要**删掉 <Parameters>**，Vars 只留一块；
+3. 功能块不会出现在 Progress.txt 的 程序(...) 清单里——判定它建出来靠
+   “多一份 STDB（正文）”+“LabelData 里有它的变量名”。

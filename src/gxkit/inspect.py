@@ -177,6 +177,13 @@ def flat(text: str) -> str:
     return "".join(str(text).split())
 
 
+def label_names(gx3: str | pathlib.Path, column_id: int = 2) -> list[str]:
+    """标签名（默认取 ColumnDataTbl.ColumnID=2，实测名称就在这一列）。"""
+    return [r["value"] for r in read_labels(gx3)
+            if r.get("column_id") == column_id
+            and isinstance(r.get("value"), str) and r["value"]]
+
+
 def source_matches(gx3: str | pathlib.Path, code: str) -> bool:
     """工程里是否存在内容等于 code 的程序正文（忽略空白差异）。"""
     want = flat(code)

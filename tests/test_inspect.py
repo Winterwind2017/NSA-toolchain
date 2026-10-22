@@ -162,3 +162,28 @@ def test_build_program_shape() -> None:
 
 def test_flat_and_source_matches() -> None:
     assert I.flat('B0 := NOT B0;\r\n\r\nW0 := W0 + 1;') == 'B0:=NOTB0;W0:=W0+1;'
+
+
+def test_build_fb_program_shape() -> None:
+    """顺序（Program 在 FunctionBlock 之前）、无 Parameters、单 Vars、唯一行号。"""
+    tree = xmlgen.build_fb_program(
+        'PrgFB', 'LocBool := NOT LocBool;', 'FBGen', 'FB_Bool := NOT FB_Bool;')
+    ns = xmlgen.NS
+    gn = tree.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    tags = [c.tag.replace('{%s}' % ns, '') for c in list(gn)]
+    assert tags.index('Program') < tags.index('FunctionBlock'), 'Program 必须在 FunctionBlock 之前'
+    assert 'Parameters' not in tags
+    assert tags.count('Program') == 1 and tags.count('FunctionBlock') == 1
+
+    fb = gn.find('{%s}FunctionBlock' % ns)
+    assert fb.get('name') == 'FBGen'
+    assert fb.findall('{%s}Parameters' % ns) == [], 'FunctionBlock 不能带 Parameters'
+    assert len(fb.findall('{%s}Vars' % ns)) == 1
+    assert [v.get('name') for v in fb.find('{%s}Vars' % ns)] == ['FB_Bool', 'FB_Word']
+
+    prog = gn.find('{%s}Program' % ns)
+    assert [v.get('name') for v in prog.find('{%s}Vars' % ns)] == ['LocBool', 'LocWord']
+    # 行号在各自 Vars 内唯一（功能块样例变量原本没有行号，由 _ensure_line_number 补上）
+    for holder in (fb, prog):
+        nums = [e.get('number') for e in holder.iter('{%s}VariableLineNumber' % ns)]
+        assert len(nums) == len(set(nums)) == 2, (holder.tag, nums)

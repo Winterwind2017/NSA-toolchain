@@ -445,6 +445,49 @@ def program_import_xml(ctx: dict) -> dict:
             "errors": prog.get("errors")}
 
 
+def program_import_fb(ctx: dict) -> dict:
+    """用 XML 一次建出"带局部标签的程序 + 一个功能块"，并读回确认三样东西都落地。"""
+    from . import xmlgen
+    from . import inspect as I
+
+    code = ctx.get("code") or "LocBool := NOT LocBool;\r\nLocWord := LocWord + 1;"
+    fb_code = ctx.get("fb_code") or "FB_Bool := NOT FB_Bool;\r\nFB_Word := FB_Word + 1;"
+    s, _ = _new_and_save(ctx)
+    base_labels = len(I.read_labels(ctx["project"]))
+    base_sources = len(I.st_sources(ctx["project"]))
+
+    xml = xmlgen.write_fb_program(
+        pathlib.Path(ctx["project"]).with_name("fb.xml"),
+        ctx.get("program_name") or "PrgFB", code,
+        ctx.get("fb_name") or "FBGen", fb_code)
+    imp = s.import_xml(xml)
+    for _ in range(3):
+        s.convert_all(wait_s=12.0)
+        s.save()
+        if read_progress(ctx["project"]).get("found"):
+            break
+
+    names = I.program_names(ctx["project"])
+    sources = I.st_sources(ctx["project"])
+    flat = "".join(I.flat(v) for v in sources.values())
+    labels = set(I.label_names(ctx["project"]))
+    prog = read_progress(ctx["project"])
+    want_locals = [x["name"] for x in xmlgen.DEFAULT_LOCALS]
+    want_fb = [x["name"] for x in xmlgen.DEFAULT_FB_LOCALS]
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "program_created": "PrgFB" in names,
+            "program_count": len(names),
+            "names": names,
+            "body_found": I.flat(code) in flat,
+            "fb_body_found": I.flat(fb_code) in flat,
+            "locals_found": sum(1 for n in want_locals if n in labels),
+            "fb_vars_found": sum(1 for n in want_fb if n in labels),
+            "labels_before": base_labels,
+            "labels_after": len(I.read_labels(ctx["project"])),
+            "new_sources": len(sources) - base_sources,
+            "errors": prog.get("errors")}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -452,6 +495,7 @@ ACTIONS = {
     "program_paste_st": program_paste_st,
     "program_read_st": program_read_st,
     "program_import_xml": program_import_xml,
+    "program_import_fb": program_import_fb,
     "inspect_source_map": inspect_source_map,
     "inspect_devices": inspect_devices,
     "inspect_mil": inspect_mil,
