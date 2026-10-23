@@ -13,12 +13,30 @@ from .judges import judge
 from .win import kill_stray
 
 
-def run(workdir: str | pathlib.Path, only: str | None = None,
-        code: str | None = None, keep: bool = False) -> dict:
-    wd = pathlib.Path(workdir)
-    wd.mkdir(parents=True, exist_ok=True)
+def select_caps(only: str | None = None, shuffle: bool = False,
+                seed: int | None = None) -> tuple[list, int | None]:
+    """按过滤条件选能力；shuffle=True 时用固定种子打乱（种子会返回，便于复现）。"""
     sel = [c for c in caps_mod.CAPS
            if not only or c.id.startswith(only) or c.family == only]
+    if not shuffle:
+        return sel, None
+    import random
+    if seed is None:
+        seed = int(time.time()) % 100000
+    rng = random.Random(seed)
+    rng.shuffle(sel)
+    return sel, seed
+
+
+def run(workdir: str | pathlib.Path, only: str | None = None,
+        code: str | None = None, keep: bool = False,
+        shuffle: bool = False, seed: int | None = None) -> dict:
+    wd = pathlib.Path(workdir)
+    wd.mkdir(parents=True, exist_ok=True)
+    sel, seed = select_caps(only, shuffle, seed)
+    order = [c.id for c in sel]
+    if shuffle:
+        print("乱序跑：seed=%s，顺序 %s" % (seed, order))
 
     rows = []
     t_all = time.time()
@@ -54,6 +72,7 @@ def run(workdir: str | pathlib.Path, only: str | None = None,
     dur = round(time.time() - t_all, 1)
     result = {"total": len(rows), "passed": passed, "seconds": dur,
               "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+              "shuffled": bool(shuffle), "seed": seed, "order": order,
               "caps": rows}
     (wd / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1),
                                     encoding="utf-8")

@@ -77,6 +77,7 @@
 ```powershell
 python -m gxkit apply --xml build.xml --dry        # 只做离线预检（不开 GX Works3）
 python -m gxkit apply --xml build.xml              # 导入 -> 编译 -> 存盘 -> 报告
+python -m gxkit run --shuffle --seed 7            # 乱序跑一轮（查顺序依赖/状态泄漏）
 ```
 
 `apply` 会打印并写出报告文件 apply_report.json：程序/功能块/结构体/标签清单、导入是否生效、

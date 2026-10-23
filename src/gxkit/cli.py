@@ -50,7 +50,8 @@ def cmd_meta(args: argparse.Namespace) -> int:
 def cmd_run(args: argparse.Namespace) -> int:
     from .runner import run
 
-    res = run(args.workdir, only=args.only, code=args.code, keep=args.keep)
+    res = run(args.workdir, only=args.only, code=args.code, keep=args.keep,
+              shuffle=args.shuffle, seed=args.seed)
     return 0 if res["passed"] == res["total"] else 1
 
 
@@ -82,6 +83,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--only", default=None, help="按 id 前缀或 family 过滤")
     s.add_argument("--code", default=None, help="自定义 ST 代码（\\r\\n 分隔）")
     s.add_argument("--keep", action="store_true", help="结束后不关闭 GX Works3")
+    s.add_argument("--shuffle", action="store_true",
+                   help="打乱能力顺序（暴露顺序依赖/状态泄漏）")
+    s.add_argument("--seed", type=int, default=None, help="乱序种子（复现用）")
     s.set_defaults(func=cmd_run)
 
     s = sub.add_parser("meta", help="读 .gx3 的 Config 与编译日志")

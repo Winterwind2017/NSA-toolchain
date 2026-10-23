@@ -355,3 +355,27 @@ def test_check_xml_precheck(tmp_path: pathlib.Path) -> None:
     bad.write_text("<Project><Types>", encoding="utf-8")
     info = A.check_xml(bad)
     assert info["ok"] is False and info["problems"]
+
+
+def test_select_caps_shuffle_is_reproducible_permutation() -> None:
+    """乱序跑：同种子结果一致、是真排列、顺序确实变了；不 shuffle 时保持原序。"""
+    from gxkit import caps as caps_mod
+    from gxkit.runner import select_caps
+
+    plain, seed_plain = select_caps()
+    assert seed_plain is None
+    assert [c.id for c in plain] == [c.id for c in caps_mod.CAPS]
+
+    a, seed_a = select_caps(shuffle=True, seed=7)
+    b, seed_b = select_caps(shuffle=True, seed=7)
+    assert seed_a == seed_b == 7
+    assert [c.id for c in a] == [c.id for c in b]
+    assert sorted(c.id for c in a) == sorted(c.id for c in plain)
+    assert [c.id for c in a] != [c.id for c in plain]
+
+
+def test_select_caps_filter_still_works_with_shuffle() -> None:
+    from gxkit.runner import select_caps
+
+    sel, _ = select_caps(only="datatype", shuffle=True, seed=3)
+    assert sel and all(c.family == "datatype" for c in sel)
