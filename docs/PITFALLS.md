@@ -360,3 +360,23 @@ XML 里任何不认识的属性都可能让解析器整段放弃——要带元�
 `InitialValue`、补 `BodyProperties`/`FbPouProperties`。FB 那条因此通了，局部标签没有。
 要真正自给自足，得继续做"逐元素 diff 二分"，记在 `docs/EXPAND_BACKLOG.md` 第 6 条。
 
+## 三十九、叫停全量跑：`job_kill` 只杀外层，真正的运行器还在跑
+
+全量套件是 "pwsh → python -m gxkit run → 每条能力 taskkill/启动 GXW3"。
+对后台任务 `job_kill` 只终止**外层 pwsh**，`python` 子进程会继续按清单一条条跑，
+表现就是"说了暂停，GX Works3 还在自动开窗口"。
+
+正确收尾：
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+  Where-Object { $_.CommandLine -like '*gxkit run*' } |
+  ForEach-Object { & taskkill /T /F /PID $_.ProcessId }
+Get-Process GXW3 -ErrorAction SilentlyContinue |
+  ForEach-Object { & taskkill /T /F /PID $_.Id }
+```
+
+杀完要复查：`(Get-Process GXW3).Count` 与 `(Get-Process python).Count`。
+注意别误杀无关的 python（本机常驻 SolidWorks-MCP 等 MCP 服务），
+用命令行里是否含 `gxkit run` 来过滤。
+
