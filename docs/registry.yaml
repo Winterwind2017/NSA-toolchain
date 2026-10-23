@@ -1,11 +1,11 @@
-version: 7
-kernel: gxkit 0.7.0
+version: 8
+kernel: gxkit 0.8.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 20
+  verified: 21
 capabilities:
 - id: project.new
   family: project
@@ -67,6 +67,12 @@ capabilities:
   status: verified
   action: datatype_member_var
   expect: {"imported": true, "program_created": true, "errors": 0, "define_stage_seen": true, "define_stage_errors": 0, "struct_node_seen": true, "member_rows_seen": {"min": 7.0, "max": 7.0}}
+- id: datatype.custom_members
+  family: datatype
+  level: L3
+  status: verified
+  action: datatype_custom_members
+  expect: {"imported": true, "program_created": true, "errors": 0, "member_rows_seen": {"min": 2.0, "max": 2.0}, "struct_node_seen": true}
 - id: inspect.source_map
   family: inspect
   level: L2

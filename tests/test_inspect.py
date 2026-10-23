@@ -236,3 +236,40 @@ def test_build_struct_var_program_shape() -> None:
     members = assign.find('{%s}VariableStructDeviceAssignment' % ns).findall('{%s}Member' % ns)
     assert [m.get('name') for m in members] == ['member1_1', 'member1_2', 'member1_3', 'member1_4']
     assert members[-1].find('{%s}Struct' % ns) is not None, '嵌套成员要套 Struct'
+
+
+def test_custom_members_keep_adddata_last() -> None:
+    """自定义成员时，UserDefinedTypeSpec 的 <AddData> 必须留在最后。
+
+    顺序反了（AddData 跑到 Member 前面）整份导入会被静默丢弃——探针 73 的四个候选全灭。
+    """
+    tree = xmlgen.build_struct_program(
+        'PrgCust', 'LocBool := NOT LocBool;', 'StructCust',
+        members=[{'name': 'MyBool', 'type': 'BOOL'}, {'name': 'MyWord', 'type': 'WORD'}],
+        locals_=[{'name': 'LocBool', 'type': 'BOOL'}])
+    ns = xmlgen.NS
+    gn = tree.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    dt = gn.find('{%s}DataTypeDecl' % ns)
+    spec = dt.find('{%s}UserDefinedTypeSpec' % ns)
+    tags = [c.tag.replace('{%s}' % ns, '') for c in list(spec)]
+    assert tags[-1] == 'AddData', tags
+    assert tags.count('Member') == 2
+    members = spec.findall('{%s}Member' % ns)
+    assert [m.get('name') for m in members] == ['MyBool', 'MyWord']
+    types = [m.find('{%s}Type' % ns).find('{%s}TypeName' % ns).text for m in members]
+    assert types == ['BOOL', 'WORD']
+
+
+def test_struct_var_assign_matches_members() -> None:
+    tree = xmlgen.build_struct_var_program(
+        'PrgCust', 'StructCust', 'S1', members=[{'name': 'MyBool'}, {'name': 'MyWord'}])
+    ns = xmlgen.NS
+    gn = tree.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    prog = gn.find('{%s}Program' % ns)
+    var = next(v for v in prog.find('{%s}Vars' % ns).findall('{%s}Variable' % ns)
+               if v.get('name') == 'S1')
+    add = var.find('{%s}AddData' % ns)
+    data = next(d for d in add if 'VariableStructDeviceAssignment' in (d.get('name') or ''))
+    assigned = [m.get('name') for m in data.find(
+        '{%s}VariableStructDeviceAssignment' % ns).findall('{%s}Member' % ns)]
+    assert assigned == ['MyBool', 'MyWord']

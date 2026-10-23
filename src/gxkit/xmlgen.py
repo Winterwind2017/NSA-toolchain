@@ -391,23 +391,35 @@ def build_struct_program(program_name: str, st_code: str,
     st_el.set("name", struct_name)
     spec = st_el.find(_q("UserDefinedTypeSpec"))
     if members is not None:
-        for old in spec.findall(_q("Member")):
-            spec.remove(old)
-    for idx, item in enumerate(members or [], start=1):
+        _replace_members(spec, members, tpl_member)
+    gn.append(st_el)          # ← 类型放在程序之后
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def _replace_members(spec, members: list[dict], tpl_member,
+                     start_no: int = 1) -> None:
+    """替换 `UserDefinedTypeSpec` 里的 `<Member>`，**保持它的 `<AddData>` 在最后**。
+
+    这一条是踩出来的：`<AddData>` 若跑到 Member 前面，整份导入会被静默丢弃
+    （探针 73 的四个候选全灭，最后是靠结构对比发现顺序反了）。
+    """
+    add_blocks = [ch for ch in list(spec) if ch.tag == _q("AddData")]
+    for old in spec.findall(_q("Member")):
+        spec.remove(old)
+    insert_at = list(spec).index(add_blocks[0]) if add_blocks else len(spec)
+    for offset, item in enumerate(members):
         mem = copy.deepcopy(tpl_member)
         mem.set("name", item["name"])
         for ln in mem.iter(_q("VariableLineNumber")):
-            ln.set("number", str(idx))
+            ln.set("number", str(start_no + offset))
         for ct in mem.iter(_q("CommentText")):
             ct.text = item.get("comment") or item["name"]
         for tn in mem.iter(_q("TypeName")):
             tn.text = item.get("type", "BOOL")
         for sv in mem.iter(_q("SimpleValue")):
             sv.set("value", item.get("init", "FALSE"))
-        spec.append(mem)
-    gn.append(st_el)          # ← 类型放在程序之后
-    ET.indent(tree, space="\t")
-    return tree
+        spec.insert(insert_at + offset, mem)
 
 
 def write_struct_program(path: str | pathlib.Path, program_name: str, st_code: str,
@@ -480,11 +492,14 @@ DEFAULT_NESTED_ASSIGN = [("member2_1", "B100"), ("member2_2", "W100"),
                          ("member2_3", "B120")]
 
 
-def _add_struct_assign(var, nested=DEFAULT_NESTED_ASSIGN) -> None:
+def _add_struct_assign(var, members=None, nested=DEFAULT_NESTED_ASSIGN) -> None:
     """给结构体类型的变量加 `VariableStructDeviceAssignment`（成员级软元件分配）。
 
     没有这一块，`局部标签(...)定义检查中` 会报 1 个错（探针 64）；
     加上之后同样一段 XML 就是 0 错（探针 66）。
+
+    `members` 给定时按 [{"name","address"}] 分配（自定义结构体用）；
+    为 None 时用样例那套（member1_1…member1_4，最后一个是嵌套 Struct2）。
     """
     add = var.find(_q("AddData"))
     if add is None:
@@ -495,31 +510,41 @@ def _add_struct_assign(var, nested=DEFAULT_NESTED_ASSIGN) -> None:
         "name": ADD_NS + "VariableStructDeviceAssignment",
         "handleUnknown": "implementation"})
     assign = ET.SubElement(data, _q("VariableStructDeviceAssignment"))
-    for name, addr in DEFAULT_MEMBER_ASSIGN:
-        if addr is None:
-            holder = ET.SubElement(assign, _q("Member"), {"name": name})
-            struct_el = ET.SubElement(holder, _q("Struct"))
-            for n2, a2 in nested:
-                ET.SubElement(struct_el, _q("Member"), {"name": n2, "address": a2})
-        else:
-            ET.SubElement(assign, _q("Member"), {"name": name, "address": addr})
+    if members is not None:
+        for item in members:
+            attrs = {"name": item["name"]}
+            if item.get("address"):
+                attrs["address"] = item["address"]
+            ET.SubElement(assign, _q("Member"), attrs)
+    else:
+        for name, addr in DEFAULT_MEMBER_ASSIGN:
+            if addr is None:
+                holder = ET.SubElement(assign, _q("Member"), {"name": name})
+                struct_el = ET.SubElement(holder, _q("Struct"))
+                for n2, a2 in nested:
+                    ET.SubElement(struct_el, _q("Member"), {"name": n2, "address": a2})
+            else:
+                ET.SubElement(assign, _q("Member"), {"name": name, "address": addr})
     add.insert(0, data)
 
 
 def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
                              var_name: str = "S1",
                              st_code: str = "LocBool := NOT LocBool;",
+                             members: list[dict] | None = None,
+                             assign: list[dict] | None = None,
                              sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
     """结构体 + 结构体类型的变量（带成员级软元件分配）+ 程序，一份文档导入。
 
     实测要点：
       * 结构体与程序必须在**同一份文档**里（先导结构体、再导程序，程序仍报转换错）；
       * 变量必须带 `VariableStructDeviceAssignment`，否则 `局部标签定义检查` 报错；
+      * `members` 给定时才自定义成员（`UserDefinedTypeSpec` 的 `<AddData>` 必须留在最后）；
       * 正文**不要引用结构体成员**（`S1.member1_1` 会让转换报错）——成员已经绑到
         B0/W0/B10 这些软元件上，按软元件访问。
     """
     tree = build_struct_program(program_name, st_code, struct_name,
-                                members=None,
+                                members=members,
                                 locals_=[{"name": var_name, "type": struct_name},
                                          {"name": "LocBool", "type": "BOOL"}],
                                 sample=sample)
@@ -528,14 +553,19 @@ def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
     prog = next(p for p in gn.findall(_q("Program")) if p.get("name") == program_name)
     var = next(v for v in prog.find(_q("Vars")).findall(_q("Variable"))
                if v.get("name") == var_name)
-    _add_struct_assign(var)
+    if assign is None and members is not None:
+        addrs = ["B0", "W0", "B10", "B20", "W20", "B30", "W30", "B40"]
+        assign = [{"name": m["name"], "address": addrs[i % len(addrs)]}
+                  for i, m in enumerate(members)]
+    _add_struct_assign(var, members=assign)
 
-    # Struct1 的 member1_4 类型是 Struct2：把 Struct2 也导进来，嵌套成员才有定义
-    src_gn = ET.parse(str(sample)).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
-    nested = next((d for d in src_gn.findall(_q("DataTypeDecl"))
-                   if d.get("name") == "Struct2"), None)
-    if nested is not None:
-        gn.append(copy.deepcopy(nested))
+    if members is None:
+        # Struct1 的 member1_4 类型是 Struct2：把 Struct2 也导进来，嵌套成员才有定义
+        src_gn = ET.parse(str(sample)).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
+        nested = next((d for d in src_gn.findall(_q("DataTypeDecl"))
+                       if d.get("name") == "Struct2"), None)
+        if nested is not None:
+            gn.append(copy.deepcopy(nested))
     ET.indent(tree, space="\t")
     return tree
 
@@ -543,9 +573,13 @@ def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
 def write_struct_var_program(path: str | pathlib.Path, program_name: str,
                              struct_name: str = "StructGen", var_name: str = "S1",
                              st_code: str = "LocBool := NOT LocBool;",
+                             members: list[dict] | None = None,
+                             assign: list[dict] | None = None,
                              sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     build_struct_var_program(program_name, struct_name, var_name, st_code,
-                             sample).write(p, encoding="utf-8", xml_declaration=True)
+                             members=members, assign=assign,
+                             sample=sample).write(p, encoding="utf-8",
+                                                  xml_declaration=True)
     return p

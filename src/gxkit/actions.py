@@ -632,6 +632,51 @@ def datatype_member_var(ctx: dict) -> dict:
             "labels_after": len(labels)}
 
 
+CUSTOM_MEMBERS = [
+    {"name": "MyBool", "type": "BOOL", "init": "FALSE"},
+    {"name": "MyWord", "type": "WORD", "init": "0"},
+]
+
+
+def datatype_custom_members(ctx: dict) -> dict:
+    """自定义结构体成员（MyBool / MyWord）+ 结构体变量，一份文档导入并读回。"""
+    from . import xmlgen
+    from . import inspect as I
+    from . import uia
+
+    name = ctx.get("program_name") or "PrgCust"
+    struct_name = ctx.get("struct_name") or "StructCust"
+    members = ctx.get("members") or CUSTOM_MEMBERS
+    s, _ = _new_and_save(ctx)
+    base_labels = len(I.read_labels(ctx["project"]))
+    xml = xmlgen.write_struct_var_program(
+        pathlib.Path(ctx["project"]).with_name("custom_members.xml"),
+        name, struct_name, ctx.get("var_name") or "S1",
+        ctx.get("code") or "LocBool := NOT LocBool;",
+        members=members)
+    imp = _import_verified(s, ctx, xml, name)
+
+    prog = read_progress(ctx["project"])
+    labels = I.read_labels(ctx["project"])
+    label_names = {r["value"] for r in labels if isinstance(r["value"], str)}
+    nodes = []
+    try:
+        nodes = uia.find_names(s.main["hwnd"], struct_name)
+    except Exception:
+        nodes = []
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "attempts": imp.get("attempts"),
+            "program_created": name in I.program_names(ctx["project"]),
+            "programs": I.program_names(ctx["project"]),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages"),
+            "member_rows_seen": sum(1 for m in members if m["name"] in label_names),
+            "member_names": [m["name"] for m in members],
+            "struct_node_seen": bool(nodes),
+            "labels_before": base_labels,
+            "labels_after": len(labels)}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -643,6 +688,7 @@ ACTIONS = {
     "program_import_fb_instance": program_import_fb_instance,
     "datatype_import": datatype_import,
     "datatype_member_var": datatype_member_var,
+    "datatype_custom_members": datatype_custom_members,
     "inspect_source_map": inspect_source_map,
     "inspect_devices": inspect_devices,
     "inspect_mil": inspect_mil,

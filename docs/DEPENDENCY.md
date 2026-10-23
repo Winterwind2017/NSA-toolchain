@@ -65,6 +65,7 @@
 | B7 | **结构体（DataTypeDecl，成员保持样例原样）** | B5 | ✅ |
 | B8 | **结构体类型的变量（成员级软元件分配）** | B7 | ✅ |
 | B9 | 正文里按成员名访问结构体（S1.member1_1） | B8 | ⚠️ 见 UNSUPPORTED |
+| B10 | **自定义结构体成员** | B7（顺序：Member… 然后 AddData） | ✅ |
 | L4 | 存盘 → 关工程 → 重开 → 步数仍在 | P3 + R1 | ✅ |
 | P4 | 编译器原话（错误消息文本） | 面板不可读 | ❌ 见 UNSUPPORTED |
 | P5 | WORD/DINT 标签 | 类型相关未验证 | ⚠️ 见 UNSUPPORTED |

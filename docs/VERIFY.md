@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"20 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"21 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：20 条能力，动作与判据齐全
+# 自检通过：21 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 18 passed
+# 20 passed
 
-# 3) 真机全量（约 42 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 43 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -63,6 +63,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **19/19（v0.6，同一份代码第二次）** | 2342.9 s |
 | 2026-10-23 | **20/20（v0.7，新增 datatype.member_var）** | 2485.6 s |
 | 2026-10-23 | **20/20（v0.7，同一份代码第二次）** | 2482.7 s |
+| 2026-10-23 | **21/21（v0.8，新增 datatype.custom_members）** | 2630.5 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -166,3 +167,18 @@ ew_sources=2、0 错 |
 2. 结构体变量必须带 VariableStructDeviceAssignment（成员级软元件分配），
    否则 局部标签定义检查 报 1 个错——同一段 XML 加上它就是 0 错；
 3. 嵌套成员类型（Struct2）也要一起导入，7 个成员名才会全部出现在 LabelData。
+
+## v0.8 新增一条：datatype.custom_members（自定义结构体成员）
+
+| 读数 | 值 |
+|---|---|
+| program_created | true（PrgCust） |
+| rrors / ailed_stages | 0 / [] |
+| member_rows_seen | 2（MyBool、MyWord，自定义名字） |
+| struct_node_seen | true（导航树 StructCust …） |
+| labels_before → after | 54 → 64 |
+
+**推翻旧结论**：结构体成员不是"必须保持样例原样"，真正的规则是**元素顺序**——
+UserDefinedTypeSpec 里 Member 全部在前，<AddData> 必须在最后。
+之前重建成员时把 <AddData> 挤到了最前面，于是整份导入被静默丢弃（探针 73 四个候选全灭）。
+只把 <AddData> 挪回最后，同一份自定义成员的 XML 立刻 0 错导入成功（探针 74）。

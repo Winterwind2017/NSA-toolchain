@@ -284,3 +284,20 @@ program_names() 只能抓到 程序(PrgFB)；功能块**没有独立条目**。
 导入偶发整份被忽略（对话框确认没落到），表现是工程里**一点变化都没有**。
 此时重试是安全的；但**一旦检测到目标程序出现就绝不能重试**（导入非幂等，
 会得到 `PrgGen_2`）。`_import_verified()` 就是按这个规则写的。
+
+
+## 三十一、UserDefinedTypeSpec 的 <AddData> 必须留在成员后面
+
+这是自定义结构体成员的**唯一**卡点，也是它骗了我好几轮的原因：
+重建成员时我用 spec.remove(member) 再 spec.append(new)，样例里那个**排在最后的
+<AddData> 就被推到了最前面**，于是整份导入被静默丢弃——0 错、连程序都不建、
+导航树里也没有结构体。
+
+对照实验（探针 73）：同一份 XML，只把 <AddData> 挪回最后，立刻导入成功。
+所以"结构体成员必须原样"那条旧结论是**错的**，真正的规则是**元素顺序**：
+UserDefinedTypeSpec = Member × N，然后 AddData。
+
+## 三十二、结构体名字上的 	itle 不会被改
+
+导航树显示 StructCust タイトル Struct1——类型名改了，DataTypeProperties 里的
+	itle 还是样例的。这只是显示文案，不影响导入。
