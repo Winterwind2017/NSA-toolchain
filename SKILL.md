@@ -39,7 +39,7 @@ python -m gxkit run --workdir D:\tmp\run1     # 真机全量，约 53 分钟
 python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 ```
 
-日常干活就用 `apply`：它打印并写出 `apply_report.json`（程序/功能块/结构体/标签、
+日常干活就用 `apply`：它打印并写出 apply_report.json（程序/功能块/结构体/标签、
 导入是否生效、源码块数、步数、编译错误、失败阶段），退出码 0 才算可交付。
 
 ## 2. 已打通的能力（详见 capabilities.md）
