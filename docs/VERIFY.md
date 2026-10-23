@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"21 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"22 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：21 条能力，动作与判据齐全
+# 自检通过：22 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 20 passed
+# 21 passed
 
-# 3) 真机全量（约 43 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 45 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -65,6 +65,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **20/20（v0.7，同一份代码第二次）** | 2482.7 s |
 | 2026-10-23 | **21/21（v0.8，新增 datatype.custom_members）** | 2630.5 s |
 | 2026-10-23 | **21/21（v0.8，同一份代码第二次）** | 2632.2 s |
+| 2026-10-23 | **22/22（v0.9，新增 datatype.member_access）** | 2786.3 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -183,3 +184,17 @@ ew_sources=2、0 错 |
 UserDefinedTypeSpec 里 Member 全部在前，<AddData> 必须在最后。
 之前重建成员时把 <AddData> 挤到了最前面，于是整份导入被静默丢弃（探针 73 四个候选全灭）。
 只把 <AddData> 挪回最后，同一份自定义成员的 XML 立刻 0 错导入成功（探针 74）。
+
+## v0.9 新增一条：datatype.member_access（正文按成员名访问结构体）
+
+| 读数 | 值 |
+|---|---|
+| program_created | true（PrgGA） |
+| rrors / ailed_stages | 0 / [] |
+| struct_define_stage_seen / _errors | true / 0（新阶段 结构体(StructCust)的定义检查中） |
+| member_access_in_source | true（源码里 GS1.MyBool := NOT GS1.MyBool;） |
+| global_label_seen / struct_type_in_labels | true / true |
+| labels_before → after | 54 → 74 |
+
+关键：**结构体标签要放全局**。同一个结构体，放程序 <Vars> 里按成员名访问会转换报错；
+放 Instances/Configuration/GlobalVars 里就 0 错（探针 66 vs 75）。

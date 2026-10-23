@@ -273,3 +273,26 @@ def test_struct_var_assign_matches_members() -> None:
     assigned = [m.get('name') for m in data.find(
         '{%s}VariableStructDeviceAssignment' % ns).findall('{%s}Member' % ns)]
     assert assigned == ['MyBool', 'MyWord']
+
+
+def test_build_struct_global_program_shape() -> None:
+    """成员名访问要用**全局**结构体标签：GlobalVars 里一个变量，带成员分配。"""
+    tree = xmlgen.build_struct_global_program(
+        'PrgGA', 'GS1.MyBool := NOT GS1.MyBool;', 'StructCust', 'GS1',
+        members=[{'name': 'MyBool', 'type': 'BOOL'}, {'name': 'MyWord', 'type': 'WORD'}])
+    ns = xmlgen.NS
+    root = tree.getroot()
+    cfg = root.find('{%s}Instances' % ns).find('{%s}Configuration' % ns)
+    gv = cfg.find('{%s}GlobalVars' % ns)
+    assert gv is not None, 'GlobalVars 必须挂在 Instances/Configuration 下'
+    var = gv.find('{%s}Variable' % ns)
+    assert var.get('name') == 'GS1'
+    assert var.find('{%s}Type' % ns).find('{%s}TypeName' % ns).text == 'StructCust'
+    assert var.find('{%s}Address' % ns) is None, '结构体标签不要 Address'
+    datas = [d.get('name', '') for d in var.find('{%s}AddData' % ns)]
+    assert any('VariableStructDeviceAssignment' in d for d in datas)
+
+    gn = root.find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    prog = gn.find('{%s}Program' % ns)
+    st = prog.find('{%s}MainBody' % ns).find('{%s}BodyContent' % ns).find('{%s}ST' % ns)
+    assert 'GS1.MyBool' in (st.text or '')

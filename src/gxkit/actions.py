@@ -677,6 +677,47 @@ def datatype_custom_members(ctx: dict) -> dict:
             "labels_after": len(labels)}
 
 
+def datatype_member_access(ctx: dict) -> dict:
+    """结构体成员按名字访问（GS1.MyBool := ...）——必须走**全局**结构体标签。"""
+    from . import xmlgen
+    from . import inspect as I
+
+    name = ctx.get("program_name") or "PrgGA"
+    struct_name = ctx.get("struct_name") or "StructCust"
+    label = ctx.get("label_name") or "GS1"
+    members = ctx.get("members") or CUSTOM_MEMBERS
+    code = ctx.get("code") or (label + ".MyBool := NOT " + label + ".MyBool;")
+    s, _ = _new_and_save(ctx)
+    base_labels = len(I.read_labels(ctx["project"]))
+    xml = xmlgen.write_struct_global_program(
+        pathlib.Path(ctx["project"]).with_name("global_struct.xml"),
+        name, code, struct_name, label, members=members)
+    imp = _import_verified(s, ctx, xml, name)
+
+    prog = read_progress(ctx["project"])
+    stages = prog.get("stages") or []
+    define = next((x for x in stages
+                   if x["stage"] == "结构体(%s)的定义检查中" % struct_name), None)
+    labels = I.read_labels(ctx["project"])
+    label_names = {r["value"] for r in labels if isinstance(r["value"], str)}
+    flat = "".join(I.flat(v) for v in I.st_sources(ctx["project"]).values())
+    types = [r["value"] for r in labels
+             if r.get("column_id") == 3 and isinstance(r.get("value"), str)]
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "attempts": imp.get("attempts"),
+            "program_created": name in I.program_names(ctx["project"]),
+            "programs": I.program_names(ctx["project"]),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages"),
+            "struct_define_stage_seen": define is not None,
+            "struct_define_stage_errors": (define or {}).get("errors"),
+            "member_access_in_source": I.flat(code) in flat,
+            "global_label_seen": label in label_names,
+            "struct_type_in_labels": struct_name in types,
+            "labels_before": base_labels,
+            "labels_after": len(labels)}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -689,6 +730,7 @@ ACTIONS = {
     "datatype_import": datatype_import,
     "datatype_member_var": datatype_member_var,
     "datatype_custom_members": datatype_custom_members,
+    "datatype_member_access": datatype_member_access,
     "inspect_source_map": inspect_source_map,
     "inspect_devices": inspect_devices,
     "inspect_mil": inspect_mil,

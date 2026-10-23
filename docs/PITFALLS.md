@@ -301,3 +301,16 @@ UserDefinedTypeSpec = Member × N，然后 AddData。
 
 导航树显示 StructCust タイトル Struct1——类型名改了，DataTypeProperties 里的
 	itle 还是样例的。这只是显示文案，不影响导入。
+
+
+## 三十三、按成员名访问结构体，必须用**全局**标签
+
+同一个结构体，变量放哪儿决定了能不能按成员名访问：
+
+| 放法 | 正文 X.MyBool := NOT X.MyBool; |
+|---|---|
+| 程序局部标签（Program/Vars 里的 S1 : StructCust） | 程序(...)转换中 **报错** |
+| **全局标签**（Instances/Configuration/GlobalVars 里的 GS1 : StructCust） | **0 错** |
+
+全局结构体标签还要带成员级软元件分配（和局部的一样），并且**不要 Address**。
+导入后 Progress.txt 会多出一个阶段：结构体(<类型名>)的定义检查中——正好当判据。

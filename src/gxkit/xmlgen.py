@@ -583,3 +583,69 @@ def write_struct_var_program(path: str | pathlib.Path, program_name: str,
                              sample=sample).write(p, encoding="utf-8",
                                                   xml_declaration=True)
     return p
+
+
+def build_struct_global_program(program_name: str, st_code: str,
+                                struct_name: str = "StructCust",
+                                label_name: str = "GS1",
+                                members: list[dict] | None = None,
+                                assign: list[dict] | None = None,
+                                sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+    """结构体 + **全局**结构体标签 + 程序（正文按成员名访问），一份文档导入。
+
+    为什么必须用全局标签：实测局部结构体标签（S1 : StructX 在程序 <Vars> 里）
+    按成员名访问会 程序(...)转换中 报错；换成 GlobalVars 里的结构体标签后
+    GS1.MyBool := NOT GS1.MyBool; **转换 0 错**（探针 75）。
+    导入时还会多出一个阶段 结构体(<名字>)的定义检查中，正好可以当判据。
+    """
+    members = members or DEFAULT_STRUCT_MEMBERS
+    tree = build_struct_program(program_name, st_code, struct_name,
+                                members=members, locals_=None, sample=sample)
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+
+    if assign is None:
+        addrs = ["B0", "W0", "B10", "B20", "W20"]
+        assign = [{"name": m["name"], "address": addrs[i % len(addrs)]}
+                  for i, m in enumerate(members)]
+
+    src_cfg = ET.parse(str(sample)).getroot().find(_q("Instances")).find(_q("Configuration"))
+    gv_tpl = copy.deepcopy(src_cfg.findall(_q("GlobalVars"))[0])
+    var_tpl = src_cfg.findall(_q("GlobalVars"))[0].find(_q("Variable"))
+    for v in gv_tpl.findall(_q("Variable")):
+        gv_tpl.remove(v)
+    gvar = copy.deepcopy(var_tpl)
+    gvar.set("name", label_name)
+    for tn in gvar.iter(_q("TypeName")):
+        tn.text = struct_name
+    addr = gvar.find(_q("Address"))
+    if addr is not None:
+        gvar.remove(addr)
+    add = gvar.find(_q("AddData"))
+    if add is None:
+        add = ET.SubElement(gvar, _q("AddData"))
+    for d in list(add):
+        if "VariableStructDeviceAssignment" in (d.get("name") or ""):
+            add.remove(d)
+    _add_struct_assign(gvar, members=assign)
+    gv_tpl.append(gvar)
+
+    cfg = root.find(_q("Instances")).find(_q("Configuration"))
+    cfg.append(gv_tpl)
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def write_struct_global_program(path: str | pathlib.Path, program_name: str, st_code: str,
+                                struct_name: str = "StructCust",
+                                label_name: str = "GS1",
+                                members: list[dict] | None = None,
+                                assign: list[dict] | None = None,
+                                sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    build_struct_global_program(program_name, st_code, struct_name, label_name,
+                                members=members, assign=assign,
+                                sample=sample).write(p, encoding="utf-8",
+                                                     xml_declaration=True)
+    return p

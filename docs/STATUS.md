@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.8.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.9.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**21** 条
+- 真机通过能力：**22** 条
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -36,6 +36,7 @@
 | `datatype.import` | **用 XML 建结构体** | UIA 导航树出现 `StructGen …`、程序照常导入、0 错 |
 | `datatype.member_var` | **结构体类型的变量（成员级软元件分配）** | `局部标签定义检查` 0 错、导航树有结构体、`LabelData` 里 7 个成员名、整体 0 错 |
 | `datatype.custom_members` | **自定义结构体成员（MyBool/MyWord）** | `LabelData` 里出现自定义成员名、导航树有结构体、整体 0 错 |
+| `datatype.member_access` | **正文按成员名访问（`GS1.MyBool := ...`）** | 多出 `结构体(StructCust)的定义检查中` 阶段且 0 错、源码含该语句、`GS1` 进 `LabelData`、整体 0 错 |
 
 ### 编译与检查
 
@@ -73,5 +74,5 @@
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 21/21，约 43 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 22/22，约 45 分钟
 ```
