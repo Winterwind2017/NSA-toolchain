@@ -47,6 +47,8 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | 场景 | 能力 | 关键点 |
 |---|---|---|
 | 新建工程 | `project.new` | Ctrl+N → 系列=FX5CPU(3)、机型=FX5U(0)、语言=ST(1) |
+| **换机型** | `project.new_rcpu` / `project.new_fx5s` | 只改 series/model：RCPU=1（28 机型）、FX5CPU=3（FX5U/FX5UJ/FX5S）；读回 `Unit` 验证 |
+| **机型无关性** | `program.rcpu_roundtrip` | iQ-R(R00) 上粘贴→转换→读回源码全对（4 步 0 错） |
 | 存盘 | `project.save` | 文件名 Edit cid=1148（**按类名取**）、保存按钮 cid=1（同） |
 | 看工程 | `project.meta` | `!!Config.xml` → `Unit="FX5U"`；ZIP 条目数 |
 | 写程序 | `program.paste_st` | 点进编辑区 → Ctrl+A → 粘贴 → 转换（标题出现 `N步` 才算落地） |

@@ -1,14 +1,14 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.11.0",
-  "kernel_commit": "77f2b70",
+  "kernel_version": "0.12.0",
+  "kernel_commit": "32eea1b",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 25,
+    "verified": 28,
     "families": 6,
     "pending": 6
   },
@@ -21,6 +21,47 @@
       "expect": {
         "has_window": true,
         "is_st": true
+      },
+      "reopen": false
+    },
+    "project.new_rcpu": {
+      "family": "project",
+      "level": "L1",
+      "title": "新建 iQ-R（RCPU/R00）+ ST 工程",
+      "action": "project_new_cpu",
+      "expect": {
+        "unit": "R00",
+        "unit_id": "4609",
+        "is_st": true,
+        "exists": true
+      },
+      "reopen": false
+    },
+    "project.new_fx5s": {
+      "family": "project",
+      "level": "L1",
+      "title": "新建 FX5S + ST 工程",
+      "action": "project_new_cpu",
+      "expect": {
+        "unit": "FX5S",
+        "is_st": true,
+        "exists": true
+      },
+      "reopen": false
+    },
+    "program.rcpu_roundtrip": {
+      "family": "program",
+      "level": "L1–L3",
+      "title": "iQ-R 上粘贴 ST 并读回",
+      "action": "program_roundtrip_cpu",
+      "expect": {
+        "unit": "R00",
+        "source_matches": true,
+        "steps": {
+          "min": 2.0,
+          "max": 500.0
+        },
+        "errors": 0
       },
       "reopen": false
     },
@@ -433,8 +474,18 @@
   "families": {
     "project": [
       "project.new",
+      "project.new_rcpu",
+      "project.new_fx5s",
       "project.save",
       "project.reopen"
+    ],
+    "program": [
+      "program.rcpu_roundtrip",
+      "program.paste_st",
+      "program.read_st",
+      "program.import_xml",
+      "program.import_fb",
+      "program.import_fb_instance"
     ],
     "inspect": [
       "project.meta",
@@ -443,13 +494,6 @@
       "project.diff",
       "inspect.devices",
       "inspect.mil"
-    ],
-    "program": [
-      "program.paste_st",
-      "program.read_st",
-      "program.import_xml",
-      "program.import_fb",
-      "program.import_fb_instance"
     ],
     "datatype": [
       "datatype.import",

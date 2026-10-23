@@ -1,10 +1,13 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **25** 条已验证能力（内核 `gxkit 0.11.0`，commit `77f2b70`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **28** 条已验证能力（内核 `gxkit 0.12.0`，commit `32eea1b`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
 | `project.new` | project | L1 | 新建 FX5U + ST 工程 |
+| `project.new_rcpu` | project | L1 | 新建 iQ-R（RCPU/R00）+ ST 工程 |
+| `project.new_fx5s` | project | L1 | 新建 FX5S + ST 工程 |
+| `program.rcpu_roundtrip` | program | L1–L3 | iQ-R 上粘贴 ST 并读回 |
 | `project.save` | project | L1–L2 | 另存为 .gx3（含读回校验） |
 | `project.meta` | inspect | L1–L2 | 解包 .gx3：Config.xml + 条目数 |
 | `program.paste_st` | program | L1–L3 | 把 ST 代码粘进编辑器并转换 |

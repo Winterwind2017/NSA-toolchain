@@ -1,0 +1,2 @@
+feat: 同步 gxkit 0.12 —— 28 条能力（多机型 iQ-R/FX5S + 乱序跑）
+新增：series/model 换机型矩阵、iQ-R 机型无关性、乱序跑（seed 记进 result.json）。
