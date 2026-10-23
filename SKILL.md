@@ -58,6 +58,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **程序+功能块（XML）** | `program.import_fb` | `Program` 必须在 `FunctionBlock` 之前；FB 删 `<Parameters>` |
 | **功能块实例（XML）** | `program.import_fb_instance` | 程序里 `InstFB : FBInst` + 正文 `InstFB();` |
 | **结构体（XML）** | `datatype.import` | `DataTypeDecl` 成员**保持样例原样**；判据用 UIA 导航树 |
+| **结构体变量** | `datatype.member_var` | 必须带 `VariableStructDeviceAssignment`（成员绑 B0/W0/B10…），且与结构体同文档 |
 | 批量 | `batch.projects` | 同会话连续粘贴变体 + `工程 → 另存为` |
 | L4 | `project.reopen` | 存盘 → 关工程 → 重开 → `N步` 仍在 |
 
@@ -120,9 +121,13 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     + "`LabelData` 里有它的变量名"。
 25. **结构体的 `<Member>` 不要重建**：自己拼成员（哪怕一个 BOOL）会让整份导入被
     **静默丢弃**；成员必须保持样例原样，只改类型名。
-26. **结构体类型的变量会报错**：`S1 : StructGen` 能落库，但 `局部标签定义检查` 报 1 个错
-    （需要成员级软元件分配）。所以结构体的判据是**导航树节点**，不是"有变量能用它"。
-27. **导入"静默什么都没进"时可以重试**；一旦目标程序出现就**绝不能重试**（非幂等）。
+26. **结构体类型的变量必须带成员级软元件分配**：`<AddData>` 里要有
+    `VariableStructDeviceAssignment`（成员逐个绑 B0/W0/B10…，嵌套成员再套 `<Struct>`）。
+    没有它 `局部标签定义检查` 报 1 个错；同一段 XML 加上它就是 0 错。
+27. **结构体与程序必须同文档导入**：先导结构体、再导程序，后导的那份仍报转换错。
+    嵌套成员类型（Struct2）也要一起导，成员名才会全出现在 `LabelData`。
+28. **正文里 `S1.member1_1` 会转换报错**：成员已绑到软元件，按软元件访问才是通的。
+29. **导入"静默什么都没进"时可以重试**；一旦目标程序出现就**绝不能重试**（非幂等）。
 
 ## 5. 明确不做
 
