@@ -31,11 +31,16 @@ description: >
 
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
-python -m gxkit selftest            # 离线自检（15 条）
+python -m gxkit selftest            # 离线自检（25 条）
 python -m gxkit caps                # 列能力
-python -m gxkit run --workdir D:\tmp\run1     # 真机全量，约 28 分钟
+python -m gxkit apply --xml build.xml --dry   # 离线预检一份 XML（不开 GX Works3）
+python -m gxkit apply --xml build.xml         # 一条命令：导入→编译→存盘→报告（约 2.5 分钟）
+python -m gxkit run --workdir D:\tmp\run1     # 真机全量，约 53 分钟
 python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 ```
+
+日常干活就用 `apply`：它打印并写出 `apply_report.json`（程序/功能块/结构体/标签、
+导入是否生效、源码块数、步数、编译错误、失败阶段），退出码 0 才算可交付。
 
 ## 2. 已打通的能力（详见 capabilities.md）
 
@@ -142,7 +147,13 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     BOOL→FALSE、WORD/DWORD/INT→0。
 30. **不要给 `<Variable>` 加自定义属性**：我加过 `template="variable"` 当标记，
     整份标签导入被静默忽略。元信息放代码里，别写进 XML。
-29. **导入"静默什么都没进"时可以重试**；一旦目标程序出现就**绝不能重试**（非幂等）。
+31. **导入"静默什么都没进"时可以重试**；一旦目标程序出现就**绝不能重试**（非幂等）。
+32. **XML 骨架别每次去读 MELSOFT 的样例**：升级换样例会让生成器整批静默失效。
+    现在首次复制到 `%LOCALAPPDATA%/gxkit/skeleton.xml` 并记 sha256，指纹变了自动重建；
+    `GXKIT_TEMPLATE=<文件>` 可绕开安装目录。
+33. **手写骨架能导入程序/标签/全局结构体，但局部标签不落地**（`locals_found=0` + 转换 2 错）。
+    已排除 title/AddData 顺序/Remark/InitialValue/BodyProperties 五个因素，
+    要自给自足得继续做逐元素 diff 二分（记在 gxkit 的 `docs/EXPAND_BACKLOG.md`）。
 
 ## 5. 明确不做
 

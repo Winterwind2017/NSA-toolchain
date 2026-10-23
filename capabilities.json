@@ -1,14 +1,14 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.10.0",
-  "kernel_commit": "211e211",
+  "kernel_version": "0.11.0",
+  "kernel_commit": "77f2b70",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 23,
+    "verified": 25,
     "families": 6,
     "pending": 6
   },
@@ -242,6 +242,50 @@
       },
       "reopen": false
     },
+    "inspect.programs": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "列程序清单（步数/源码行数）",
+      "action": "inspect_programs",
+      "expect": {
+        "program_count": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "source_count": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "matched_blocks": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "total_steps": {
+          "min": 2.0,
+          "max": 1000.0
+        },
+        "body_found": true
+      },
+      "reopen": false
+    },
+    "project.diff": {
+      "family": "inspect",
+      "level": "L2–L3",
+      "title": "两个工程的源码级差异",
+      "action": "project_diff",
+      "expect": {
+        "identical_self": true,
+        "blocks_changed": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "changed_added": {
+          "min": 1.0,
+          "max": 100.0
+        }
+      },
+      "reopen": false
+    },
     "inspect.devices": {
       "family": "inspect",
       "level": "L1–L2",
@@ -395,6 +439,8 @@
     "inspect": [
       "project.meta",
       "inspect.source_map",
+      "inspect.programs",
+      "project.diff",
       "inspect.devices",
       "inspect.mil"
     ],

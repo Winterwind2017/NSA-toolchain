@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **23** 条已验证能力（内核 `gxkit 0.10.0`，commit `211e211`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **25** 条已验证能力（内核 `gxkit 0.11.0`，commit `77f2b70`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -18,6 +18,8 @@
 | `datatype.member_access` | datatype | L3 | 正文按成员名访问结构体（全局标签） |
 | `label.multi_type` | label | L2–L3 | BOOL/WORD/DWORD 全局标签 |
 | `inspect.source_map` | inspect | L2 | 步→源码坐标（Row/Col/StrLen） |
+| `inspect.programs` | inspect | L2 | 列程序清单（步数/源码行数） |
+| `project.diff` | inspect | L2–L3 | 两个工程的源码级差异 |
 | `inspect.devices` | inspect | L1–L2 | 读 FX5U 系统软元件模板 |
 | `inspect.mil` | inspect | L2 | 读编译后的 IL 文本 |
 | `label.import_xml` | label | L2–L3 | 导入全局标签 XML 并读回 |
