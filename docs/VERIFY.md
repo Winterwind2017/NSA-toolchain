@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"19 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"20 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：19 条能力，动作与判据齐全
+# 自检通过：20 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 17 passed
+# 18 passed
 
-# 3) 真机全量（约 40 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 42 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -61,6 +61,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **17/17（v0.5，同一份代码第二次）** | 2047.8 s |
 | 2026-10-23 | **19/19（v0.6，新增功能块实例 + 结构体）** | 2344.3 s |
 | 2026-10-23 | **19/19（v0.6，同一份代码第二次）** | 2342.9 s |
+| 2026-10-23 | **20/20（v0.7，新增 datatype.member_var）** | 2485.6 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -147,3 +148,20 @@ ew_sources=2、0 错 |
 2. **结构体类型的变量**能落库但 局部标签定义检查 报错，所以结构体的判据改用
    **UIA 导航树**（.gx3 里根本没有结构体明文）；
 3. 导入"静默什么都没进"时可以重试，**一旦目标程序出现就绝不能重试**（非幂等）。
+
+## v0.7 新增一条：datatype.member_var（结构体类型的变量）
+
+| 读数 | 值 |
+|---|---|
+| program_created / programs | true / ["ProgPou","PrgSV"] |
+| rrors / ailed_stages | 0 / [] |
+| define_stage_seen / define_stage_errors | true / 0（局部标签(PrgSV)定义检查中） |
+| struct_node_seen | true（导航树 StructGen …） |
+| member_rows_seen | 7（member1_1..4 + member2_1..3） |
+| labels_before → after | 54 → 79 |
+
+三条关键规则：
+1. 结构体与程序必须在**同一份文档**里导入（先导结构体、再导程序，程序仍报转换错）；
+2. 结构体变量必须带 VariableStructDeviceAssignment（成员级软元件分配），
+   否则 局部标签定义检查 报 1 个错——同一段 XML 加上它就是 0 错；
+3. 嵌套成员类型（Struct2）也要一起导入，7 个成员名才会全部出现在 LabelData。

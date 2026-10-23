@@ -588,6 +588,50 @@ def program_import_fb_instance(ctx: dict) -> dict:
             "errors": prog.get("errors")}
 
 
+def datatype_member_var(ctx: dict) -> dict:
+    """结构体 + 结构体类型的变量（带成员级软元件分配），一份文档导入并读回。"""
+    from . import xmlgen
+    from . import inspect as I
+    from . import uia
+
+    name = ctx.get("program_name") or "PrgSV"
+    s, _ = _new_and_save(ctx)
+    base_labels = len(I.read_labels(ctx["project"]))
+    xml = xmlgen.write_struct_var_program(
+        pathlib.Path(ctx["project"]).with_name("struct_var.xml"),
+        name, ctx.get("struct_name") or "StructGen",
+        ctx.get("var_name") or "S1",
+        ctx.get("code") or "LocBool := NOT LocBool;")
+    imp = _import_verified(s, ctx, xml, name)
+
+    names = I.program_names(ctx["project"])
+    prog = read_progress(ctx["project"])
+    labels = I.read_labels(ctx["project"])
+    label_names = {r["value"] for r in labels if isinstance(r["value"], str)}
+    members = ["member1_1", "member1_2", "member1_3", "member1_4",
+               "member2_1", "member2_2", "member2_3"]
+    nodes = []
+    try:
+        nodes = uia.find_names(s.main["hwnd"], ctx.get("struct_name") or "StructGen")
+    except Exception:
+        nodes = []
+    stages = prog.get("stages") or []
+    define_stage = next((x for x in stages
+                         if x["stage"] == "局部标签(%s)定义检查中" % name), None)
+    return {"imported": bool(imp.get("opened") and imp.get("confirmed")),
+            "attempts": imp.get("attempts"),
+            "program_created": name in names,
+            "programs": names,
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages"),
+            "define_stage_seen": define_stage is not None,
+            "define_stage_errors": (define_stage or {}).get("errors"),
+            "struct_node_seen": bool(nodes),
+            "member_rows_seen": sum(1 for m in members if m in label_names),
+            "labels_before": base_labels,
+            "labels_after": len(labels)}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -598,6 +642,7 @@ ACTIONS = {
     "program_import_fb": program_import_fb,
     "program_import_fb_instance": program_import_fb_instance,
     "datatype_import": datatype_import,
+    "datatype_member_var": datatype_member_var,
     "inspect_source_map": inspect_source_map,
     "inspect_devices": inspect_devices,
     "inspect_mil": inspect_mil,

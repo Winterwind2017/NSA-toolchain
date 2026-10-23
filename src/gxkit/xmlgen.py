@@ -469,3 +469,83 @@ def write_fb_instance(path: str | pathlib.Path, program_name: str, st_code: str,
                       locals_=locals_, fb_locals=fb_locals, sample=sample,
                       **kwargs).write(p, encoding="utf-8", xml_declaration=True)
     return p
+
+
+# 结构体成员的默认软元件分配（照抄样例 global_label1_4：顶层 3 个 + 嵌套 Struct2 的 3 个）
+DEFAULT_MEMBER_ASSIGN = [
+    ("member1_1", "B0"), ("member1_2", "W0"), ("member1_3", "B10"),
+    ("member1_4", None),          # None = 嵌套结构，用嵌套表
+]
+DEFAULT_NESTED_ASSIGN = [("member2_1", "B100"), ("member2_2", "W100"),
+                         ("member2_3", "B120")]
+
+
+def _add_struct_assign(var, nested=DEFAULT_NESTED_ASSIGN) -> None:
+    """给结构体类型的变量加 `VariableStructDeviceAssignment`（成员级软元件分配）。
+
+    没有这一块，`局部标签(...)定义检查中` 会报 1 个错（探针 64）；
+    加上之后同样一段 XML 就是 0 错（探针 66）。
+    """
+    add = var.find(_q("AddData"))
+    if add is None:
+        add = ET.Element(_q("AddData"))
+        type_el = var.find(_q("Type"))
+        var.insert(list(var).index(type_el) if type_el is not None else len(var), add)
+    data = ET.Element(_q("Data"), {
+        "name": ADD_NS + "VariableStructDeviceAssignment",
+        "handleUnknown": "implementation"})
+    assign = ET.SubElement(data, _q("VariableStructDeviceAssignment"))
+    for name, addr in DEFAULT_MEMBER_ASSIGN:
+        if addr is None:
+            holder = ET.SubElement(assign, _q("Member"), {"name": name})
+            struct_el = ET.SubElement(holder, _q("Struct"))
+            for n2, a2 in nested:
+                ET.SubElement(struct_el, _q("Member"), {"name": n2, "address": a2})
+        else:
+            ET.SubElement(assign, _q("Member"), {"name": name, "address": addr})
+    add.insert(0, data)
+
+
+def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
+                             var_name: str = "S1",
+                             st_code: str = "LocBool := NOT LocBool;",
+                             sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+    """结构体 + 结构体类型的变量（带成员级软元件分配）+ 程序，一份文档导入。
+
+    实测要点：
+      * 结构体与程序必须在**同一份文档**里（先导结构体、再导程序，程序仍报转换错）；
+      * 变量必须带 `VariableStructDeviceAssignment`，否则 `局部标签定义检查` 报错；
+      * 正文**不要引用结构体成员**（`S1.member1_1` 会让转换报错）——成员已经绑到
+        B0/W0/B10 这些软元件上，按软元件访问。
+    """
+    tree = build_struct_program(program_name, st_code, struct_name,
+                                members=None,
+                                locals_=[{"name": var_name, "type": struct_name},
+                                         {"name": "LocBool", "type": "BOOL"}],
+                                sample=sample)
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+    prog = next(p for p in gn.findall(_q("Program")) if p.get("name") == program_name)
+    var = next(v for v in prog.find(_q("Vars")).findall(_q("Variable"))
+               if v.get("name") == var_name)
+    _add_struct_assign(var)
+
+    # Struct1 的 member1_4 类型是 Struct2：把 Struct2 也导进来，嵌套成员才有定义
+    src_gn = ET.parse(str(sample)).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
+    nested = next((d for d in src_gn.findall(_q("DataTypeDecl"))
+                   if d.get("name") == "Struct2"), None)
+    if nested is not None:
+        gn.append(copy.deepcopy(nested))
+    ET.indent(tree, space="\t")
+    return tree
+
+
+def write_struct_var_program(path: str | pathlib.Path, program_name: str,
+                             struct_name: str = "StructGen", var_name: str = "S1",
+                             st_code: str = "LocBool := NOT LocBool;",
+                             sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    build_struct_var_program(program_name, struct_name, var_name, st_code,
+                             sample).write(p, encoding="utf-8", xml_declaration=True)
+    return p

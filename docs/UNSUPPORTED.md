@@ -7,7 +7,7 @@
 | `build.error_message`（编译器的原话） | `转换 → 转换结果`(Ctrl+Alt+O) 调出来后，主窗里只有 `Afx:*` 自绘视图（`EnumChildWindows` 与 UIA 都读不到文字）；`Progress.txt` 只给阶段级计数 | 探针 31/33 |
 | `label.non_bool`（WORD/DINT 标签） | 当前只验证了 BOOL；把 `TypeName` 改成 WORD 时只有一个标签落地，未验证是否类型相关 | 探针 42（`LBL_A` 出现、`LBL_B/C` 缺失） |
 | `project.check`（工程校验） | 该功能是**两工程比对**，不是"校验本工程"：不选"校验目标"就弹"未选择校验目标工程。" | 探针 32 |
-| `datatype.member_var`（结构体类型的变量） | 结构体本身能建（UIA 导航树可见），但 `S1 : StructGen` 这种局部标签会让 `局部标签(...)定义检查中` 报 1 个错——需要成员级软元件分配（`VariableStructDeviceAssignment`） | 探针 63/64 |
+| `datatype.member_access`（正文里读写结构体成员） | 变量本身已合法（加了成员级软元件分配后 `局部标签定义检查` 0 错），但正文写 `S1.member1_1` 会让转换报错——成员已绑到 B0/W0/B10，按软元件访问才是通的 | 探针 66 |
 | `datatype.custom_members`（自定义结构体成员） | 只验证了"成员保持样例原样 + 改类型名"；重建/裁剪 `<Member>` 会让整份导入被静默丢弃 | 探针 59/61 |
 | `online.write` / `online.read` / `online.monitor` | 需要真实 PLC 或内置模拟器；用户口径是"只做离线"，未验证 | 不做 |
 | `ladder.write`（梯形图内容） | 编辑器是自绘控件，UIA 里没有单元格；只能靠菜单/快捷键，无法程序化写网络 | 不做（ST 已覆盖需求） |

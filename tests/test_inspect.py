@@ -217,3 +217,22 @@ def test_build_fb_instance_shape() -> None:
     # 实例变量也要有唯一行号
     nums = [e.get('number') for e in prog.iter('{%s}VariableLineNumber' % ns)]
     assert len(nums) == len(set(nums))
+
+
+def test_build_struct_var_program_shape() -> None:
+    """结构体变量必须带成员级软元件分配；嵌套 Struct2 也要一起导入。"""
+    tree = xmlgen.build_struct_var_program('PrgSV', 'StructGen', 'S1')
+    ns = xmlgen.NS
+    gn = tree.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    tags = [c.tag.replace('{%s}' % ns, '') for c in list(gn)]
+    assert tags.count('DataTypeDecl') == 2, 'StructGen + Struct2'
+    prog = gn.find('{%s}Program' % ns)
+    var = next(v for v in prog.find('{%s}Vars' % ns).findall('{%s}Variable' % ns)
+               if v.get('name') == 'S1')
+    datas = [d.get('name', '') for d in var.find('{%s}AddData' % ns)]
+    assert any('VariableStructDeviceAssignment' in d for d in datas), '必须有成员级软元件分配'
+    assign = var.find('{%s}AddData' % ns).find(
+        '{%s}Data' % ns + "[@name='http://www.mitsubishielectric.com/xml/VariableStructDeviceAssignment']")
+    members = assign.find('{%s}VariableStructDeviceAssignment' % ns).findall('{%s}Member' % ns)
+    assert [m.get('name') for m in members] == ['member1_1', 'member1_2', 'member1_3', 'member1_4']
+    assert members[-1].find('{%s}Struct' % ns) is not None, '嵌套成员要套 Struct'
