@@ -1,11 +1,11 @@
-version: 10
-kernel: gxkit 0.10.0
+version: 11
+kernel: gxkit 0.11.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 23
+  verified: 25
 capabilities:
 - id: project.new
   family: project
@@ -91,6 +91,18 @@ capabilities:
   status: verified
   action: inspect_source_map
   expect: {"steps": {"min": 2.0, "max": 500.0}, "rows": {"min": 2.0, "max": 500.0}, "snippets": {"min": 2.0, "max": 500.0}}
+- id: inspect.programs
+  family: inspect
+  level: L2
+  status: verified
+  action: inspect_programs
+  expect: {"program_count": {"min": 1.0, "max": 50.0}, "source_count": {"min": 1.0, "max": 50.0}, "matched_blocks": {"min": 1.0, "max": 50.0}, "total_steps": {"min": 2.0, "max": 1000.0}, "body_found": true}
+- id: project.diff
+  family: inspect
+  level: L2–L3
+  status: verified
+  action: project_diff
+  expect: {"identical_self": true, "blocks_changed": {"min": 1.0, "max": 50.0}, "changed_added": {"min": 1.0, "max": 100.0}}
 - id: inspect.devices
   family: inspect
   level: L1–L2

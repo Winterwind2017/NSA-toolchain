@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"23 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"25 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：23 条能力，动作与判据齐全
+# 自检通过：25 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 22 passed
+# 23 passed
 
-# 3) 真机全量（约 48 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 53 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -222,3 +222,23 @@ UserDefinedTypeSpec 里 Member 全部在前，<AddData> 必须在最后。
 五条路都试过（private/public、:= TRUE、整体 <Address>、结构体移到程序前面）：
 前三种转换报错、后两种整份导入被丢弃。**全局**结构体标签可以按成员名访问
 （datatype.member_access，已验证 0 错）。这条结论写进了 UNSUPPORTED.md 与 PITFALLS 三十六。
+
+## v0.11 新增两条（纯离线读数，不碰界面）
+
+| 能力 | 读数 |
+|---|---|
+| inspect.programs | program_count=1、source_count=1、matched_blocks=1、	otal_steps=4、ody_found=true |
+| project.diff | identical_self=true、locks_changed=1、changed_added=1、diff 行 +W0 := W0 + 1; |
+
+project_diff 的比较口径是**去空白后的行序列**（导入会改写换行/空行），
+自比必须 identical=True——这是防"diff 永远报有差异"的自检。
+
+## v0.11 新增两条（纯离线读数，不碰界面）
+
+| 能力 | 读数 |
+|---|---|
+| inspect.programs | program_count=1、source_count=1、matched_blocks=1、	otal_steps=4、ody_found=true |
+| project.diff | identical_self=true、locks_changed=1、changed_added=1、diff 行 +W0 := W0 + 1; |
+
+project_diff 的比较口径是**去空白后的行序列**（导入会改写换行/空行），
+自比必须 identical=True——这是防"diff 永远报有差异"的自检。

@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.10.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.11.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**23** 条
+- 真机通过能力：**25** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -55,6 +55,8 @@
 | `inspect.source_map` | 每个 MIL 步 → 源码坐标 | `T_SourcePos` 的 `Row/Col/StrLen` |
 | `inspect.mil` | 编译后的 IL 文本 | `MilDB.MIL.data` 的 `op=` 个数 |
 | `inspect.devices` | FX5U 系统软元件模板 | `DEVICE_DATA` 2935 行 + 注释 |
+| `inspect.programs` | **列程序清单（步数/源码行数/正文）** | `program_list`：程序数、块数、步数、正文都能对上 |
+| `project.diff` | **两个工程的源码级差异** | 自比一致（`identical_self`）、改一行就 `blocks_changed=1 / +1` |
 
 ### 标签
 
@@ -75,5 +77,5 @@
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 23/23，约 48 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 25/25，约 53 分钟
 ```

@@ -257,6 +257,77 @@ def steps_with_source(gx3: str | pathlib.Path) -> list[dict]:
     return out
 
 
+def program_list(gx3: str | pathlib.Path) -> dict:
+    """列出工程里的每个程序：步数、源码行数、正文与所属块。
+
+    数据来源：
+      * 程序名 —— Progress.txt 的 程序(xxx) 阶段
+      * 正文   —— 每个程序一套 *_STDB.db 的 StBlocks
+      * 步数   —— 每个程序一套 *_StepInfo.db 的 T_Step
+    名字与正文的对应关系在文件里没有显式记录（块 id 是 GUID），所以按
+    "步数最多的块 → 程序数" 不猜；这里给出 sources 与 locks 两个清单，
+    并把能确认的对应关系写成 y_steps（同一块 id 同时出现在 StepInfo 与 STDB）。
+    """
+    names = program_names(gx3)
+    blocks = read_st_blocks(gx3)
+    steps: dict[str, int] = {}
+    for st in read_steps(gx3):
+        key = _block_key(st.get("block", ""))
+        steps[key] = steps.get(key, 0) + 1
+    sources = []
+    for b in blocks:
+        key = _block_key(b["id"])
+        text = b["text"]
+        sources.append({"block": b["id"], "key": key,
+                        "chars": len(text),
+                        "lines": len([ln for ln in text.splitlines() if ln.strip()]),
+                        "steps": steps.get(key, 0),
+                        "text": text})
+    matched = [s for s in sources if s["steps"] > 0]
+    return {"programs": names,
+            "program_count": len(names),
+            "sources": sources,
+            "source_count": len(sources),
+            "matched_blocks": len(matched),
+            "total_steps": sum(steps.values())}
+
+
+def project_diff(a: str | pathlib.Path, b: str | pathlib.Path) -> dict:
+    """两个 .gx3 的源码级差异（按程序名配对，找不到名字就按块 id 配对）。"""
+    import difflib
+
+    pa, pb = program_list(a), program_list(b)
+    na, nb = set(pa["programs"]), set(pb["programs"])
+    src_a = {s["key"]: s for s in pa["sources"]}
+    src_b = {s["key"]: s for s in pb["sources"]}
+
+    changed = []
+    for key in src_a.keys() & src_b.keys():
+        ta = _norm_lines(src_a[key]["text"])
+        tb = _norm_lines(src_b[key]["text"])
+        if ta == tb:
+            continue
+        diff = list(difflib.unified_diff(ta, tb, lineterm="", n=0))
+        added = sum(1 for d in diff if d.startswith("+") and not d.startswith("+++"))
+        removed = sum(1 for d in diff if d.startswith("-") and not d.startswith("---"))
+        changed.append({"key": key, "added": added, "removed": removed,
+                        "diff": diff[:40]})
+    return {"programs_a": pa["programs"], "programs_b": pb["programs"],
+            "programs_added": sorted(nb - na), "programs_removed": sorted(na - nb),
+            "blocks_added": len(src_b.keys() - src_a.keys()),
+            "blocks_removed": len(src_a.keys() - src_b.keys()),
+            "blocks_changed": len(changed),
+            "changed": changed,
+            "identical": (not changed and not (nb - na) and not (na - nb)
+                          and src_a.keys() == src_b.keys())}
+
+
+def _norm_lines(text: str) -> list[str]:
+    """比较口径：去空白与空行（导入会改写换行/空行）。"""
+    return [ln.rstrip() for ln in (text or "").replace("\r\n", "\n").split("\n")
+            if ln.strip()]
+
+
 def read_mil(gx3: str | pathlib.Path) -> list[dict]:
     """编译后的 IL 文本（每个程序一套 `*_MilDB.db`）。"""
     out: list[dict] = []

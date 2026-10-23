@@ -317,3 +317,19 @@ def test_multi_type_labels_get_matching_init() -> None:
     assert got['BOOL'] == ('FALSE', 'M50')
     assert got['WORD'] == ('0', 'W0')
     assert got['DWORD'] == ('0', 'D0')
+
+
+def test_program_list_and_diff(tmp_path: pathlib.Path) -> None:
+    """program_list 数得清程序/块/步；project_diff 能识别内容变化且自比为一致。"""
+    g = _fake_gx3(tmp_path)
+    info = I.program_list(g)
+    assert info["source_count"] == 1
+    assert info["matched_blocks"] == 1
+    assert info["total_steps"] == 2
+    src = info["sources"][0]
+    assert src["lines"] == 2 and src["steps"] == 2
+    assert "W0 := W0 + 1;" in src["text"]
+
+    same = I.project_diff(g, g)
+    assert same["identical"] is True
+    assert same["blocks_changed"] == 0

@@ -770,6 +770,53 @@ def label_multi_type(ctx: dict) -> dict:
             "failed_stages": prog.get("failed_stages")}
 
 
+def inspect_programs(ctx: dict) -> dict:
+    """列程序清单（步数 / 源码行数 / 正文），数据全来自 .gx3 里的 SQLite。"""
+    from . import inspect as I
+
+    s, _ = _new_and_save(ctx)
+    code = ctx.get("code") or "B0 := NOT B0;\r\nW0 := W0 + 1;"
+    s.paste_st(code)
+    s.convert_all()
+    s.save()
+
+    info = I.program_list(ctx["project"])
+    return {"program_count": info["program_count"],
+            "programs": info["programs"],
+            "source_count": info["source_count"],
+            "matched_blocks": info["matched_blocks"],
+            "total_steps": info["total_steps"],
+            "body_found": I.source_matches(ctx["project"], code),
+            "max_lines": max([x["lines"] for x in info["sources"]] or [0])}
+
+
+def project_diff_action(ctx: dict) -> dict:
+    """两个工程做源码级差异：先存 A，改代码另存 B，再 diff A/A（应为一致）与 A/B。"""
+    from . import inspect as I
+
+    s, _ = _new_project(ctx)
+    code_a = ctx.get("code_a") or "B0 := NOT B0;"
+    code_b = ctx.get("code_b") or "B0 := NOT B0;\r\nW0 := W0 + 1;"
+    pa = pathlib.Path(ctx["project"]).with_name("diff_a.gx3")
+    pb = pathlib.Path(ctx["project"]).with_name("diff_b.gx3")
+    s.paste_st(code_a)
+    s.convert_all()
+    s.save_as(pa, via_menu=True)
+    s.paste_st(code_b)
+    s.convert_all()
+    s.save_as(pb, via_menu=True)
+
+    same = I.project_diff(pa, pa)
+    diff = I.project_diff(pa, pb)
+    return {"identical_self": same["identical"],
+            "blocks_changed": diff["blocks_changed"],
+            "changed_added": sum(c["added"] for c in diff["changed"]),
+            "changed_removed": sum(c["removed"] for c in diff["changed"]),
+            "programs_a": len(diff["programs_a"]),
+            "programs_b": len(diff["programs_b"]),
+            "diff_lines": diff["changed"][0]["diff"][:6] if diff["changed"] else []}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -790,6 +837,8 @@ ACTIONS = {
     "build_program_check": build_program_check,
     "build_error_detail": build_error_detail,
     "batch_projects": batch_projects,
+    "inspect_programs": inspect_programs,
+    "project_diff": project_diff_action,
     "label_import_xml": label_import_xml,
     "label_multi_type": label_multi_type,
     "build_locate_error_line": build_locate_error_line,
