@@ -1,2 +1,2 @@
-feat: 同步 gxkit 0.7 —— 20 条能力（结构体类型的变量 / 成员级软元件分配）
-补三条坑：结构体变量必须有 VariableStructDeviceAssignment、结构体与程序要同文档导入、正文不能按成员名访问。
+feat: 同步 gxkit 0.8 —— 21 条能力（自定义结构体成员）
+推翻旧结论：成员不是必须原样，真正规则是 UserDefinedTypeSpec 里 AddData 必须排在 Member 之后。

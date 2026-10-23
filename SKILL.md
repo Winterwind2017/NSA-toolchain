@@ -59,6 +59,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **功能块实例（XML）** | `program.import_fb_instance` | 程序里 `InstFB : FBInst` + 正文 `InstFB();` |
 | **结构体（XML）** | `datatype.import` | `DataTypeDecl` 成员**保持样例原样**；判据用 UIA 导航树 |
 | **结构体变量** | `datatype.member_var` | 必须带 `VariableStructDeviceAssignment`（成员绑 B0/W0/B10…），且与结构体同文档 |
+| **自定义成员** | `datatype.custom_members` | `Member` 全在前、`<AddData>` 留在最后；成员名随便起 |
 | 批量 | `batch.projects` | 同会话连续粘贴变体 + `工程 → 另存为` |
 | L4 | `project.reopen` | 存盘 → 关工程 → 重开 → `N步` 仍在 |
 
@@ -119,8 +120,10 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     FB 的样例变量没有 `VariableLineNumber`，补唯一行号更稳。
 24. **功能块不会出现在 `程序(...)` 清单里**：判定它建出来靠"多一份 STDB（正文）"
     + "`LabelData` 里有它的变量名"。
-25. **结构体的 `<Member>` 不要重建**：自己拼成员（哪怕一个 BOOL）会让整份导入被
-    **静默丢弃**；成员必须保持样例原样，只改类型名。
+25. **自定义结构体成员没问题，卡的是元素顺序**：`UserDefinedTypeSpec` 里
+    `Member` 全部在前、`<AddData>` 必须留**最后**。顺序反了（例如先删成员再
+    append，把样例的 AddData 挤到最前面）整份导入被**静默丢弃**——0 错、连程序
+    都不建、导航树里也没有结构体。把 `<AddData>` 挪回最后立刻成功。
 26. **结构体类型的变量必须带成员级软元件分配**：`<AddData>` 里要有
     `VariableStructDeviceAssignment`（成员逐个绑 B0/W0/B10…，嵌套成员再套 `<Struct>`）。
     没有它 `局部标签定义检查` 报 1 个错；同一段 XML 加上它就是 0 错。
