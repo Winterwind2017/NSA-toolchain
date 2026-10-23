@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"25 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"28 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：25 条能力，动作与判据齐全
+# 自检通过：28 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
 # 23 passed
 
-# 3) 真机全量（约 53 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 60 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -265,3 +265,29 @@ project_diff 的比较口径是**去空白后的行序列**（导入会改写换
 第 3 轮是新增维度，不是"再测一遍同样的东西"：两轮全量已让每条能力各跑两遍，
 第三遍同序收益很小；换顺序才能验证各能力之间有没有互相污染。
 乱序种子记在 `result.json` 的 `seed`/`order` 里，可原样复现。
+
+## v0.12 新增三条：多机型（iQ-R / FX5S）
+
+探针 95 把新建工程对话框的系列/机型全列了一遍：
+
+| 系列索引 | 名称 | 机型数 |
+|---|---|---|
+| 0 | MX控制器 | 10 |
+| 1 | **RCPU（iQ-R）** | 28（R00…R32EN） |
+| 2 | LHCPU | 4 |
+| 3 | **FX5CPU** | 3（**FX5U / FX5UJ / FX5S**） |
+| 4 | QCPU(Q模式) | 0（需另选机架） |
+| 5 | LCPU | 0 |
+| 6 | FXCPU | 0 |
+| 7 | NCCPU | 1（R16NC） |
+
+实测 RCPU/R00：`Unit=R00`、`UnitId=4609`，ST 粘贴→转换→存盘→读回源码全对（4 步、0 错）。
+说明**能力链与机型无关**，只需把 series/model 参数化。
+
+| 能力 | 读数 |
+|---|---|
+| `project.new_rcpu` | `unit=R00`、`unit_id=4609`、`is_st=true` |
+| `project.new_fx5s` | `unit=FX5S`、`is_st=true` |
+| `program.rcpu_roundtrip` | `unit=R00`、`source_matches=true`、`steps=4`、`errors=0` |
+
+顺带纠正一个旧说法：**没有 FX5C 这条系列**，FX5 家族只有 FX5U / FX5UJ / FX5S。

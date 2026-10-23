@@ -379,3 +379,29 @@ def test_select_caps_filter_still_works_with_shuffle() -> None:
 
     sel, _ = select_caps(only="datatype", shuffle=True, seed=3)
     assert sel and all(c.family == "datatype" for c in sel)
+
+
+def test_cpu_params_default_and_override() -> None:
+    """机型参数：默认 FX5U（series=3/model=0/lang=1），ctx 覆盖时按覆盖走。"""
+    from gxkit.actions import _cpu
+
+    assert _cpu({}) == {"series": 3, "model": 0, "lang": 1}
+    assert _cpu({"series": 1, "model": 0}) == {"series": 1, "model": 0, "lang": 1}
+    assert _cpu({"series": 3, "model": 2, "lang": 1})["model"] == 2
+
+
+def test_cpu_caps_declare_their_models() -> None:
+    """机型类能力必须把自己的 series/model 声明清楚，判据里要有 Unit。"""
+    from gxkit import caps as caps_mod
+
+    by_id = {c.id: c for c in caps_mod.CAPS}
+    rcpu = by_id["project.new_rcpu"]
+    assert rcpu.params["series"] == 1 and rcpu.params["model"] == 0
+    assert rcpu.expect["unit"] == "R00" and rcpu.expect["unit_id"] == "4609"
+
+    fx5s = by_id["project.new_fx5s"]
+    assert fx5s.params["series"] == 3 and fx5s.params["model"] == 2
+    assert fx5s.expect["unit"] == "FX5S"
+
+    rt = by_id["program.rcpu_roundtrip"]
+    assert rt.params["series"] == 1 and rt.expect["source_matches"] is True

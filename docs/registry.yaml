@@ -1,11 +1,11 @@
-version: 11
-kernel: gxkit 0.11.0
+version: 12
+kernel: gxkit 0.12.0
 engine: GX Works3 1.117.0.1
-cpu: FX5U
+cpu: FX5U / FX5S / iQ-R(R00)
 lang: ST
 scope: offline
 counts:
-  verified: 25
+  verified: 28
 capabilities:
 - id: project.new
   family: project
@@ -13,6 +13,24 @@ capabilities:
   status: verified
   action: project_new
   expect: {"has_window": true, "is_st": true}
+- id: project.new_rcpu
+  family: project
+  level: L1
+  status: verified
+  action: project_new_cpu
+  expect: {"unit": "R00", "unit_id": "4609", "is_st": true, "exists": true}
+- id: project.new_fx5s
+  family: project
+  level: L1
+  status: verified
+  action: project_new_cpu
+  expect: {"unit": "FX5S", "is_st": true, "exists": true}
+- id: program.rcpu_roundtrip
+  family: program
+  level: L1–L3
+  status: verified
+  action: program_roundtrip_cpu
+  expect: {"unit": "R00", "source_matches": true, "steps": {"min": 2.0, "max": 500.0}, "errors": 0}
 - id: project.save
   family: project
   level: L1–L2

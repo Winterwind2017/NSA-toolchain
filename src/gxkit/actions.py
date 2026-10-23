@@ -13,7 +13,18 @@ from .session import Session, read_config, read_progress
 
 ST_CODE = "B0 := NOT B0;\r\nW0 := W0 + 1;\r\n"
 
-NEW = dict(series=3, model=0, lang=1)   # FX5CPU / FX5U / ST
+NEW = dict(series=3, model=0, lang=1)   # FX5CPU(FX5U) / ST
+
+# 系列索引（探针 95 实测，来自新建工程对话框的系列下拉框）
+CPU_SERIES = {0: "MX控制器", 1: "RCPU", 2: "LHCPU", 3: "FX5CPU",
+              4: "QCPU(Q模式)", 5: "LCPU", 6: "FXCPU", 7: "NCCPU"}
+
+
+def _cpu(ctx: dict) -> dict:
+    """从 ctx 取机型参数；没给就用 FX5U 默认。"""
+    return {"series": int(ctx.get("series", NEW["series"])),
+            "model": int(ctx.get("model", NEW["model"])),
+            "lang": int(ctx.get("lang", NEW["lang"]))}
 
 
 def _boot(ctx: dict, project: str | None = None) -> Session:
@@ -34,7 +45,7 @@ def _new_and_save(ctx: dict) -> tuple[Session, dict]:
     for attempt in range(2):
         s = _boot(ctx)
         try:
-            s.new_project(**NEW)
+            s.new_project(**_cpu(ctx))
             saved = s.save_as(ctx["project"])
             return s, saved
         except RuntimeError as exc:
@@ -53,7 +64,7 @@ def _new_project(ctx: dict) -> tuple[Session, dict]:
     for attempt in range(2):
         s = _boot(ctx)
         try:
-            return s, s.new_project(**NEW)
+            return s, s.new_project(**_cpu(ctx))
         except RuntimeError as exc:
             last = exc
             try:
@@ -62,6 +73,36 @@ def _new_project(ctx: dict) -> tuple[Session, dict]:
                 pass
             time.sleep(8 + attempt * 4)
     raise last or RuntimeError("新建工程失败")
+
+
+def project_new_cpu(ctx: dict) -> dict:
+    """按 ctx 里的 series/model 新建工程，并读回 `!!Config.xml` 证明机型真的换了。"""
+    s, proj = _new_project(ctx)
+    saved = s.save_as(ctx["project"])
+    cfg = read_config(ctx["project"])
+    title = proj.get("title") or ""
+    return {"unit": cfg.get("Unit"), "unit_id": cfg.get("UnitId"),
+            "series": _cpu(ctx)["series"], "model": _cpu(ctx)["model"],
+            "series_name": CPU_SERIES.get(_cpu(ctx)["series"]),
+            "is_st": "ST" in title, "exists": bool(saved.get("exists")),
+            "bytes": saved.get("bytes") or 0}
+
+
+def program_roundtrip_cpu(ctx: dict) -> dict:
+    """在指定机型上跑一遍"粘贴 ST → 转换 → 存盘 → 读回源码"。"""
+    from . import inspect as I
+
+    s, _ = _new_and_save(ctx)
+    code = ctx.get("code") or "B0 := NOT B0;\r\nW0 := W0 + 1;"
+    s.paste_st(code)
+    s.convert_all()
+    s.save()
+    prog = read_progress(ctx["project"])
+    return {"unit": read_config(ctx["project"]).get("Unit"),
+            "source_matches": I.source_matches(ctx["project"], code),
+            "steps": len(I.read_steps(ctx["project"])),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages")}
 
 
 def project_new(ctx: dict) -> dict:
@@ -819,6 +860,8 @@ def project_diff_action(ctx: dict) -> dict:
 
 ACTIONS = {
     "project_new": project_new,
+    "project_new_cpu": project_new_cpu,
+    "program_roundtrip_cpu": program_roundtrip_cpu,
     "project_save": project_save,
     "project_meta": project_meta,
     "program_paste_st": program_paste_st,

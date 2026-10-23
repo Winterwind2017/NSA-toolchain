@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.11.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.12.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**25** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
+- 真机通过能力：**28** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -16,6 +16,8 @@
 |---|---|---|
 | `project.new` | 新建 FX5U+ST 工程 | 标题含 `[PRG] [ST]` |
 | `project.save` | 另存为 `.gx3`（含读回） | 文件存在 + `!!Config.xml` 的 `Unit` |
+| `project.new_rcpu` | **新建 iQ-R（RCPU/R00）+ ST 工程** | `!!Config.xml` 读到 `Unit=R00`、`UnitId=4609` |
+| `project.new_fx5s` | **新建 FX5S + ST 工程** | `Unit=FX5S` |
 | `project.meta` | 解包读 Config/条目数 | ZIP 条目 + Config |
 | `project.reopen` | 存盘→关→重开→步数仍在（L4） | 标题文件名 + `N步` |
 
@@ -24,6 +26,7 @@
 | id | 做什么 | 判据来源 |
 |---|---|---|
 | `program.paste_st` | ST 代码粘进编辑器 | 标题 `N步` |
+| `program.rcpu_roundtrip` | **iQ-R 上粘贴 ST 并读回** | 源码逐字匹配、4 步、0 错 |
 | `program.read_st` | **从 `.gx3` 读回 ST 源码** | `StBlocks.data` 与贴进去的逐字相同 |
 | `program.import_xml` | **用 XML 新建程序（PrgGen）** | 编译日志出现 `程序(PrgGen)` + 正文进 STDB + 0 错 |
 | `program.import_fb` | **用 XML 建程序 + 功能块（带局部标签）** | `PrgFB` 进程序清单、两段正文进 STDB、4 个局部标签进 `LabelData`、0 错 |
@@ -88,5 +91,5 @@ python -m gxkit run --shuffle --seed 7            # 乱序跑一轮（查顺序�
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 25/25，约 53 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 28/28，约 60 分钟
 ```
