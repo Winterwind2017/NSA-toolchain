@@ -718,6 +718,58 @@ def datatype_member_access(ctx: dict) -> dict:
             "labels_after": len(labels)}
 
 
+MULTI_TYPE_LABELS = [
+    {"name": "LBL_BOOL", "type": "BOOL", "address": "M50", "init": "FALSE"},
+    {"name": "LBL_WORD", "type": "WORD", "address": "W0", "init": "0"},
+    {"name": "LBL_DWORD", "type": "DWORD", "address": "D0", "init": "0"},
+]
+
+
+def label_multi_type(ctx: dict) -> dict:
+    """导入 BOOL / WORD / DWORD 三种全局标签，再导入一个用 WORD 标签的程序。"""
+    from . import xmlgen
+    from . import inspect as I
+
+    s, _ = _new_and_save(ctx)
+    base_labels = len(I.read_labels(ctx["project"]))
+
+    labels_path = xmlgen.write(
+        pathlib.Path(ctx["project"]).with_name("multi_labels.xml"),
+        ctx.get("labels") or MULTI_TYPE_LABELS)
+    s.import_xml(labels_path)
+    s.convert_all(wait_s=12.0)
+    s.save()
+
+    names = {r["value"] for r in I.read_labels(ctx["project"])
+             if isinstance(r["value"], str)}
+    want = [x["name"] for x in (ctx.get("labels") or MULTI_TYPE_LABELS)]
+    landed = sum(1 for n in want if n in names)
+    labels_after = len(I.read_labels(ctx["project"]))
+
+    # 再用 WORD 标签写一段程序，证明它真的能用
+    prog_name = "PrgType"
+    prog_xml = xmlgen.write_program(
+        pathlib.Path(ctx["project"]).with_name("type_prog.xml"),
+        prog_name, ctx.get("code") or "LBL_WORD := LBL_WORD + 1;")
+    s.import_xml(prog_xml)
+    for _ in range(3):
+        s.convert_all(wait_s=12.0)
+        s.save()
+        if read_progress(ctx["project"]).get("found"):
+            break
+
+    prog = read_progress(ctx["project"])
+    flat = "".join(I.flat(v) for v in I.st_sources(ctx["project"]).values())
+    return {"labels_landed": landed,
+            "labels_wanted": len(want),
+            "labels_before": base_labels,
+            "labels_after": labels_after,
+            "program_created": prog_name in I.program_names(ctx["project"]),
+            "word_used_in_source": I.flat("LBL_WORD := LBL_WORD + 1;") in flat,
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages")}
+
+
 ACTIONS = {
     "project_new": project_new,
     "project_save": project_save,
@@ -739,6 +791,7 @@ ACTIONS = {
     "build_error_detail": build_error_detail,
     "batch_projects": batch_projects,
     "label_import_xml": label_import_xml,
+    "label_multi_type": label_multi_type,
     "build_locate_error_line": build_locate_error_line,
     "project_reopen": project_reopen,
 }

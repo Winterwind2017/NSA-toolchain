@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.9.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.10.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**22** 条
+- 真机通过能力：**23** 条
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -61,6 +61,7 @@
 | id | 做什么 | 判据来源 |
 |---|---|---|
 | `label.import_xml` | 导入全局标签 XML | `LabelData` 里出现 `LBL_A/B/C`（54→75 行） |
+| `label.multi_type` | **BOOL / WORD / DWORD 三种标签** | 3 个名字全进 `LabelData`（54→75）、随后用 WORD 标签写的程序 0 错 |
 
 ## 五层判据
 
@@ -74,5 +75,5 @@
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 22/22，约 45 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 23/23，约 48 分钟
 ```

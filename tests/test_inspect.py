@@ -296,3 +296,24 @@ def test_build_struct_global_program_shape() -> None:
     prog = gn.find('{%s}Program' % ns)
     st = prog.find('{%s}MainBody' % ns).find('{%s}BodyContent' % ns).find('{%s}ST' % ns)
     assert 'GS1.MyBool' in (st.text or '')
+
+
+def test_multi_type_labels_get_matching_init() -> None:
+    """非 BOOL 标签的初值必须与类型匹配（WORD 用 FALSE 会一个都不落地）。"""
+    tree = xmlgen.build([
+        {'name': 'LBL_BOOL', 'type': 'BOOL', 'address': 'M50'},
+        {'name': 'LBL_WORD', 'type': 'WORD', 'address': 'W0'},
+        {'name': 'LBL_DWORD', 'type': 'DWORD', 'address': 'D0'},
+    ])
+    ns = xmlgen.NS
+    cfg = tree.getroot().find('{%s}Instances' % ns).find('{%s}Configuration' % ns)
+    gv = cfg.find('{%s}GlobalVars' % ns)
+    got = {}
+    for var in gv.findall('{%s}Variable' % ns):
+        typ = var.find('{%s}Type' % ns).find('{%s}TypeName' % ns).text
+        simple = var.find('{%s}InitialValue' % ns).find('{%s}SimpleValue' % ns)
+        got[typ] = (simple.get('value') if simple is not None else None,
+                    var.find('{%s}Address' % ns).get('address'))
+    assert got['BOOL'] == ('FALSE', 'M50')
+    assert got['WORD'] == ('0', 'W0')
+    assert got['DWORD'] == ('0', 'D0')

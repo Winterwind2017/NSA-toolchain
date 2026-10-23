@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"22 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"23 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：22 条能力，动作与判据齐全
+# 自检通过：23 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
-# 21 passed
+# 22 passed
 
-# 3) 真机全量（约 45 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 48 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -67,6 +67,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **21/21（v0.8，同一份代码第二次）** | 2632.2 s |
 | 2026-10-23 | **22/22（v0.9，新增 datatype.member_access）** | 2786.3 s |
 | 2026-10-23 | **22/22（v0.9，同一份代码第二次）** | 2795.7 s |
+| 2026-10-23 | **23/23（v0.10，新增 label.multi_type）** | 3027.9 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -199,3 +200,24 @@ UserDefinedTypeSpec 里 Member 全部在前，<AddData> 必须在最后。
 
 关键：**结构体标签要放全局**。同一个结构体，放程序 <Vars> 里按成员名访问会转换报错；
 放 Instances/Configuration/GlobalVars 里就 0 错（探针 66 vs 75）。
+
+## v0.10 新增一条：label.multi_type（BOOL / WORD / DWORD 全局标签）
+
+| 读数 | 值 |
+|---|---|
+| labels_landed / labels_wanted | 3 / 3 |
+| labels_before → after | 54 → 75 |
+| program_created | true（PrgType，正文 LBL_WORD := LBL_WORD + 1;） |
+| word_used_in_source | true |
+| rrors / ailed_stages | 0 / [] |
+
+两条教训：
+1. **初值必须与类型匹配**——WORD 标签若沿用了 BOOL 模板的 <SimpleValue value="FALSE">，
+   一个标签都不落地（连 全局标签(Global1)定义检查中 阶段都不出现）。
+2. **不要给 <Variable> 加自定义属性**（我曾加 	emplate="variable" 当标记，整份导入被忽略）。
+
+## v0.10 的另一半：datatype.local_member_access 判定为不可行
+
+五条路都试过（private/public、:= TRUE、整体 <Address>、结构体移到程序前面）：
+前三种转换报错、后两种整份导入被丢弃。**全局**结构体标签可以按成员名访问
+（datatype.member_access，已验证 0 错）。这条结论写进了 UNSUPPORTED.md 与 PITFALLS 三十六。

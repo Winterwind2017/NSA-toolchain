@@ -1,11 +1,11 @@
-version: 9
-kernel: gxkit 0.9.0
+version: 10
+kernel: gxkit 0.10.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U
 lang: ST
 scope: offline
 counts:
-  verified: 22
+  verified: 23
 capabilities:
 - id: project.new
   family: project
@@ -79,6 +79,12 @@ capabilities:
   status: verified
   action: datatype_member_access
   expect: {"imported": true, "program_created": true, "errors": 0, "struct_define_stage_seen": true, "struct_define_stage_errors": 0, "member_access_in_source": true, "global_label_seen": true, "struct_type_in_labels": true}
+- id: label.multi_type
+  family: label
+  level: L2–L3
+  status: verified
+  action: label_multi_type
+  expect: {"labels_landed": 3, "labels_wanted": 3, "program_created": true, "word_used_in_source": true, "errors": 0}
 - id: inspect.source_map
   family: inspect
   level: L2

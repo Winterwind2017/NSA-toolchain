@@ -37,6 +37,29 @@ DEFAULT_LABELS = [
     {"name": "LBL_C", "type": "BOOL", "address": "M52", "comment": "gxkit C"},
 ]
 
+# 每种类型的默认初值：初值类型必须与变量类型对得上，否则标签只落一部分/不落
+TYPE_DEFAULTS = {
+    "BOOL": ("FALSE", "M"),
+    "WORD": ("0", "W"),
+    "DWORD": ("0", "D"),
+    "INT": ("0", "W"),
+    "DINT": ("0", "D"),
+    "REAL": ("0.0", "D"),
+}
+
+
+def _fix_initial_value(var, value: str) -> None:
+    """把 `<InitialValue><SimpleValue value=...>` 设成与类型匹配的值（没有就补一个）。"""
+    iv = var.find(_q("InitialValue"))
+    if iv is None:
+        iv = ET.SubElement(var, _q("InitialValue"))
+    simples = list(iv.iter(_q("SimpleValue")))
+    if simples:
+        for sp in simples:
+            sp.set("value", value)
+    else:
+        ET.SubElement(iv, _q("SimpleValue"), {"value": value})
+
 
 def build(labels: list[dict] | None = None,
           sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
@@ -79,9 +102,15 @@ def build(labels: list[dict] | None = None,
             rt.text = item.get("remark") or (item["name"] + " remark")
         for tn in var.iter(_q("TypeName")):
             tn.text = item.get("type", "BOOL")
+        kind = item.get("type", "BOOL")
+        default_init, default_dev = TYPE_DEFAULTS.get(kind, ("0", "W"))
+        _fix_initial_value(var, item.get("init", default_init))
         ad = var.find(_q("Address"))
         if ad is not None and item.get("address"):
             ad.set("address", item["address"])
+        elif ad is not None and item.get("address") is None:
+            # 非 BOOL 默认给一个该类型的地址（不给自己也能过，但给上更接近真实工程）
+            var.remove(ad)
         gv.append(var)
 
     ET.indent(tree, space="\t")

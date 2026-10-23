@@ -314,3 +314,30 @@ UserDefinedTypeSpec = Member × N，然后 AddData。
 
 全局结构体标签还要带成员级软元件分配（和局部的一样），并且**不要 Address**。
 导入后 Progress.txt 会多出一个阶段：结构体(<类型名>)的定义检查中——正好当判据。
+
+
+## 三十四、非 BOOL 标签的初值必须与类型匹配
+
+克隆 BOOL 模板做 WORD/DWORD 标签时，<InitialValue><SimpleValue value="FALSE">
+会留在里面——类型是 WORD、初值是 FALSE。结果：**一个标签都不落地**
+（Progress.txt 里连 全局标签(Global1)定义检查中 都不出现，rows 停在 54）。
+
+改成按类型给初值（BOOL→FALSE、WORD/DWORD/INT→0）之后，三个标签全部落地（54→75）。
+
+## 三十五、别给 <Variable> 加自定义属性
+
+我给标签变量加了一个 	emplate="variable" 属性当标记，结果整份标签导入被忽略。
+XML 里任何不认识的属性都可能让解析器整段放弃——要带元信息就放在代码里，别写进 XML。
+
+## 三十六、局部结构体变量按成员名访问：五条路都不通
+
+| 试法 | 结果 |
+|---|---|
+| 局部标签 private + S1.MyBool := NOT S1.MyBool; | 程序(...)转换中 2 个错 |
+| 局部标签 **public** + 同上 | 2 个错 |
+| 局部标签 private + S1.MyBool := TRUE; | 1 个错 |
+| 局部标签加**整体** <Address> | 整份导入被丢弃 |
+| 结构体 DataTypeDecl 放到 Program **前面** | 整份导入被丢弃（顺序反了） |
+
+结论：这个导入器里**局部**结构体标签不支持成员名访问；
+**全局**结构体标签可以（见 datatype.member_access，0 错）。要按名字访问就提到全局。
