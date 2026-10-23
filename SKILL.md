@@ -54,6 +54,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | 错误定位（阶段） | `build.error_detail` | `Progress.txt` 的 `failed_stages` |
 | **错误定位（行）** | `build.locate_error_line` | 前缀二分：`k` 通过、`k+1` 失败 → 第 `k+1` 行 |
 | **标签导入** | `label.import_xml` | `Instances/Configuration/GlobalVars` + 唯一行号 |
+| **多类型标签** | `label.multi_type` | BOOL/WORD/DWORD：初值必须与类型匹配（BOOL→FALSE、WORD→0） |
 | **程序新建（XML）** | `program.import_xml` | `Program` + `Resource/ProgramInstance`，且删掉 `<Vars>` |
 | **程序+功能块（XML）** | `program.import_fb` | `Program` 必须在 `FunctionBlock` 之前；FB 删 `<Parameters>` |
 | **功能块实例（XML）** | `program.import_fb_instance` | 程序里 `InstFB : FBInst` + 正文 `InstFB();` |
@@ -134,6 +135,13 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     `S1.MyBool` 会转换报错；放 `Instances/Configuration/GlobalVars`（全局，带成员级
     软元件分配、**不要 Address**）就能写 `GS1.MyBool := NOT GS1.MyBool;`（0 错）。
     导入后 `Progress.txt` 会多出 `结构体(<类型名>)的定义检查中`，可当判据。
+    局部结构体标签按成员名访问试过五条路（private/public、`:= TRUE`、整体 `<Address>`、
+    结构体前置）**全不通**：三条转换报错、两条整份丢弃。
+29. **非 BOOL 标签的初值必须与类型匹配**：克隆 BOOL 模板做 WORD/DWORD 时，
+    `<SimpleValue value="FALSE">` 会让**一个标签都不落地**（连 `Global1` 阶段都不出现）。
+    BOOL→FALSE、WORD/DWORD/INT→0。
+30. **不要给 `<Variable>` 加自定义属性**：我加过 `template="variable"` 当标记，
+    整份标签导入被静默忽略。元信息放代码里，别写进 XML。
 29. **导入"静默什么都没进"时可以重试**；一旦目标程序出现就**绝不能重试**（非幂等）。
 
 ## 5. 明确不做
