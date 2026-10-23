@@ -73,6 +73,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **25/25（v0.11，同一份代码第二次）** | 3270.9 s |
 | 2026-10-24 | **28/28（v0.12，新增 iQ-R/FX5S 三条）** | 3564.6 s |
 | 2026-10-24 | **28/28（v0.12，同一份代码第二次）** | 3593.5 s |
+| 2026-10-24 | **28/28（v0.12，乱序跑 seed=7）** | 3556.3 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -293,3 +294,16 @@ project_diff 的比较口径是**去空白后的行序列**（导入会改写换
 | `program.rcpu_roundtrip` | `unit=R00`、`source_matches=true`、`steps=4`、`errors=0` |
 
 顺带纠正一个旧说法：**没有 FX5C 这条系列**，FX5 家族只有 FX5U / FX5UJ / FX5S。
+
+### 乱序轮的实际顺序（seed=7）
+
+`program.import_fb → project.meta → build.convert_all → program.import_xml →
+program.read_st → batch.projects → datatype.member_access → inspect.devices →
+project.reopen → build.error_detail → datatype.custom_members → build.locate_error_line →
+label.multi_type → label.import_xml → project.new → program.paste_st →
+inspect.source_map → build.program_check → project.diff → datatype.import →
+program.rcpu_roundtrip → inspect.programs → project.new_fx5s → project.new_rcpu →
+inspect.mil → datatype.member_var → project.save → program.import_fb_instance`
+
+28 条全过，说明各能力之间**没有顺序依赖/状态泄漏**（共享 workdir、骨架缓存、
+kill_stray 时机都经得起换序）。
