@@ -69,6 +69,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-23 | **22/22（v0.9，同一份代码第二次）** | 2795.7 s |
 | 2026-10-23 | **23/23（v0.10，新增 label.multi_type）** | 3027.9 s |
 | 2026-10-23 | **23/23（v0.10，同一份代码第二次）** | 3060.8 s |
+| 2026-10-23 | **25/25（v0.11，含 inspect.programs / project.diff）** | 3272.6 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -242,3 +243,12 @@ project_diff 的比较口径是**去空白后的行序列**（导入会改写换
 
 project_diff 的比较口径是**去空白后的行序列**（导入会改写换行/空行），
 自比必须 identical=True——这是防"diff 永远报有差异"的自检。
+
+## v0.11 收尾四件事
+
+| 项 | 结果 |
+|---|---|
+| 模板依赖 | 首次复制到 `%LOCALAPPDATA%/gxkit/skeleton.xml` 并记 sha256，指纹变化自动重建；`GXKIT_TEMPLATE` 可绕开安装目录 |
+| 手写骨架 | `templates/base.xml` 能导入程序/标签/全局结构体；**局部标签不落地**（已排除 5 个因素），记入 UNSUPPORTED |
+| 一条命令 | `gxkit apply --xml x.xml [--dry]`：预检 → 导入 → 编译 → 存盘 → 报告（实测 142.7 s 通过） |
+| 待办 | `docs/EXPAND_BACKLOG.md`：往外扩按预估用时降序排好（LAD 8–16h → iQ-R 4–8h → …） |
