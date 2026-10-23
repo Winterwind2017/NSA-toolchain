@@ -17,9 +17,10 @@ import zipfile
 from . import uia
 from .win import (
     ensure_size,
-    key,VK, activate, alt_letter, chord, click, close_window, key,
+    key, VK, activate, alt_letter, chord, click, close_window,
+    kill_stray,
     post_alt_letter, post_ctrl_key,
-                  main_window, set_clipboard, tap, windows)
+    main_window, set_clipboard, tap, windows)
 
 EXE = r"D:\Program Files (x86)\MELSOFT\GPPW3\GXW3.exe"
 
@@ -108,7 +109,8 @@ class Session:
     # ---------- 生命周期 ----------
     def start(self) -> dict:
         last = None
-        for attempt in range(2):
+        kill_stray()          # 上一轮残留的实例会让新实例起不来
+        for attempt in range(3):
             args = [self.exe] + ([str(self.project)] if self.project else [])
             self.proc = subprocess.Popen(args, cwd=str(pathlib.Path(self.exe).parent))
             uia.bind_pid(self.proc.pid)
@@ -121,7 +123,8 @@ class Session:
             if self.proc.poll() is None:
                 subprocess.run(["taskkill", "/T", "/F", "/PID", str(self.proc.pid)],
                                capture_output=True)
-            time.sleep(3)
+            kill_stray()
+            time.sleep(3 + attempt * 3)
         if not self.main:
             raise RuntimeError("GX Works3 主窗口没起来：%r" % (last,))
         self.log.append({"action": "start", "pid": self.proc.pid,

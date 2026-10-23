@@ -28,11 +28,24 @@ def _cpu(ctx: dict) -> dict:
 
 
 def _boot(ctx: dict, project: str | None = None) -> Session:
-    s = Session(project=project)
-    info = s.start()
-    ctx["session"] = s
-    ctx["startup"] = info.get("startup_s")
-    return s
+    """起会话；启动失败也要重试（残留实例会让第一次必然失败）。"""
+    last: Exception | None = None
+    for attempt in range(3):
+        s = Session(project=project)
+        try:
+            info = s.start()
+        except RuntimeError as exc:
+            last = exc
+            try:
+                s.close()
+            except Exception:
+                pass
+            time.sleep(4 + attempt * 4)
+            continue
+        ctx["session"] = s
+        ctx["startup"] = info.get("startup_s")
+        return s
+    raise last or RuntimeError("GX Works3 启动失败")
 
 
 def _new_and_save(ctx: dict) -> tuple[Session, dict]:
@@ -42,9 +55,9 @@ def _new_and_save(ctx: dict) -> tuple[Session, dict]:
     重试 4 次仍不行，重开会话比继续等更可靠。
     """
     last: Exception | None = None
-    for attempt in range(2):
-        s = _boot(ctx)
+    for attempt in range(3):
         try:
+            s = _boot(ctx)
             s.new_project(**_cpu(ctx))
             saved = s.save_as(ctx["project"])
             return s, saved
@@ -61,9 +74,9 @@ def _new_and_save(ctx: dict) -> tuple[Session, dict]:
 def _new_project(ctx: dict) -> tuple[Session, dict]:
     """新建工程；对话框没弹出来就**重开会话**再试（冷启动时偶发）。"""
     last: Exception | None = None
-    for attempt in range(2):
-        s = _boot(ctx)
+    for attempt in range(3):
         try:
+            s = _boot(ctx)
             return s, s.new_project(**_cpu(ctx))
         except RuntimeError as exc:
             last = exc
