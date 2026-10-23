@@ -60,6 +60,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **结构体（XML）** | `datatype.import` | `DataTypeDecl` 成员**保持样例原样**；判据用 UIA 导航树 |
 | **结构体变量** | `datatype.member_var` | 必须带 `VariableStructDeviceAssignment`（成员绑 B0/W0/B10…），且与结构体同文档 |
 | **自定义成员** | `datatype.custom_members` | `Member` 全在前、`<AddData>` 留在最后；成员名随便起 |
+| **成员名访问** | `datatype.member_access` | 结构体标签必须放**全局**（`GlobalVars`），正文才能写 `GS1.MyBool` |
 | 批量 | `batch.projects` | 同会话连续粘贴变体 + `工程 → 另存为` |
 | L4 | `project.reopen` | 存盘 → 关工程 → 重开 → `N步` 仍在 |
 
@@ -129,7 +130,10 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
     没有它 `局部标签定义检查` 报 1 个错；同一段 XML 加上它就是 0 错。
 27. **结构体与程序必须同文档导入**：先导结构体、再导程序，后导的那份仍报转换错。
     嵌套成员类型（Struct2）也要一起导，成员名才会全出现在 `LabelData`。
-28. **正文里 `S1.member1_1` 会转换报错**：成员已绑到软元件，按软元件访问才是通的。
+28. **按成员名访问要用全局结构体标签**：同一个结构体，放程序 `<Vars>`（局部）里写
+    `S1.MyBool` 会转换报错；放 `Instances/Configuration/GlobalVars`（全局，带成员级
+    软元件分配、**不要 Address**）就能写 `GS1.MyBool := NOT GS1.MyBool;`（0 错）。
+    导入后 `Progress.txt` 会多出 `结构体(<类型名>)的定义检查中`，可当判据。
 29. **导入"静默什么都没进"时可以重试**；一旦目标程序出现就**绝不能重试**（非幂等）。
 
 ## 5. 明确不做

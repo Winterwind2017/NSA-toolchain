@@ -1,2 +1,2 @@
-feat: 同步 gxkit 0.8 —— 21 条能力（自定义结构体成员）
-推翻旧结论：成员不是必须原样，真正规则是 UserDefinedTypeSpec 里 AddData 必须排在 Member 之后。
+feat: 同步 gxkit 0.9 —— 22 条能力（正文按成员名访问结构体）
+结构体标签放到全局（GlobalVars）后，正文可以直接写 GS1.MyBool；局部标签不行。

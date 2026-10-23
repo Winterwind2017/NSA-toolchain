@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **21** 条已验证能力（内核 `gxkit 0.8.0`，commit `45c7ba6`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **22** 条已验证能力（内核 `gxkit 0.9.0`，commit `060ae3a`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -15,6 +15,7 @@
 | `datatype.import` | datatype | L3 | 用 XML 建结构体（并用变量读回） |
 | `datatype.member_var` | datatype | L3 | 结构体类型的变量（成员级软元件分配） |
 | `datatype.custom_members` | datatype | L3 | 自定义结构体成员 |
+| `datatype.member_access` | datatype | L3 | 正文按成员名访问结构体（全局标签） |
 | `inspect.source_map` | inspect | L2 | 步→源码坐标（Row/Col/StrLen） |
 | `inspect.devices` | inspect | L1–L2 | 读 FX5U 系统软元件模板 |
 | `inspect.mil` | inspect | L2 | 读编译后的 IL 文本 |
@@ -33,6 +34,6 @@
 | `build.error_message` | 编译器原话：转换结果面板是自绘视图，读不到文本 |
 | `label.non_bool` | WORD/DINT 标签导入未验证（只验证了 BOOL） |
 | `project.check` | 工程校验是两工程比对，不是校验本工程 |
-| `datatype.member_access` | 正文里按成员名访问结构体未通（成员已绑软元件） |
+| `datatype.local_member_access` | 局部结构体变量按成员名访问未通（全局标签已通） |
 | `online.write` | 需要真实 PLC；用户口径只做离线 |
 | `ladder.write` | 梯形图编辑器是自绘控件，无法程序化写网络 |
