@@ -200,7 +200,14 @@ def test_build_struct_program_shape() -> None:
     dt = gn.find('{%s}DataTypeDecl' % ns)
     assert dt.get('name') == 'StructGen'
     members = dt.find('{%s}UserDefinedTypeSpec' % ns).findall('{%s}Member' % ns)
-    assert len(members) == 4, 'members=None 应保留样例的 4 个成员'
+    # members=None 表示"保留模板里的成员"，数量应与模板自身一致（模板是我们自己写的）
+    import xml.etree.ElementTree as _ET
+    tpl = _ET.parse(str(xmlgen.template_path()))
+    tpl_gn = tpl.getroot().find('{%s}Types' % ns).find('{%s}GlobalNamespace' % ns)
+    tpl_struct = next(d for d in tpl_gn.findall('{%s}DataTypeDecl' % ns)
+                      if d.get('name') == 'Struct1')
+    want = len(tpl_struct.find('{%s}UserDefinedTypeSpec' % ns).findall('{%s}Member' % ns))
+    assert len(members) == want and want >= 1
 
 
 def test_build_fb_instance_shape() -> None:
@@ -333,3 +340,18 @@ def test_program_list_and_diff(tmp_path: pathlib.Path) -> None:
     same = I.project_diff(g, g)
     assert same["identical"] is True
     assert same["blocks_changed"] == 0
+
+
+def test_check_xml_precheck(tmp_path: pathlib.Path) -> None:
+    """apply 的离线预检：能认出顺序错/缺结构，也能对正常文件放行。"""
+    from gxkit import apply as A
+
+    good = xmlgen.write_program(tmp_path / "good.xml", "PrgOK", "B0 := NOT B0;")
+    info = A.check_xml(good)
+    assert info["ok"] is True, info["problems"]
+    assert info["programs"] == ["PrgOK"]
+
+    bad = tmp_path / "bad.xml"
+    bad.write_text("<Project><Types>", encoding="utf-8")
+    info = A.check_xml(bad)
+    assert info["ok"] is False and info["problems"]

@@ -1,0 +1,302 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Project xmlns="www.iec.ch/public/TC65SC65BWG7TF10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="1.000" xsi:schemaLocation="www.iec.ch/public/TC65SC65BWG7TF10 GXW3_IEC61131_10_Ed1_0_ForGXW3.xsd">
+	<FileHeader companyName="gxkit" companyURL="https://github.com/Winterwind2017/gxkit" productName="gxkit template" productVersion="ver.1.0" />
+	<ContentHeader name="gxkit" creationDateTime="2024-01-01T00:00:00+09:00" modificationDateTime="2024-01-01T00:00:01+09:00" />
+	<Types>
+		<GlobalNamespace>
+			<Documentation xsi:type="SimpleText">GlobalNamespace</Documentation>
+			<AddData>
+				<Data name="http://www.mitsubishielectric.com/xml/FbFiles" handleUnknown="implementation">
+					<FbFiles>
+						<FbFile name="FbFile1" functionBlockType="macro" />
+					</FbFiles>
+				</Data>
+			</AddData>
+			<Program name="Program1">
+				<Documentation xsi:type="SimpleText">Program1</Documentation>
+				<AddData>
+					<Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+						<PouProperties title="タイトル プログラムST(一般)" version="ver.1.003" helpFilePath="" supportVersion="1.001W" />
+					</Data>
+				</AddData>
+				<Vars constant="false" retain="false" accessSpecifier="private">
+					<Variable name="Local1_1">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableLineNumber" handleUnknown="implementation">
+								<VariableLineNumber number="1" />
+							</Data>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>Local1_1</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableRemark" handleUnknown="implementation">
+								<VariableRemark>
+									<RemarkText>remark</RemarkText>
+								</VariableRemark>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>BOOL</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="FALSE" />
+						</InitialValue>
+					</Variable>
+				</Vars>
+				<MainBody>
+					<AddData>
+						<Data name="http://www.mitsubishielectric.com/xml/BodyProperties" handleUnknown="implementation">
+							<BodyProperties orderWithinBodyProperties="1" workSheetName="workSheet1" executeOrder="1" />
+						</Data>
+					</AddData>
+					<BodyContent xsi:type="ST">
+						<ST>B0 := NOT B0;</ST>
+					</BodyContent>
+				</MainBody>
+			</Program>
+			<FunctionBlock name="FBPou1">
+				<Documentation xsi:type="SimpleText">FBPou1</Documentation>
+				<AddData>
+					<Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+						<PouProperties title="FB" version="ver.1.012" helpFilePath="" supportVersion="1.010W" />
+					</Data>
+					<Data name="http://www.mitsubishielectric.com/xml/FbPouProperties" handleUnknown="implementation">
+						<FbPouProperties isEnEno="false" isMcMcr="false" labelAssignmentArea="20" latchLabelAssignmentArea="12" signalFlowAssignmentArea="5" />
+					</Data>
+					<Data name="http://www.mitsubishielectric.com/xml/FbPouFile" handleUnknown="implementation">
+						<FbPouFile name="FbFile1" />
+					</Data>
+				</AddData>
+				<Vars constant="false" retain="false" accessSpecifier="private">
+					<Variable name="fb1_v">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableLineNumber" handleUnknown="implementation">
+								<VariableLineNumber number="1" />
+							</Data>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>fb1_v</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>BOOL</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="FALSE" />
+						</InitialValue>
+					</Variable>
+				</Vars>
+				<MainBody>
+					<AddData>
+						<Data name="http://www.mitsubishielectric.com/xml/BodyProperties" handleUnknown="implementation">
+							<BodyProperties orderWithinBodyProperties="1" workSheetName="workSheet1" executeOrder="1" />
+						</Data>
+					</AddData>
+					<BodyContent xsi:type="ST">
+						<ST>fb1_v := fb1_v;</ST>
+					</BodyContent>
+				</MainBody>
+			</FunctionBlock>
+			<DataTypeDecl name="Struct1">
+				<Documentation xsi:type="SimpleText">Struct1</Documentation>
+				<AddData>
+					<Data name="http://www.mitsubishielectric.com/xml/DataTypeProperties" handleUnknown="implementation">
+						<DataTypeProperties title="struct" version="ver.1.002" helpFilePath="" supportVersion="1.000W" reservedArea="4" />
+					</Data>
+				</AddData>
+				<UserDefinedTypeSpec xsi:type="StructTypeSpec">
+					<Member name="member1_1">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableLineNumber" handleUnknown="implementation">
+								<VariableLineNumber number="1" />
+							</Data>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member1_1</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>BOOL</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="FALSE" />
+						</InitialValue>
+					</Member>
+					<Member name="member1_2">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableLineNumber" handleUnknown="implementation">
+								<VariableLineNumber number="2" />
+							</Data>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member1_2</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>WORD</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="0" />
+						</InitialValue>
+					</Member>
+					<Member name="member1_3">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableLineNumber" handleUnknown="implementation">
+								<VariableLineNumber number="3" />
+							</Data>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member1_3</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>BOOL</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="FALSE" />
+						</InitialValue>
+					</Member>
+					<Member name="member1_4">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member1_4</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>Struct2</TypeName>
+						</Type>
+					</Member>
+					<AddData />
+				</UserDefinedTypeSpec>
+			</DataTypeDecl>
+			<DataTypeDecl name="Struct2">
+				<Documentation xsi:type="SimpleText">Struct2</Documentation>
+				<AddData>
+					<Data name="http://www.mitsubishielectric.com/xml/DataTypeProperties" handleUnknown="implementation">
+						<DataTypeProperties title="struct" version="ver.1.002" helpFilePath="" supportVersion="1.000W" reservedArea="4" />
+					</Data>
+				</AddData>
+				<UserDefinedTypeSpec xsi:type="StructTypeSpec">
+					<Member name="member2_1">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member2_1</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>BOOL</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="FALSE" />
+						</InitialValue>
+					</Member>
+					<Member name="member2_2">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member2_2</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>WORD</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="0" />
+						</InitialValue>
+					</Member>
+					<Member name="member2_3">
+						<AddData>
+							<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+								<VariableComments>
+									<Comment number="6">
+										<CommentText>member2_3</CommentText>
+									</Comment>
+								</VariableComments>
+							</Data>
+						</AddData>
+						<Type>
+							<TypeName>BOOL</TypeName>
+						</Type>
+						<InitialValue>
+							<SimpleValue value="FALSE" />
+						</InitialValue>
+					</Member>
+					<AddData />
+				</UserDefinedTypeSpec>
+			</DataTypeDecl>
+		</GlobalNamespace>
+	</Types>
+	<Instances>
+		<Configuration name="config1">
+			<Resource name="Main" resourceTypeName="prgFile">
+				<ProgramInstance name="Program1" typeName="pou" evaluationOrder="1">
+					<AddData>
+						<Data name="http://www.mitsubishielectric.com/xml/PouResourceFolder" handleUnknown="implementation">
+							<PouResourceFolder name="userFolder1" />
+						</Data>
+					</AddData>
+				</ProgramInstance>
+			</Resource>
+			<GlobalVars constant="false" retain="false">
+				<Documentation xsi:type="SimpleText">Global</Documentation>
+				<AddData>
+					<Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+						<GlobalVarsProperties name="Global1" title="Global" version="ver.1.017" helpFilePath="" supportVersion="1.015W" />
+					</Data>
+				</AddData>
+				<Variable name="global_label1_1">
+					<AddData>
+						<Data name="http://www.mitsubishielectric.com/xml/VariableLineNumber" handleUnknown="implementation">
+							<VariableLineNumber number="1" />
+						</Data>
+						<Data name="http://www.mitsubishielectric.com/xml/VariableComments" handleUnknown="implementation">
+							<VariableComments>
+								<Comment number="6">
+									<CommentText>global_label1_1</CommentText>
+								</Comment>
+							</VariableComments>
+						</Data>
+						<Data name="http://www.mitsubishielectric.com/xml/VariableRemark" handleUnknown="implementation">
+							<VariableRemark>
+								<RemarkText>remark</RemarkText>
+							</VariableRemark>
+						</Data>
+						</AddData>
+					<Type>
+						<TypeName>BOOL</TypeName>
+					</Type>
+					<InitialValue>
+						<SimpleValue value="FALSE" />
+					</InitialValue>
+					<Address address="M50" />
+				</Variable>
+			</GlobalVars>
+		</Configuration>
+	</Instances>
+</Project>

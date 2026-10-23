@@ -341,3 +341,22 @@ XML 里任何不认识的属性都可能让解析器整段放弃——要带元�
 
 结论：这个导入器里**局部**结构体标签不支持成员名访问；
 **全局**结构体标签可以（见 datatype.member_access，0 错）。要按名字访问就提到全局。
+
+## 三十七、XML 骨架不要"每次运行时去读 MELSOFT 的样例"
+
+早期 `xmlgen` 每次生成都以安装目录里的 `Sample.xml` 当骨架——MELSOFT 一升级换样例，
+整套生成器就可能整批失效，而且**失效方式是静默的**。
+
+现在：首次运行把样例复制到 `%LOCALAPPDATA%/gxkit/skeleton.xml` 并记下 sha256，
+之后都读缓存；指纹变了自动重建；`GXKIT_TEMPLATE=<文件>` 可以完全绕开安装目录。
+
+## 三十八、手写骨架卡在"局部标签"
+
+我们自己写的 `templates/base.xml`（`use_manual_template()` 可切）能让
+程序、全局标签、全局结构体+成员名访问全部导入成功；但**局部标签不落地**
+（locals_found=0，随后 `程序(...)转换中` 报 2 错）。
+
+排除过的因素：`PouProperties title`、`AddData` 内部顺序、去掉 `VariableRemark`/
+`InitialValue`、补 `BodyProperties`/`FbPouProperties`。FB 那条因此通了，局部标签没有。
+要真正自给自足，得继续做"逐元素 diff 二分"，记在 `docs/EXPAND_BACKLOG.md` 第 6 条。
+

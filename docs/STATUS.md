@@ -72,6 +72,16 @@
 3. **编译层**：`Progress.txt` 的逐阶段 `Error/Warning` 与 `failed_stages`。
 4. **软件层**：`工具 → 程序检查` 的判定文本（UIA 可读）。
 
+## 一条命令干活
+
+```powershell
+python -m gxkit apply --xml build.xml --dry        # 只做离线预检（不开 GX Works3）
+python -m gxkit apply --xml build.xml              # 导入 -> 编译 -> 存盘 -> 报告
+```
+
+`apply` 会打印并写出报告文件 apply_report.json：程序/功能块/结构体/标签清单、导入是否生效、
+源码块数、步数、编译错误、失败阶段。退出码 0 = 可交付。
+
 ## 复现
 
 ```powershell

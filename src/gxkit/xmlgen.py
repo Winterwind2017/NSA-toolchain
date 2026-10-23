@@ -15,16 +15,92 @@
 from __future__ import annotations
 
 import copy
+import json
+import os
 import pathlib
 import xml.etree.ElementTree as ET
 
 NS = "www.iec.ch/public/TC65SC65BWG7TF10"
 XSI = "http://www.w3.org/2001/XMLSchema-instance"
+# 模板来源（按优先级）：
+#   1. 环境变量 GXKIT_TEMPLATE 指向的文件
+#   2. 缓存骨架 %LOCALAPPDATA%/gxkit/skeleton.xml（首次从下面的 Sample.xml 复制并记指纹；
+#      MELSOFT 升级导致指纹变化时自动重建）
+#   3. MELSOFT 安装目录里的 Sample.xml
+#
+# 为什么没有完全自给自足：手写过一份等价骨架（templates/base.xml），程序/标签/全局
+# 结构体都能导入，但**局部标签**（结构体变量、功能块实例所必需）不会被导入
+# （locals_found=0、程序(...)转换中 报 2 错）。改 PouProperties title、调整 AddData
+# 顺序、去掉 VariableRemark/InitialValue 都试过仍未解开，属未打通的逆向项。
+MANUAL_TEMPLATE = pathlib.Path(__file__).with_name("templates") / "base.xml"
+
 SAMPLE = pathlib.Path(
     r"D:\Program Files (x86)\MELSOFT\GPPW3\SampleData\IEC61131-10XML\Sample.xml")
 
 ET.register_namespace("", NS)
 ET.register_namespace("xsi", XSI)
+
+
+_SKELETON_CACHE: pathlib.Path | None = None
+
+
+def _cache_dir() -> pathlib.Path:
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~/.cache")
+    d = pathlib.Path(base) / "gxkit"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _fingerprint(path: pathlib.Path) -> dict:
+    import hashlib
+    data = path.read_bytes()
+    return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+
+
+def template_path() -> pathlib.Path:
+    """返回可用骨架；缓存与安装样例的指纹不一致时自动重建。"""
+    global _SKELETON_CACHE
+    if _SKELETON_CACHE is not None:
+        return _SKELETON_CACHE
+
+    env = os.environ.get("GXKIT_TEMPLATE")
+    if env:
+        p = pathlib.Path(env)
+        if not p.exists():
+            raise RuntimeError("GXKIT_TEMPLATE 指向的文件不存在：%s" % p)
+        _SKELETON_CACHE = p
+        return p
+
+    cache = _cache_dir() / "skeleton.xml"
+    meta = _cache_dir() / "skeleton.json"
+    if not SAMPLE.exists():
+        if cache.exists():
+            _SKELETON_CACHE = cache
+            return cache
+        raise RuntimeError(
+            "找不到 MELSOFT 样例，也没有缓存骨架：%s\n"
+            "解决办法：设 GXKIT_TEMPLATE=<可用的 IEC61131-10 XML>，或确认 GX Works3 已安装" % SAMPLE)
+
+    want = _fingerprint(SAMPLE)
+    have = {}
+    if meta.exists() and cache.exists():
+        try:
+            have = json.loads(meta.read_text(encoding="utf-8"))
+        except Exception:
+            have = {}
+    if have.get("sha256") != want["sha256"] or not cache.exists():
+        cache.write_bytes(SAMPLE.read_bytes())
+        meta.write_text(json.dumps({"source": str(SAMPLE), **want}, ensure_ascii=False),
+                        encoding="utf-8")
+    _SKELETON_CACHE = cache
+    return cache
+
+
+def use_manual_template() -> pathlib.Path:
+    """切到我们自己手写的骨架（局部标签导入不了，仅用于对照/测试）。"""
+    global _SKELETON_CACHE
+    _SKELETON_CACHE = MANUAL_TEMPLATE
+    return MANUAL_TEMPLATE
 
 
 def _q(tag: str) -> str:
@@ -62,9 +138,9 @@ def _fix_initial_value(var, value: str) -> None:
 
 
 def build(labels: list[dict] | None = None,
-          sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+          sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     labels = labels or DEFAULT_LABELS
-    tree = ET.parse(str(sample))
+    tree = ET.parse(str(sample or template_path()))
     root = tree.getroot()
 
     # 1) Types：只留 Documentation + AddData（去掉程序/FB/FUN/结构体）
@@ -118,7 +194,7 @@ def build(labels: list[dict] | None = None,
 
 
 def write(path: str | pathlib.Path, labels: list[dict] | None = None,
-          sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+          sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     build(labels, sample).write(p, encoding="utf-8", xml_declaration=True)
@@ -127,7 +203,7 @@ def write(path: str | pathlib.Path, labels: list[dict] | None = None,
 
 def build_program(program_name: str, st_code: str,
                   locals_: list[dict] | None = None,
-                  sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+                  sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     """用样例骨架造一个"只有 ST 程序"的文档，用来让 GX Works3 **建出新程序**。
 
     实测要点（缺一条就不建程序）：
@@ -139,7 +215,7 @@ def build_program(program_name: str, st_code: str,
       * `MainBody` 只留一个 `BodyContent xsi:type="ST"`，正文用设备软元件（B0/W0），
         不要引用局部标签。
     """
-    tree = ET.parse(str(sample))
+    tree = ET.parse(str(sample or template_path()))
     root = tree.getroot()
     gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
 
@@ -191,7 +267,7 @@ def build_program(program_name: str, st_code: str,
 
 def write_program(path: str | pathlib.Path, program_name: str, st_code: str,
                   locals_: list[dict] | None = None,
-                  sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+                  sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     build_program(program_name, st_code, locals_=locals_, sample=sample).write(
@@ -267,7 +343,7 @@ def build_fb_program(program_name: str, st_code: str,
                      fb_body: str = "FB_Bool := NOT FB_Bool;\r\nFB_Word := FB_Word + 1;",
                      locals_: list[dict] | None = None,
                      fb_locals: list[dict] | None = None,
-                     sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+                     sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     """建一套"带局部标签的程序 + 一个功能块"的 XML。
 
     实测出来的必要条件（每条都是**静默**失败——导入"成功"、工程里什么都没有）：
@@ -284,7 +360,7 @@ def build_fb_program(program_name: str, st_code: str,
     locals_ = locals_ or DEFAULT_LOCALS
     fb_locals = fb_locals or DEFAULT_FB_LOCALS
 
-    tree = ET.parse(str(sample))
+    tree = ET.parse(str(sample or template_path()))
     root = tree.getroot()
     gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
 
@@ -293,7 +369,7 @@ def build_fb_program(program_name: str, st_code: str,
         if ch.tag.replace("{%s}" % NS, "") not in ("Documentation", "AddData"):
             gn.remove(ch)
 
-    src_root = ET.parse(str(sample)).getroot()
+    src_root = ET.parse(str(sample or template_path())).getroot()
     src_gn = src_root.find(_q("Types")).find(_q("GlobalNamespace"))
     src_prog = next(p for p in src_gn.findall(_q("Program")) if p.get("name") == "Program1")
     src_fb = next(f for f in src_gn.findall(_q("FunctionBlock"))
@@ -365,7 +441,7 @@ def write_fb_program(path: str | pathlib.Path, program_name: str, st_code: str,
                      fb_name: str = "FBGen", fb_body: str | None = None,
                      locals_: list[dict] | None = None,
                      fb_locals: list[dict] | None = None,
-                     sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+                     sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     kwargs = {}
@@ -393,7 +469,7 @@ def build_struct_program(program_name: str, st_code: str,
                          struct_name: str = "StructGen",
                          members: list[dict] | None = None,
                          locals_: list[dict] | None = None,
-                         sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+                         sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     """建"结构体 + 用它的程序"的 XML。
 
     结构体形态照抄样例 `Struct1`：
@@ -411,7 +487,7 @@ def build_struct_program(program_name: str, st_code: str,
     root = tree.getroot()
     gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
 
-    src_gn = ET.parse(str(sample)).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
+    src_gn = ET.parse(str(sample or template_path())).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
     src_struct = next(d for d in src_gn.findall(_q("DataTypeDecl"))
                       if d.get("name") == "Struct1")
     tpl_member = src_struct.find(_q("UserDefinedTypeSpec")).find(_q("Member"))
@@ -455,7 +531,7 @@ def write_struct_program(path: str | pathlib.Path, program_name: str, st_code: s
                          struct_name: str = "StructGen",
                          members: list[dict] | None = None,
                          locals_: list[dict] | None = None,
-                         sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+                         sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     build_struct_program(program_name, st_code, struct_name=struct_name,
@@ -471,7 +547,7 @@ def build_fb_instance(program_name: str, st_code: str,
                       fb_body: str = "FB_Bool := NOT FB_Bool;",
                       locals_: list[dict] | None = None,
                       fb_locals: list[dict] | None = None,
-                      sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+                      sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     """建"功能块 + 程序里声明它的实例并调用"的 XML。
 
     程序侧多一个 `<Variable name="InstFB"><Type><TypeName>FBInst</TypeName></Type></Variable>`，
@@ -500,7 +576,7 @@ def write_fb_instance(path: str | pathlib.Path, program_name: str, st_code: str,
                       fb_body: str | None = None,
                       locals_: list[dict] | None = None,
                       fb_locals: list[dict] | None = None,
-                      sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+                      sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     kwargs = {}
@@ -562,7 +638,7 @@ def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
                              st_code: str = "LocBool := NOT LocBool;",
                              members: list[dict] | None = None,
                              assign: list[dict] | None = None,
-                             sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+                             sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     """结构体 + 结构体类型的变量（带成员级软元件分配）+ 程序，一份文档导入。
 
     实测要点：
@@ -590,7 +666,7 @@ def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
 
     if members is None:
         # Struct1 的 member1_4 类型是 Struct2：把 Struct2 也导进来，嵌套成员才有定义
-        src_gn = ET.parse(str(sample)).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
+        src_gn = ET.parse(str(sample or template_path())).getroot().find(_q("Types")).find(_q("GlobalNamespace"))
         nested = next((d for d in src_gn.findall(_q("DataTypeDecl"))
                        if d.get("name") == "Struct2"), None)
         if nested is not None:
@@ -604,7 +680,7 @@ def write_struct_var_program(path: str | pathlib.Path, program_name: str,
                              st_code: str = "LocBool := NOT LocBool;",
                              members: list[dict] | None = None,
                              assign: list[dict] | None = None,
-                             sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+                             sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     build_struct_var_program(program_name, struct_name, var_name, st_code,
@@ -619,7 +695,7 @@ def build_struct_global_program(program_name: str, st_code: str,
                                 label_name: str = "GS1",
                                 members: list[dict] | None = None,
                                 assign: list[dict] | None = None,
-                                sample: str | pathlib.Path = SAMPLE) -> ET.ElementTree:
+                                sample: str | pathlib.Path | None = None) -> ET.ElementTree:
     """结构体 + **全局**结构体标签 + 程序（正文按成员名访问），一份文档导入。
 
     为什么必须用全局标签：实测局部结构体标签（S1 : StructX 在程序 <Vars> 里）
@@ -638,7 +714,7 @@ def build_struct_global_program(program_name: str, st_code: str,
         assign = [{"name": m["name"], "address": addrs[i % len(addrs)]}
                   for i, m in enumerate(members)]
 
-    src_cfg = ET.parse(str(sample)).getroot().find(_q("Instances")).find(_q("Configuration"))
+    src_cfg = ET.parse(str(sample or template_path())).getroot().find(_q("Instances")).find(_q("Configuration"))
     gv_tpl = copy.deepcopy(src_cfg.findall(_q("GlobalVars"))[0])
     var_tpl = src_cfg.findall(_q("GlobalVars"))[0].find(_q("Variable"))
     for v in gv_tpl.findall(_q("Variable")):
@@ -670,7 +746,7 @@ def write_struct_global_program(path: str | pathlib.Path, program_name: str, st_
                                 label_name: str = "GS1",
                                 members: list[dict] | None = None,
                                 assign: list[dict] | None = None,
-                                sample: str | pathlib.Path = SAMPLE) -> pathlib.Path:
+                                sample: str | pathlib.Path | None = None) -> pathlib.Path:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     build_struct_global_program(program_name, st_code, struct_name, label_name,
