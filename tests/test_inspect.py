@@ -405,3 +405,52 @@ def test_cpu_caps_declare_their_models() -> None:
 
     rt = by_id["program.rcpu_roundtrip"]
     assert rt.params["series"] == 1 and rt.expect["source_matches"] is True
+
+
+def test_fb_params_omit_empty_groups() -> None:
+    """空组不能输出（空的 <InoutVars/> 会让整份文档被静默丢弃）。"""
+    tree = xmlgen.build_fb_params_program("PrgFP", "InstFB(fbIn := B0);")
+    ns = xmlgen.NS
+    gn = tree.getroot().find("{%s}Types" % ns).find("{%s}GlobalNamespace" % ns)
+    fb = next(f for f in gn.findall("{%s}FunctionBlock" % ns))
+    par = fb.find("{%s}Parameters" % ns)
+    groups = [g for g in list(par)]
+    assert groups, "至少要有一组"
+    assert all(len(list(g)) > 0 for g in groups), "不允许空组"
+    tags = [g.tag.split("}")[-1] for g in groups]
+    assert tags == ["InputVars", "OutputVars", "OutputVars"]
+
+
+def test_struct_member_array_shape() -> None:
+    """数组成员用 InstantlyDefinedType/ArrayTypeSpec + IndexRange，并带 Address。"""
+    tree = xmlgen.build_struct_global_program(
+        "PrgArr", "GS1.Arr[0] := TRUE;", "StructArr", "GS1",
+        members=[{"name": "Arr", "type": "BOOL", "array": [0, 3]}],
+        assign=[{"name": "Arr", "address": "B10"}])
+    ns = xmlgen.NS
+    gn = tree.getroot().find("{%s}Types" % ns).find("{%s}GlobalNamespace" % ns)
+    dt = next(d for d in gn.findall("{%s}DataTypeDecl" % ns) if d.get("name") == "StructArr")
+    mem = dt.find("{%s}UserDefinedTypeSpec" % ns).find("{%s}Member" % ns)
+    idt = mem.find("{%s}Type" % ns).find("{%s}InstantlyDefinedType" % ns)
+    assert idt is not None
+    assert idt.find("{%s}BaseType" % ns).find("{%s}TypeName" % ns).text == "BOOL"
+    rng = idt.find("{%s}DimensionSpec" % ns).find("{%s}IndexRange" % ns)
+    assert rng.get("lower") == "0" and rng.get("upper") == "3"
+    # 数组基地址在"结构体变量的成员分配"里（成员自身的 <Address> 是可选的）
+    cfg = tree.getroot().find("{%s}Instances" % ns).find("{%s}Configuration" % ns)
+    gv = cfg.find("{%s}GlobalVars" % ns)
+    var = gv.find("{%s}Variable" % ns)
+    assign = var.find("{%s}AddData" % ns).find("{%s}Data" % ns).find(
+        "{%s}VariableStructDeviceAssignment" % ns)
+    assert assign.find("{%s}Member" % ns).get("address") == "B10"
+
+
+def test_new_caps_declared() -> None:
+    from gxkit import caps as caps_mod
+
+    by_id = {c.id: c for c in caps_mod.CAPS}
+    assert by_id["program.import_fb_params"].expect["program_created"] is True
+    assert by_id["datatype.struct_array"].expect["struct_stage_errors"] == 0
+    assert by_id["program.multi_programs"].expect["both_created"] is True
+    dev = by_id["inspect.devices_rcpu"]
+    assert dev.params["series"] == 1 and dev.expect["has_type_35"] is True

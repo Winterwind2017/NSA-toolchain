@@ -275,6 +275,15 @@ def write_program(path: str | pathlib.Path, program_name: str, st_code: str,
     return p
 
 
+# 只用 IN / OUT / OUT_RETAIN：IN_OUT 一旦传参或在正文引用就会
+# `局部标签(FB)定义检查中` 1 错 + `程序` 转换 2~4 错（探针 100 实测）。
+DEFAULT_FB_PARAMS = [
+    {"name": "fbIn", "kind": "input", "order": 3, "init": "FALSE"},
+    {"name": "fbOut", "kind": "output", "order": 7, "init": "FALSE"},
+    {"name": "fbOutR", "kind": "output_retain", "order": 6},
+]
+
+
 DEFAULT_LOCALS = [
     {"name": "LocBool", "type": "BOOL", "init": "FALSE"},
     {"name": "LocWord", "type": "WORD", "init": "0"},
@@ -465,6 +474,81 @@ DEFAULT_STRUCT_MEMBERS = [
 ]
 
 
+FB_PARAM_GROUPS = ("InoutVars", "InputVars", "OutputVars")
+
+
+def _param_var(name: str, order: int, init: str | None = None) -> ET.Element:
+    var = ET.fromstring(
+        '<Variable xmlns="%s" name="%s" orderWithinParamSet="%d">'
+        '<AddData><Data name="http://www.mitsubishielectric.com/xml/VariableComments" '
+        'handleUnknown="implementation"><VariableComments><Comment number="6">'
+        '<CommentText>%s</CommentText></Comment></VariableComments></Data></AddData>'
+        '<Type><TypeName>BOOL</TypeName></Type>%s</Variable>'
+        % (NS, name, order, name,
+           ('<InitialValue><SimpleValue value="%s"/></InitialValue>' % init) if init else ""))
+    return var
+
+
+def add_fb_parameters(fb, params: list[dict]) -> None:
+    """给 FunctionBlock 插 `<Parameters>`（四组固定：Inout / Input / Output(false) / Output(true)）。
+
+    params: [{"name": ..., "kind": "inout|input|output|output_retain", "order": int, "init": "FALSE"}]
+    """
+    for old in fb.findall(_q("Parameters")):
+        fb.remove(old)
+    par = ET.Element(_q("Parameters"))
+    # 组顺序照样例：InoutVars → InputVars → OutputVars(false) → OutputVars(true)，
+    # 但**空组一律不输出**（空的 <InoutVars/> 会让整份文档被静默丢弃，探针 101）。
+    buckets: dict[str, list] = {"inout": [], "input": [], "output": [], "output_retain": []}
+    for item in params:
+        buckets[item.get("kind", "input")].append(item)
+
+    def add_group(tag: str, items: list, attrs: dict | None = None) -> None:
+        if not items:
+            return
+        grp = ET.SubElement(par, _q(tag), attrs or {})
+        for item in items:
+            grp.append(_param_var(item["name"], int(item.get("order", 1)),
+                                  item.get("init")))
+
+    add_group("InoutVars", buckets["inout"])
+    add_group("InputVars", buckets["input"])
+    add_group("OutputVars", buckets["output"], {"retain": "false"})
+    add_group("OutputVars", buckets["output_retain"], {"retain": "true"})
+    idx = list(fb).index(fb.find(_q("AddData"))) + 1
+    fb.insert(idx, par)
+
+
+def build_fb_params_program(program_name: str, st_code: str,
+                            fb_name: str = "FBParam",
+                            inst_name: str = "InstFB",
+                            fb_body: str = "fbOut := fbIn;",
+                            params: list[dict] | None = None,
+                            locals_: list[dict] | None = None,
+                            fb_locals: list[dict] | None = None,
+                            sample: str | pathlib.Path | None = None) -> ET.ElementTree:
+    """功能块带 Parameters + 程序里实例化并传参。"""
+    sample = sample or template_path()
+    params = params or DEFAULT_FB_PARAMS
+    tree = build_fb_instance(program_name, st_code, fb_name=fb_name,
+                             inst_name=inst_name, fb_body=fb_body,
+                             locals_=locals_, fb_locals=fb_locals, sample=sample)
+    root = tree.getroot()
+    gn = root.find(_q("Types")).find(_q("GlobalNamespace"))
+    fb = next(f for f in gn.findall(_q("FunctionBlock")) if f.get("name") == fb_name)
+    add_fb_parameters(fb, params)
+    return tree
+
+
+def write_fb_params_program(path: str | pathlib.Path, *args,
+                            **kwargs) -> pathlib.Path:
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    build_fb_params_program(*args, **kwargs).write(
+        p, encoding="utf-8", xml_declaration=True)
+    return p
+
+
 def build_struct_program(program_name: str, st_code: str,
                          struct_name: str = "StructGen",
                          members: list[dict] | None = None,
@@ -520,8 +604,27 @@ def _replace_members(spec, members: list[dict], tpl_member,
             ln.set("number", str(start_no + offset))
         for ct in mem.iter(_q("CommentText")):
             ct.text = item.get("comment") or item["name"]
-        for tn in mem.iter(_q("TypeName")):
-            tn.text = item.get("type", "BOOL")
+        array = item.get("array")
+        if array:
+            # 换成 InstantlyDefinedType/ArrayTypeSpec（数组成员）
+            type_el = mem.find(_q("Type"))
+            for ch in list(type_el):
+                type_el.remove(ch)
+            idt = ET.SubElement(type_el, _q("InstantlyDefinedType"),
+                                {"{%s}type" % XSI: "ArrayTypeSpec"})
+            base = ET.SubElement(idt, _q("BaseType"))
+            ET.SubElement(base, _q("TypeName")).text = item.get("type", "BOOL")
+            dim = ET.SubElement(idt, _q("DimensionSpec"), {"dimensionNumber": "1"})
+            ET.SubElement(dim, _q("IndexRange"),
+                          {"lower": str(int(array[0])), "upper": str(int(array[1]))})
+            if item.get("address"):
+                addr = mem.find(_q("Address"))
+                if addr is None:
+                    addr = ET.SubElement(mem, _q("Address"))
+                addr.set("address", item["address"])
+        else:
+            for tn in mem.iter(_q("TypeName")):
+                tn.text = item.get("type", "BOOL")
         for sv in mem.iter(_q("SimpleValue")):
             sv.set("value", item.get("init", "FALSE"))
         spec.insert(insert_at + offset, mem)

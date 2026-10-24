@@ -380,3 +380,43 @@ Get-Process GXW3 -ErrorAction SilentlyContinue |
 注意别误杀无关的 python（本机常驻 SolidWorks-MCP 等 MCP 服务），
 用命令行里是否含 `gxkit run` 来过滤。
 
+## 四十、功能块 `<Parameters>`：空组会让整份文档被静默丢弃
+
+带参数的 FB 需要 `<Parameters>`，里面可以有四组：
+`InoutVars` / `InputVars` / `OutputVars retain="false"` / `OutputVars retain="true"`，
+顺序固定。**但空组不能输出**——`<InoutVars/>` 只要出现（哪怕没有变量），
+整份导入就被静默丢弃（程序与 FB 都不建、`errors=0`）。
+
+判定陷阱：这种"什么都没进"时转换阶段根本不会列这两个 POU，所以 `errors=0` 是**假象**，
+必须同时检查 `program_created` / `fb_created`。
+
+## 四十一、IN_OUT 参数只能声明，不能传参或引用
+
+`<InoutVars>` 里声明一个变量没问题（正文不引用、调用不传它就 0 错）；
+一旦在调用里写 `InstFB(vio := B0)` 或正文里用 `vio`，
+就变成 `局部标签(FB)定义检查中` 1 错 + `程序(...)转换中` 2~4 错。
+能力只做 IN / OUT / OUT_RETAIN。
+
+## 四十二、调用必须给全输入
+
+FB 的输入参数如果没有初值，调用时漏传就会 `程序(...)转换中` 报 2 错。
+给输入加 `<InitialValue>`，或调用时把输入全给上。
+
+## 四十三、结构体数组成员要 `InstantlyDefinedType/ArrayTypeSpec`
+
+    <Type>
+      <InstantlyDefinedType xsi:type="ArrayTypeSpec">
+        <BaseType><TypeName>BOOL</TypeName></BaseType>
+        <DimensionSpec dimensionNumber="1"><IndexRange lower="0" upper="3"/></DimensionSpec>
+      </InstantlyDefinedType>
+    </Type>
+    <Address address="B10"/>        ← 数组基地址
+
+成员分配里给数组一个基地址（`<Member name="Arr" address="B10"/>`），
+正文就能写 `GS1.Arr[0]`。
+
+## 四十四、同一工程再导一次全局标签会撞名
+
+第二次导入带 `GlobalVars` 的文档时，`全局标签(Global1)` 会变成 `Global1_2`
+并被报定义错。**每个工程只导一次全局标签**；程序可以多次导入。
+

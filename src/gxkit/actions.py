@@ -571,6 +571,100 @@ def _import_verified(s, ctx: dict, xml_path, name: str, attempts: int = 2) -> di
     return info
 
 
+def inspect_devices_cpu(ctx: dict) -> dict:
+    """指定机型工程的软元件模板（`*_DC.db` 的 DEVICE_DATA），并和 FX5U 对比。"""
+    from . import inspect as I
+
+    s, _ = _new_and_save(ctx)
+    info = I.read_devices(ctx["project"], limit=5)
+    types = info.get("types") or []
+    codes = sorted({t if isinstance(t, int) else t.get("code") for t in types}) \
+        if isinstance(types, list) else sorted(types)
+    return {"unit": read_config(ctx["project"]).get("Unit"),
+            "rows": info.get("rows"),
+            "device_type_codes": len(codes),
+            "has_type_35": 35 in codes,
+            "commented": info.get("commented")}
+
+
+def datatype_struct_array(ctx: dict) -> dict:
+    """结构体带**数组成员**（ARRAY[0..3] OF BOOL），并通过全局标签访问元素。"""
+    from . import inspect as I
+    from . import xmlgen
+
+    s, _ = _new_and_save(ctx)
+    members = ctx.get("members") or [
+        {"name": "MyBool", "type": "BOOL"},
+        {"name": "Arr", "type": "BOOL", "array": [0, 3]}]
+    assign = ctx.get("assign") or [{"name": "MyBool", "address": "B0"},
+                                   {"name": "Arr", "address": "B10"}]
+    code = ctx.get("code") or "GS1.Arr[0] := TRUE;\r\nGS1.MyBool := NOT GS1.MyBool;"
+    xml = xmlgen.write_struct_global_program(
+        pathlib.Path(ctx["project"]).with_name("struct_array.xml"),
+        "PrgArr", code, "StructArr", "GS1", members=members, assign=assign)
+    info = _import_verified(s, ctx, xml, "PrgArr")
+    prog = read_progress(ctx["project"])
+    stages = prog.get("stages") or []
+    struct_stage = next((x for x in stages if "结构体" in x["stage"]), None)
+    src = I.st_source(ctx["project"])
+    return {"program_created": "PrgArr" in I.program_names(ctx["project"]),
+            "struct_stage_seen": struct_stage is not None,
+            "struct_stage_errors": (struct_stage or {}).get("errors"),
+            "array_access_in_source": "Arr[" in src,
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages"),
+            "attempts": info.get("attempts")}
+
+
+def program_multi_programs(ctx: dict) -> dict:
+    """一个工程里放**两个程序**（各导入一次 XML），验证互不干扰。"""
+    from . import inspect as I
+    from . import xmlgen
+
+    s, _ = _new_and_save(ctx)
+    code1 = ctx.get("code") or "B0 := NOT B0;"
+    code2 = ctx.get("code2") or "W0 := W0 + 1;\r\nW1 := W0;"
+    p1 = xmlgen.write_program(pathlib.Path(ctx["project"]).with_name("prog1.xml"),
+                              "PrgOne", code1)
+    _import_verified(s, ctx, p1, "PrgOne")
+    p2 = xmlgen.write_program(pathlib.Path(ctx["project"]).with_name("prog2.xml"),
+                              "PrgTwo", code2)
+    _import_verified(s, ctx, p2, "PrgTwo")
+    prog = read_progress(ctx["project"])
+    names = I.program_names(ctx["project"])
+    sources = [I.flat(v) for v in I.st_sources(ctx["project"]).values()]
+    return {"both_created": ("PrgOne" in names) and ("PrgTwo" in names),
+            "one_in_source": I.flat(code1) in sources,
+            "two_in_source": I.flat(code2) in sources,
+            "program_count": len(names),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages")}
+
+
+def program_import_fb_params(ctx: dict) -> dict:
+    """导入"带参数的功能块 + 程序里实例化并传参"，并读回验证。"""
+    from . import inspect as I
+    from . import xmlgen
+
+    s, _ = _new_and_save(ctx)
+    call = ctx.get("code") or (
+        "InstFB(fbIn := B0, fbOut => B1, fbOutR => B2);")
+    xml = xmlgen.write_fb_params_program(
+        pathlib.Path(ctx["project"]).with_name("fb_params.xml"),
+        "PrgFP", call, fb_name="FBParam", inst_name="InstFB",
+        fb_body=ctx.get("fb_body") or "fbOut := fbIn;\r\nfbOutR := fbOut;")
+    info = _import_verified(s, ctx, xml, "PrgFP")
+    prog = read_progress(ctx["project"])
+    names = I.program_names(ctx["project"])
+    flat = I.flat(I.st_source(ctx["project"]))
+    return {"program_created": "PrgFP" in names,
+            "fb_created": "FBParam" in names,
+            "call_in_source": I.flat(call) in flat,
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages"),
+            "attempts": info.get("attempts")}
+
+
 def datatype_import(ctx: dict) -> dict:
     """用 XML 建结构体（StructGen），并用**导航树**把它读回来确认。
 
@@ -882,6 +976,10 @@ ACTIONS = {
     "program_import_xml": program_import_xml,
     "program_import_fb": program_import_fb,
     "program_import_fb_instance": program_import_fb_instance,
+    "program_import_fb_params": program_import_fb_params,
+    "datatype_struct_array": datatype_struct_array,
+    "inspect_devices_cpu": inspect_devices_cpu,
+    "program_multi_programs": program_multi_programs,
     "datatype_import": datatype_import,
     "datatype_member_var": datatype_member_var,
     "datatype_custom_members": datatype_custom_members,

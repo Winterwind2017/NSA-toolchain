@@ -1,11 +1,11 @@
-version: 12
-kernel: gxkit 0.12.0
+version: 13
+kernel: gxkit 0.13.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U / FX5S / iQ-R(R00)
 lang: ST
 scope: offline
 counts:
-  verified: 28
+  verified: 32
 capabilities:
 - id: project.new
   family: project
@@ -73,6 +73,12 @@ capabilities:
   status: verified
   action: program_import_fb_instance
   expect: {"imported": true, "program_created": true, "body_found": true, "fb_body_found": true, "instance_type_seen": true, "new_sources": {"min": 1.0, "max": 10.0}, "errors": 0}
+- id: program.import_fb_params
+  family: program
+  level: L3
+  status: verified
+  action: program_import_fb_params
+  expect: {"program_created": true, "fb_created": true, "call_in_source": true, "errors": 0}
 - id: datatype.import
   family: datatype
   level: L3
@@ -103,6 +109,24 @@ capabilities:
   status: verified
   action: label_multi_type
   expect: {"labels_landed": 3, "labels_wanted": 3, "program_created": true, "word_used_in_source": true, "errors": 0}
+- id: datatype.struct_array
+  family: datatype
+  level: L3
+  status: verified
+  action: datatype_struct_array
+  expect: {"program_created": true, "struct_stage_seen": true, "struct_stage_errors": 0, "array_access_in_source": true, "errors": 0}
+- id: program.multi_programs
+  family: program
+  level: L2–L3
+  status: verified
+  action: program_multi_programs
+  expect: {"both_created": true, "one_in_source": true, "two_in_source": true, "errors": 0}
+- id: inspect.devices_rcpu
+  family: inspect
+  level: L2
+  status: verified
+  action: inspect_devices_cpu
+  expect: {"unit": "R00", "rows": {"min": 3000.0, "max": 9000.0}, "has_type_35": true}
 - id: inspect.source_map
   family: inspect
   level: L2

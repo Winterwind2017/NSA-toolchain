@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"28 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"32 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：28 条能力，动作与判据齐全
+# 自检通过：32 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
 # 23 passed
 
-# 3) 真机全量（约 60 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 68 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -307,3 +307,19 @@ inspect.mil → datatype.member_var → project.save → program.import_fb_insta
 
 28 条全过，说明各能力之间**没有顺序依赖/状态泄漏**（共享 workdir、骨架缓存、
 kill_stray 时机都经得起换序）。
+
+## v0.13 新增四条（功能块参数 / 结构体数组 / 多程序 / iQ-R 软元件表）
+
+| 能力 | 读数 |
+|---|---|
+| `program.import_fb_params` | `program_created=true`、`fb_created=true`、`call_in_source=true`、`errors=0`（162.7 s） |
+| `datatype.struct_array` | `struct_stage_errors=0`、`array_access_in_source=true`、`errors=0`（148.9 s） |
+| `program.multi_programs` | `both_created=true`、两段源码都在、`program_count=3`、`errors=0`（229.7 s） |
+| `inspect.devices_rcpu` | `unit=R00`、`rows=3345`、`device_type_codes=3`、`has_type_35=true`（59.0 s） |
+
+两条硬规矩（详见 PITFALLS 四十~四十四）：
+1. `<Parameters>` 的**空组会让整份文档被静默丢弃**——空组一律不输出；
+   此时 `errors=0` 是假象，必须同时看 `program_created`/`fb_created`。
+2. `IN_OUT` 只能声明，传参或引用就报错；能力只做 IN / OUT / OUT_RETAIN。
+
+另：iQ-R 的软元件模板确实和 FX5U 不同（3345 行 / 3 种类型码 vs 2935 行 / 2 种）。
