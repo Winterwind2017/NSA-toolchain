@@ -60,6 +60,9 @@ def _new_and_save(ctx: dict) -> tuple[Session, dict]:
             s = _boot(ctx)
             s.new_project(**_cpu(ctx))
             saved = s.save_as(ctx["project"])
+            got = pathlib.Path(ctx["project"])
+            if not got.exists() or got.stat().st_size < 100_000:
+                raise RuntimeError("另存为没有产出文件：%s" % got)
             return s, saved
         except RuntimeError as exc:
             last = exc
