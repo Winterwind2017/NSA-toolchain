@@ -76,6 +76,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-24 | **28/28（v0.12，乱序跑 seed=7）** | 3556.3 s |
 | 2026-10-24 | **32/32（v0.13，新增 FB 参数/结构体数组/多程序/iQ-R 软元件表）** | 4120.9 s |
 | 2026-10-24 | **32/32（v0.13，同一份代码第二次）** | 4102.9 s |
+| 2026-10-24 | **32/32（v0.13，乱序跑 seed=11）** | 4104.5 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -325,3 +326,9 @@ kill_stray 时机都经得起换序）。
 2. `IN_OUT` 只能声明，传参或引用就报错；能力只做 IN / OUT / OUT_RETAIN。
 
 另：iQ-R 的软元件模板确实和 FX5U 不同（3345 行 / 3 种类型码 vs 2935 行 / 2 种）。
+
+### v0.13 的乱序轮（seed=11）
+
+`build.locate_error_line → inspect.devices_rcpu → inspect.source_map → datatype.member_var → project.save → datatype.import → inspect.devices → program.read_st → project.diff → project.new → program.import_fb_instance → program.import_fb_params → program.import_xml → project.new_rcpu → project.new_fx5s → program.import_fb → label.import_xml → program.rcpu_roundtrip → inspect.programs → datatype.member_access → project.reopen → project.meta → program.paste_st → program.multi_programs → label.multi_type → build.convert_all → datatype.custom_members → inspect.mil → batch.projects → datatype.struct_array → build.program_check → build.error_detail`
+
+32 条换序全过 → 无顺序依赖/状态泄漏。
