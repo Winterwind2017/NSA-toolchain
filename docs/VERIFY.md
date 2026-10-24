@@ -79,6 +79,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-24 | **32/32（v0.13，乱序跑 seed=11）** | 4104.5 s |
 | 2026-10-24 | **33/33（v0.14，含粘贴/保存校验重试）** | 4249.1 s |
 | 2026-10-24 | **33/33（v0.14，同一份代码第二次）** | 4246.8 s |
+| 2026-10-24 | **33/33（v0.14，乱序跑 seed=23）** | 4251.1 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -352,3 +353,9 @@ kill_stray 时机都经得起换序）。
 能力 `xmlgen.manual_template` 守着这条。
 
 这也意味着：`GXKIT_TEMPLATE`/缓存骨架不再是唯一出路——手写骨架可以独立工作。
+
+### v0.14 的乱序轮（seed=23）
+
+`datatype.member_access → project.diff → project.new_fx5s → label.import_xml → datatype.struct_array → program.import_fb_instance → build.program_check → batch.projects → build.convert_all → inspect.source_map → inspect.mil → inspect.programs → build.error_detail → inspect.devices → project.new_rcpu → program.rcpu_roundtrip → inspect.devices_rcpu → xmlgen.manual_template → program.read_st → build.locate_error_line → datatype.custom_members → program.import_xml → program.paste_st → project.save → program.import_fb_params → label.multi_type → datatype.import → datatype.member_var → program.import_fb → project.reopen → project.new → project.meta → program.multi_programs`
+
+33 条换序全过 → 无顺序依赖/状态泄漏。
