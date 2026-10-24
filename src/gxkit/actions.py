@@ -145,6 +145,20 @@ def project_meta(ctx: dict) -> dict:
             "has_config": "!!Config.xml" in names}
 
 
+def _paste_verified(s, ctx: dict, code: str, attempts: int = 3) -> bool:
+    """粘贴 ST 并读回校验；不匹配就覆盖重试（Ctrl+A 后粘贴是覆盖，不会追加）。"""
+    from . import inspect as I
+
+    for attempt in range(attempts):
+        s.paste_st(code)
+        s.convert_all()
+        s.save()
+        if I.source_matches(ctx["project"], code):
+            return True
+        time.sleep(1.5 + attempt)
+    return False
+
+
 def program_paste_st(ctx: dict) -> dict:
     s, _ = _new_and_save(ctx)
     _paste_until_steps(s, ctx.get("code") or ST_CODE)
@@ -234,8 +248,7 @@ def batch_projects(ctx: dict) -> dict:
     t0 = time.time()
     for i, code in enumerate(codes):
         path = pathlib.Path(ctx["project"]).with_name("batch_%d.gx3" % i)
-        s.paste_st(code)
-        s.convert_all()
+        _paste_until_steps(s, code)   # 带“标题出现 N步”的校验重试
         info = s.save_as(path, via_menu=True)
         prog = read_progress(path)
         items.append({"index": i, "exists": bool(info.get("exists")),
@@ -969,8 +982,7 @@ def inspect_programs(ctx: dict) -> dict:
 
     s, _ = _new_and_save(ctx)
     code = ctx.get("code") or "B0 := NOT B0;\r\nW0 := W0 + 1;"
-    s.paste_st(code)
-    s.convert_all()
+    _paste_until_steps(s, code)   # 带“标题出现 N步”的校验重试
     s.save()
 
     info = I.program_list(ctx["project"])
