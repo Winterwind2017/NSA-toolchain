@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"32 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"33 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：32 条能力，动作与判据齐全
+# 自检通过：33 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
 # 23 passed
 
-# 3) 真机全量（约 68 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 70 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -332,3 +332,21 @@ kill_stray 时机都经得起换序）。
 `build.locate_error_line → inspect.devices_rcpu → inspect.source_map → datatype.member_var → project.save → datatype.import → inspect.devices → program.read_st → project.diff → project.new → program.import_fb_instance → program.import_fb_params → program.import_xml → project.new_rcpu → project.new_fx5s → program.import_fb → label.import_xml → program.rcpu_roundtrip → inspect.programs → datatype.member_access → project.reopen → project.meta → program.paste_st → program.multi_programs → label.multi_type → build.convert_all → datatype.custom_members → inspect.mil → batch.projects → datatype.struct_array → build.program_check → build.error_detail`
 
 32 条换序全过 → 无顺序依赖/状态泄漏。
+
+## v0.14：手写骨架打通（不依赖 MELSOFT 样例）
+
+定位过程：把"样例骨架"与"手写骨架"生成的 **同一份程序 XML 逐行 diff**，
+唯一实质差异是局部变量上的 `<VariableRemark>`。去掉它以后：
+
+| 读数 | 值 |
+|---|---|
+| `uses_manual` | true（`base.xml`） |
+| `program_created` | true |
+| `locals_found` | 2（LocBool / LocWord 都进 `LabelData`） |
+| `errors` / `failed_stages` | 0 / `[]` |
+
+规则：`Program`/`FunctionBlock` 的 `<Vars>` 里**不要** `VariableRemark`
+（`GlobalVars` 保留）。`xmlgen.strip_local_remarks()` 统一处理，
+能力 `xmlgen.manual_template` 守着这条。
+
+这也意味着：`GXKIT_TEMPLATE`/缓存骨架不再是唯一出路——手写骨架可以独立工作。

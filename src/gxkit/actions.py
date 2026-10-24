@@ -587,6 +587,33 @@ def inspect_devices_cpu(ctx: dict) -> dict:
             "commented": info.get("commented")}
 
 
+def xmlgen_manual_template(ctx: dict) -> dict:
+    """用**手写骨架**（templates/base.xml，不读 MELSOFT 样例）建程序+FB，验证局部标签落地。"""
+    from . import inspect as I
+    from . import xmlgen
+
+    s, _ = _new_and_save(ctx)
+    try:
+        xmlgen.use_manual_template()
+        xml = xmlgen.write_fb_instance(
+            pathlib.Path(ctx["project"]).with_name("manual_tpl.xml"),
+            "PrgMT", "LocBool := NOT LocBool;", fb_name="FBInst", inst_name="InstFB")
+        template_used = str(xmlgen.template_path())
+    finally:
+        xmlgen._SKELETON_CACHE = None          # 复位到默认骨架
+    info = _import_verified(s, ctx, xml, "PrgMT")
+    names = {r["value"] for r in I.read_labels(ctx["project"])
+             if isinstance(r["value"], str)}
+    prog = read_progress(ctx["project"])
+    return {"template": pathlib.Path(template_used).name,
+            "uses_manual": "base.xml" in template_used,
+            "program_created": "PrgMT" in I.program_names(ctx["project"]),
+            "locals_found": sum(1 for n in ("LocBool", "LocWord") if n in names),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages"),
+            "attempts": info.get("attempts")}
+
+
 def datatype_struct_array(ctx: dict) -> dict:
     """结构体带**数组成员**（ARRAY[0..3] OF BOOL），并通过全局标签访问元素。"""
     from . import inspect as I
@@ -978,6 +1005,7 @@ ACTIONS = {
     "program_import_fb_instance": program_import_fb_instance,
     "program_import_fb_params": program_import_fb_params,
     "datatype_struct_array": datatype_struct_array,
+    "xmlgen_manual_template": xmlgen_manual_template,
     "inspect_devices_cpu": inspect_devices_cpu,
     "program_multi_programs": program_multi_programs,
     "datatype_import": datatype_import,

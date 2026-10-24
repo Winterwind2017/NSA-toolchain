@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.13.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.14.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**32** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
+- 真机通过能力：**33** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -14,6 +14,7 @@
 
 | id | 做什么 | 判据来源 |
 |---|---|---|
+| `xmlgen.manual_template` | **手写骨架也能导入**（不再依赖 MELSOFT 样例） | `uses_manual=true`、局部标签 2 个都落地、0 错 |
 | `inspect.devices_rcpu` | **iQ-R 软元件模板** | 3345 行、三种设备类型码（含 35），与 FX5U 的 2935 行不同 |
 | `program.multi_programs` | **一个工程两个程序** | PrgOne/PrgTwo 都建、两段源码都在、0 错 |
 | `datatype.struct_array` | **结构体数组成员 + 元素访问** | `结构体(StructArr)的定义检查中` 0 错、源码含 `Arr[` |
@@ -95,5 +96,5 @@ python -m gxkit run --shuffle --seed 7            # 乱序跑一轮（查顺序�
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 32/32，约 68 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 33/33，约 70 分钟
 ```

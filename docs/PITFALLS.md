@@ -350,7 +350,17 @@ XML 里任何不认识的属性都可能让解析器整段放弃——要带元�
 现在：首次运行把样例复制到 `%LOCALAPPDATA%/gxkit/skeleton.xml` 并记下 sha256，
 之后都读缓存；指纹变了自动重建；`GXKIT_TEMPLATE=<文件>` 可以完全绕开安装目录。
 
-## 三十八、手写骨架卡在"局部标签"
+## 三十八、手写骨架卡在"局部标签"——真因是 `<VariableRemark>`（已解决）
+
+一开始以为手写骨架缺了什么结构，最后靠 **逐行 diff 两份生成的 XML** 定位：
+唯一实质差异是手写骨架的局部变量带了 `<VariableRemark>`。去掉之后
+`LocBool`/`LocWord` 立刻落地、转换 0 错（探针 108 diff + 109 实测）。
+
+规则：**Program / FunctionBlock 的 `<Vars>` 里不要 `<VariableRemark>`**；
+`GlobalVars` 的 remark 保留（标签导入那边验证过是有用的）。
+`xmlgen.strip_local_remarks()` 统一处理，能力 `xmlgen.manual_template` 守着这条。
+
+## 三十八·旧、手写骨架卡在"局部标签"
 
 我们自己写的 `templates/base.xml`（`use_manual_template()` 可切）能让
 程序、全局标签、全局结构体+成员名访问全部导入成功；但**局部标签不落地**

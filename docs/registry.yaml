@@ -1,11 +1,11 @@
-version: 13
-kernel: gxkit 0.13.0
+version: 14
+kernel: gxkit 0.14.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U / FX5S / iQ-R(R00)
 lang: ST
 scope: offline
 counts:
-  verified: 32
+  verified: 33
 capabilities:
 - id: project.new
   family: project
@@ -127,6 +127,12 @@ capabilities:
   status: verified
   action: inspect_devices_cpu
   expect: {"unit": "R00", "rows": {"min": 3000.0, "max": 9000.0}, "has_type_35": true}
+- id: xmlgen.manual_template
+  family: xmlgen
+  level: L3
+  status: verified
+  action: xmlgen_manual_template
+  expect: {"uses_manual": true, "program_created": true, "locals_found": 2, "errors": 0}
 - id: inspect.source_map
   family: inspect
   level: L2

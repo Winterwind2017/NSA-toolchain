@@ -14,6 +14,7 @@ FAMILY_LICENSE = {
     "inspect": "GX Works3",
     "label": "GX Works3",
     "datatype": "GX Works3",
+    "xmlgen": "GX Works3",
 }
 
 
@@ -131,6 +132,10 @@ CAPS: tuple[Cap, ...] = (
         "inspect_devices_cpu", "L2", params={"series": 1, "model": 0},
         expect={"unit": "R00", "rows": {"min": 3000.0, "max": 9000.0},
                 "has_type_35": True}, reopen=False),
+    Cap("xmlgen.manual_template", "xmlgen", "手写骨架也能导入（不依赖 MELSOFT 样例）",
+        "xmlgen_manual_template", "L3", params={},
+        expect={"uses_manual": True, "program_created": True,
+                "locals_found": 2, "errors": 0}, reopen=False),
     Cap("inspect.source_map", "inspect", "步→源码坐标（Row/Col/StrLen）", "inspect_source_map",
         "L2", params={}, expect={"steps": {"min": 2.0, "max": 500.0},
                                   "rows": {"min": 2.0, "max": 500.0},

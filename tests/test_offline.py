@@ -75,3 +75,21 @@ def test_cli_selftest_and_caps(capsys: pytest.CaptureFixture[str]) -> None:
     assert "自检通过" in capsys.readouterr().out
     assert main(["caps"]) == 0
     assert "共 %d 条" % len(caps.CAPS) in capsys.readouterr().out
+
+
+def test_local_vars_have_no_remark() -> None:
+    """局部变量不能带 VariableRemark（会让转换报 2 错、局部标签不落地）。"""
+    from gxkit import xmlgen
+
+    tree = xmlgen.build_fb_instance("PrgX", "LocBool := NOT LocBool;",
+                                    fb_name="FBInst", inst_name="InstFB")
+    ns = xmlgen.NS
+    for tag in ("Program", "FunctionBlock"):
+        for pou in tree.getroot().iter("{%s}%s" % (ns, tag)):
+            for vs in pou.findall("{%s}Vars" % ns):
+                for var in vs.findall("{%s}Variable" % ns):
+                    add = var.find("{%s}AddData" % ns)
+                    if add is None:
+                        continue
+                    names = [d.get("name") or "" for d in list(add)]
+                    assert not any("VariableRemark" in n for n in names), var.get("name")

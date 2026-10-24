@@ -174,8 +174,13 @@ def build(labels: list[dict] | None = None,
         _ensure_line_number(var, idx)
         for ct in var.iter(_q("CommentText")):
             ct.text = item.get("comment") or item["name"]
-        for rt in var.iter(_q("RemarkText")):
-            rt.text = item.get("remark") or (item["name"] + " remark")
+        # 局部标签**不能**带 <VariableRemark>：实测会让 `程序(...)转换中` 报 2 错，
+        # 而且局部标签表不落地（探针 108 逐行 diff + 109 实测）。全局标签的 remark 保留。
+        add_el = var.find(_q("AddData"))
+        if add_el is not None:
+            for data in list(add_el):
+                if "VariableRemark" in (data.get("name") or ""):
+                    add_el.remove(data)
         for tn in var.iter(_q("TypeName")):
             tn.text = item.get("type", "BOOL")
         kind = item.get("type", "BOOL")
@@ -189,6 +194,7 @@ def build(labels: list[dict] | None = None,
             var.remove(ad)
         gv.append(var)
 
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
@@ -199,6 +205,25 @@ def write(path: str | pathlib.Path, labels: list[dict] | None = None,
     p.parent.mkdir(parents=True, exist_ok=True)
     build(labels, sample).write(p, encoding="utf-8", xml_declaration=True)
     return p
+
+
+def strip_local_remarks(tree) -> None:
+    """去掉 Program / FunctionBlock 局部变量上的 `<VariableRemark>`。
+
+    实测（探针 108 逐行 diff + 109）：局部变量带 remark 会让
+    `程序(...)转换中` 报 2 错、局部标签表也不落地。全局标签不受影响。
+    """
+    root = tree.getroot() if hasattr(tree, "getroot") else tree
+    for pou_tag in ("Program", "FunctionBlock"):
+        for pou in root.iter(_q(pou_tag)):
+            for vars_el in pou.findall(_q("Vars")):
+                for var in vars_el.findall(_q("Variable")):
+                    add = var.find(_q("AddData"))
+                    if add is None:
+                        continue
+                    for data in list(add):
+                        if "VariableRemark" in (data.get("name") or ""):
+                            add.remove(data)
 
 
 def build_program(program_name: str, st_code: str,
@@ -261,6 +286,7 @@ def build_program(program_name: str, st_code: str,
     inst.set("evaluationOrder", "1")
     cfg.append(res)
 
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
@@ -442,6 +468,7 @@ def build_fb_program(program_name: str, st_code: str,
     inst.set("evaluationOrder", "1")
     cfg.append(res)
 
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
@@ -582,6 +609,7 @@ def build_struct_program(program_name: str, st_code: str,
     if members is not None:
         _replace_members(spec, members, tpl_member)
     gn.append(st_el)          # ← 类型放在程序之后
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
@@ -670,6 +698,7 @@ def build_fb_instance(program_name: str, st_code: str,
         tn.text = fb_name
     _ensure_line_number(inst, len(locals_) + 1)
     vars_el.append(inst)
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
@@ -774,6 +803,7 @@ def build_struct_var_program(program_name: str, struct_name: str = "StructGen",
                        if d.get("name") == "Struct2"), None)
         if nested is not None:
             gn.append(copy.deepcopy(nested))
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
@@ -840,6 +870,7 @@ def build_struct_global_program(program_name: str, st_code: str,
 
     cfg = root.find(_q("Instances")).find(_q("Configuration"))
     cfg.append(gv_tpl)
+    strip_local_remarks(tree)
     ET.indent(tree, space="\t")
     return tree
 
