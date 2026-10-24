@@ -454,3 +454,20 @@ def test_new_caps_declared() -> None:
     assert by_id["program.multi_programs"].expect["both_created"] is True
     dev = by_id["inspect.devices_rcpu"]
     assert dev.params["series"] == 1 and dev.expect["has_type_35"] is True
+
+
+def test_v015_caps_declared() -> None:
+    """v0.15 的五条新能力：判据必须写清关键读数。"""
+    from gxkit import caps as caps_mod
+
+    by_id = {c.id: c for c in caps_mod.CAPS}
+    em = by_id["build.error_messages"]
+    assert em.expect["pane_found"] is True and em.expect["errors"] == 1
+    pc = by_id["project.check"]
+    assert pc.expect["status_count"] == 2 and pc.expect["result_doc"] is True
+    pl = by_id["project.new_language"]
+    assert pl.expect["made"] == 3 and pl.expect["all_marks"] is True
+    ee = by_id["program.edit_existing"]
+    assert ee.expect["a_gone"] is True and ee.expect["programs_after"] == 2
+    bn = by_id["batch.new_projects"]
+    assert bn.expect["made"] == 3 and bn.expect["all_src"] is True

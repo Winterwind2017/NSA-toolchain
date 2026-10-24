@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.14.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.15.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**33** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
+- 真机通过能力：**38** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -14,6 +14,11 @@
 
 | id | 做什么 | 判据来源 |
 |---|---|---|
+| `build.error_messages` | **编译器原话**（读「输出」面板的表格） | 表格 6 列 + 一行 `使用了未定义的标签。`／`0x110E1A20` |
+| `project.check` | **工程校验**（与另一个 .gx3 比对） | 结果页 `校验结果` + 状态行 `存在2个不同内容` |
+| `project.new_language` | **换程序语言建工程**（ST / SFC / FBD） | 标题分别含 `[ST]` / `[SFC]` / `[FBD/LD]`，Unit 都是 FX5U |
+| `program.edit_existing` | **改写已有程序**（导航树打开→覆盖粘贴） | 打开后 A 消失、B 存在、程序数仍 2、0 错 |
+| `batch.new_projects` | 同会话连新建 3 个工程（关闭后重建） | 3 个都存在、源码逐字匹配、0 错 |
 | `xmlgen.manual_template` | **手写骨架也能导入**（不再依赖 MELSOFT 样例） | `uses_manual=true`、局部标签 2 个都落地、0 错 |
 | `inspect.devices_rcpu` | **iQ-R 软元件模板** | 3345 行、三种设备类型码（含 35），与 FX5U 的 2935 行不同 |
 | `program.multi_programs` | **一个工程两个程序** | PrgOne/PrgTwo 都建、两段源码都在、0 错 |
@@ -96,5 +101,5 @@ python -m gxkit run --shuffle --seed 7            # 乱序跑一轮（查顺序�
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 33/33，约 70 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 38/38，约 78 分钟
 ```

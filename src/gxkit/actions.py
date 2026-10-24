@@ -191,6 +191,32 @@ def build_program_check(ctx: dict) -> dict:
 BAD_ST_CODE = "B0 := ;\r\nW0 := W0 + ;\r\n"
 
 
+UNDEF_CODE = "UndefLabel := 1;\r\nB0 := NOT B0;"
+
+
+def build_error_messages(ctx: dict) -> dict:
+    """读**编译器原话**（「输出」面板的表格）：结果/数据名/分类/内容/错误代码。"""
+    from . import uia
+
+    s, _ = _new_and_save(ctx)
+    code = ctx.get("code") or UNDEF_CODE
+    s.paste_st(code)
+    s.convert_all()
+    info = uia.output_rows(s.proc.pid)
+    s.save()                     # Progress.txt 只在存盘时写入
+    prog = read_progress(ctx["project"])
+    rows = info["rows"]
+    return {"pane_found": bool(info["pane"]),
+            "header": info["header"],
+            "rows": len(rows),
+            "messages": [r.get("content") for r in rows],
+            "categories": [r.get("category") for r in rows],
+            "codes": [r.get("code") for r in rows],
+            "data_names": [r.get("data") for r in rows],
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages")}
+
+
 def build_error_detail(ctx: dict) -> dict:
     """故意写错 → 转换 → 从 Progress.txt 读出"错在哪个阶段、错几个"。
 
@@ -274,6 +300,198 @@ def batch_projects(ctx: dict) -> dict:
             "distinct_sizes": len({x["bytes"] for x in items}),
             "distinct_sources": len(set(sources)),
             "content_match": matched}
+
+
+def project_new_language(ctx: dict) -> dict:
+    """按不同**程序语言**建工程（1=ST 2=SFC 3=FBD），逐个存盘并核对标题/机型。"""
+    langs = ctx.get("langs") or [1, 2, 3]
+    marks = {1: "[ST]", 2: "[SFC]", 3: "[FBD"}
+    s, _ = _new_and_save(ctx)
+    made = []
+    for idx, lang in enumerate(langs):
+        if idx:
+            s.close_project()
+            time.sleep(1.5)
+            title = s.new_project(series=int(ctx.get("series", 3)),
+                                  model=int(ctx.get("model", 0)),
+                                  lang=int(lang)).get("title") or ""
+        else:
+            title = s.title()
+        path = pathlib.Path(ctx["project"]).with_name("lang_%d.gx3" % int(lang))
+        s.save_as(path)
+        cfg = read_config(path)
+        made.append({"lang": int(lang), "title": title,
+                     "mark": marks[int(lang)] in title,
+                     "exists": path.exists(), "unit": cfg.get("Unit")})
+    return {"made": len(made),
+            "all_marks": all(m["mark"] for m in made),
+            "all_exist": all(m["exists"] for m in made),
+            "all_fx5u": all(m["unit"] == "FX5U" for m in made),
+            "detail": made}
+
+
+def project_check(ctx: dict) -> dict:
+    """**工程校验**：把当前工程与另一个 .gx3 比对，读「校验结果」页的表格。"""
+    import ctypes
+
+    from . import inspect as I
+    from . import uia
+    from . import win as W
+
+    u32 = ctypes.windll.user32
+    s, _ = _new_and_save(ctx)
+    base = pathlib.Path(ctx["project"]).with_name("check_base.gx3")
+    s.save_as(base)
+    s.paste_st(ctx.get("code_src") or "B0 := NOT B0;\r\nW0 := W0 + 1;")
+    s.convert_all()
+    s.save()
+    other = pathlib.Path(ctx["project"]).with_name("check_other.gx3")
+    s.save_as(other)
+    s.paste_st(ctx.get("code_dst") or "B0 := NOT B0;")
+    s.convert_all()
+    s.save()
+
+    # 工程 → 工程校验
+    W.post_alt_letter(s.main["hwnd"], "P")
+    time.sleep(0.7)
+    opened = uia.invoke_menu_item("工程校验")
+    time.sleep(2.0)
+    dialogs = [w["hwnd"] for w in W.windows(s.proc.pid) if w["class"] == "#32770"]
+    dlg = next((h for h in dialogs
+                if "工程校验" in next((w["title"] for w in W.windows(s.proc.pid)
+                                       if w["hwnd"] == h), "")), 0)
+    if not dlg:
+        return {"opened": opened, "result_doc": False, "rows": 0,
+                "diff_count": None, "dialogs": len(dialogs)}
+    # 点「...」→ 文件对话框 → 文件名框粘贴路径 → 回车
+    btn = next((w["hwnd"] for w in W.windows(s.proc.pid)
+                if w["class"] == "Button" and (w["title"] or "").strip() == "..."), 0)
+    if not btn:
+        btn = _find_button(dlg, "...")
+    if btn:
+        r = _rect(btn)
+        W.click((r[0] + r[2]) // 2, (r[1] + r[3]) // 2, settle=0.6)
+        time.sleep(2.0)
+        fdlg = next((w["hwnd"] for w in W.windows(s.proc.pid)
+                     if w["class"] == "#32770" and w["hwnd"] != dlg), 0)
+        if fdlg:
+            combo = _widest_lower_combo(fdlg)
+            if combo:
+                r = _rect(combo)
+                W.click((r[0] + r[2]) // 2, (r[1] + r[3]) // 2, settle=0.5)
+                W.set_clipboard(str(base))
+                time.sleep(0.3)
+                W.chord("ctrl", "v")
+                time.sleep(0.6)
+                W.tap("enter", 2.5)
+    # 点「校验」
+    chk = _find_button(dlg, "校验")
+    if chk:
+        r = _rect(chk)
+        W.click((r[0] + r[2]) // 2, (r[1] + r[3]) // 2, settle=0.6)
+        time.sleep(10.0)
+
+    doc = uia.mdi_child(s.proc.pid, "校验结果")
+    rows = uia.grid_rows(doc)["rows"] if doc else []
+    diff = sum(1 for row in rows if row and "不一致" in "".join(row))
+    status = _child_texts(doc) if doc else []
+    note = next((x for x in status if "不同内容" in x), "")
+    count = None
+    if "存在" in note:
+        digits = "".join(ch for ch in note.split("不同内容")[0] if ch.isdigit())
+        count = int(digits) if digits else None
+    return {"opened": opened, "result_doc": bool(doc), "rows": len(rows),
+            "diff_count": diff if diff else count,
+            "grid_diff": diff, "status_note": note, "status_count": count,
+            "diffs": [r[:5] for r in rows if "不一致" in "".join(r)][:5],
+            "errors": read_progress(base).get("errors")}
+
+
+def _child_texts(hwnd: int) -> list[str]:
+    """枚举子控件文本（结果页底部的状态行常是普通 Static/Edit）。"""
+    import win32gui
+
+    out = []
+
+    def cb(h, _):
+        txt = win32gui.GetWindowText(h)
+        if txt:
+            out.append(txt.strip())
+        return True
+
+    try:
+        win32gui.EnumChildWindows(hwnd, cb, None)
+    except Exception:
+        pass
+    return out
+
+
+def _rect(hwnd: int):
+    import win32gui
+    return win32gui.GetWindowRect(hwnd)
+
+
+def _find_button(parent: int, label: str) -> int:
+    import win32gui
+    hits = []
+
+    def cb(h, _):
+        if win32gui.GetClassName(h) == "Button" and win32gui.GetWindowText(h).strip() == label:
+            hits.append(h)
+        return True
+
+    win32gui.EnumChildWindows(parent, cb, None)
+    return hits[0] if hits else 0
+
+
+def _widest_lower_combo(parent: int) -> int:
+    import win32gui
+    p = _rect(parent)
+    best, bestw = 0, 0
+    hits = []
+
+    def cb(h, _):
+        if win32gui.GetClassName(h) == "ComboBox":
+            hits.append(h)
+        return True
+
+    win32gui.EnumChildWindows(parent, cb, None)
+    for h in hits:
+        r = _rect(h)
+        w = r[2] - r[0]
+        if w > 150 and r[1] > p[1] + (p[3] - p[1]) * 0.45 and w > bestw:
+            best, bestw = h, w
+    return best
+
+
+def batch_new_projects(ctx: dict) -> dict:
+    """同一会话连做 N 个新建工程：保存 → 关闭工程 → Ctrl+N → 另存为 → 写入 → 转换 → 校验。"""
+    from . import inspect as I
+    from . import xmlgen
+
+    count = int(ctx.get("count") or 3)
+    s, _ = _new_and_save(ctx)
+    made = []
+    for i in range(count):
+        if i:
+            s.close_project()
+            time.sleep(1.5)
+            s.new_project(**_cpu(ctx))
+        path = pathlib.Path(ctx["project"]).with_name("batch_new_%d.gx3" % i)
+        s.save_as(path)
+        code = "W%d := W%d + %d;\r\n" % (i, i, i + 1)
+        s.paste_st(code)
+        s.convert_all()
+        s.save()
+        prog = read_progress(path)
+        made.append({"i": i, "exists": path.exists(),
+                     "src_match": I.source_matches(path, code),
+                     "errors": prog.get("errors")})
+    return {"made": len(made),
+            "all_exist": all(m["exists"] for m in made),
+            "all_src": all(m["src_match"] for m in made),
+            "all_clean": all(m["errors"] == 0 for m in made),
+            "detail": made}
 
 
 def project_reopen(ctx: dict) -> dict:
@@ -676,6 +894,41 @@ def datatype_struct_array(ctx: dict) -> dict:
             "attempts": info.get("attempts")}
 
 
+def program_edit_existing(ctx: dict) -> dict:
+    """**改写已有程序**：XML 建 PrgOne(正文A) → 双击打开它 → 粘正文B → 转换 → 读回。"""
+    from . import inspect as I
+    from . import uia
+    from . import xmlgen
+
+    s, _ = _new_and_save(ctx)
+    code_a = ctx.get("code_a") or "B0 := NOT B0;"
+    code_b = ctx.get("code_b") or "W0 := W0 + 7;\r\nW1 := W0;"
+    xml = xmlgen.write_program(pathlib.Path(ctx["project"]).with_name("edit1.xml"),
+                               "PrgOne", code_a)
+    _import_verified(s, ctx, xml, "PrgOne")
+    counts_before = len(I.program_names(ctx["project"]))
+    a_before = I.source_matches(ctx["project"], code_a)
+
+    opened = uia.open_program(s.proc.pid, "PrgOne")
+    if not opened["opened"]:
+        return {"opened": False, "title": opened["title"],
+                "programs_before": counts_before, "a_before": a_before,
+                "b_after": False, "a_gone": False, "programs_after": counts_before,
+                "errors": None}
+
+    _paste_verified(s, ctx, code_b)
+    s.save()
+    prog = read_progress(ctx["project"])
+    return {"opened": True, "title": opened["title"], "offset": opened["offset"],
+            "programs_before": counts_before,
+            "a_before": a_before,
+            "programs_after": len(I.program_names(ctx["project"])),
+            "b_after": I.source_matches(ctx["project"], code_b),
+            "a_gone": not I.source_matches(ctx["project"], code_a),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages")}
+
+
 def program_multi_programs(ctx: dict) -> dict:
     """一个工程里放**两个程序**（各导入一次 XML），验证互不干扰。"""
     from . import inspect as I
@@ -1038,6 +1291,7 @@ ACTIONS = {
     "xmlgen_manual_template": xmlgen_manual_template,
     "inspect_devices_cpu": inspect_devices_cpu,
     "program_multi_programs": program_multi_programs,
+    "program_edit_existing": program_edit_existing,
     "datatype_import": datatype_import,
     "datatype_member_var": datatype_member_var,
     "datatype_custom_members": datatype_custom_members,
@@ -1048,6 +1302,7 @@ ACTIONS = {
     "build_convert_all": build_convert_all,
     "build_program_check": build_program_check,
     "build_error_detail": build_error_detail,
+    "build_error_messages": build_error_messages,
     "batch_projects": batch_projects,
     "inspect_programs": inspect_programs,
     "project_diff": project_diff_action,
@@ -1055,4 +1310,7 @@ ACTIONS = {
     "label_multi_type": label_multi_type,
     "build_locate_error_line": build_locate_error_line,
     "project_reopen": project_reopen,
+    "batch_new_projects": batch_new_projects,
+    "project_check": project_check,
+    "project_new_language": project_new_language,
 }

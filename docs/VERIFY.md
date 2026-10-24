@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"33 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"38 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：33 条能力，动作与判据齐全
+# 自检通过：38 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
 # 23 passed
 
-# 3) 真机全量（约 70 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 78 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -359,3 +359,20 @@ kill_stray 时机都经得起换序）。
 `datatype.member_access → project.diff → project.new_fx5s → label.import_xml → datatype.struct_array → program.import_fb_instance → build.program_check → batch.projects → build.convert_all → inspect.source_map → inspect.mil → inspect.programs → build.error_detail → inspect.devices → project.new_rcpu → program.rcpu_roundtrip → inspect.devices_rcpu → xmlgen.manual_template → program.read_st → build.locate_error_line → datatype.custom_members → program.import_xml → program.paste_st → project.save → program.import_fb_params → label.multi_type → datatype.import → datatype.member_var → program.import_fb → project.reopen → project.new → project.meta → program.multi_programs`
 
 33 条换序全过 → 无顺序依赖/状态泄漏。
+
+## v0.15 新增五条：编译器原话 / 改写已有程序 / 批量新建 / 工程校验 / 换语言
+
+| 能力 | 读数 |
+|---|---|
+| `build.error_messages` | `pane_found=true`、`rows=1`、内容 `使用了未定义的标签。`、代码 `0x110E1A20`、分类 `转换程序`（117.1 s） |
+| `project.check` | 结果页存在、`status_count=2`（`存在2个不同内容`）、表格首行 `程序文件 MAIN MAIN 不一致`（285.5 s） |
+| `project.new_language` | ST/SFC/FBD 三个工程都建成、标题标记齐、`Unit=FX5U`（199.2 s） |
+| `program.edit_existing` | 打开 `PrgOne`（`[ST]` 页），A 消失、B 存在、程序数仍 2、0 错（263.1 s） |
+| `batch.new_projects` | 3 个新工程同会话建成：都存在、源码逐字匹配、0 错（388.3 s） |
+
+三条"换渠道"的结论也一并落地：
+
+1. **编译器原话能拿到**——在「输出」面板，不在「转换结果」面板（后者转换失败时写着
+   「对象未转换，因此无法显示转换结果。」）。
+2. **SFC / FBD / IL 正文仍被静默丢弃**（探针 123）→ IEC XML 只认 ST。
+3. **局部结构体成员名访问是机制级堵死**：又试"带/不带成员分配"两条，仍 `程序(...)转换中` 2 错（探针 144）。

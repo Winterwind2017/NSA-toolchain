@@ -1,11 +1,11 @@
-version: 14
-kernel: gxkit 0.14.0
+version: 15
+kernel: gxkit 0.15.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U / FX5S / iQ-R(R00)
-lang: ST
+lang: ST(+SFC/FBD 工程可建)
 scope: offline
 counts:
-  verified: 33
+  verified: 38
 capabilities:
 - id: project.new
   family: project
@@ -103,6 +103,12 @@ capabilities:
   status: verified
   action: datatype_member_access
   expect: {"imported": true, "program_created": true, "errors": 0, "struct_define_stage_seen": true, "struct_define_stage_errors": 0, "member_access_in_source": true, "global_label_seen": true, "struct_type_in_labels": true}
+- id: program.edit_existing
+  family: program
+  level: L3
+  status: verified
+  action: program_edit_existing
+  expect: {"opened": true, "a_before": true, "b_after": true, "a_gone": true, "programs_after": 2, "errors": 0}
 - id: label.multi_type
   family: label
   level: L2–L3
@@ -181,6 +187,12 @@ capabilities:
   status: verified
   action: build_program_check
   expect: {"opened": true, "clean": true, "check_errors": 0}
+- id: build.error_messages
+  family: build
+  level: L2
+  status: verified
+  action: build_error_messages
+  expect: {"pane_found": true, "rows": {"min": 1.0, "max": 30.0}, "errors": 1}
 - id: build.error_detail
   family: build
   level: L2–L3
@@ -193,12 +205,30 @@ capabilities:
   status: verified
   action: build_locate_error_line
   expect: {"found_line": 5, "iterations": {"min": 1.0, "max": 6.0}}
+- id: batch.new_projects
+  family: batch
+  level: L3
+  status: verified
+  action: batch_new_projects
+  expect: {"made": 3, "all_exist": true, "all_src": true, "all_clean": true}
 - id: batch.projects
   family: build
   level: L3
   status: verified
   action: batch_projects
   expect: {"items": 3, "clean_items": 3, "distinct_sources": 3, "content_match": 3}
+- id: project.new_language
+  family: project
+  level: L1
+  status: verified
+  action: project_new_language
+  expect: {"made": 3, "all_marks": true, "all_exist": true, "all_fx5u": true}
+- id: project.check
+  family: project
+  level: L3
+  status: verified
+  action: project_check
+  expect: {"opened": true, "result_doc": true, "rows": {"min": 1.0, "max": 60.0}, "status_count": 2, "grid_diff": {"min": 1.0, "max": 60.0}}
 - id: project.reopen
   family: project
   level: L4
