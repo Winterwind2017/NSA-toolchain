@@ -1,14 +1,14 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.12.0",
-  "kernel_commit": "32eea1b",
+  "kernel_version": "0.13.0",
+  "kernel_commit": "308a5e1",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 28,
+    "verified": 32,
     "families": 6,
     "pending": 6
   },
@@ -182,6 +182,19 @@
       },
       "reopen": false
     },
+    "program.import_fb_params": {
+      "family": "program",
+      "level": "L3",
+      "title": "功能块带参数（IN/OUT/IN_OUT）+ 调用传参",
+      "action": "program_import_fb_params",
+      "expect": {
+        "program_created": true,
+        "fb_created": true,
+        "call_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
     "datatype.import": {
       "family": "datatype",
       "level": "L3",
@@ -259,6 +272,48 @@
         "program_created": true,
         "word_used_in_source": true,
         "errors": 0
+      },
+      "reopen": false
+    },
+    "datatype.struct_array": {
+      "family": "datatype",
+      "level": "L3",
+      "title": "结构体数组成员 + 元素访问",
+      "action": "datatype_struct_array",
+      "expect": {
+        "program_created": true,
+        "struct_stage_seen": true,
+        "struct_stage_errors": 0,
+        "array_access_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.multi_programs": {
+      "family": "program",
+      "level": "L2–L3",
+      "title": "一个工程里两个程序",
+      "action": "program_multi_programs",
+      "expect": {
+        "both_created": true,
+        "one_in_source": true,
+        "two_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "inspect.devices_rcpu": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "iQ-R 软元件模板（与 FX5U 不同）",
+      "action": "inspect_devices_cpu",
+      "expect": {
+        "unit": "R00",
+        "rows": {
+          "min": 3000.0,
+          "max": 9000.0
+        },
+        "has_type_35": true
       },
       "reopen": false
     },
@@ -485,10 +540,13 @@
       "program.read_st",
       "program.import_xml",
       "program.import_fb",
-      "program.import_fb_instance"
+      "program.import_fb_instance",
+      "program.import_fb_params",
+      "program.multi_programs"
     ],
     "inspect": [
       "project.meta",
+      "inspect.devices_rcpu",
       "inspect.source_map",
       "inspect.programs",
       "project.diff",
@@ -499,7 +557,8 @@
       "datatype.import",
       "datatype.member_var",
       "datatype.custom_members",
-      "datatype.member_access"
+      "datatype.member_access",
+      "datatype.struct_array"
     ],
     "label": [
       "label.multi_type",

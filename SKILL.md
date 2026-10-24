@@ -56,6 +56,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **步↔源码** | `inspect.source_map` | `T_SourcePos` 的 `Row=/Col=/StrLen=` + 片段 |
 | **编译 IL** | `inspect.mil` | `*_MilDB.db` 的 `MIL.data`（`op=` 流） |
 | **软元件表** | `inspect.devices` | `*_DC.db` `DEVICE_DATA`（FX5U 2935 行 + 注释） |
+| **iQ-R 软元件表** | `inspect.devices_rcpu` | R00 是 3345 行、多一种设备类型码（35），与 FX5U 不同 |
 | 编译 | `build.convert_all` | Shift+Alt+F4，保存后读 `Progress.txt` |
 | 程序检查 | `build.program_check` | 工具 → 程序检查 → 执行 → `程序检查已完成。无错误。` |
 | 错误定位（阶段） | `build.error_detail` | `Progress.txt` 的 `failed_stages` |
@@ -65,6 +66,9 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **程序新建（XML）** | `program.import_xml` | `Program` + `Resource/ProgramInstance`，且删掉 `<Vars>` |
 | **程序+功能块（XML）** | `program.import_fb` | `Program` 必须在 `FunctionBlock` 之前；FB 删 `<Parameters>` |
 | **功能块实例（XML）** | `program.import_fb_instance` | 程序里 `InstFB : FBInst` + 正文 `InstFB();` |
+| **功能块带参数** | `program.import_fb_params` | `<Parameters>` 四组、**空组不能输出**；`IN_OUT` 只能声明不能传参；调用必须给全输入 |
+| **结构体数组成员** | `datatype.struct_array` | 成员用 `InstantlyDefinedType/ArrayTypeSpec` + `IndexRange`，正文 `GS1.Arr[0]` |
+| **一个工程两个程序** | `program.multi_programs` | 程序可多次导入；但**全局标签只能导一次**（否则 Global1_2 冲突） |
 | **结构体（XML）** | `datatype.import` | `DataTypeDecl` 成员**保持样例原样**；判据用 UIA 导航树 |
 | **结构体变量** | `datatype.member_var` | 必须带 `VariableStructDeviceAssignment`（成员绑 B0/W0/B10…），且与结构体同文档 |
 | **自定义成员** | `datatype.custom_members` | `Member` 全在前、`<AddData>` 留在最后；成员名随便起 |
@@ -156,6 +160,15 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 33. **手写骨架能导入程序/标签/全局结构体，但局部标签不落地**（`locals_found=0` + 转换 2 错）。
     已排除 title/AddData 顺序/Remark/InitialValue/BodyProperties 五个因素，
     要自给自足得继续做逐元素 diff 二分（记在 gxkit 的 `docs/EXPAND_BACKLOG.md`）。
+34. **功能块的 `<Parameters>` 空组会让整份文档被静默丢弃**：`<InoutVars/>` 哪怕是空的也要
+    整组删掉；此时 `errors=0` 是假象（转换根本没列这两个 POU），必须同时看
+    `program_created` / `fb_created`。
+35. **`IN_OUT` 参数只能声明**：调用里传 `InstFB(vio := B0)` 或正文引用 `vio` 就报
+    `局部标签(FB)定义检查中` 1 错 + 转换 2~4 错。只做 IN / OUT / OUT_RETAIN，输入给初值
+    或调用时给全。
+36. **结构体数组成员**：`InstantlyDefinedType xsi:type="ArrayTypeSpec"` + `DimensionSpec/IndexRange`，
+    成员分配里给数组基地址；正文 `GS1.Arr[0]` 可用。
+37. **全局标签一个工程只能导一次**：再导一次会变成 `Global1_2` 并报定义错；程序可以多次导。
 
 ## 5. 明确不做
 

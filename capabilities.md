@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **28** 条已验证能力（内核 `gxkit 0.12.0`，commit `32eea1b`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **32** 条已验证能力（内核 `gxkit 0.13.0`，commit `308a5e1`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -15,11 +15,15 @@
 | `program.import_xml` | program | L2–L3 | 用 XML 新建程序（另起一个 PrgGen） |
 | `program.import_fb` | program | L3 | 用 XML 建程序+功能块（带局部标签） |
 | `program.import_fb_instance` | program | L3 | 用 XML 建功能块实例并调用 |
+| `program.import_fb_params` | program | L3 | 功能块带参数（IN/OUT/IN_OUT）+ 调用传参 |
 | `datatype.import` | datatype | L3 | 用 XML 建结构体（并用变量读回） |
 | `datatype.member_var` | datatype | L3 | 结构体类型的变量（成员级软元件分配） |
 | `datatype.custom_members` | datatype | L3 | 自定义结构体成员 |
 | `datatype.member_access` | datatype | L3 | 正文按成员名访问结构体（全局标签） |
 | `label.multi_type` | label | L2–L3 | BOOL/WORD/DWORD 全局标签 |
+| `datatype.struct_array` | datatype | L3 | 结构体数组成员 + 元素访问 |
+| `program.multi_programs` | program | L2–L3 | 一个工程里两个程序 |
+| `inspect.devices_rcpu` | inspect | L2 | iQ-R 软元件模板（与 FX5U 不同） |
 | `inspect.source_map` | inspect | L2 | 步→源码坐标（Row/Col/StrLen） |
 | `inspect.programs` | inspect | L2 | 列程序清单（步数/源码行数） |
 | `project.diff` | inspect | L2–L3 | 两个工程的源码级差异 |

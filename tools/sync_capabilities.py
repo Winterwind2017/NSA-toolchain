@@ -43,7 +43,7 @@ def main() -> int:
     snap = {
         "skill": "ww-gxworks-automation",
         "kernel": "gxkit",
-        "kernel_version": "0.12.0",
+        "kernel_version": "0.13.0",
         "kernel_commit": kit_commit(),
         "engine": "GX Works3 1.117.0.1",
         "cpu": "FX5U",

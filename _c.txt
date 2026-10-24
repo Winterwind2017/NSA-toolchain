@@ -1,2 +1,2 @@
-feat: 同步 gxkit 0.12 —— 28 条能力（多机型 iQ-R/FX5S + 乱序跑）
-新增：series/model 换机型矩阵、iQ-R 机型无关性、乱序跑（seed 记进 result.json）。
+feat: 同步 gxkit 0.13 —— 32 条能力（FB 参数 / 结构体数组 / 多程序 / iQ-R 软元件表）
+补四条坑（空组丢弃、IN_OUT 限制、数组形状、全局标签只能导一次）。
