@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **32** 条已验证能力（内核 `gxkit 0.13.0`，commit `308a5e1`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **33** 条已验证能力（内核 `gxkit 0.14.0`，commit `2c48868`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -24,6 +24,7 @@
 | `datatype.struct_array` | datatype | L3 | 结构体数组成员 + 元素访问 |
 | `program.multi_programs` | program | L2–L3 | 一个工程里两个程序 |
 | `inspect.devices_rcpu` | inspect | L2 | iQ-R 软元件模板（与 FX5U 不同） |
+| `xmlgen.manual_template` | xmlgen | L3 | 手写骨架也能导入（不依赖 MELSOFT 样例） |
 | `inspect.source_map` | inspect | L2 | 步→源码坐标（Row/Col/StrLen） |
 | `inspect.programs` | inspect | L2 | 列程序清单（步数/源码行数） |
 | `project.diff` | inspect | L2–L3 | 两个工程的源码级差异 |

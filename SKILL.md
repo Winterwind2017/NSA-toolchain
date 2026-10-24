@@ -69,6 +69,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **功能块带参数** | `program.import_fb_params` | `<Parameters>` 四组、**空组不能输出**；`IN_OUT` 只能声明不能传参；调用必须给全输入 |
 | **结构体数组成员** | `datatype.struct_array` | 成员用 `InstantlyDefinedType/ArrayTypeSpec` + `IndexRange`，正文 `GS1.Arr[0]` |
 | **一个工程两个程序** | `program.multi_programs` | 程序可多次导入；但**全局标签只能导一次**（否则 Global1_2 冲突） |
+| **手写骨架** | `xmlgen.manual_template` | 不依赖 MELSOFT 样例；关键：局部变量**不能带** `VariableRemark` |
 | **结构体（XML）** | `datatype.import` | `DataTypeDecl` 成员**保持样例原样**；判据用 UIA 导航树 |
 | **结构体变量** | `datatype.member_var` | 必须带 `VariableStructDeviceAssignment`（成员绑 B0/W0/B10…），且与结构体同文档 |
 | **自定义成员** | `datatype.custom_members` | `Member` 全在前、`<AddData>` 留在最后；成员名随便起 |
@@ -157,9 +158,10 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 32. **XML 骨架别每次去读 MELSOFT 的样例**：升级换样例会让生成器整批静默失效。
     现在首次复制到 `%LOCALAPPDATA%/gxkit/skeleton.xml` 并记 sha256，指纹变了自动重建；
     `GXKIT_TEMPLATE=<文件>` 可绕开安装目录。
-33. **手写骨架能导入程序/标签/全局结构体，但局部标签不落地**（`locals_found=0` + 转换 2 错）。
-    已排除 title/AddData 顺序/Remark/InitialValue/BodyProperties 五个因素，
-    要自给自足得继续做逐元素 diff 二分（记在 gxkit 的 `docs/EXPAND_BACKLOG.md`）。
+33. **手写骨架当初卡在"局部标签不落地"，真因是局部变量带 `<VariableRemark>`**（已解决）。
+    把两种骨架生成的同一份程序 XML **逐行 diff** 才看出来：唯一实质差异就是它。
+    规则：`Program`/`FunctionBlock` 的 `<Vars>` 里不要 `VariableRemark`；`GlobalVars` 保留。
+    `xmlgen.strip_local_remarks()` 统一处理，能力 `xmlgen.manual_template` 守着。
 34. **功能块的 `<Parameters>` 空组会让整份文档被静默丢弃**：`<InoutVars/>` 哪怕是空的也要
     整组删掉；此时 `errors=0` 是假象（转换根本没列这两个 POU），必须同时看
     `program_created` / `fb_created`。
@@ -169,6 +171,9 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 36. **结构体数组成员**：`InstantlyDefinedType xsi:type="ArrayTypeSpec"` + `DimensionSpec/IndexRange`，
     成员分配里给数组基地址；正文 `GS1.Arr[0]` 可用。
 37. **全局标签一个工程只能导一次**：再导一次会变成 `Global1_2` 并报定义错；程序可以多次导。
+38. **偶发失败要"验证+重试"，不要靠运气**：启动（`kill_stray` + 3 次）、另存为（校验文件
+    存在且 >100 KB）、XML/标签导入（读回目标是否出现）、粘贴（标题出现 `N步` 才算数）。
+    这些都是静默失败，返回值永远"成功"。
 
 ## 5. 明确不做
 
