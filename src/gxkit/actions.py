@@ -424,6 +424,23 @@ def inspect_mil(ctx: dict) -> dict:
             "steps": len(I.read_steps(ctx["project"]))}
 
 
+def _import_labels_verified(s, ctx: dict, xml_path, want: list[str],
+                            attempts: int = 2) -> int:
+    """导入全局标签，若一个都没落地就重试（安全：上一次确实没写进去）。"""
+    from . import inspect as I
+
+    for attempt in range(attempts):
+        s.import_xml(xml_path)
+        s.convert_all(wait_s=12.0)
+        s.save()
+        names = {r["value"] for r in I.read_labels(ctx["project"])
+                 if isinstance(r["value"], str)}
+        landed = sum(1 for n in want if n in names)
+        if landed == len(want):
+            return landed
+    return landed
+
+
 def label_import_xml(ctx: dict) -> dict:
     """导入"只有全局标签"的 XML，并从 LabelData 读回确认标签真的进了工程。"""
     from . import xmlgen
@@ -908,16 +925,14 @@ def label_multi_type(ctx: dict) -> dict:
     s, _ = _new_and_save(ctx)
     base_labels = len(I.read_labels(ctx["project"]))
 
+    want = [x["name"] for x in (ctx.get("labels") or MULTI_TYPE_LABELS)]
     labels_path = xmlgen.write(
         pathlib.Path(ctx["project"]).with_name("multi_labels.xml"),
         ctx.get("labels") or MULTI_TYPE_LABELS)
-    s.import_xml(labels_path)
-    s.convert_all(wait_s=12.0)
-    s.save()
+    _import_labels_verified(s, ctx, labels_path, want)
 
     names = {r["value"] for r in I.read_labels(ctx["project"])
              if isinstance(r["value"], str)}
-    want = [x["name"] for x in (ctx.get("labels") or MULTI_TYPE_LABELS)]
     landed = sum(1 for n in want if n in names)
     labels_after = len(I.read_labels(ctx["project"]))
 
