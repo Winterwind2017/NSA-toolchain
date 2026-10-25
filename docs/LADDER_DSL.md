@@ -70,3 +70,11 @@ V1:<头>:a:X:a:X:c:Y:cb{ fg=fg{ dim=<列>x<行>: es=[ ... ] } :vs=[ v{pos=列,�
 instructions, elements:[{col,row,op,kind,addr,const}], verticals}]`，
 `summarize()` 给一行人类可读摘要（如 `-[ ]-a0@0,0 -[ ]-a1@1,0 -( )-a0@2,0`），
 `count_kinds()` 数触点/线圈个数。**判据只认这些读数 + `Progress.txt` 的 errors**。
+
+## 7. 多梯级
+
+一个程序里可以有多个 `blocktype=0` 块（一个块 = 一个梯级）。
+在编辑器里**第 0 行建块、第 3 行开下一个块**（实测：第 3 行插触点后出现 `pos=750000` 的新块）。
+所以第 i 个梯级从 `i*3` 行开始，每个块内部坐标各自从 `(0,0)` 起。
+`program.write_ladder_multi` 就是按这个规则画两个梯级（读回 2 块、3 触点 2 端子、0 错）。
+

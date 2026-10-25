@@ -2,10 +2,10 @@ version: 16
 kernel: gxkit 0.16.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U / FX5S / iQ-R(R00)
-lang: ST + LAD(单梯级) + SFC/FBD 工程
+lang: ST + LAD(多梯级) + SFC/FBD 工程
 scope: offline
 counts:
-  verified: 41
+  verified: 42
 capabilities:
 - id: project.new
   family: project
@@ -181,6 +181,12 @@ capabilities:
   status: verified
   action: build_program_check
   expect: {"opened": true, "clean": true, "check_errors": 0}
+- id: program.write_ladder_multi
+  family: program
+  level: L3
+  status: verified
+  action: program_write_ladder
+  expect: {"bodies": 2, "contacts_read": 3, "terminals_read": 2, "errors": 0}
 - id: program.write_ladder_parallel
   family: program
   level: L3

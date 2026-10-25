@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"41 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"42 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：41 条能力，动作与判据齐全
+# 自检通过：42 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
 # 23 passed
 
-# 3) 真机全量（约 100 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 105 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -396,6 +396,7 @@ kill_stray 时机都经得起换序）。
 | `program.write_ladder_parallel` | grid `12x2`、竖线 1、2 触点 1 线圈，0 错（185.4 s） |
 | `program.write_ladder_appl` | 头里 `a:X:MOV:K_1:D`，1 触点 1 端子，0 错（177.9 s） |
 | `inspect.ladder` | 往返：写 X0-X1→(Y0) 后离线读回 2 触点 1 线圈，0 错（185.6 s） |
+| `program.write_ladder_multi` | 2 个正文块、3 触点 2 端子，0 错（207.3 s） |
 
 探索过程中的关键读数（都进 `PITFALLS.md` 五十一~五十四）：
 

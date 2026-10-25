@@ -275,8 +275,11 @@ def _lad_place(s, pid: int, symbol: str, col: int, row: int, text: str) -> None:
     W.tap("esc", 0.3)                     # 清掉放置模式，否则后续 Invoke 会被禁用
 
 
+LAD_RUNG_ROWS = 3          # 每个梯级占 3 行网格（实测：第 0 行建块，第 3 行开新块）
+
+
 def _lad_build(s, pid: int, contacts, parallel, out) -> None:
-    """画一个梯级。**顺序是实测出来的，不能换**：
+    """画一个梯级（单块）。**顺序是实测出来的，不能换**：
 
     ① 先放串联触点
     ② 再放端子（线圈/应用指令）—— 并联支路两端要有东西可连，否则 OR 会被静默丢弃
@@ -288,6 +291,22 @@ def _lad_build(s, pid: int, contacts, parallel, out) -> None:
     for j, branch in enumerate(parallel):
         for k, (sym, dev) in enumerate(branch):
             _lad_place(s, pid, "OR_NO" if sym == "NO" else "OR_NC", k, 1 + j, dev)
+
+
+def _lad_build_many(s, pid: int, rungs: list[dict]) -> None:
+    """多个梯级：第 i 个梯级从第 `i * LAD_RUNG_ROWS` 行开始（每块自己的坐标从 0 起）。"""
+    for idx, rung in enumerate(rungs):
+        base = idx * LAD_RUNG_ROWS
+        contacts = rung.get("contacts") or [["NO", "X0"]]
+        parallel = rung.get("parallel") or []
+        out = rung.get("out") or ["COIL", "Y0"]
+        for i, (sym, dev) in enumerate(contacts):
+            _lad_place(s, pid, sym, i, base, dev)
+        _lad_place(s, pid, out[0], len(contacts), base, out[1])
+        for j, branch in enumerate(parallel):
+            for k, (sym, dev) in enumerate(branch):
+                _lad_place(s, pid, "OR_NO" if sym == "NO" else "OR_NC",
+                           k, base + 1 + j, dev)
 
 
 def inspect_ladder(ctx: dict) -> dict:
@@ -321,12 +340,14 @@ def program_write_ladder(ctx: dict) -> dict:
     ctx = dict(ctx)
     ctx["lang"] = 0                      # 梯形图工程
     s, _ = _new_and_save(ctx)
-    contacts = ctx.get("contacts") or [["NO", "X0"], ["NO", "X1"]]  # noqa: E501
-    parallel = ctx.get("parallel") or []
-    out = ctx.get("out") or ["COIL", "Y0"]
+    rungs = ctx.get("rungs")
+    if not rungs:
+        rungs = [{"contacts": ctx.get("contacts") or [["NO", "X0"], ["NO", "X1"]],
+                  "parallel": ctx.get("parallel") or [],
+                  "out": ctx.get("out") or ["COIL", "Y0"]}]
     pid = s.proc.pid
-
-    _lad_build(s, pid, contacts, parallel, out)
+    contacts = rungs[0]["contacts"]
+    _lad_build_many(s, pid, rungs)
 
     s.save()
     blocks = ladder.read_blocks(pathlib.Path(ctx["project"]))
@@ -335,8 +356,11 @@ def program_write_ladder(ctx: dict) -> dict:
     s.convert_all()
     s.save()
     prog = read_progress(ctx["project"])
+    want_contacts = sum(len(r["contacts"]) + sum(len(b) for b in (r.get("parallel") or []))
+                        for r in rungs)
     return {"bodies": len(bodies),
-            "contacts_expected": len(contacts) + sum(len(b) for b in parallel),
+            "rungs_read": len(bodies),
+            "contacts_expected": want_contacts,
             "contacts_read": kinds.get("contact", 0),
             "terminals_read": kinds.get("coil", 0),
             "summaries": [ladder.summarize(b) for b in bodies][:3],
