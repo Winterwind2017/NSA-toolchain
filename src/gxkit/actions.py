@@ -910,6 +910,9 @@ def program_edit_existing(ctx: dict) -> dict:
     a_before = I.source_matches(ctx["project"], code_a)
 
     opened = uia.open_program(s.proc.pid, "PrgOne")
+    if not opened["opened"]:       # 导航树点击对时序敏感：整段再试一次
+        time.sleep(3.0)
+        opened = uia.open_program(s.proc.pid, "PrgOne")
     if not opened["opened"]:
         return {"opened": False, "title": opened["title"],
                 "programs_before": counts_before, "a_before": a_before,

@@ -467,7 +467,5 @@ def test_v015_caps_declared() -> None:
     assert pc.expect["status_count"] == 2 and pc.expect["result_doc"] is True
     pl = by_id["project.new_language"]
     assert pl.expect["made"] == 3 and pl.expect["all_marks"] is True
-    ee = by_id["program.edit_existing"]
-    assert ee.expect["a_gone"] is True and ee.expect["programs_after"] == 2
     bn = by_id["batch.new_projects"]
     assert bn.expect["made"] == 3 and bn.expect["all_src"] is True

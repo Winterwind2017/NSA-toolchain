@@ -1,11 +1,11 @@
-version: 15
+version: 16
 kernel: gxkit 0.15.0
 engine: GX Works3 1.117.0.1
 cpu: FX5U / FX5S / iQ-R(R00)
 lang: ST(+SFC/FBD 工程可建)
 scope: offline
 counts:
-  verified: 38
+  verified: 37
 capabilities:
 - id: project.new
   family: project
@@ -103,12 +103,6 @@ capabilities:
   status: verified
   action: datatype_member_access
   expect: {"imported": true, "program_created": true, "errors": 0, "struct_define_stage_seen": true, "struct_define_stage_errors": 0, "member_access_in_source": true, "global_label_seen": true, "struct_type_in_labels": true}
-- id: program.edit_existing
-  family: program
-  level: L3
-  status: verified
-  action: program_edit_existing
-  expect: {"opened": true, "a_before": true, "b_after": true, "a_gone": true, "programs_after": 2, "errors": 0}
 - id: label.multi_type
   family: label
   level: L2–L3

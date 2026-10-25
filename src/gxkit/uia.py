@@ -297,29 +297,98 @@ def open_program(pid: int, name: str, offsets: tuple[int, ...] = (0,)) -> dict:
     if not frame:
         return {"opened": False, "title": "", "offset": None}
 
-    for attempt in range(2):
+    # 冷启动时先"热身"：打开默认程序 ProgPou（它一定在树里），
+    # 让 MDI 标签栏/导航栏布局稳定下来，再去找目标程序。
+    if name != "ProgPou":
+        for _ in range(2):
+            rows_w = nav_tree_rows(pid)
+            if not any(r["name"] == "ProgPou" for r in rows_w):
+                break
+            idx_w = next(i for i, r in enumerate(rows_w) if r["name"] == "ProgPou")
+            body_w = next((r for r in rows_w[idx_w + 1:idx_w + 4]
+                           if r["name"] == "程序本体"), None)
+            if not body_w:
+                break
+            activate(frame)
+            for dy in (0, 6, 12, -6):
+                click(body_w["pt"][0], body_w["pt"][1] + dy, settle=0.10)
+                click(body_w["pt"][0], body_w["pt"][1] + dy, settle=0.8)
+                if "ProgPou" in _window_title(frame) and "[ST]" in _window_title(frame):
+                    break
+            break
+
+    # 关键：左侧停靠面板可能停在「连接目标」页，必须先切到「导航」标签，
+    # 否则读到的是隐藏树的行、点在可见的别的页面上（冷启动必失败）。
+    activate_pane_tab(pid, "导航")
+
+    # 再把主窗最大化：导航面板变高后所有行都可见（自绘树不响应合成滚轮）
+    try:
+        import ctypes as _ct
+        _ct.windll.user32.ShowWindow(frame, 3)   # SW_MAXIMIZE
+        import time as _t2
+        _t2.sleep(1.0)
+    except Exception:
+        pass
+
+    # 三轮：每轮「点顶层行拿焦点 → 滚到可见 → 行中心上下扫点双击」。
+    # 单轮偶然失手（首启后布局不同 / 焦点没拿到）就再来一轮。
+    import time as _t
+
+    for _round in range(3):
+        if _round:
+            _t.sleep(2.0)          # 轮次之间给界面一点时间（时序敏感）
+        # 冷启动时导航树是懒加载的：先轮询等目标行出现（最多 ~25 秒）
+        rows = sys_rows = []
+        for _ in range(25):
+            sys_rows = nav_tree_rows(pid)
+            rows = sys_rows
+            if any(r["name"] == name or r["name"].startswith(name + " ")
+                   for r in rows):
+                break
+            top0 = next((r for r in rows if r["name"] == "工程"), None)
+            activate(frame)
+            if top0:
+                click(top0["pt"][0], top0["pt"][1], settle=0.3)
+            _t.sleep(0.8)
+        top = next((r for r in rows if r["name"] == "工程"), None)
+        activate(frame)
+        if top:
+            click(top["pt"][0], top["pt"][1], settle=0.4)
+        scroll_rows_into_view(pid, name)
         rows = nav_tree_rows(pid)
         idx = next((i for i, r in enumerate(rows)
                     if r["name"] == name or r["name"].startswith(name + " ")), None)
         if idx is None:
-            return {"opened": False, "title": "", "offset": None}
+            continue
         body = next((r for r in rows[idx + 1:idx + 4] if r["name"] == "程序本体"), None)
         if body is None:
-            # 没展开：双击父行展开后再来一轮
-            activate(frame)
+            # 没展开：双击父行展开，下一轮再来
             click(rows[idx]["pt"][0], rows[idx]["pt"][1], settle=0.10)
             click(rows[idx]["pt"][0], rows[idx]["pt"][1], settle=0.8)
             continue
-        activate(frame)
         x, y = body["pt"]
-        # UIA 的行矩形和视觉位置有 ~13px 偏差（probe131 在 +13 处才点开），
-        # 所以在 ±20px 内扫几个点，用标题里的 `[ST]` 当成功判据。
+        import os as _os
+        if _os.environ.get("GXKIT_DEBUG_OPEN"):
+            print("[open] round=%d rows=%d body=%s pane=%s"
+                  % (_round, len(rows), body["rect"], _pane_rect(nav_pane_hwnd(pid))),
+                  flush=True)
+        # UIA 行矩形与视觉位置有 ~13px 偏差，±20px 内扫点，以标题里的 `[ST]` 为判据
         for dy in (0, 6, 12, 18, -6):
             click(x, y + dy, settle=0.10)
             click(x, y + dy, settle=1.0)
             title = _window_title(frame)
+            if _os.environ.get("GXKIT_DEBUG_OPEN"):
+                print("[open]   dy=%+d title=%r" % (dy, title[-50:]), flush=True)
             if name in title and "[ST]" in title:
                 return {"opened": True, "title": title, "offset": dy}
+    try:
+        import pathlib as _pl
+        from PIL import ImageGrab
+        _p = _pl.Path.home() / "open_program_fail.png"
+        ImageGrab.grab().save(_p)
+        print("[open] 失败截图:", _p, flush=True)
+    except Exception:
+        pass
     return {"opened": False, "title": _window_title(frame), "offset": None}
 
 
@@ -361,4 +430,73 @@ def grid_rows(hwnd: int, ncol: int = 0) -> dict:
             break
         rows.append(chunk)
     return {"header": header, "rows": rows}
+
+def _pane_rect(hwnd: int):
+    import win32gui
+    return win32gui.GetWindowRect(hwnd)
+
+
+def _visible_in_pane(pane: int, rect) -> bool:
+    """只看中心点是否在面板内（留 2px 边）。"""
+    p = _pane_rect(pane)
+    cx = (rect[0] + rect[2]) // 2
+    cy = (rect[1] + rect[3]) // 2
+    return p[0] + 2 <= cx <= p[2] - 2 and p[1] + 2 <= cy <= p[3] - 2
+
+
+def scroll_rows_into_view(pid: int, name: str, below: str = "程序本体",
+                          max_steps: int = 12) -> bool:
+    """按方向滚动导航树，把 `name` 下面那行 `below` 的中心滚进面板。
+
+    方向很重要：行在面板**上方**要往上滚（+120），在下方才往下滚（-120）。
+    """
+    import ctypes
+    import time as _t
+
+    pane = nav_pane_hwnd(pid)
+    if not pane:
+        return False
+    u32 = ctypes.windll.user32
+    p = _pane_rect(pane)
+    cx_pane, cy_pane = (p[0] + p[2]) // 2, (p[1] + p[3]) // 2
+    for _ in range(max_steps):
+        rows = nav_tree_rows(pid)
+        idx = next((i for i, r in enumerate(rows)
+                    if r["name"] == name or r["name"].startswith(name + " ")), None)
+        if idx is None:
+            return False
+        body = next((r for r in rows[idx + 1:idx + 4] if r["name"] == below), None)
+        target = body or rows[idx]
+        if _visible_in_pane(pane, target["rect"]):
+            return True
+        cy_row = (target["rect"][1] + target["rect"][3]) // 2
+        delta = -120 if cy_row > p[3] else 120
+        u32.SetCursorPos(int(cx_pane), int(cy_pane))
+        u32.mouse_event(0x0800, 0, 0, delta, 0)
+        _t.sleep(0.45)
+    return False
+
+def activate_pane_tab(pid: int, tab_name: str) -> bool:
+    """点停靠面板的标签页（`导航` / `输出` / `进度` / `转换结果` …）。"""
+    from .win import click, windows
+
+    frame = next((w["hwnd"] for w in windows(pid) if w["class"] == "GXW3FrameWnd"), 0)
+    if not frame:
+        return False
+    obj, UIA = automation()
+    el = element(frame)
+    cond = obj.CreatePropertyCondition(UIA.UIA_ControlTypePropertyId, 50019)
+    try:
+        items = el.FindAll(4, cond)
+    except Exception:
+        return False
+    for i in range(items.Length):
+        it = items.GetElement(i)
+        if (it.CurrentName or "").strip() == tab_name:
+            r = it.CurrentBoundingRectangle
+            click((r.left + r.right) // 2, (r.top + r.bottom) // 2, settle=0.6)
+            import time as _t
+            _t.sleep(0.8)
+            return True
+    return False
 

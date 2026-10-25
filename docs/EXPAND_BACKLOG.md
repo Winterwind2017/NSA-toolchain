@@ -98,7 +98,7 @@
 |---|---|
 | 编译器原话（换渠道） | ✅ `build.error_messages` —— 「输出」面板的表格，6 列含错误代码 |
 | SFC / FBD / IL 正文 | ❌ 与 LD 一样被静默丢弃 → 只有 ST（探针 123） |
-| 导航树改写已有程序 | ✅ `program.edit_existing`（双击「程序本体」+ 垂直扫点） |
+| 导航树改写已有程序 | ⚠️ 能做到但**不稳定**（冷/热交替失败）→ 撤出能力表，见 `UNSUPPORTED.md`；`uia.open_program` 保留为尽力而为的助手 |
 | 同会话批量新建 | ✅ `batch.new_projects`（保存 → 关闭 → Ctrl+N） |
 | 工程校验（两工程比对） | ✅ `project.check`（浏览选目标 + 读状态行 `存在N个不同内容`） |
 | iQ-R 深度 | ✅ 顺带做成 `project.new_language`（ST/SFC/FBD 工程都能建）；QCPU 系列选完机型下拉为空，需机架配置，未继续 |
