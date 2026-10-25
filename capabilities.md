@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **33** 条已验证能力（内核 `gxkit 0.14.0`，commit `2c48868`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **37** 条已验证能力（内核 `gxkit 0.15.0`，commit `64856c1`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -33,9 +33,13 @@
 | `label.import_xml` | label | L2–L3 | 导入全局标签 XML 并读回 |
 | `build.convert_all` | build | L1–L3 | 全部转换：从 Progress.txt 读错误数 |
 | `build.program_check` | build | L2–L3 | 程序检查：读「无错误」判定文本 |
+| `build.error_messages` | build | L2 | **编译器原话**（输出面板的表格） |
 | `build.error_detail` | build | L2–L3 | 故意写错：定位错在哪个编译阶段 |
 | `build.locate_error_line` | build | L3 | 二分法定位坏行（前缀问编译器） |
+| `batch.new_projects` | batch | L3 | 同会话连新建 3 个工程（关闭后重建） |
 | `batch.projects` | build | L3 | 同会话批量出 3 个工程（各自 0 错） |
+| `project.new_language` | project | L1 | **换程序语言建工程**（ST / SFC / FBD） |
+| `project.check` | project | L3 | **工程校验**（与另一个 .gx3 比对） |
 | `project.reopen` | project | L4 | 存盘→重开→步数仍在（L4） |
 
 ## 未打通

@@ -48,6 +48,7 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 |---|---|---|
 | 新建工程 | `project.new` | Ctrl+N → 系列=FX5CPU(3)、机型=FX5U(0)、语言=ST(1) |
 | **换机型** | `project.new_rcpu` / `project.new_fx5s` | 只改 series/model：RCPU=1（28 机型）、FX5CPU=3（FX5U/FX5UJ/FX5S）；读回 `Unit` 验证 |
+| **换语言** | `project.new_language` | 语言下拉 = 梯形图/ST/SFC/FBD/不指定；SFC/FBD 工程标题分别带 `[SFC]`、`[FBD/LD]` |
 | **机型无关性** | `program.rcpu_roundtrip` | iQ-R(R00) 上粘贴→转换→读回源码全对（4 步 0 错） |
 | 存盘 | `project.save` | 文件名 Edit cid=1148（**按类名取**）、保存按钮 cid=1（同） |
 | 看工程 | `project.meta` | `!!Config.xml` → `Unit="FX5U"`；ZIP 条目数 |
@@ -55,6 +56,9 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **读源码** | `program.read_st` | `*_STDB.db` 的 `StBlocks.data` 是**明文**，逐字比对 |
 | **步↔源码** | `inspect.source_map` | `T_SourcePos` 的 `Row=/Col=/StrLen=` + 片段 |
 | **编译 IL** | `inspect.mil` | `*_MilDB.db` 的 `MIL.data`（`op=` 流） |
+| **编译器原话** | `build.error_messages` | 读**「输出」面板**的表格（No./结果/数据名/分类/内容/错误代码）；「转换结果」面板在失败时是空的 |
+| **工程校验** | `project.check` | 工程→工程校验→用「...」浏览选目标工程（手输路径不算）→ 校验 → 状态行 `存在N个不同内容` |
+| **批量新建** | `batch.new_projects` | 保存 → 工程→关闭 → Ctrl+N → 另存为，同会话连做 3 个 |
 | **软元件表** | `inspect.devices` | `*_DC.db` `DEVICE_DATA`（FX5U 2935 行 + 注释） |
 | **iQ-R 软元件表** | `inspect.devices_rcpu` | R00 是 3345 行、多一种设备类型码（35），与 FX5U 不同 |
 | 编译 | `build.convert_all` | Shift+Alt+F4，保存后读 `Progress.txt` |
@@ -174,13 +178,25 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 38. **偶发失败要"验证+重试"，不要靠运气**：启动（`kill_stray` + 3 次）、另存为（校验文件
     存在且 >100 KB）、XML/标签导入（读回目标是否出现）、粘贴（标题出现 `N步` 才算数）。
     这些都是静默失败，返回值永远"成功"。
+39. **编译器原话在「输出」面板**，不在「转换结果」面板（后者转换失败时写着
+    「对象未转换，因此无法显示转换结果。」）。读法：`DataGrid`(50007) 下按文档顺序
+    `FindAll` 所有 `DataItem`(50020)，每 6 个切一行；`GridPattern`/`TablePattern` 都拿不到。
+40. **文件对话框别用 `SetWindowText`**：会打到"文件类型"那个 Edit。改成找最宽且在下半部的
+    `ComboBox` → 点进去 → `Ctrl+V` → 回车。`SendMessage(BM_CLICK)` 会**同步阻塞**
+    （整段校验跑完才返回），要用鼠标点按钮中心。
+41. **工程校验必须用「...」浏览选目标工程**，手输路径会弹「未选择校验目标工程。」；
+    结果页的 DataGrid 只暴露 1 行（虚拟化），判据用状态行 `存在N个不同内容`。
+42. **左侧停靠面板冷启动默认停在「连接目标」页**，不是「导航」。要操作导航树先
+    `uia.activate_pane_tab(pid, "导航")`，并且最好先把主窗最大化（面板太矮时行在可见区外）。
+    即便如此，导航树双击打开程序仍**不稳定** → 该能力未进能力表（见 `docs/UNSUPPORTED.md`）。
 
 ## 5. 明确不做
 
 - 在线（写入 PLC / 监视）：需要真实 PLC 或模拟器，用户口径只做离线。
 - 梯形图内容：编辑器自绘，UIA 没有单元格；ST 已覆盖需求。
-- 编译器原话（错误消息文本）：没有可读口。
-- WORD/DINT 标签导入：只验证了 BOOL。
+- IEC XML 的 LD / FBD / IL / **SFC** 正文：全部被静默丢弃，只认 ST（探针 123）。
+- 局部结构体变量的成员名访问：七条走法都报 2 错，要按成员名访问就用**全局**结构体标签。
+- 导航树里打开已有程序再改写：能打开但不稳定（冷/热交替失败）。
 
 ## 6. 新增能力的姿势
 

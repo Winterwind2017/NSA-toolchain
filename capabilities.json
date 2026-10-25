@@ -1,15 +1,15 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.14.0",
-  "kernel_commit": "2c48868",
+  "kernel_version": "0.15.0",
+  "kernel_commit": "64856c1",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 33,
-    "families": 7,
+    "verified": 37,
+    "families": 8,
     "pending": 6
   },
   "verified": {
@@ -480,6 +480,21 @@
       },
       "reopen": false
     },
+    "build.error_messages": {
+      "family": "build",
+      "level": "L2",
+      "title": "**编译器原话**（输出面板的表格）",
+      "action": "build_error_messages",
+      "expect": {
+        "pane_found": true,
+        "rows": {
+          "min": 1.0,
+          "max": 30.0
+        },
+        "errors": 1
+      },
+      "reopen": false
+    },
     "build.error_detail": {
       "family": "build",
       "level": "L2–L3",
@@ -511,6 +526,19 @@
       },
       "reopen": false
     },
+    "batch.new_projects": {
+      "family": "batch",
+      "level": "L3",
+      "title": "同会话连新建 3 个工程（关闭后重建）",
+      "action": "batch_new_projects",
+      "expect": {
+        "made": 3,
+        "all_exist": true,
+        "all_src": true,
+        "all_clean": true
+      },
+      "reopen": false
+    },
     "batch.projects": {
       "family": "build",
       "level": "L3",
@@ -521,6 +549,39 @@
         "clean_items": 3,
         "distinct_sources": 3,
         "content_match": 3
+      },
+      "reopen": false
+    },
+    "project.new_language": {
+      "family": "project",
+      "level": "L1",
+      "title": "**换程序语言建工程**（ST / SFC / FBD）",
+      "action": "project_new_language",
+      "expect": {
+        "made": 3,
+        "all_marks": true,
+        "all_exist": true,
+        "all_fx5u": true
+      },
+      "reopen": false
+    },
+    "project.check": {
+      "family": "project",
+      "level": "L3",
+      "title": "**工程校验**（与另一个 .gx3 比对）",
+      "action": "project_check",
+      "expect": {
+        "opened": true,
+        "result_doc": true,
+        "rows": {
+          "min": 1.0,
+          "max": 60.0
+        },
+        "status_count": 2,
+        "grid_diff": {
+          "min": 1.0,
+          "max": 60.0
+        }
       },
       "reopen": false
     },
@@ -545,6 +606,8 @@
       "project.new_rcpu",
       "project.new_fx5s",
       "project.save",
+      "project.new_language",
+      "project.check",
       "project.reopen"
     ],
     "program": [
@@ -583,9 +646,13 @@
     "build": [
       "build.convert_all",
       "build.program_check",
+      "build.error_messages",
       "build.error_detail",
       "build.locate_error_line",
       "batch.projects"
+    ],
+    "batch": [
+      "batch.new_projects"
     ]
   },
   "pending": {
