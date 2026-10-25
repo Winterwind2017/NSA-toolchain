@@ -85,6 +85,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-25 | **37/37（v0.15，乱序跑 seed=31）** | 5332.1 s |
 | 2026-10-25 | **42/42（v0.16：梯形图读/画/并联/应用指令/多梯级）** | 6302.2 s |
 | 2026-10-25 | **42/42（v0.16，同一份代码第二次）** | 6327.1 s |
+| 2026-10-25 | **42/42（v0.16，乱序跑 seed=47）** | 6302.8 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -408,3 +409,9 @@ kill_stray 时机都经得起换序）。
 3. **并联必须最后插**：先插 OR 会被静默丢弃，并把「线圈」按钮弄成禁用态。
 4. 真实产线工程（某产线项目网片焊接线 4 个 .gx3）用来对照 DSL：`ct` 的 `as=[as{vt=Abl}]` 恒定，
    线圈/应用指令的 `as` 多一段 `A16`，`c{s=#:v=1}` 是常数 K1。
+
+### v0.16 的乱序轮（seed=47）
+
+`batch.new_projects → program.import_fb → program.multi_programs → project.check → project.new_fx5s → program.paste_st → program.import_fb_params → datatype.import → xmlgen.manual_template → program.write_ladder_parallel → program.write_ladder → label.import_xml → project.meta → datatype.custom_members → project.reopen → build.error_messages → program.read_st → project.new_language → program.import_fb_instance → project.diff → datatype.struct_array → datatype.member_access → program.import_xml → build.program_check → program.rcpu_roundtrip → project.new → batch.projects → datatype.member_var → program.write_ladder_appl → project.new_rcpu → inspect.devices_rcpu → inspect.mil → inspect.devices → inspect.ladder → label.multi_type → inspect.source_map → build.locate_error_line → program.write_ladder_multi → build.error_detail → build.convert_all → project.save → inspect.programs`
+
+42 条换序全过 → 无顺序依赖/状态泄漏（含梯形图五条排在项目/导入/标签各段之后）。
