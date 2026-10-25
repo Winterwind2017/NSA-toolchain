@@ -15,12 +15,11 @@ sys.path.insert(0, str(KIT / "src"))
 from gxkit import caps  # noqa: E402
 
 PENDING = [
-    ("build.error_message", "编译器原话：转换结果面板是自绘视图，读不到文本"),
     ("label.non_bool", "WORD/DINT 标签导入未验证（只验证了 BOOL）"),
-    ("project.check", "工程校验是两工程比对，不是校验本工程"),
-    ("datatype.local_member_access", "局部结构体变量按成员名访问不可行（五条路都试过；全局标签已通）"),
-    ("online.write", "需要真实 PLC；用户口径只做离线"),
-    ("ladder.write", "梯形图编辑器是自绘控件，无法程序化写网络"),
+    ("datatype.local_member_access", "局部结构体变量按成员名访问不可行（七条路都试过；全局标签已通）"),
+    ("sfc.body", "SFC 正文：`*_SFCDB.db` 编码未解析（工程能建、内容画不了）"),
+    ("fbd.body", "FBD 正文：`*_FBDDB.db` 编码未解析（工程能建、内容画不了）"),
+    ("online.write", "需要真实 PLC 或 GX Simulator3；用户口径只做离线"),
 ]
 
 

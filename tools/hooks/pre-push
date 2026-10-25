@@ -1,0 +1,69 @@
+#!/bin/sh
+# pre-push 钩子：技能是**从内核生成**的，生成物没同步就推上去会立刻过期。
+#
+# 装：python tools/install_hooks.py      临时绕过：git push --no-verify
+#
+# 拦四件事：
+#   1) 远端不是 SSH（HTTPS 远端会卡在凭据弹窗上）
+#   2) ssh -T git@github.com 不通
+#   3) tools/check_skill.py 不过（SKILL.md 引用了未知能力 / 计数不一致）
+#   4) capabilities.json / capabilities.md 与内核不同步（重跑 sync 后仍有 diff → 拒推）
+
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+fail() {
+  printf '\n[pre-push] 拒绝推送：%s\n' "$1" >&2
+  [ -n "$2" ] && printf '  修法：%s\n' "$2" >&2
+  exit 1
+}
+
+url="$(git remote get-url origin 2>/dev/null || true)"
+case "$url" in
+  git@*|ssh://*) : ;;
+  "") fail "没有 origin 远端" "git remote add origin git@github.com:Winterwind2017/ww-gxworks-automation.git" ;;
+  *) fail "远端是 HTTPS（$url）——会卡在凭据弹窗" \
+          "git remote set-url origin git@github.com:Winterwind2017/ww-gxworks-automation.git" ;;
+esac
+
+if command -v ssh >/dev/null 2>&1; then
+  if ! ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=8 \
+        -T git@github.com 2>&1 | grep -q 'successfully authenticated'; then
+    fail "ssh -T git@github.com 不通（没有可用 key）" \
+         "ssh-keygen -t ed25519 -C \"you@machine\"，公钥贴到 GitHub → Settings → SSH keys"
+  fi
+fi
+
+PY="${GXKIT_PYTHON:-}"
+if [ -z "$PY" ]; then
+  for cand in "py -3" \
+              "/c/Users/yuche/AppData/Local/Programs/Python/Python312/python.exe" \
+              python3 python; do
+    if $cand -c "import sys" >/dev/null 2>&1; then PY="$cand"; break; fi
+  done
+fi
+if [ -z "$PY" ]; then
+  echo "[pre-push] 警告：找不到 python，跳过检查" >&2
+  exit 0
+fi
+
+# 3) 技能自检
+if ! $PY tools/check_skill.py >/tmp/wxgx_skill_check 2>&1; then
+  cat /tmp/wxgx_skill_check >&2
+  fail "技能自检不过" "$PY tools/check_skill.py"
+fi
+
+# 4) 生成物同步：重跑 sync，若 capabilities.* 有 diff 说明忘了提交
+$PY tools/sync_capabilities.py >/tmp/wxgx_skill_sync 2>&1 || {
+  cat /tmp/wxgx_skill_sync >&2
+  fail "同步脚本本身失败" "$PY tools/sync_capabilities.py"
+}
+if ! git diff --quiet -- capabilities.json capabilities.md; then
+  git --no-pager diff --stat -- capabilities.json capabilities.md >&2
+  fail "capabilities.* 与内核不同步（已重新生成，请提交后再推）" \
+       "git add capabilities.json capabilities.md && git commit -m 'chore: 同步能力表'"
+fi
+
+echo "[pre-push] OK：远端 SSH、技能自检通过、生成物与内核同步"
+exit 0
