@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **37** 条已验证能力（内核 `gxkit 0.15.0`，commit `64856c1`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **42** 条已验证能力（内核 `gxkit 0.16.0`，commit `33d5c23`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
@@ -33,6 +33,11 @@
 | `label.import_xml` | label | L2–L3 | 导入全局标签 XML 并读回 |
 | `build.convert_all` | build | L1–L3 | 全部转换：从 Progress.txt 读错误数 |
 | `build.program_check` | build | L2–L3 | 程序检查：读「无错误」判定文本 |
+| `program.write_ladder_multi` | program | L3 | **画两个梯级**（X0→(Y0)、X1-X2→(Y1)） |
+| `program.write_ladder_parallel` | program | L3 | **画并联支路**（X0 ∥ X2 → (Y0)） |
+| `program.write_ladder_appl` | program | L3 | **画应用指令**（X0 → MOV K1 D0） |
+| `inspect.ladder` | inspect | L1 | **离线读梯形图**（LadderBlocks → 结构/摘要） |
+| `program.write_ladder` | program | L3 | **画梯级**（触点/并联/线圈/应用指令） |
 | `build.error_messages` | build | L2 | **编译器原话**（输出面板的表格） |
 | `build.error_detail` | build | L2–L3 | 故意写错：定位错在哪个编译阶段 |
 | `build.locate_error_line` | build | L3 | 二分法定位坏行（前缀问编译器） |

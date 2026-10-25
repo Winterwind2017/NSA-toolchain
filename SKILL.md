@@ -61,6 +61,11 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 | **批量新建** | `batch.new_projects` | 保存 → 工程→关闭 → Ctrl+N → 另存为，同会话连做 3 个 |
 | **软元件表** | `inspect.devices` | `*_DC.db` `DEVICE_DATA`（FX5U 2935 行 + 注释） |
 | **iQ-R 软元件表** | `inspect.devices_rcpu` | R00 是 3345 行、多一种设备类型码（35），与 FX5U 不同 |
+| **读梯形图** | `inspect.ladder` | `*_LDDB.db` 的 `LadderBlocks.data` 是 `V1:` 文本 DSL；`blocktype` 0=正文 5=END |
+| **画梯级** | `program.write_ladder` | UIA Invoke 工具栏按钮（常开/常闭/OR/线圈/应用指令）→ 点格 → 输软元件 → 回车 |
+| **画并联** | `program.write_ladder_parallel` | 并联必须**最后**插：触点→端子→OR，grid 从 12x1 变 12x2 并自动补竖线 |
+| **画应用指令** | `program.write_ladder_appl` | `应用指令` 按钮 + 剪贴板粘贴整条 `MOV K1 D0` + 回车 |
+| **画多梯级** | `program.write_ladder_multi` | 第 i 个梯级从 `i*3` 行开始；第 3 行插触点会自动开新块（pos=750000） |
 | 编译 | `build.convert_all` | Shift+Alt+F4，保存后读 `Progress.txt` |
 | 程序检查 | `build.program_check` | 工具 → 程序检查 → 执行 → `程序检查已完成。无错误。` |
 | 错误定位（阶段） | `build.error_detail` | `Progress.txt` 的 `failed_stages` |
@@ -193,10 +198,11 @@ python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读 Config + 编译日志
 ## 5. 明确不做
 
 - 在线（写入 PLC / 监视）：需要真实 PLC 或模拟器，用户口径只做离线。
-- 梯形图内容：编辑器自绘，UIA 没有单元格；ST 已覆盖需求。
 - IEC XML 的 LD / FBD / IL / **SFC** 正文：全部被静默丢弃，只认 ST（探针 123）。
+  梯形图改走 **GUI 画 + 读回**（已打通，DSL 规格见内核 `docs/LADDER_DSL.md`）。
 - 局部结构体变量的成员名访问：七条走法都报 2 错，要按成员名访问就用**全局**结构体标签。
 - 导航树里打开已有程序再改写：能打开但不稳定（冷/热交替失败）。
+- SFC / FBD 的**正文**编辑：只能建工程，画不了内容（本轮只做了 LD）。
 
 ## 6. 新增能力的姿势
 

@@ -1,14 +1,14 @@
 {
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
-  "kernel_version": "0.15.0",
-  "kernel_commit": "64856c1",
+  "kernel_version": "0.16.0",
+  "kernel_commit": "33d5c23",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",
   "scope": "offline",
   "counts": {
-    "verified": 37,
+    "verified": 42,
     "families": 8,
     "pending": 6
   },
@@ -480,6 +480,75 @@
       },
       "reopen": false
     },
+    "program.write_ladder_multi": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画两个梯级**（X0→(Y0)、X1-X2→(Y1)）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 2,
+        "contacts_read": 3,
+        "terminals_read": 2,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder_parallel": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画并联支路**（X0 ∥ X2 → (Y0)）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 2,
+        "terminals_read": 1,
+        "verticals": {
+          "min": 1.0,
+          "max": 8.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder_appl": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画应用指令**（X0 → MOV K1 D0）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 1,
+        "terminals_read": 1,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "inspect.ladder": {
+      "family": "inspect",
+      "level": "L1",
+      "title": "**离线读梯形图**（LadderBlocks → 结构/摘要）",
+      "action": "inspect_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 2,
+        "terminals_read": 1,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画梯级**（触点/并联/线圈/应用指令）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 2,
+        "terminals_read": 1,
+        "errors": 0
+      },
+      "reopen": false
+    },
     "build.error_messages": {
       "family": "build",
       "level": "L2",
@@ -618,7 +687,11 @@
       "program.import_fb",
       "program.import_fb_instance",
       "program.import_fb_params",
-      "program.multi_programs"
+      "program.multi_programs",
+      "program.write_ladder_multi",
+      "program.write_ladder_parallel",
+      "program.write_ladder_appl",
+      "program.write_ladder"
     ],
     "inspect": [
       "project.meta",
@@ -627,7 +700,8 @@
       "inspect.programs",
       "project.diff",
       "inspect.devices",
-      "inspect.mil"
+      "inspect.mil",
+      "inspect.ladder"
     ],
     "datatype": [
       "datatype.import",
