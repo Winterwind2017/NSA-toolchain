@@ -82,6 +82,7 @@ python -m gxkit meta D:\tmp\one\label_import_xml.gx3
 | 2026-10-24 | **33/33（v0.14，乱序跑 seed=23）** | 4251.1 s |
 | 2026-10-25 | **37/37（v0.15：编译器原话/工程校验/换语言/批量新建）** | 5326.4 s |
 | 2026-10-25 | **37/37（v0.15，同一份代码第二次）** | 5321.9 s |
+| 2026-10-25 | **37/37（v0.15，乱序跑 seed=31）** | 5332.1 s |
 
 ## v0.3 加固了什么（每一轮失败换来的）
 
@@ -378,3 +379,9 @@ kill_stray 时机都经得起换序）。
    「对象未转换，因此无法显示转换结果。」）。
 2. **SFC / FBD / IL 正文仍被静默丢弃**（探针 123）→ IEC XML 只认 ST。
 3. **局部结构体成员名访问是机制级堵死**：又试"带/不带成员分配"两条，仍 `程序(...)转换中` 2 错（探针 144）。
+
+### v0.15 的乱序轮（seed=31）
+
+`datatype.member_access → program.import_fb_instance → inspect.devices_rcpu → program.import_xml → program.multi_programs → build.locate_error_line → program.import_fb_params → label.multi_type → project.meta → program.paste_st → project.reopen → datatype.import → xmlgen.manual_template → batch.new_projects → build.error_messages → datatype.member_var → datatype.custom_members → build.program_check → build.convert_all → project.diff → label.import_xml → inspect.source_map → project.new_rcpu → batch.projects → project.check → inspect.devices → inspect.programs → project.new_language → datatype.struct_array → program.rcpu_roundtrip → project.save → project.new_fx5s → program.import_fb → inspect.mil → program.read_st → build.error_detail → project.new`
+
+37 条换序全过 → 无顺序依赖/状态泄漏。
