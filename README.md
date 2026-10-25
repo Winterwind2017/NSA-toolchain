@@ -3,7 +3,10 @@
 **MELSOFT GX Works3 的自动化内核**（工控 PLC 编程）：无 COM、无 API，靠真实界面操作 + 工程文件读数。
 
 引擎：**GX Works3 1.117.0.1**（`D:\Program Files (x86)\MELSOFT\GPPW3\GXW3.exe`）
-目标机型：**FX5U**（MELSEC iQ-F）　程序语言：**ST**　范围：**仅离线**
+目标机型：**FX5U**（MELSEC iQ-F，另支持 FX5S / iQ-R R00）　程序语言：**ST + 梯形图(LAD)**　范围：**仅离线**
+
+> **下次开工先读 [docs/NEXT_SESSION.md](docs/NEXT_SESSION.md)** —— 收口交接单：还没做的方向（SFC/FBD 正文、注释写入……）、
+> 已判定堵死的清单、以及"需要真机才能做"的在线能力。
 
 ## 为什么长这样
 
@@ -27,7 +30,7 @@
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest                       # 离线自检（不需要 GX Works3）
 python -m gxkit caps                           # 列能力
-python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部（约 35 分钟）
+python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部 42 条（约 105 分钟）
 python -m gxkit run --only project.save        # 只跑一条
 python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编译日志
 ```
