@@ -194,6 +194,159 @@ BAD_ST_CODE = "B0 := ;\r\nW0 := W0 + ;\r\n"
 UNDEF_CODE = "UndefLabel := 1;\r\nB0 := NOT B0;"
 
 
+LAD_BUTTON = {"NO": "常开触点", "NC": "常闭触点",
+              "OR_NO": "常开触点OR", "OR_NC": "常闭触点OR",
+              "COIL": "线圈", "APPL": "应用指令"}
+LAD_COL_PX, LAD_ROW_PX = 28, 22
+LAD_X0_PX, LAD_Y0_PX = 84, 46
+
+
+def _lad_canvas(pid: int):
+    """梯形图画布矩形（'m_splitterControl' 下面积最大的子元素）。"""
+    from . import uia
+
+    obj, UIA = uia.automation()
+    fr = uia.element(next(w["hwnd"] for w in uia.windows_of(pid)
+                          if w["class"] == "GXW3FrameWnd"))
+    holder = fr.FindFirst(4, obj.CreatePropertyCondition(
+        UIA.UIA_NamePropertyId, "m_splitterControl"))
+    if not holder:
+        return None
+    wk = obj.RawViewWalker
+    best, area = None, 0
+    stack = []
+    ch = wk.GetFirstChildElement(holder)
+    while ch:
+        stack.append(ch)
+        ch = wk.GetNextSiblingElement(ch)
+    while stack:
+        e = stack.pop()
+        try:
+            r = e.CurrentBoundingRectangle
+            a = (r.right - r.left) * (r.bottom - r.top)
+            if a > area:
+                best, area = (r.left, r.top, r.right, r.bottom), a
+            c = wk.GetFirstChildElement(e)
+            while c:
+                stack.append(c)
+                c = wk.GetNextSiblingElement(c)
+        except Exception:
+            continue
+    return best
+
+
+def _lad_invoke(pid: int, name: str) -> bool:
+    """UIA Invoke 梯形图工具栏按钮。"""
+    from . import uia
+
+    obj, UIA = uia.automation()
+    fr = uia.element(next(w["hwnd"] for w in uia.windows_of(pid)
+                          if w["class"] == "GXW3FrameWnd"))
+    found = fr.FindAll(4, obj.CreatePropertyCondition(UIA.UIA_NamePropertyId, name))
+    for i in range(found.Length):
+        it = found.GetElement(i)
+        try:
+            if it.CurrentBoundingRectangle.right > it.CurrentBoundingRectangle.left:
+                it.GetCurrentPattern(10000).QueryInterface(
+                    UIA.IUIAutomationInvokePattern).Invoke()
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _lad_place(s, pid: int, symbol: str, col: int, row: int, text: str) -> None:
+    from . import win as W
+
+    _lad_invoke(pid, LAD_BUTTON[symbol])
+    W.activate(s.main["hwnd"])
+    cr = _lad_canvas(pid)
+    W.click(cr[0] + LAD_X0_PX + LAD_COL_PX * col,
+            cr[1] + LAD_Y0_PX + LAD_ROW_PX * row, settle=0.7)
+    if " " in text:                      # 应用指令：整条指令一起粘
+        W.set_clipboard(text)
+        time.sleep(0.3)
+        W.chord("ctrl", "v")
+        time.sleep(0.4)
+    else:
+        for ch in text:
+            W.tap(ch.lower(), 0.22)
+    W.tap("enter", 1.3)
+    W.tap("esc", 0.3)                     # 清掉放置模式，否则后续 Invoke 会被禁用
+
+
+def _lad_build(s, pid: int, contacts, parallel, out) -> None:
+    """画一个梯级。**顺序是实测出来的，不能换**：
+
+    ① 先放串联触点
+    ② 再放端子（线圈/应用指令）—— 并联支路两端要有东西可连，否则 OR 会被静默丢弃
+    ③ 最后插并联支路（OR 按钮），此时 grid 会从 Nx1 变成 Nx2 并自动补竖线
+    """
+    for i, (sym, dev) in enumerate(contacts):
+        _lad_place(s, pid, sym, i, 0, dev)
+    _lad_place(s, pid, out[0], len(contacts), 0, out[1])
+    for j, branch in enumerate(parallel):
+        for k, (sym, dev) in enumerate(branch):
+            _lad_place(s, pid, "OR_NO" if sym == "NO" else "OR_NC", k, 1 + j, dev)
+
+
+def inspect_ladder(ctx: dict) -> dict:
+    """**往返**：画一个固定梯级（X0、X1 串联 → (Y0)），再离线读回来核对。"""
+    from . import ladder
+
+    ctx = dict(ctx)
+    ctx["lang"] = 0                      # 梯形图工程
+    s, _ = _new_and_save(ctx)
+    _lad_build(s, s.proc.pid, [["NO", "X0"], ["NO", "X1"]], [], ["COIL", "Y0"])
+    s.save()
+    blocks = ladder.read_blocks(pathlib.Path(ctx["project"]))
+    bodies = [b for b in blocks if b["blocktype"] == 0]
+    kinds = ladder.count_kinds(bodies)
+    s.convert_all()
+    s.save()
+    prog = read_progress(ctx["project"])
+    return {"blocks": len(blocks), "bodies": len(bodies),
+            "contacts_read": kinds.get("contact", 0),
+            "terminals_read": kinds.get("coil", 0),
+            "summaries": [ladder.summarize(b) for b in bodies][:3],
+            "devices": [b["devices"] for b in bodies][:3],
+            "instructions": [b["instructions"] for b in bodies][:3],
+            "errors": prog.get("errors")}
+
+
+def program_write_ladder(ctx: dict) -> dict:
+    """**画一个梯级**：串联触点（常开/常闭）+ 可选并联支路 + 端子（线圈/应用指令）。"""
+    from . import ladder
+
+    ctx = dict(ctx)
+    ctx["lang"] = 0                      # 梯形图工程
+    s, _ = _new_and_save(ctx)
+    contacts = ctx.get("contacts") or [["NO", "X0"], ["NO", "X1"]]  # noqa: E501
+    parallel = ctx.get("parallel") or []
+    out = ctx.get("out") or ["COIL", "Y0"]
+    pid = s.proc.pid
+
+    _lad_build(s, pid, contacts, parallel, out)
+
+    s.save()
+    blocks = ladder.read_blocks(pathlib.Path(ctx["project"]))
+    bodies = [b for b in blocks if b["blocktype"] == 0]
+    kinds = ladder.count_kinds(bodies)
+    s.convert_all()
+    s.save()
+    prog = read_progress(ctx["project"])
+    return {"bodies": len(bodies),
+            "contacts_expected": len(contacts) + sum(len(b) for b in parallel),
+            "contacts_read": kinds.get("contact", 0),
+            "terminals_read": kinds.get("coil", 0),
+            "summaries": [ladder.summarize(b) for b in bodies][:3],
+            "devices": [b["devices"] for b in bodies][:3],
+            "instructions": [b["instructions"] for b in bodies][:3],
+            "verticals": sum(len(b["verticals"]) for b in bodies),
+            "errors": prog.get("errors"),
+            "failed_stages": prog.get("failed_stages")}
+
+
 def build_error_messages(ctx: dict) -> dict:
     """读**编译器原话**（「输出」面板的表格）：结果/数据名/分类/内容/错误代码。"""
     from . import uia
@@ -1306,6 +1459,8 @@ ACTIONS = {
     "build_program_check": build_program_check,
     "build_error_detail": build_error_detail,
     "build_error_messages": build_error_messages,
+    "inspect_ladder": inspect_ladder,
+    "program_write_ladder": program_write_ladder,
     "batch_projects": batch_projects,
     "inspect_programs": inspect_programs,
     "project_diff": project_diff_action,

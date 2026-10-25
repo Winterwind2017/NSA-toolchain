@@ -500,3 +500,9 @@ def activate_pane_tab(pid: int, tab_name: str) -> bool:
             return True
     return False
 
+
+def windows_of(pid: int):
+    """给 actions 用的窗口列表（转发 win.windows）。"""
+    from .win import windows
+
+    return windows(pid)

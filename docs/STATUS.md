@@ -1,10 +1,10 @@
 # gxkit 现状
 
-引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.15.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
+引擎 **GX Works3 1.117.0.1**，内核 **gxkit 0.16.0**。目标机型 **FX5U**，程序语言 **ST**，范围 **离线**。
 
 ## 数字
 
-- 真机通过能力：**37** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
+- 真机通过能力：**41** 条（其中 23 条已全量连跑两次通过；inspect.programs / project.diff 单项通过，**全量复跑待补**）
 - 一条能力一个干净会话（启动约 10 s）；`batch.projects` 与 `build.locate_error_line` 是例外（前者同会话连做，后者同会话多次转换）
 - 未打通：见 `UNSUPPORTED.md`
 
@@ -14,6 +14,10 @@
 
 | id | 做什么 | 判据来源 |
 |---|---|---|
+| `inspect.ladder` | **离线读梯形图**（`LadderBlocks` → 结构/摘要） | 往返：写 X0-X1→(Y0)，读回 2 触点 1 线圈、0 错 |
+| `program.write_ladder` | **画梯级**（串联触点 + 线圈） | 读回 `-[ ]-a0@0,0 -[ ]-a1@1,0 -( )-a0@2,0`、0 错 |
+| `program.write_ladder_parallel` | **画并联支路**（X0 ∥ X2） | grid 变 `12x2`、竖线 ≥1、2 触点 1 线圈、0 错 |
+| `program.write_ladder_appl` | **画应用指令**（`MOV K1 D0`） | 头里出现 `MOV:K_1:D`、1 触点 1 端子、0 错 |
 | `build.error_messages` | **编译器原话**（读「输出」面板的表格） | 表格 6 列 + 一行 `使用了未定义的标签。`／`0x110E1A20` |
 | `project.check` | **工程校验**（与另一个 .gx3 比对） | 结果页 `校验结果` + 状态行 `存在2个不同内容` |
 | `project.new_language` | **换程序语言建工程**（ST / SFC / FBD） | 标题分别含 `[ST]` / `[SFC]` / `[FBD/LD]`，Unit 都是 FX5U |
@@ -100,5 +104,5 @@ python -m gxkit run --shuffle --seed 7            # 乱序跑一轮（查顺序�
 ```powershell
 $env:PYTHONPATH='D:\bililive\gxkit\src'
 python -m gxkit selftest
-python -m gxkit run --workdir D:\tmp\run1     # 37/37，约 76 分钟
+python -m gxkit run --workdir D:\tmp\run1     # 41/41，约 100 分钟
 ```

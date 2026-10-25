@@ -1,6 +1,6 @@
 # 全量验证记录
 
-> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"37 条能力全过"。
+> 目的：在一台装了 GX Works3 的机器上，按下面几步就能复现"41 条能力全过"。
 
 ## 环境
 
@@ -18,13 +18,13 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
-# 自检通过：37 条能力，动作与判据齐全
+# 自检通过：41 条能力，动作与判据齐全
 
 # 2) 离线测试（含 inspect / xmlgen 的合成 .gx3）
 python -m pytest -q tests
 # 23 passed
 
-# 3) 真机全量（约 76 分钟；每条能力一个干净会话）
+# 3) 真机全量（约 100 分钟；每条能力一个干净会话）
 python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
 ```
 
@@ -385,3 +385,23 @@ kill_stray 时机都经得起换序）。
 `datatype.member_access → program.import_fb_instance → inspect.devices_rcpu → program.import_xml → program.multi_programs → build.locate_error_line → program.import_fb_params → label.multi_type → project.meta → program.paste_st → project.reopen → datatype.import → xmlgen.manual_template → batch.new_projects → build.error_messages → datatype.member_var → datatype.custom_members → build.program_check → build.convert_all → project.diff → label.import_xml → inspect.source_map → project.new_rcpu → batch.projects → project.check → inspect.devices → inspect.programs → project.new_language → datatype.struct_array → program.rcpu_roundtrip → project.save → project.new_fx5s → program.import_fb → inspect.mil → program.read_st → build.error_detail → project.new`
 
 37 条换序全过 → 无顺序依赖/状态泄漏。
+
+## v0.16：梯形图（LAD）四条能力
+
+先弄清 DSL，再逐层验证。下面每条都是真机读数。
+
+| 能力 | 读数 |
+|---|---|
+| `program.write_ladder` | 2 触点 1 线圈，摘要 `-[ ]-a0@0,0 -[ ]-a1@1,0 -( )-a0@2,0`，0 错（185.4 s） |
+| `program.write_ladder_parallel` | grid `12x2`、竖线 1、2 触点 1 线圈，0 错（185.4 s） |
+| `program.write_ladder_appl` | 头里 `a:X:MOV:K_1:D`，1 触点 1 端子，0 错（177.9 s） |
+| `inspect.ladder` | 往返：写 X0-X1→(Y0) 后离线读回 2 触点 1 线圈，0 错（185.6 s） |
+
+探索过程中的关键读数（都进 `PITFALLS.md` 五十一~五十四）：
+
+1. **`LadderBlocks.data` 是 `V1:` 文本 DSL**，`blocktype=0` 正文、`5` END；
+   `e{s=ce{op=ct…}:pos=列,行}` / `op=cl`；`d{s=#:a=N}` 的 N 就是软元件地址（X0→0、X1→1、Y0→0）。
+2. **F5/F7 不可靠**（同一像素一次成功一次报「执行位置不正确。」），改 **UIA Invoke 工具栏按钮**。
+3. **并联必须最后插**：先插 OR 会被静默丢弃，并把「线圈」按钮弄成禁用态。
+4. 真实产线工程（某产线项目网片焊接线 4 个 .gx3）用来对照 DSL：`ct` 的 `as=[as{vt=Abl}]` 恒定，
+   线圈/应用指令的 `as` 多一段 `A16`，`c{s=#:v=1}` 是常数 K1。

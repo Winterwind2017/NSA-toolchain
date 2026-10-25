@@ -93,3 +93,47 @@ def test_local_vars_have_no_remark() -> None:
                         continue
                     names = [d.get("name") or "" for d in list(add)]
                     assert not any("VariableRemark" in n for n in names), var.get("name")
+
+def test_ladder_dsl_reader() -> None:
+    """`V1:` DSL 的解析：触点/线圈/空位/竖线/软元件表。"""
+    from gxkit import ladder
+
+    series = (
+        "V1:6:1:1:1:1:1:1:a:X:a:X:c:Y:cb{fg=fg{dim=12x1:es=["
+        "e{s=ce{op=ct{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=0:vt=nn}]}:pos=0,0}:"
+        "e{s=ce{op=ct{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=1:vt=nn}]}:pos=1,0}:"
+        "e{s=ce{op=cl{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=0:vt=nn}]}:pos=2,0}]}}"
+    )
+    blk = ladder._parse_block("x_LDDB.db", 0, 500000.0, series)
+    assert blk["cols"] == 12 and blk["rows"] == 1
+    assert blk["devices"] == ["X", "X", "Y"]
+    kinds = [e["kind"] for e in blk["elements"]]
+    assert kinds == ["contact", "contact", "coil"]
+    assert [e["addr"] for e in blk["elements"]] == [0, 1, 0]
+    assert [e["col"] for e in blk["elements"]] == [0, 1, 2]
+    assert blk["verticals"] == []
+
+    parallel = (
+        "V1:8:1:1:1:1:1:1:1:1:a:X:a:X:c:Y:a:X:cb{fg=fg{dim=12x2:es=["
+        "e{s=ce{op=ct{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=0:vt=nn}]}:pos=0,0}:"
+        "e{s=-:pos=1,0}:"
+        "e{s=ce{op=cl{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=0:vt=nn}]}:pos=11,0}:"
+        "e{s=ce{op=ct{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=2:vt=nn}]}:pos=0,1}]"
+        ":vs=[v{pos=1,1}]}}"
+    )
+    blk2 = ladder._parse_block("x_LDDB.db", 0, 500000.0, parallel)
+    assert blk2["rows"] == 2
+    assert blk2["verticals"] == [{"col": 1, "row": 1}]
+    assert ladder.count_kinds([blk2])["contact"] == 2
+    assert "empty" in [e["kind"] for e in blk2["elements"]]
+
+    appl = (
+        "V1:5:1:1:3:3:1:a:X:MOV:K_1:D:cb{fg=fg{dim=4x1:es=["
+        "e{s=ce{op=ct{op=#:ct=a:as=[as{vt=Abl}]}:args=[d{s=#:a=0:vt=nn}]}:pos=0,0}:"
+        "e{s=ce{op=cl{op=#:ct=a:as=[as{vt=A16}:as{vt=A16}]}:args=[c{s=#:v=1:si=s}"
+        ":d{s=#:a=0:vt=nn}]}:pos=1,0}]}}"
+    )
+    blk3 = ladder._parse_block("x_LDDB.db", 0, 500000.0, appl)
+    assert blk3["instructions"] == ["MOV"]
+    assert blk3["elements"][1]["const"] == 1
+    assert blk3["elements"][1]["addr"] == 0
