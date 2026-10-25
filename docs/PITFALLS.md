@@ -493,3 +493,20 @@ FB 的输入参数如果没有初值，调用时漏传就会 `程序(...)转换�
 `存在无法转换的梯形图。请修改程序。`（0x11031F01，结构不成立）、
 `使用了未定义的标签。`（0x110E1A20）。都能从「输出」面板读到。
 
+## 五十五、远端默认分支不是 main 时，"推成功"≠"页面更新"
+
+2026-10-25 收口时发现：`gxkit` 远端有两条分支 —— `main`（最新，42 条能力）与
+`master`（停在 **0.1，6 条能力**，53 个提交之前），而 GitHub 的**默认分支是 master**。
+结果是 `git push origin main` 一路成功、`git rev-list` 也显示 0/0，但仓库首页与 clone
+拿到的都是 0.1。判据不能只看 `origin/main` 的 ref，要看 `git ls-remote origin HEAD`
+与 `gh repo view --json defaultBranchRef`。修法：先 `git push origin main:master` 快进
+（master 是 main 的祖先，安全），再 `gh repo edit <repo> --default-branch main`，
+最后删掉多余的 `master`。
+
+## 五十六、文档一致性要靠钩子拦，不能靠自觉
+
+`check_consistency.py` 只在"有人记得跑"时有效。现在 `tools/hooks/pre-push` 会把它
+连同 `selftest`、`pytest tests` 一起跑，任何一处不过就拒推并打印修法；
+换机器先 `python tools/install_hooks.py`（只写 `.git/hooks/pre-push`，不碰全局配置）。
+实测：把 STATUS 里的能力数从 42 改成 41，推送前立刻被拦下并指出是哪一处不一致。
+

@@ -109,4 +109,8 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 - 干活时**不要主动因上下文收口**；上下文余量另有机制。
 - 每批改动都要：单跑 → 三轮全量（2 同序 + 1 乱序）→ 结果写进 `docs/VERIFY.md` → 推两个仓库。
 - 没打通的不许进能力表，写进 `UNSUPPORTED.md`（`AGENTS.md` 第 1 条）。
+- 推代码前有 `pre-push` 钩子把关（远端 SSH / 五处数字一致 / selftest / 离线测试）；
+  换机器先跑 `python tools/install_hooks.py`。
+- 远端默认分支是 **`main`**（曾经默认 `master` 停在 0.1，导致“推了 main 但页面是旧版”，已修）；
+  推之前确认 `git ls-remote --heads origin` 只有 `main`。
 - GUI 会抢前台；用户接受这一点（他选择"按现状继续"）。

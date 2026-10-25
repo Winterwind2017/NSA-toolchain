@@ -1,0 +1,86 @@
+#!/bin/sh
+# pre-push 钩子：把"推上去才发现文档和代码不一致 / 离线测试挂了"提前拦下来。
+#
+# 装：python tools/install_hooks.py
+# 临时绕过：git push --no-verify
+#
+# 拦四件事：
+#   1) 远端不是 SSH（HTTPS 远端会卡在凭据弹窗上，表现为无输出挂死）
+#   2) ssh -T git@github.com 不通（没有可用 key）
+#   3) tools/check_consistency.py 不过（STATUS / registry / VERIFY / 自检 / 测试 五处数字不一致）
+#   4) 离线测试不过（pytest tests）或能力自检不过（selftest）
+
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+fail() {
+  printf '\n[pre-push] 拒绝推送：%s\n' "$1" >&2
+  [ -n "$2" ] && printf '  修法：%s\n' "$2" >&2
+  exit 1
+}
+
+# 1) 远端必须是 SSH
+url="$(git remote get-url origin 2>/dev/null || true)"
+case "$url" in
+  git@*|ssh://*) : ;;
+  "") fail "没有 origin 远端" \
+          "git remote add origin git@github.com:Winterwind2017/gxkit.git" ;;
+  *) fail "远端是 HTTPS（$url）——会卡在凭据弹窗" \
+          "git remote set-url origin git@github.com:Winterwind2017/gxkit.git" ;;
+esac
+
+# 2) SSH 必须通
+if command -v ssh >/dev/null 2>&1; then
+  if ! ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=8 \
+        -T git@github.com 2>&1 | grep -q 'successfully authenticated'; then
+    fail "ssh -T git@github.com 不通（没有可用 key）" \
+         "ssh-keygen -t ed25519 -C \"you@machine\"，公钥贴到 GitHub → Settings → SSH keys"
+  fi
+fi
+
+# 3) 找 python：本机 `python` 可能是 Microsoft Store 占位符，优先已知解释器
+PY="${GXKIT_PYTHON:-}"
+if [ -z "$PY" ]; then
+  for cand in "py -3" \
+              "$LOCALAPPDATA/Programs/Python/Python312/python.exe" \
+              "/c/Users/yuche/AppData/Local/Programs/Python/Python312/python.exe" \
+              python3 python; do
+    if $cand -c "import sys" >/dev/null 2>&1; then PY="$cand"; break; fi
+  done
+fi
+
+if [ -z "$PY" ]; then
+  echo "[pre-push] 警告：找不到 python，跳过文档一致性检查" >&2
+  exit 0
+fi
+
+export PYTHONPATH="$ROOT/src"
+
+run_checked() {
+  if ! $PY "$@" >/tmp/gxkit_hook_check 2>&1; then
+    cat /tmp/gxkit_hook_check >&2
+    fail "检查没过：$*" "$PY $*"
+  fi
+}
+
+run_optional() {
+  if ! $PY "$@" >/tmp/gxkit_hook_check 2>&1; then
+    cat /tmp/gxkit_hook_check >&2
+    echo "[pre-push] 警告：$* 跳过（环境缺依赖）" >&2
+  fi
+}
+
+# 3) 文档 ↔ 代码五处数字一致（STATUS / registry / VERIFY / selftest / tests）
+run_checked tools/check_consistency.py
+
+# 4) 能力自检 + 离线测试
+run_checked -m gxkit selftest
+if $PY -c "import pytest" >/dev/null 2>&1; then
+  run_checked -m pytest -q tests
+else
+  echo "[pre-push] 警告：这个 python 没装 pytest，跳过 tests" >&2
+fi
+
+echo "[pre-push] OK：远端 SSH、五处数字一致、selftest 与离线测试通过"
+exit 0

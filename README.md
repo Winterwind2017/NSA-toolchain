@@ -35,6 +35,22 @@ python -m gxkit run --only project.save        # 只跑一条
 python -m gxkit meta D:\tmp\run1\project_save.gx3   # 读工程元信息与编译日志
 ```
 
+## 推代码之前：`pre-push` 钩子
+
+```powershell
+python tools\install_hooks.py      # 每台机器跑一次
+```
+
+之后 `git push` 会先过四道闸（任何一道不过就**拒推**，并打印修法）：
+
+1. 远端必须是 SSH（HTTPS 远端会卡在凭据弹窗上，表现为无输出挂死）；
+2. `ssh -T git@github.com` 必须通；
+3. `tools/check_consistency.py` —— STATUS / registry / VERIFY / 自检 / 测试 **五处数字一致**；
+4. `python -m gxkit selftest` + `pytest tests` —— 能力自检与离线测试。
+
+临时绕过：`git push --no-verify`（只在明确知道原因时用）。
+模板在 `tools/hooks/pre-push`，钩子是仓库内的文件，换机器只需重跑一次 `install_hooks.py`。
+
 ## 判据从哪来（不看返回值）
 
 | 判据 | 来源 |
