@@ -8,6 +8,9 @@
 1. NX 交互式会话在运行，且 `nx_user/startup` 里的 NXMcPRemotingServer.dll 被加载
    （把 `UGII_USER_DIR` 指到 `CAD-Agent-Hub/MCP/UG/nx_user` 即可自动加载）；
 2. 上游 `start_mcp.py` 在 NX 里跑过一次，把 socket 桥起来；
+   实测最省事的做法：NX 里 **Ctrl+U** 直接加载 `NXMcPRemotingServer.dll`
+   （或跑 `start_bridge.py`），然后保持 NX 开着。桥没起时的报错原文是
+   "cannot reach the non-blocking NX bridge at http://127.0.0.1:48161/NXOpenSession"。
 3. 本机 NX 有对应模块许可（CAM 需要 CAM 许可）。
 """
 

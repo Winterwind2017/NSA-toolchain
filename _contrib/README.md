@@ -22,5 +22,5 @@ nsa-mcp-hub 的约定是"**工具必须给判据、判据必须真机可验**"�
 - `ug`（`CAD-Agent-Hub/MCP/UG`，82 个工具）：CAM / 机床运动学 / NX 钣金 / 装配约束写入。
   需要 NX 交互式会话 + `nx_user/startup` 里的 `NXMcPRemotingServer.dll` 被加载
   （把 `UGII_USER_DIR` 指到 `CAD-Agent-Hub/MCP/UG/nx_user`），并在 NX 里跑过一次
-  `start_mcp.py` 把 socket 桥起来。桥没起时工具会如实报错，不会假装成功。
+  `start_mcp.py` 把 socket 桥起来（最省事：NX 里 Ctrl+U 直接加载那个 .dll，然后保持 NX 开着）。桥没起时工具会如实报错，不会假装成功。
 - `catia`（`CAD-Agent-Hub/MCP/CATIA`，55 个工具）：本机未安装 CATIA V5，验收 SKIP。
