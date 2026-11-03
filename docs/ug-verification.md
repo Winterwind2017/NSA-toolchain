@@ -392,3 +392,66 @@ OP_POCKET2/3/4、OP_POCKET_NEW     false   （配方试验留下的）
 结论：平面铣这一族**要底面**，且底面要么用 UI（含表达式输入），要么找 `GeometryCiBuilder`
 里未暴露的 floor 入口。其余三族（腔铣/无壁底面、面铣 Midpass、面铣单向往复）已经全线可生成。
 
+## 12. 2→1→3 收尾（2026-11-04 02:30–03:00）
+
+### 12.1 ② 平面铣：找到底面入口，但仍不出刀路
+
+`PlanarMillingBuilder.Geometry` 是 `GeometryCiBuilder`，成员里有 **`FloorPlane`**——这就是 UI 上
+「指定底面」的 API 入口。设置成功：
+
+```
+b.Geometry.FloorPlane = work.Planes.CreatePlane((0,0,0),(0,0,1), AfterModeling)
+  → set_floor ok / validate true / commit ok
+```
+
+但生成仍是 `path_exists=false`、状态 `regenerate`。也就是说平面铣除了底面还要
+「部件边界 + 切削深度」自洽（UI 里我把边界设在顶面、底面设在 z=0、公共深度 20，仍不出）。
+结论：**平面铣这一族暂未打通**，其余三族（腔铣/无壁底面、面铣 Midpass、面铣单向往复）共 6 条可生成。
+
+### 12.2 ① 清场：删掉 3 条试验工序，剩 1 条删不掉
+
+UI 右键 → 删除，删掉了 `OP_POCKET2`、`OP_POCKET_NEW`、`OP_POCKET4`。
+
+**删不掉的**：`OP_POCKET3`（还有一个本轮试验新建的 `OP_FLOOR_NEW`）。原因查清了：
+
+```
+CAMOperationCollection 没有 DeleteObject/Remove
+Operation 对象也没有 Delete/Destroy
+（其 delete-like 成员只有 DeleteToolPath / DeleteMasterPath / DeleteAllAttributesByType 等）
+```
+
+→ NXOpen **不提供删除工序的 API**，只能 UI 右键删除。这是工具面缺的一环，记在这里。
+
+### 12.3 ③ 回写工具面（CAD-Agent-Hub/MCP/UG）
+
+改了两处，均已 `py_compile` 通过：
+
+**A. stable_id 跨体解析**（`_resolve_topology_object`）
+
+以前：给了 `stable_id` 但没给几何回退，而该 id 属于另一个 body（比如毛坯体 1）时，直接抛
+`topology stable_id no longer exists and has no geometry fallback`。
+现在：先在指定 body 找，找不到就遍历其余 body，命中即切换。stable id 本来就是"零件级"的。
+
+**B. 切削区自动补毛坯顶面**（新增 `_cam_blank_top_faces` + 参数 `auto_add_blank_faces`）
+
+`set_cam_operation_geometry(..., auto_add_blank_faces=true)` 会把毛坯体（BlankGeometry 里的体）
+的 +Z 最高面追加进 `CutAreaGeometry`——这正是第 9 节那条"切削区必须同时有零件面和毛坯面"的配方。
+`configure_cam_milling_operation` 同样支持该参数，schema 已同步（`server.py`）。
+
+实测（`OP_FLOOR_NEW`）：
+
+```
+绑几何 + auto_add_blank_faces  ok=true  validation_passed=true
+  cut_area: objects_added=2     blank_faces: objects_added=1
+生成                            path_exists=false  status=regenerate
+```
+
+→ 几何配方能自动落实了，但**新建工序依然生成不出来**，缺的仍是那一步：
+**工序级「包含毛坯」必须是「毛坯几何体」**，而它没有任何 NXOpen 属性可写
+（`VolumeBased25DMillingOperationBuilder` 89 个属性里只有 `BlankBoundary`/`BlankGeometry`/
+`WallBlankThickness`；`GeometryCiBuilder` 里也没有）。改几何体组无效——组是 `FromGeometry`
+时新工序仍是 `3D IPW`，说明默认值来自工序模板 part。
+
+**这就是工具面最后一条缺口**：要么改 `mach\resource\template_part\metric\mill_planar.prt` 模板，
+要么每条工序在 UI 里点一次下拉。
+
