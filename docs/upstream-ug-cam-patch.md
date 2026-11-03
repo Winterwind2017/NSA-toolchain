@@ -72,3 +72,29 @@
 改 `mach/resource/template_part/metric/mill_planar.prt` 里 `FLOOR_FACING` / `POCKETING` 模板的
 「毛坯」为「毛坯几何体」（模板文件需先去只读，并以普通部件重开），新建工序的默认毛坯就正确了。
 备份：`mill_planar.prt.bak-20261104`。
+
+## 4. 平面铣支持（floor_z + 边界曲线）
+
+`_op_set_cam_operation_geometry` 增加平面铣分支：
+
+```python
+        cut_area_value = getattr(builder, "CutAreaGeometry", None)
+        planar_mill = hasattr(builder, "PartBoundary") and cut_area_value is None
+        ...
+        if planar_mill and result_name == "cut_area":
+            assignments["boundary"] = _cam_planar_boundary_curves(builder, faces)
+        ...
+        if params.get("floor_z") is not None:
+            assignments["floor_z"] = _cam_set_planar_floor(builder, params.get("floor_z"))
+```
+
+`_cam_planar_boundary_curves()`：取（或建）`BoundarySetPlanarMill`，对每个面
+`AppendCurves(list(face.GetEdges()), Point3d, Matrix3x3 单位矩阵)`，并把
+`boundary_set.Plane` 补成该面高度处的基准面。
+
+`_cam_set_planar_floor()`：`builder.Geometry.FloorPlane = 基准面(z=floor_z)`。
+
+另加 `_cam_append_geometry` 的 `geometry is None` 守卫，避免
+`'NoneType' object has no attribute 'GeometryList'`。
+
+`server.py` 两个工具都新增 `floor_z: float | None`。

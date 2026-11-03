@@ -520,3 +520,51 @@ OP_FLOOR_NEW         regenerate false ← 早期遗留试验件
 已有 6 条也统一补了毛坯体并重新生成，状态位全部回到 `repost(1)`，刀路未丢。
 验收 `ug` 仍 **2/2 通过**（`_runs/acceptance-20261104-024108.json`）。
 
+## 14. 平面铣打通 —— 11/11 全有刀路（2026-11-04 02:45–03:05）
+
+### 14.1 平面铣到底要什么
+
+`PlanarMillingBuilder`（模板 `PLANAR_MILL`）和腔铣那族完全不同：它**没有 `CutAreaGeometry`**
+（属性存在但值是 `None`），边界走 `PartBoundary` → `BoundaryList` → `BoundarySetPlanarMill`。
+四样东西缺一不可：
+
+1. **边界曲线**：`boundary_set.AppendCurves(curves, Point3d, Matrix3x3)`
+   —— 真签名是 3 个参数（曲线列表、起点、单位矩阵），不是 1 个参数；
+   用顶面的 4 条边追加后 `BoundaryMemberList.Length` 从 0 变 4；
+2. **边界平面**：`boundary_set.Plane`（此前是 `None`，NX 状态栏就是在报「未指定底面」）；
+3. **底面**：`builder.Geometry.FloorPlane`（`GeometryCiBuilder` 上，第 12 节已确认可写）；
+4. **切削深度**：`builder.DepthPerCut.Value`（此前是 0.0，等于不切）。
+
+### 14.2 纯工具调用（已实测 generated_count=1）
+
+```
+ug_create_cam_operation(name, template_subtype="PLANAR_MILL", template_type="mill_planar",
+                        tool_name="T1_D10", geometry_name="MCP_WORKPIECE")
+ug_set_cam_operation_geometry(operation_name,
+    cut_area_face_selectors=[{"selector": {"stable_id": 顶面}, "body_index": 0}],
+    floor_z=0.0,          # 新增：底面高度
+    depth_per_cut=20.0)   # → DepthPerCut
+ug_generate_cam_toolpath(...)   → generated_count=1
+```
+
+返回里能看到 `assignments.boundary = {boundary_sets: 1, curves_added: 4}`、`assignments.floor_z = 0.0`。
+
+### 14.3 上游实现要点（`docs/upstream-ug-cam-patch.md` 第 4 节）
+
+* 平面铣判定不能写 `hasattr(builder, "CutAreaGeometry")` —— 这个属性**存在但为 None**，
+  要判 `getattr(builder, "CutAreaGeometry", None) is None`；
+* `_cam_append_geometry` 增加 `geometry is None` 的守卫（否则报
+  `'NoneType' object has no attribute 'GeometryList'`）；
+* 新增 `_cam_planar_boundary_curves()` / `_cam_set_planar_floor()`，参数 `floor_z` 已进 schema。
+
+### 14.4 最终状态：11 / 11
+
+```
+FACE_MILL_1  OP_PLANAR_MILL  OP_FLOOR_FACING  OP_FACE_MILL_ZIGZAG  OP_TEST2
+OP_POCKET    OP_FINAL        OP_TEMPLATE_TEST OP_RECIPE_FLOOR
+OP_RECIPE_POCKET             OP_RECIPE_PLANAR
+→ 全部 repost / path_exists=true
+```
+
+验收 `ug` 仍 **2/2 通过**（`_runs/acceptance-20261104-025012.json`）。
+
