@@ -258,3 +258,39 @@ ug_inspect_cam_operations
 "包含毛坯"模式要用各自的方式去设。下一步就是把这组差异逐个补齐，
 把"能生成"从 1/7 做到 7/7。
 
+## 9. CAM 刀路配方（2026-11-04 02:00–02:10，2/11 生成成功）
+
+### 9.1 已验证的三条配方
+
+1. **几何体组毛坯**必须是 `FromGeometry`（毛坯几何体）且毛坯几何集非空；
+2. **切削区必须同时包含「零件顶面 + 毛坯顶面」两个面**——成功那条的 `CutAreaGeometry`
+   是 `[Face 63370 FACE 1 (50,30,20) BLOCK(0), Face 63361 FACE 1 (50,30,20) BLOCK(4)]`，
+   只放零件面（其它工序就是这样）不出刀路；
+3. **工序级「包含毛坯」= 毛坯几何体**（不是默认的 3D IPW）。
+
+按这三条，`OP_FLOOR_FACING` 与 `OP_FINAL` 两条：
+
+```
+status = repost(1)     path_exists = true
+```
+
+其余 9 条仍是 `regenerate(2)` / `path_exists=false`。
+
+### 9.2 卡点：工序级「包含毛坯」模式没有 API
+
+新建工序默认 3D IPW；`VolumeBased25DMillingOperationBuilder` 的 89 个属性里只有
+`BlankBoundary` / `BlankGeometry` / `WallBlankThickness`，**没有**写这个模式的地方
+（`BlankGeometry.BlankDefinitionType` 会抛 `'NXOpen.CAM.Geometry' object has no
+attribute 'BlankDefinitionType'`）。只有 UI 里那个下拉能改。
+
+所以现在能做的是：
+- 用 UI 逐条把「毛坯」从 `3D IPW` 改成 `毛坯几何体`（每条 3 击：双击工序 → 下拉 → 确定）；
+- 或者改 NX 默认（文件 → 实用工具 → 用户默认设置 → 加工 → 工序 → 毛坯），让以后新建的工序
+  默认就是毛坯几何体；
+- 或者继续找 `CutParameters` 里那层没暴露的 builder（`b.GetCutParameters()` 之类）。
+
+### 9.3 现场
+
+`nsa_verify_cam.prt` 里现在有 11 条工序（含几个试出来的 `OP_POCKET2/3/4`、`OP_POCKET_NEW`），
+其中 2 条有刀路。许可包 `FSSSQ` 会话仍在运行，桥在 48161。
+
