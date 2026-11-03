@@ -684,6 +684,132 @@ def _ug_no_live_nx(context: dict) -> bool:
         return True
 
 
+def _ug_cam_recipe(client, context: dict) -> dict:
+    """端到端 CAM 配方：新零件 → 零件体/毛坯体 → CAM 设置 → 三条工序各自生成刀路。
+
+    覆盖的是「模板 + 工具面」这条链：工序默认毛坯必须是「毛坯几何体」（改过的
+    mill_planar.prt 模板），并且 set_cam_operation_geometry 要给工序自己的毛坯体、
+    切削区里要有零件顶面 + 毛坯顶面；平面铣还要 floor_z + 边界曲线。
+    任何一环退化（模板被还原、参数没生效），path_exists 会立刻变 false。
+    """
+    import time as _time
+
+    stamp = _time.strftime("%H%M%S")
+    part_name = "nsa_accept_cam_%s.prt" % stamp
+    steps = []
+    checks = []
+    ops = {}
+
+    def call(tool: str, args: dict, label: str, strict: bool = True):
+        result = client.call(tool, args)
+        steps.append({"step": label, "tool": tool, "ok": bool(result.get("ok"))})
+        if not result.get("ok") and strict:
+            error = (result.get("errors") or [{}])[0]
+            raise RuntimeError("%s 失败：%s" % (label, str(error)[:220]))
+        return result
+
+    def top_face(body_index: int):
+        data = call("ug_inspect_body_topology", {"body_index": body_index},
+                    "topology_%d" % body_index).get("reads") or {}
+        for face in data.get("faces") or []:
+            normal = face.get("normal") or [0, 0, 0]
+            if abs(float(normal[2]) - 1.0) < 1e-6:
+                return face.get("stable_id")
+        raise RuntimeError("body %d 没有 +Z 顶面" % body_index)
+
+    try:
+        # 1. 独立零件：零件体 100×60×20，毛坯体 104×64×24（顶面同为 z=20）
+        call("ug_create_part", {"file_name": part_name}, "create_part")
+        call("ug_create_block", {"length": 100.0, "width": 60.0, "height": 20.0,
+                                 "origin": [0.0, 0.0, 0.0]}, "part_block")
+        call("ug_create_block", {"length": 104.0, "width": 64.0, "height": 24.0,
+                                 "origin": [-2.0, -2.0, -4.0]}, "blank_block")
+        call("ug_initialize_cam_setup", {"template_name": "mill_planar"}, "cam_setup")
+        call("ug_create_cam_mill_tool", {"name": "T1_D10", "diameter": 10.0,
+                                         "flute_length": 30.0,
+                                         "overall_length": 75.0}, "tool")
+        call("ug_create_cam_milling_context", {
+            "origin": [0.0, 0.0, 20.0],
+            "part_body_indices": [0],
+            "blank_body_indices": [1],
+            "workpiece_name": "MCP_WORKPIECE",
+        }, "workpiece")
+
+        part_top = top_face(0)
+        blank_top = top_face(1)
+        selectors = [
+            {"selector": {"stable_id": part_top}, "body_index": 0},
+            {"selector": {"stable_id": blank_top}, "body_index": 1},
+        ]
+
+        # 2. 三条工序，覆盖腔铣族 / 无壁底面 / 平面铣
+        for subtype in ("FLOOR_FACING", "POCKETING", "PLANAR_MILL"):
+            name = "ACC_%s" % subtype
+            call("ug_create_cam_operation", {
+                "name": name,
+                "template_subtype": subtype,
+                "template_type": "mill_planar",
+                "tool_name": "T1_D10",
+                "geometry_name": "MCP_WORKPIECE",
+            }, "create_%s" % subtype)
+            call("ug_set_cam_operation_geometry", {
+                "operation_name": name,
+                "part_body_indices": [0],
+                "blank_body_indices": [1],
+                "cut_area_face_selectors": selectors,
+                "auto_add_blank_faces": True,
+                "floor_z": 0.0,
+                "depth_per_cut": 2.0,
+            }, "geometry_%s" % subtype)
+            generated = call("ug_generate_cam_toolpath", {"operation_names": [name]},
+                             "generate_%s" % subtype, strict=False)
+            checks.append({"check": "%s.generate_ok" % subtype,
+                           "ok": bool(generated.get("ok")),
+                           "got": bool(generated.get("ok")), "want": True})
+
+        # 3. 判据：三条都得有刀路
+        inspected = call("ug_inspect_cam_operations", {}, "inspect").get("reads") or {}
+        for record in inspected.get("operations") or []:
+            ops[record.get("name")] = bool(record.get("path_exists"))
+        for subtype in ("FLOOR_FACING", "POCKETING", "PLANAR_MILL"):
+            name = "ACC_%s" % subtype
+            found = ops.get(name, False)
+            checks.append({"check": "%s.path_exists" % subtype, "ok": found,
+                           "got": found, "want": True})
+        return {
+            "ok": all(item["ok"] for item in checks),
+            "reads": {"part": part_name, "operations": ops,
+                      "part_top": part_top, "blank_top": blank_top,
+                      "steps": steps},
+            "checks": checks,
+            "errors": [],
+        }
+    finally:
+        # 收紧现场：关掉验收零件（不存盘），把显示切回原零件
+        try:
+            client.call("ug_run_python", {"code": (
+                "import NXOpen\n"
+                "s = NXOpen.Session.GetSession()\n"
+                "target = None\n"
+                "for p in s.Parts:\n"
+                "    if str(p.Leaf).startswith('nsa_accept_cam_'):\n"
+                "        target = p\n"
+                "        break\n"
+                "if target is not None:\n"
+                "    target.Close(NXOpen.BasePart.CloseWholeTree.TrueValue,\n"
+                "                 NXOpen.BasePart.CloseModified.CloseModified, None)\n"
+                "left = [p for p in s.Parts]\n"
+                "if left:\n"
+                "    try:\n"
+                "        s.Parts.SetDisplay(left[0], False, True)\n"
+                "    except Exception:\n"
+                "        pass\n"
+                "result = [str(p.Leaf) for p in s.Parts]\n"
+            ), "timeout": 180.0})
+        except Exception:                              # noqa: BLE001
+            pass
+
+
 UG_CASES = [
     {"id": "ug.ping", "tool": "ug_ping",
      "title": "NX 桥连通性（进程/零件/桥版本）",
@@ -697,6 +823,15 @@ UG_CASES = [
      "args": {},
      "expect_ok": True,
      "timeout_s": 180,
+     "skip_if": _ug_no_live_nx},
+
+    {"id": "ug.cam.recipe", "call": _ug_cam_recipe,
+     "title": "CAM 端到端配方：新零件 → 三种工序各自生成刀路（path_exists）",
+     "expect_check_true": ["FLOOR_FACING.path_exists", "POCKETING.path_exists",
+                           "PLANAR_MILL.path_exists", "FLOOR_FACING.generate_ok",
+                           "POCKETING.generate_ok", "PLANAR_MILL.generate_ok"],
+     "expect_min_checks": 6,
+     "timeout_s": 900,
      "skip_if": _ug_no_live_nx},
 ]
 

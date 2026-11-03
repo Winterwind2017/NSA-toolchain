@@ -275,13 +275,15 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
                     print("  %-4s %-28s %5d ms  %s" % ("SKIP", row["id"], 0, row["detail"]),
                           flush=True)
                 continue
-            if case["tool"] not in tool_names:
+            if case.get("call") is None and case["tool"] not in tool_names:
                 row.update(verdict="FAIL", ms=0,
                            detail="工具不存在：%s" % case["tool"])
                 results.append(row)
                 continue
             prepare = case.get("prepare")
-            if prepare is not None:
+            if case.get("call") is not None:
+                args = None
+            elif prepare is not None:
                 try:
                     args = prepare(client)
                 except Exception as exc:               # noqa: BLE001
@@ -299,7 +301,11 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
 
             def _invoke():
                 try:
-                    box["payload"] = client.call(case["tool"], args)
+                    hook = case.get("call")
+                    if hook is not None:
+                        box["payload"] = hook(client, context)
+                    else:
+                        box["payload"] = client.call(case["tool"], args)
                 except Exception as exc:               # noqa: BLE001
                     box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:300])
 

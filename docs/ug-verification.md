@@ -568,3 +568,58 @@ OP_RECIPE_POCKET             OP_RECIPE_PLANAR
 
 验收 `ug` 仍 **2/2 通过**（`_runs/acceptance-20261104-025012.json`）。
 
+## 15. CAM 配方进验收：`ug.cam.recipe`（2026-11-04 03:05–03:15）
+
+### 15.1 用例做什么
+
+`nsa_mcp_hub/acceptance/cases.py::_ug_cam_recipe` 全程只用 kit 工具，自己建一个独立零件：
+
+```
+ug_create_part            nsa_accept_cam_<时分秒>.prt
+ug_create_block           零件体 100×60×20 @(0,0,0)
+ug_create_block           毛坯体 104×64×24 @(-2,-2,-4)   ← 顶面同在 z=20
+ug_initialize_cam_setup   mill_planar
+ug_create_cam_mill_tool   T1_D10
+ug_create_cam_milling_context(origin=(0,0,20), part=[0], blank=[1])
+→ 对 FLOOR_FACING / POCKETING / PLANAR_MILL 各做一遍：
+    ug_create_cam_operation
+    ug_set_cam_operation_geometry(part=[0], blank=[1],
+        cut_area_face_selectors=[零件顶面, 毛坯顶面],
+        auto_add_blank_faces=True, floor_z=0, depth_per_cut=2)
+    ug_generate_cam_toolpath
+→ ug_inspect_cam_operations 取回 path_exists
+→ finally：把验收零件 Close（不存盘），显示切回原零件
+```
+
+判据 6 条（三种工序各两条）：`<族>.generate_ok` 与 `<族>.path_exists`，全 true 才算过。
+耗时约 **12 s**。
+
+### 15.2 判据不是空转——做了负向验证
+
+把 `floor_z` 从调用里摘掉（模拟平面铣退化）：
+
+```
+FLOOR_FACING.generate_ok    True
+POCKETING.generate_ok       True
+PLANAR_MILL.generate_ok     False   ← 立刻红
+PLANAR_MILL.path_exists     False
+ok = False
+```
+
+### 15.3 顺带给验收框架加了 `call` 钩子
+
+原来的用例模型是「一条用例 = 一次工具调用」，装不下多步配方。
+`harness.run_kit` 现在支持 `case["call"](client, context) -> payload`：钩子自己编排调用，
+返回标准契约 `{ok, reads, checks, errors}`，后面的判据/报告逻辑完全复用。
+
+### 15.4 结果
+
+```
+=== ug ===
+  PASS ug.ping                 523 ms
+  PASS ug.cam.capabilities     474 ms
+  PASS ug.cam.recipe         12037 ms
+ug：3/3 通过（14.4s）
+报告：_runs/acceptance-20261104-025429.json
+```
+
