@@ -16,3 +16,6 @@ plot.log
 .idea/
 Thumbs.db
 desktop.ini
+
+# 迁移进来的历史产物（recon 证据 / AutoCAD 导出 / 旧脚本），只在本机保留
+_archive/
