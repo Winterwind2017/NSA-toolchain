@@ -51,3 +51,24 @@
 
 工序级「包含毛坯」模式（3D IPW → 毛坯几何体）没有 NXOpen 写入口，新建工序默认 3D IPW，
 导致即使几何配方齐全也不出刀路。可行路径只剩改工序模板 part 或逐条 UI 点选。
+
+## 3. 工序毛坯体（blank_body_indices）
+
+`_op_set_cam_operation_geometry` 增加 `blank_body_indices`：
+
+```python
+        blank_indices = params.get("blank_body_indices")
+        if blank_indices is not None:
+            ... 解析 body 索引 ...
+            assignments["blank_geometry"] = _cam_append_geometry(
+                builder, "BlankGeometry", blank_bodies
+            )
+```
+
+原因：工序**不会**继承几何体组的毛坯体，`BlankGeometry` 集合为空时即使「包含毛坯=毛坯几何体」也不出刀路。
+
+## 已解决的最后一环
+
+改 `mach/resource/template_part/metric/mill_planar.prt` 里 `FLOOR_FACING` / `POCKETING` 模板的
+「毛坯」为「毛坯几何体」（模板文件需先去只读，并以普通部件重开），新建工序的默认毛坯就正确了。
+备份：`mill_planar.prt.bak-20261104`。

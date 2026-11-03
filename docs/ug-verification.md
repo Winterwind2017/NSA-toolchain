@@ -455,3 +455,68 @@ Operation 对象也没有 Delete/Destroy
 **这就是工具面最后一条缺口**：要么改 `mach\resource\template_part\metric\mill_planar.prt` 模板，
 要么每条工序在 UI 里点一次下拉。
 
+## 13. 改工序模板：CAM 全自动打通（2026-11-04 02:35–03:00）
+
+### 13.1 模板在哪、怎么改
+
+模板部件：`D:\Program Files\Siemens\DesigncenterNX2512\mach\resource\template_part\metric\mill_planar.prt`
+（6.3 MB，里面有 18 个工序模板：`FLOOR_FACING`、`POCKETING`、`FLOOR_WALL`、`WALL_PROFILING`、
+`PLANAR_MILL`、`FACE_MILL_MIDPASS` …）
+
+过程里踩到两个坑：
+
+1. 模板文件在磁盘上是 **ReadOnly**（`0o444` / 属性 ReadOnly），NX 以模板身份加载时也是只读，
+   改了只会弹「只读对象 / 将无法保存」——必须先去掉只读属性，并让 NX **以普通部件重新打开**
+   （`Part.Close(CloseWholeTree.TrueValue, …)` 再 `Parts.OpenBaseDisplay()`）；
+2. 备份先做了：`mill_planar.prt.bak-20261104`。
+
+然后把 `FLOOR_FACING` 和 `POCKETING` 两个模板的「毛坯」从 `3D IPW` 改成 **毛坯几何体**，保存。
+
+### 13.2 关键发现：工具体也要给毛坯
+
+改完模板后新工序默认确实是「毛坯几何体」了，但仍然生成不出来。查 `inspect_cam_operation_details`
+才发现：**新工序的 `BlankGeometry` 集合是空的**（item_count = 0）——工序不会自动继承几何体组里的毛坯体。
+
+补上毛坯体后立刻成功：
+
+```
+blank_items_before=0 → 把 BLOCK(4) 塞进工序的 BlankGeometry
+generate → path_exists=true  status=1(repost)
+```
+
+### 13.3 纯工具调用的完整配方（已实测两条）
+
+```
+1) ug_create_cam_operation(name, template_subtype="FLOOR_FACING"|"POCKETING", template_type="mill_planar",
+                          tool_name="T1_D10", geometry_name="MCP_WORKPIECE")
+2) ug_set_cam_operation_geometry(operation_name,
+       part_body_indices=[0],
+       blank_body_indices=[1],                    # 新增：工序自己的毛坯体
+       cut_area_face_selectors=[零件顶面, 毛坯顶面],# 两面都要
+       auto_add_blank_faces=True,                 # 新增：自动补毛坯顶面
+       depth_per_cut=2.0)
+3) ug_generate_cam_toolpath(operation_names=[...])  → generated_count=1 validation_passed=true
+```
+
+实测：`OP_RECIPE_FLOOR`、`OP_RECIPE_POCKET` 两条**全部 ok，generated_count=1**，全程没有碰 UI。
+
+### 13.4 最终状态：9 / 12
+
+```
+FACE_MILL_1          repost   true
+OP_FLOOR_FACING      repost   true
+OP_FACE_MILL_ZIGZAG  repost   true
+OP_TEST2             repost   true
+OP_POCKET            repost   true
+OP_FINAL             repost   true
+OP_TEMPLATE_TEST     repost   true    ← 改模板后新建
+OP_RECIPE_FLOOR      repost   true    ← 纯工具调用
+OP_RECIPE_POCKET     repost   true    ← 纯工具调用
+OP_PLANAR_MILL       regenerate false ← 平面铣（要底面+边界自洽）
+OP_POCKET3           regenerate false ← 早期遗留试验件
+OP_FLOOR_NEW         regenerate false ← 早期遗留试验件
+```
+
+已有 6 条也统一补了毛坯体并重新生成，状态位全部回到 `repost(1)`，刀路未丢。
+验收 `ug` 仍 **2/2 通过**（`_runs/acceptance-20261104-024108.json`）。
+
