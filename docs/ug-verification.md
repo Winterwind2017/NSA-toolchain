@@ -91,3 +91,41 @@ ug：2/2 通过（1.7s）
 `CAD-Agent-Hub\MCP\UG\workspace\` 下：`nsa_verify_sheet.prt`、`nsa_verify_asm.prt`、
 `nsa_verify_asm2.prt`、`nsa_verify_cam.prt`、`nsa_verify_flat.dxf`。
 用户原有的 `sheet_metal_model1` 只被 `SaveAll()` 存过一次盘，没有改几何。
+
+## 6. CAM 刀路的进一步定位（2026-11-04 01:00–01:10）
+
+继续攻刀路，把 NX 的**真实拒绝原因**挖出来了。逐条排除：
+
+| 试过的手段 | 结果 |
+|---|---|
+| `setup.GenerateToolPath([op])` | 调用不抛错，`AskPathExists()=false`，`GetStatus()=2` |
+| `setup.CreateToolpathGenerateBuilder([ops])` + `Types.Foreground` + `Generate()` | 返回 **0 条**结果（不是失败项，是"没东西可生成"） |
+| backend = `nxopen` / `uf` / `auto` | 全 false；`uf.Param.Generate(tag)` 返回 `False` |
+| 切到**制造应用**（`UG_APP_MANUFACTURING`，UI 里"应用模块 → 加工"） | 仍是 false |
+| 建独立**毛坯体**并用 `define_cam_workpiece(blank_body_indices=[1])` 绑上 | 绑上了（`blank_geometry_assignment.objects_added=1`），仍 false |
+| 补显式转速/进给（`spare_rpm 3000 / cut 500 / approach 200 / retract 800`） | 仍 false（原先的 `error_code 1850031` 消失） |
+| 不调用 `SetTemplateStatus(...,False,False)` 建工序 | 仍 false |
+| **在 UI 里右键 → 生成(G)** | **NX 弹出真错误**（见下） |
+
+**UI 生成时 NX 的原始提示**（这是唯一一次拿到具体原因）：
+
+```
+工序参数
+当使用 3D IPW 时，毛坯几何体在几何体组被定义。
+[确定]
+```
+
+含义：这个工序（`FLOOR_FACING` 属于体积铣）默认启用 **3D IPW**，而毛坯被定义在**几何体组**
+（`MCP_WORKPIECE`）上——两者冲突，NX 直接拒绝生成，且**不抛异常**（所以 API 侧看起来是"静默失败"）。
+
+已确认无关：许可（`IsCheckedOut("cam_base")=true`）、应用环境（已切制造）、刀具/几何/进给（都绑上了）。
+
+**下一步的两条路**（留给下一轮）：
+
+1. 把**加工首选项里的 IPW 类型**从 3D 改成 2D/无（或在工序「切削参数 → 空间范围」里改），再生成；
+   这条最可能就是缺的一脚。
+2. 走"录制操作记录"：UI 里手动建一个能生成的工序并录制 journal，反出它到底设了哪些参数
+   （`工具 → 操作记录 → 记录`），再照抄。
+
+上一轮记的"CAM 刀路未通"要精确成：**已知唯一阻塞点是 3D IPW 与几何体组毛坯的冲突**。
+
