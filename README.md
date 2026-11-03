@@ -248,7 +248,7 @@ CAD-Agent-Hub 里 nsa-mcp-hub 原本没有的能力，按"能不能代理就别�
 
 | kit | 工具 | 覆盖 | 状态 |
 |---|---|---|---|
-| **ug** | 83（82 + 1 诊断） | **NX CAM** 16（刀路/后处理/CLSF/MCS/毛坯）、**机床与运动学** 20（整机、限位、碰撞停止、静态间隙）、**NX 钣金** 6（tab/flange/bend/展开图/DXF）、装配约束写入 2、制图注释、交换格式导入、`run_python` | 需要 NX 交互式会话 + `nx_user/startup` 的 `NXMcPRemotingServer.dll`，并在 NX 里跑过 `start_mcp.py` 起 socket 桥；桥没起时如实报错 |
+| **ug** | 83（82 + 1 诊断） | **NX CAM** 16（刀路/后处理/CLSF/MCS/毛坯）、**机床与运动学** 20（整机、限位、碰撞停止、静态间隙）、**NX 钣金** 6（tab/flange/bend/展开图/DXF）、装配约束写入 2、制图注释、交换格式导入、`run_python` | 需要 NX 交互式会话 + `nx_user/startup` 的 `NXMcPRemotingServer.dll`（NX 里「工具 → 操作记录 → 播放」跑 `start_bridge.py`）；**钣金/装配约束已真机验收，CAM 刀路生成未通**，见 [docs/ug-verification.md](docs/ug-verification.md) |
 | **catia** | 56（55 + 1 诊断） | CATIA V5 建模（pad/pocket/fillet）、曲面（loft/fill/join/heal/thick/boundary/close）、**原生 Analysis**（建分析文档→set/entity/mesh/solution→材料→计算→报告/导数据/截图） | **本机未安装 CATIA**，验收 SKIP；工具面已接进网关，装上即可用 |
 
 另有三块本机没有软件、只作为资产收在 `_contrib/`（见该目录的 README）：
