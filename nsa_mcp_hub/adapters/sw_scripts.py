@@ -296,6 +296,11 @@ HUB_EXPECT = {
     "hub_setprops": {"written": ">=1", "readback_ok": True},
     "hub_config": {"created": True, "config_count": ">=1"},
     "hub_material": {"assigned": True, "material_chars": ">0"},
+    # 运行时自检：只要脚本确实给出结构化结果就算过；"SW 有没有开"是信息项，
+    # 不判负——状态工具在 SW 关着的时候也应该能回答。
+    "hub_reload": {"reported": True, "attached": True, "doc_count": "skip_none",
+                   "revision": "skip_none"},
+    "hub_status": {"reported": True, "attached": "skip_none", "doc_count": "skip_none"},
 }
 
 S = {"type": "string"}
@@ -426,6 +431,20 @@ def script_tools() -> list:
 
 
     # ── P5：hub 语义增强 9 个（脚本 mcp-patches/sw_hub_ext.py）────────────
+    tools.append(_tool(
+        "sw_reload_runtime",
+        "重新建立与 SolidWorks 的 COM 连接（SW 重启/崩溃后旧引用失效时用），"
+        "返回附着状态、文档数、版本号。",
+        {"type": "object", "properties": {}, "additionalProperties": False},
+        "sw_hub_ext.py", "hub_reload", lambda a: ["reload_runtime"], 120))
+
+    tools.append(_tool(
+        "sw_operation_status",
+        "运行时状态：COM 是否连得上、打开文档数/脏文档数、版本号；"
+        "连不上也返回结构化结果（不判负），用于排查\"服务器还挂着旧会话\"。",
+        {"type": "object", "properties": {}, "additionalProperties": False},
+        "sw_hub_ext.py", "hub_status", lambda a: ["status"], 120))
+
     tools.append(_tool(
         "sw_list_documents_dirty",
         "列出打开的文档 + 是否有未保存修改（dirty），并标出当前活动文档。"

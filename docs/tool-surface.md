@@ -1,16 +1,19 @@
 # 工具表面（nsa-mcp-hub 0.2.0 / P0–P8）
 
-> 自动生成，勿手改。聚合网关 `nsa-mcp-hub` 把下面六家合并成 **438 个工具**
-> （六家合计去重 + 1 个 `nsa_hub_status`；各家自带的 `kit_runtime` 被聚合层取代）。
+> 自动生成，勿手改。聚合网关 `nsa-mcp-hub` 把下面**八家**合并成 **579 个工具**
+> （八家合计去重 + 1 个 `nsa_hub_status`；各家自带的 `kit_runtime` 被聚合层取代）。
+> `ug` / `catia` 是 2026-11-04 从 CAD-Agent-Hub 补进来的两块（代理模式，见 `_contrib/README.md`）。
 >
 > 自动生成，勿手改。生成器 `nsa-mcp-hub/adapters/capgen.py`，策展清单 `capcuration.py`。
 
 | kit | 工具 | 任务级 | 说明 |
 |---|---|---|---|
-| **sw** | 174 | 170 | 165 原有 + 9 个 hub 语义增强（固定用例 15/15） |
+| **sw** | 176 | 172 | 165 原有 + 9 个 hub 语义增强 + 2 个运行时自检（固定用例 15/15） |
 | **acad** | 52 | 49 | 58 条能力 → 49 个工具（sweep 57/57） |
 | **nx** | 65 | 62 | 146 条能力 → 60 个工具（sweep 146/146） |
 | **gx** | 46 | 43 | 42 条能力 → 42 个工具（sweep 采样 6/6） |
+| **ug** | 83 | 82 | CAD-Agent-Hub 的 NX MCP 代理：CAM 16 / 机床 20 / 钣金 6 / 装配约束 2 / run_python 等（需 NX 交互式会话 + .NET 桥；未起桥则 SKIP） |
+| **catia** | 56 | 55 | CAD-Agent-Hub 的 CATIA V5 MCP 代理：建模/曲面/原生 Analysis（本机未装 CATIA，验收 SKIP） |
 | **codesys** | 59 | 56 | 77 条命令 → 56 个工具（sweep 15/15） |
 | **autoshop** | 41 | 40 | 24 个 CLI verb + 17 个聚焦变体（固定用例 4/4） |
 | **合计** | **437** | **420** | |

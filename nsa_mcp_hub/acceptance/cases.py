@@ -672,6 +672,53 @@ AUTOSHOP_CASES = [
 ]
 
 
+# ── ug（CAD-Agent-Hub 的 NX MCP：CAM / 机床 / 钣金 / 装配约束）────────────
+def _ug_no_live_nx(context: dict) -> bool:
+    """NX 交互式会话不在时跳过：上游要 socket 桥（start_mcp.py 在 NX 里跑过）。"""
+    import subprocess
+    try:
+        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq ugraf.exe"],
+                             capture_output=True, text=True, timeout=20).stdout
+        return "ugraf.exe" not in out.lower()
+    except Exception:                                  # noqa: BLE001
+        return True
+
+
+UG_CASES = [
+    {"id": "ug.ping", "tool": "ug_ping",
+     "title": "NX 桥连通性（进程/零件/桥版本）",
+     "args": {},
+     "expect_ok": True,
+     "timeout_s": 120,
+     "skip_if": _ug_no_live_nx},
+
+    {"id": "ug.cam.capabilities", "tool": "ug_get_cam_capabilities",
+     "title": "CAM 能力自报（模块/许可/可用操作）",
+     "args": {},
+     "expect_ok": True,
+     "timeout_s": 180,
+     "skip_if": _ug_no_live_nx},
+]
+
+# ── catia（CATIA V5：建模 / 曲面 / 原生 Analysis）────────────────────────
+def _catia_missing(context: dict) -> bool:
+    """本机没装 CATIA 就跳过（2026-11-04 实测未安装）。"""
+    import os
+    roots = [r"C:\Program Files\Dassault Systemes", r"D:\Program Files\Dassault Systemes",
+             r"C:\Program Files (x86)\Dassault Systemes"]
+    return not any(os.path.isdir(r) for r in roots)
+
+
+CATIA_CASES = [
+    {"id": "catia.health", "tool": "catia_health_check",
+     "title": "CATIA 可用性自检",
+     "args": {},
+     "expect_ok": True,
+     "timeout_s": 120,
+     "skip_if": _catia_missing},
+]
+
+
 KITS = {
     "sw": {"module": "nsa_mcp_hub.servers.sw_mcp", "setup": sw_setup,
            "teardown": sw_teardown, "cases": SW_CASES},
@@ -680,5 +727,7 @@ KITS = {
     "gx": {"module": "nsa_mcp_hub.servers.gx_mcp", "cases": GX_CASES},
     "codesys": {"module": "nsa_mcp_hub.servers.codesys_mcp", "setup": codesys_setup,
                 "cases": CODESYS_CASES},
+    "ug": {"module": "nsa_mcp_hub.servers.ug_mcp", "cases": UG_CASES},
+    "catia": {"module": "nsa_mcp_hub.servers.catia_mcp", "cases": CATIA_CASES},
     "autoshop": {"module": "nsa_mcp_hub.servers.autoshop_mcp", "setup": autoshop_setup, "between": autoshop_between, "teardown": autoshop_teardown, "cases": AUTOSHOP_CASES},
 }

@@ -176,7 +176,7 @@ sw_sim_read                # 步数 1，位移 max 5.47e-07 mm，应力 max 2102
 | codesys | 59 | 56 | **77 条真服务命令**里的 56 条（旧表 17 条里有 3 条根本不存在） |
 | autoshop | 41 | 40 | 24 个 CLI verb + 17 个聚焦变体（真实开关组合） |
 
-合计 **437 个工具（任务级 420）**；经聚合网关 **438 个**（+nsa_hub_status），逐条清单见 [`docs/tool-surface.md`](docs/tool-surface.md)。
+合计 **578 个工具（任务级 559）**；经聚合网关 **579 个**（+nsa_hub_status），逐条清单见 [`docs/tool-surface.md`](docs/tool-surface.md)。
 
 三条约定：
 
@@ -241,6 +241,23 @@ python -m nsa_mcp_hub.acceptance --kit nx --sweep --sweep-max 20
 acadkit 的 `progress.txt`（每个用例阶段落盘）、`NSA_MCP_HUB_SYNC_TOOL_CALL` 已废弃。
 
 
+
+## 从 CAD-Agent-Hub 补进来的两块（2026-11-04）
+
+CAD-Agent-Hub 里 nsa-mcp-hub 原本没有的能力，按"能不能代理就别重写"的原则接进来：
+
+| kit | 工具 | 覆盖 | 状态 |
+|---|---|---|---|
+| **ug** | 83（82 + 1 诊断） | **NX CAM** 16（刀路/后处理/CLSF/MCS/毛坯）、**机床与运动学** 20（整机、限位、碰撞停止、静态间隙）、**NX 钣金** 6（tab/flange/bend/展开图/DXF）、装配约束写入 2、制图注释、交换格式导入、`run_python` | 需要 NX 交互式会话 + `nx_user/startup` 的 `NXMcPRemotingServer.dll`，并在 NX 里跑过 `start_mcp.py` 起 socket 桥；桥没起时如实报错 |
+| **catia** | 56（55 + 1 诊断） | CATIA V5 建模（pad/pocket/fillet）、曲面（loft/fill/join/heal/thick/boundary/close）、**原生 Analysis**（建分析文档→set/entity/mesh/solution→材料→计算→报告/导数据/截图） | **本机未安装 CATIA**，验收 SKIP；工具面已接进网关，装上即可用 |
+
+另有三块本机没有软件、只作为资产收在 `_contrib/`（见该目录的 README）：
+`ansys-structural-workbench`（ANSYS 结构分析 skill，带质量门禁）、
+Fusion 360 的本地写入桥与 Starship v3 参数化建模示例、build123d/cadpy 模型样例。
+
+SolidWorks 侧同时补齐了上游有、我们缺的两个工具：`sw_reload_runtime`（SW 重启/崩溃后重连 COM，
+只做附着、不会顺手启动 SW）与 `sw_operation_status`（COM 连接 + 文档数/脏文档数，SW 关着也能答）。
+
 ## 聚合网关：nsa-mcp-hub
 
 六个 kit 各是一个 MCP 服务器（各自独占 COM/UI 与崩溃域）。**日常用网关就够了**：
@@ -249,12 +266,12 @@ acadkit 的 `progress.txt`（每个用例阶段落盘）、`NSA_MCP_HUB_SYNC_TOO
 D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\nsa-mcp-hub\_tools\nsa-mcp-hub.cmd
 ```
 
-* `tools/list` → **438 个工具**（六家合计，去重后）；`initialize` 返回
+* `tools/list` → **579 个工具**（八家合计，去重后）；`initialize` 返回
   `{"name": "nsa-mcp-hub", "version": "0.2.0"}`；
 * 路由：工具名前缀 `sw_/acad_/nx_/gx_/codesys_/autoshop_` 决定转发给哪个子进程；
   没有前缀的老工具（`swdm_stats`/`swdm_query`）走"工具名→kit"索引，也能路由；
 * 每个 kit 自带的状态工具 `kit_runtime` 在聚合层被 `nsa_hub_status` 取代
-  （一次看六个 kit 的存活/工具数/pid/最近错误/stderr 尾巴）；
+  （一次看八个 kit 的存活/工具数/pid/最近错误/stderr 尾巴）；
 * `notifications/progress` 与 `notifications/cancelled` 都会**透传**给对应子进程；
 * 子进程 lazy 启动（第一次需要时才起），hub 退出时一起收掉；子进程 stderr 由排空线程接住。
 

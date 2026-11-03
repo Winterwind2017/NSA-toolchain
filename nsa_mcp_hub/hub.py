@@ -34,6 +34,9 @@ KITS: dict[str, str] = {
     "autoshop": "nsa_mcp_hub.servers.autoshop_mcp",
     "acad": "nsa_mcp_hub.servers.acad_mcp",
     "nx": "nsa_mcp_hub.servers.nx_mcp",
+    # CAD-Agent-Hub 补进来的两块：nxkit 没有的 CAM/机床/钣金，以及 CATIA 整块
+    "ug": "nsa_mcp_hub.servers.ug_mcp",
+    "catia": "nsa_mcp_hub.servers.catia_mcp",
     "sw": "nsa_mcp_hub.servers.sw_mcp",
     "gx": "nsa_mcp_hub.servers.gx_mcp",
 }

@@ -13,6 +13,8 @@
 | gx | 2 | 204 s | ST 粘贴转换 + 全部转换 |
 | codesys | 4 | 2 s | 服务、建工程、工程信息、工程树 |
 | autoshop | 4 | 166 s | 状态、工程树、编译、apply（写程序→编译→诊断） |
+| ug | 2 | **2 SKIP** | 需要 NX 交互式会话 + `nx_user/startup` 的 .NET 桥；本机未起桥 |
+| catia | 1 | **1 SKIP** | 本机未安装 CATIA V5 |
 
 最近一次全量：**42/42 通过，714.9 s**（`_runs/acceptance-20261103-150359.json`）。
 
