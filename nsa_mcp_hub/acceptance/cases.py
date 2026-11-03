@@ -835,6 +835,41 @@ UG_CASES = [
      "skip_if": _ug_no_live_nx},
 ]
 
+# ── eplan（CAD-Agent-Hub 的 EPLAN 2.9 MCP：电气设计 / 审图）──────────────
+def _eplan_missing(context: dict) -> bool:
+    """本机没装 EPLAN 就跳过（实测装在 C:\\Program Files\\EPLAN）。"""
+    import os
+    return not any(os.path.isdir(r) for r in
+                   (r"C:\Program Files\EPLAN", r"D:\Program Files\EPLAN"))
+
+
+EPLAN_CASES = [
+    {"id": "eplan.capabilities", "tool": "eplan_capabilities",
+     "title": "EPLAN 能力自报（画像 / 版本约束 / 支持与不支持）",
+     "args": {},
+     "expect_ok": True,
+     "expect_reads": {"reads.profile": "review",
+                      "reads.server": "eplan29-lab"},
+     "timeout_s": 180,
+     "skip_if": _eplan_missing},
+
+    {"id": "eplan.tool_catalog", "tool": "eplan_tool_catalog",
+     "title": "工具目录（review 画像应给出 15 条）",
+     "args": {},
+     "expect_ok": True,
+     "expect_reads": {"reads.profile": "review", "reads.count": 15},
+     "timeout_s": 180,
+     "skip_if": _eplan_missing},
+
+    {"id": "eplan.bridge.discover", "tool": "eplan_bridge_discover",
+     "title": "原生 bridge 发现（EPLAN 没开时应是空列表而不是报错）",
+     "args": {},
+     "expect_ok": True,
+     "timeout_s": 180,
+     "skip_if": _eplan_missing},
+]
+
+
 # ── catia（CATIA V5：建模 / 曲面 / 原生 Analysis）────────────────────────
 def _catia_missing(context: dict) -> bool:
     """本机没装 CATIA 就跳过（2026-11-04 实测未安装）。"""
@@ -864,5 +899,6 @@ KITS = {
                 "cases": CODESYS_CASES},
     "ug": {"module": "nsa_mcp_hub.servers.ug_mcp", "cases": UG_CASES},
     "catia": {"module": "nsa_mcp_hub.servers.catia_mcp", "cases": CATIA_CASES},
+    "eplan": {"module": "nsa_mcp_hub.servers.eplan_mcp", "cases": EPLAN_CASES},
     "autoshop": {"module": "nsa_mcp_hub.servers.autoshop_mcp", "setup": autoshop_setup, "between": autoshop_between, "teardown": autoshop_teardown, "cases": AUTOSHOP_CASES},
 }

@@ -37,6 +37,8 @@ KITS: dict[str, str] = {
     # CAD-Agent-Hub 补进来的两块：nxkit 没有的 CAM/机床/钣金，以及 CATIA 整块
     "ug": "nsa_mcp_hub.servers.ug_mcp",
     "catia": "nsa_mcp_hub.servers.catia_mcp",
+    # EPLAN 电气设计整块（上游 MCP/EPLAN，67 个工具）
+    "eplan": "nsa_mcp_hub.servers.eplan_mcp",
     "sw": "nsa_mcp_hub.servers.sw_mcp",
     "gx": "nsa_mcp_hub.servers.gx_mcp",
 }
