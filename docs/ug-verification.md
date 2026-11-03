@@ -129,51 +129,63 @@ ug：2/2 通过（1.7s）
 
 上一轮记的"CAM 刀路未通"要精确成：**已知唯一阻塞点是 3D IPW 与几何体组毛坯的冲突**。
 
-## 7. 真正的根因：本机没有 CAM 刀路计算许可（2026-11-04 01:20）
+## 7. 许可排查（先给出错误结论，后更正）——2026-11-04 01:20–01:35
 
-继续排查时先找到了「毛坯」选项的位置，也把切削区底面补上了，仍然生成不出刀路；
-最后查许可，结论很硬：
+### 7.1 更正：**不是**"没有 CAM 许可"
+
+先按 `IsCheckedOut("cam_mill")=false` 判成"本机没 CAM 许可"，**这个结论是错的**。
+继续查许可文件与 `CheckPresence` 后更正：
 
 ```
-lm.IsCheckedOut(...) 的结果
-  cam_base        = True     ← 只有这个
-  gateway         = True
-  nxcam_base      = False
-  cam_mill        = False
-  cam_mill_planar = False
-  cam_2d / cam_3d = False
-  cam_foundation  = False
-  cam_advanced / cam_simulation = False
-  lm.GetBundlesUsed() = []   ← 没有任何"在用"的许可包
+SPLM_LICENSE_SERVER = C:\ProgramData\Siemens\siemens_SSQ.dat
+特性总数 4423（去重 4422），其中 cam_* 相关 695 个，含：
+  cam_base · cam_advanced · cam_author · cam_mill · cam_3d_sf_prog
+  am_pb_cam_basic · am_pb_cam_advanced · cam_additive_* · cam_ex_kit_post_*
+
+lm.CheckPresence(...)     lm.IsCheckedOut(...)
+  cam_base      True        True
+  cam_advanced  True        False
+  cam_mill      True        False
+  am_pb_cam_basic / advanced  True / True    False / False
+  gateway       True        True
+  design        False       False
 ```
 
-只有 `cam_base`（CAM 基础，允许建工序/看模板）和 `gateway`。**刀路的实际计算需要加工类许可
-（`nxcam_base` / `cam_mill_planar` / `cam_3d` 这类），本机一个都没有。**
+`IsCheckedOut` 只表示"本会话有没有签出"，**不等于许可不存在**；`CheckPresence` 说明这些
+CAM 特性在服务器上是可用的。
 
-这解释了全部现象：
-- `setup.GenerateToolPath([op])`、`CreateToolpathGenerateBuilder([ops]).Generate()`、
-  `uf.Param.Generate(tag)` 三种入口都"调用成功但返回空"，不抛异常；
-- UI 里右键生成也出不来，且只在没选切削区时给一句提示；
-- syslog 里只有 `GetPath` 的"工序无任何刀轨"，没有生成阶段的错误——NX 根本没进计算；
-- 与几何/刀具/进给/毛坯/IPW/应用环境全部无关（这些都逐条验过并排除了）。
+### 7.2 那为什么还是不签出 / 不生成
 
-### 毛坯选项在哪（顺手记下来）
+- syslog：`Number of bundles in use : 0`，`Bundle Setting Came From The 'UGS_LICENSE_BUNDLE'
+  Environment Variable`，而 `GetBundlesSelected()` 返回 `["None"]`；
+- 显式 `lm.SetBundlesForUse(["cam_mill"])` 返回成功（`GetBundlesSelected()` 变成
+  `[NumUsing=0,BundleName=cam_mill]`），但 `IsCheckedOut("cam_mill")` **仍是 False**，
+  刀路依旧 `path_exists=false`；
+- `SetBundlesForUse(["am_pb_cam_basic"])` 等三个包名直接报「切换许可证绑定包失败」；
+- Siemens 侧只有 `lmgrd.exe` 两个进程（属于 SolidWorks / Autodesk 的 FlexNet），
+  **找不到 ugslmd.exe，28000 端口不监听**。
+
+即：许可文件里特性齐全，但本次 NX 会话始终没有把加工特性签出来，NX 也不报错（静默空刀路）。
+
+### 7.3 毛坯选项在哪（顺手记下来）
 
 不在「加工首选项」里。「加工首选项 → 工序」只有刀轨重播/生成、编辑工序、变换、加工数据、
-IPW 后台生成、加工时间计算这些。
+IPW 后台生成、加工时间计算。
 
-毛坯在**工序对话框**里：双击工序 → 「主要」页 → 「毛坯」，下拉只有三项：
+毛坯在**工序对话框**里：双击工序 → 「主要」页 → 「毛坯」，下拉三项：
 
 | 选项 | 含义 |
 |---|---|
 | 厚度 | 用零件面按厚度偏移当毛坯 |
 | 毛坯几何体 | 用几何体组里绑的毛坯（`MCP_WORKPIECE` 的 Blank） |
-| 3D IPW | 用三维过程工件（本机默认） |
+| 3D IPW | 三维过程工件（本机默认） |
 
-### 结论与后续
+同页还有「指定切削区底面」，之前为空，已补选顶面（`选择对象 (2)`）。
 
-`ug` kit 的 CAM 工具面是**完整可用**的（建工序、配几何、配刀具、配进给、查询状态都验过），
-只差"生成刀路"这一步吃许可。要真机验收 CAM，需要这台机器上有一张 NX CAM 加工许可
-（`nxcam_base` 或 `cam_mill_planar`/`cam_3d`）。在那之前，工具会如实报
-`generated_count=0 / path_exists=false`，不会假装成功——这本身是符合验收原则的行为。
+### 7.4 结论
 
+`ug` kit 的 CAM 工具面完整可用（建工序/配几何/配刀具/配进给/查询都验过），卡在
+"本机 NX 会话签不出加工许可"这一层，**不在代码里，也不在 CAD-Agent-Hub 的配置里**
+（该仓库没有任何 license 配置文件，只在文档里写"需要商业 CAD 软件"）。
+要真机验收 CAM，需要这台机器把 Siemens 许可服务跑起来（`ugslmd`）或换一台能签出
+CAM 特性的 NX。在那之前工具如实报 `generated_count=0 / path_exists=false`。
