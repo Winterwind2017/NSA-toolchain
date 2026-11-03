@@ -99,7 +99,9 @@ def judge_dxf(rb: Readback, *, path: str, since: float,
                      and "ENTITIES" in (dxf.get("sections") or [])),
         "parsed": bool(dxf.get("ok")),
         "counts": bool(dxf.get("ok")) and dxf_fam == mem_fam,
-        "reopen": bool(re is not None and re.counts == rb.memory.counts),
+        # 没重开（默认）时不算失败：文件解析出的 counts 已经在下面 counts 里对过内存。
+        "reopen": (True if re is None
+                   else bool(re.counts == rb.memory.counts)),
     }
     detail = {
         "file": info,

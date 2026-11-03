@@ -110,7 +110,12 @@ def launch(profile: str = env.REQUIRED_PROFILE, wait_s: float = 180.0,
         raise LaunchError("找不到 acad.exe（可用 ACADKIT_ACAD_EXE 指定）")
 
     t0 = time.time()
+    # **必须**把三个标准流全接到 DEVNULL：AutoCAD 会继承父进程的 stdout，
+    # 一旦它继承了 MCP 的协议管道，服务器进程死掉后客户端 readline 永远等不到 EOF
+    # （实测：卡 5 分钟，只看到 "本次启动" 一行）。
     proc = subprocess.Popen([exe, "/p", profile], close_fds=True,
+                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
                             creationflags=_DETACHED)
     app = attach(wait_s=wait_s, poll_s=poll_s)
     waited = round(time.time() - t0, 1)

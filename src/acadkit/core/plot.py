@@ -26,6 +26,28 @@ _PDF_DEVICES = ("DWG To PDF.pc3", "AutoCAD PDF (General Documentation).pc3",
                 "DWG 转 PDF.pc3")
 
 
+def _try_busy(fn, warnings, label, attempts: int = 10, delay: float = 0.4):
+    """像 _try 一样不抛异常，但对 RPC_E_CALL_REJECTED（出图刚结束很常见）重试。
+
+    实测（2026-11-03）：`PlotToFile` 之后立刻 `SetVariable("BACKGROUNDPLOT", ...)`
+    会被 AutoCAD 拒收（-2147418111），紧跟着读回也拒收；旧代码把还原失败当成
+    "出图失败"，于是 15 条里偶发一条 FAIL。
+    """
+    from .com import is_busy_error
+    last = None
+    for i in range(attempts):
+        try:
+            return fn()
+        except Exception as exc:                    # noqa: BLE001
+            last = exc
+            if not is_busy_error(exc):
+                warnings.append("%s: %s: %s" % (label, type(exc).__name__, exc))
+                return None
+            time.sleep(delay * (1.0 + i * 0.15))
+    warnings.append("%s: COM 一直忙（%s）" % (label, last))
+    return None
+
+
 def _try(fn, warnings: List[str], label: str) -> Any:
     try:
         return fn()
@@ -107,10 +129,10 @@ def plot_model_to_pdf(doc: Any, path: str, *,
         time.sleep(0.25)
 
     if before is not None:
-        _try(lambda: doc.SetVariable("BACKGROUNDPLOT", before),
-             info["warnings"], "restore BACKGROUNDPLOT")
-        after = _try(lambda: doc.GetVariable("BACKGROUNDPLOT"),
-                     info["warnings"], "readback BACKGROUNDPLOT")
+        _try_busy(lambda: doc.SetVariable("BACKGROUNDPLOT", before),
+                  info["warnings"], "restore BACKGROUNDPLOT")
+        after = _try_busy(lambda: doc.GetVariable("BACKGROUNDPLOT"),
+                          info["warnings"], "readback BACKGROUNDPLOT")
         info["backgroundplot_after_restore"] = after
         info["backgroundplot_restored"] = (after is not None
                                            and int(after) == int(before))
@@ -133,6 +155,14 @@ def save_as(doc: Any, path: str, fmt: Optional[int] = None,
     if os.path.exists(path):
         os.remove(path)
     t0 = time.time()
+    # SaveAs 也可能弹框（"替换/另存为"）：新文档的 FILEDIA 来自模板，常常是 1。
+    # 这里临时压成 0，保存完再还原——否则 SaveAs 会一直等用户点确定（实测卡死）。
+    prev_filedia = None
+    try:
+        prev_filedia = doc.GetVariable("FILEDIA")
+        doc.SetVariable("FILEDIA", 0)
+    except Exception:                                   # noqa: BLE001
+        prev_filedia = None
     try:
         if fmt is None:
             com.retry(lambda: doc.SaveAs(path), label="SaveAs")
@@ -141,6 +171,12 @@ def save_as(doc: Any, path: str, fmt: Optional[int] = None,
     except Exception as exc:                            # noqa: BLE001
         out["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
+    finally:
+        if prev_filedia is not None:
+            try:
+                doc.SetVariable("FILEDIA", prev_filedia)
+            except Exception:                           # noqa: BLE001
+                pass
     while time.time() - t0 < exists_wait_s:
         if os.path.exists(path) and os.path.getsize(path) > 0:
             break

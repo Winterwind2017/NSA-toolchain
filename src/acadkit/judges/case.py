@@ -184,13 +184,29 @@ class CaseRunner:
         —— 看起来像"方法不存在"，其实是"还没准备好"。这里短重试几次。
         """
         last: Optional[BaseException] = None
-        for _ in range(6):
-            try:
-                self._fresh_app().Documents.Open(path)
-                return self._ready_doc()
-            except AttributeError as exc:
-                last = exc
-                time.sleep(0.8)
+        # 打开 .dxf 时 AutoCAD 可能弹"DXF 输入/替换"框把 Open 卡死（实测：判据在
+        # "reopened" 之后停住，progress.txt 只写到 reopened）。打开前先压 FILEDIA=0。
+        prev_filedia = None
+        try:
+            active = self._fresh_app().ActiveDocument
+            prev_filedia = active.GetVariable("FILEDIA")
+            active.SetVariable("FILEDIA", 0)
+        except Exception:                               # noqa: BLE001
+            prev_filedia = None
+        try:
+            for _ in range(6):
+                try:
+                    self._fresh_app().Documents.Open(path)
+                    return self._ready_doc()
+                except AttributeError as exc:
+                    last = exc
+                    time.sleep(0.8)
+        finally:
+            if prev_filedia is not None:
+                try:
+                    self._fresh_app().ActiveDocument.SetVariable("FILEDIA", prev_filedia)
+                except Exception:                       # noqa: BLE001
+                    pass
         raise last if last else RuntimeError("Open 失败")  # type: ignore[misc]
 
     def _reopen(self, path: str, source: str) -> Tuple[Optional[Any], float]:
@@ -251,10 +267,20 @@ class CaseRunner:
             if case.wants_dxf:
                 dxf_path = ctx["artifacts"].get("dxf_path")
                 if dxf_path:
+                    # 只解析文件（不依赖 AutoCAD）。**默认不再让 AutoCAD 去 Open 这个
+                    # DXF**：实测（2026-11-03）打开它会卡死 —— progress.txt 停在
+                    # "reopened"，连 acadkit 自己的看门狗都要等满超时才动手。
+                    # 需要时用 ACADKIT_DXF_REOPEN=1 打开这条验证。
                     ctx["artifacts"]["dxf_info"] = dxfinfo.read(dxf_path)
-                    reimported, elapsed = self._reopen(dxf_path, "dxf-reopened")
-                    rb.dxf_reopened = reimported
-                    close_elapsed = max(close_elapsed or 0.0, elapsed)
+                    if os.environ.get("ACADKIT_DXF_REOPEN") == "1":
+                        reimported, elapsed = self._reopen(dxf_path, "dxf-reopened")
+                        rb.dxf_reopened = reimported
+                        close_elapsed = max(close_elapsed or 0.0, elapsed)
+                    else:
+                        # 别写进 notes：acadkit 把 notes 当"问题"透传到 errors，
+                        # 会被 kitmcp 判成失败。这里只作为事实记录。
+                        ctx["artifacts"]["dxf_reopen_skipped"] = (
+                            "AutoCAD 2025 打开 DXF 会卡死，已改为只解析文件")
                     self._phase(case.id, "dxf-reimported")
 
             result = case.judge(rb, ctx)

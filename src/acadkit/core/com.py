@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from typing import Any, Optional
@@ -187,6 +188,7 @@ def is_busy_error(exc: BaseException) -> bool:
 def retry(fn, attempts: int = 25, delay: float = 0.4, label: str = ""):
     """跑一个 COM 调用，遇到"忙/拒收"就等一会儿重试；其它异常原样抛出。"""
     last: Optional[BaseException] = None
+    t_busy = time.time()
     for i in range(attempts):
         try:
             return fn()
