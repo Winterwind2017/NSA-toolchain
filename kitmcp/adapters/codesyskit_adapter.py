@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import sys
 
+from ..jsonrpc import log
 from ..tools import Kit, ToolSpec, apply_checks, normalize
 
 from . import codesys_tools
@@ -43,6 +44,54 @@ def _import():
         sys.path.insert(0, SRC)
     from codesyskit import client
     return client
+
+
+def _ensure_service(state: str, timeout_s: float = 240.0) -> None:
+    """state.json 不在 / 端口连不上时，把常驻服务拉起来。
+
+    为什么在适配器里做：工具调用不该因为"服务没起"就失败——`codesys_*` 每个工具
+    都假定 IDE 服务在跑。这里先看状态文件与端口，确实不在才执行 start（约 8–10 s），
+    已经活着就完全不碰它。
+    """
+    import json
+    import socket
+    import subprocess
+    import sys as _sys
+    import time
+
+    def alive(path: str) -> bool:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                info = json.load(fh)
+            port = int(info.get("port") or 0)
+        except Exception:                              # noqa: BLE001
+            return False
+        if port <= 0:
+            return False
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=2.0):
+                return True
+        except OSError:
+            return False
+
+    if os.path.isfile(state) and alive(state):
+        return
+    if os.path.isfile(state):
+        try:
+            os.replace(state, state + ".stale")
+        except OSError:
+            pass
+    src_dir = os.environ.get("CODESYSKIT_SRC", r"D:\bililive\codesyskit\src")
+    env = dict(os.environ)
+    env["PYTHONPATH"] = src_dir + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    env["PYTHONIOENCODING"] = "utf-8"
+    log("codesys 常驻服务不在，自动 start（最多 %.0fs）" % timeout_s)
+    subprocess.run(
+        [_sys.executable, "-c",
+         "import sys;from codesyskit.cli import main;sys.exit(main(sys.argv[1:]))",
+         "start", "--wait", "180"],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL, timeout=timeout_s, env=env)
 
 
 def build_kit() -> Kit:
@@ -154,8 +203,11 @@ def build_kit() -> Kit:
                       "required": ["cmd"], "additionalProperties": False},
                      call, timeout_s=600))
     # ── P4：服务命令 → 工具（带数字判据，见 codesys_tools.py）──────────
+    
     def _call_raw(cmd: str, payload: dict) -> object:
         """给 codesys_tools 用的"只要原始 result"的通道。"""
+        _state = _state_path({"args": payload})
+        _ensure_service(_state)
         c = client_mod.CodesysClient(state_path=_state_path({"args": payload}), timeout=180.0)
         try:
             return c.call(cmd, timeout_ms=180000, **payload)

@@ -101,7 +101,11 @@ def build_kit() -> Kit:
                          (tool.get("description") or "").strip() or ("swkit: %s" % remote_name),
                          _schema_for(tool),
                          make_handler(remote_name),
-                         timeout_s=3600))
+                         timeout_s=3600,
+                         # 代理层**必然**给出 backend_ok 判据（见 make_handler），
+                         # 所以"必须有判据"对每个代理工具都成立；这样 checks 非空
+                         # 就从"实测如此"变成"内核强制"。
+                         must_have_checks=True))
 
     kit.add(ToolSpec("sw_proxy_tools",
                      "列出被代理的 swkit 原始工具名（诊断用）。",

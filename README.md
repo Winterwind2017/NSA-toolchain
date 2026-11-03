@@ -240,6 +240,28 @@ python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
 排查手段（都留着，env 开关）：`KITMCP_DUMP_STACKS=10`（周期性打线程栈）、
 acadkit 的 `progress.txt`（每个用例阶段落盘）、`KITMCP_SYNC_TOOL_CALL` 已废弃。
 
+
+## 聚合网关：nsa-mcp-hub
+
+六个 kit 各是一个 MCP 服务器（各自独占 COM/UI 与崩溃域）。**日常用网关就够了**：
+
+```powershell
+D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\kitmcp\_tools\nsa-mcp-hub.cmd
+```
+
+* `tools/list` → **438 个工具**（六家合计，去重后）；`initialize` 返回
+  `{"name": "nsa-mcp-hub", "version": "0.2.0"}`；
+* 路由：工具名前缀 `sw_/acad_/nx_/gx_/codesys_/autoshop_` 决定转发给哪个子进程；
+  没有前缀的老工具（`swdm_stats`/`swdm_query`）走"工具名→kit"索引，也能路由；
+* 每个 kit 自带的状态工具 `kit_runtime` 在聚合层被 `nsa_hub_status` 取代
+  （一次看六个 kit 的存活/工具数/pid/最近错误/stderr 尾巴）；
+* `notifications/progress` 与 `notifications/cancelled` 都会**透传**给对应子进程；
+* 子进程 lazy 启动（第一次需要时才起），hub 退出时一起收掉；子进程 stderr 由排空线程接住。
+
+DSH 里已经改成只挂这一条（`%USERPROFILE%\.dsh\cordis.patch.yml`），
+原来的六条 `kitmcp-*` 已摘掉；回退办法：同目录下 `cordis.patch.yml.bak-hub-*` 覆盖回去再重启 DSH。
+六个单独的 `.cmd` 启动器仍保留在 `D:\bililive\DeepHarness\_tools\`，随时可以单挂。
+
 ## 环境坑（都踩过）
 
 - **`contextlib.redirect_stdout` 是进程全局的**：worker 超时后它还在跑，会把后续所有
