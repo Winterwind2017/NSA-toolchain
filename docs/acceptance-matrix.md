@@ -1,4 +1,4 @@
-# 验收矩阵（kitmcp 0.2.0）
+# 验收矩阵（nsa-mcp-hub 0.2.0）
 
 两条并行的验收线：**固定用例**（真实场景，39 条）和**能力扫描**（把每条能力/命令
 当用例跑一遍，`--sweep`，共 306 条可生成）。
@@ -19,8 +19,8 @@
 ## 能力扫描（`--sweep`）
 
 ```powershell
-python -m kitmcp.acceptance --kit acad --sweep            # 57 条
-python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
+python -m nsa_mcp_hub.acceptance --kit acad --sweep            # 57 条
+python -m nsa_mcp_hub.acceptance --kit nx --sweep --sweep-max 20
 ```
 
 | kit | 扫描用例 | 实测 | 备注 |

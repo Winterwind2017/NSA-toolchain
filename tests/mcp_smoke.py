@@ -3,7 +3,7 @@
 用法：
     python tests/mcp_smoke.py <module> [tool ...]
 
-    python tests/mcp_smoke.py kitmcp.servers.nx_mcp nx_status nx_selftest
+    python tests/mcp_smoke.py nsa_mcp_hub.servers.nx_mcp nx_status nx_selftest
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def main(argv: list) -> int:
         init = c.request("initialize", {
             "protocolVersion": "2025-06-18",
             "capabilities": {},
-            "clientInfo": {"name": "kitmcp-smoke", "version": "0"},
+            "clientInfo": {"name": "nsa-mcp-hub-smoke", "version": "0"},
         })
         print("initialize →", json.dumps(init, ensure_ascii=False)[:400])
         c.notify("notifications/initialized")

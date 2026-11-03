@@ -8,8 +8,8 @@ import threading
 import time
 import unittest
 
-from kitmcp.jsonrpc import INVALID_PARAMS, RpcError
-from kitmcp.tools import (Kit, ToolSpec, call_tool, normalize, run_with_lock,
+from nsa_mcp_hub.jsonrpc import INVALID_PARAMS, RpcError
+from nsa_mcp_hub.tools import (Kit, ToolSpec, call_tool, normalize, run_with_lock,
                           tool_listing)
 
 EMPTY = {"type": "object", "properties": {}, "additionalProperties": False}
@@ -192,7 +192,7 @@ class ValidationTests(unittest.TestCase):
         self.assertIn("path is required", r["errors"][0])
 
     def test_custom_validator(self):
-        from kitmcp.contracts import require_positive
+        from nsa_mcp_hub.contracts import require_positive
 
         def validate(args):
             require_positive(args.get("size", 0), "size")
@@ -274,8 +274,8 @@ class FileLockTests(unittest.TestCase):
     """跨进程文件锁：另一个进程占着锁时，调用要明确报错。"""
 
     def test_lock_held_elsewhere(self):
-        from kitmcp.tools import _FileLock
-        path = os.path.join(tempfile.mkdtemp(prefix="kitmcp_test_lock_"), "x.lock")
+        from nsa_mcp_hub.tools import _FileLock
+        path = os.path.join(tempfile.mkdtemp(prefix="nsa_mcp_hub_test_lock_"), "x.lock")
         holder = _FileLock(path)
         self.assertTrue(holder.acquire(1.0))
         try:

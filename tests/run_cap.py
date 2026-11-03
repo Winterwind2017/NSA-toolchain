@@ -15,10 +15,10 @@ from mcp_smoke import Client  # noqa: E402
 
 def main(argv: list) -> int:
     ids = argv or ["solid.block"]
-    c = Client("kitmcp.servers.nx_mcp")
+    c = Client("nsa_mcp_hub.servers.nx_mcp")
     try:
         c.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
-                                 "clientInfo": {"name": "kitmcp-run-cap", "version": "0"}})
+                                 "clientInfo": {"name": "nsa-mcp-hub-run-cap", "version": "0"}})
         c.notify("notifications/initialized")
         c.request("tools/list")
         print("跑能力：%s" % ids)

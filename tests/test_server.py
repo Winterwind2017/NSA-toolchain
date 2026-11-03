@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import unittest
 
-from kitmcp import jsonrpc
-from kitmcp.server import build_handlers
-from kitmcp.tools import Kit, ToolSpec
+from nsa_mcp_hub import jsonrpc
+from nsa_mcp_hub.server import build_handlers
+from nsa_mcp_hub.tools import Kit, ToolSpec
 
 EMPTY = {"type": "object", "properties": {}, "additionalProperties": False}
 
@@ -35,7 +35,7 @@ class InitializeTests(unittest.TestCase):
 
     def test_server_info_name(self):
         r = self.handlers["initialize"]({})
-        self.assertEqual(r["serverInfo"]["name"], "kitmcp-t")
+        self.assertEqual(r["serverInfo"]["name"], "nsa-mcp-hub-t")
 
     def test_instructions_used(self):
         r = self.handlers["initialize"]({})

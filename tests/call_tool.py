@@ -19,7 +19,7 @@ def main(argv: list) -> int:
     c = Client(module)
     try:
         c.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
-                                 "clientInfo": {"name": "kitmcp-call", "version": "0"}})
+                                 "clientInfo": {"name": "nsa-mcp-hub-call", "version": "0"}})
         c.notify("notifications/initialized")
         c.request("tools/list")
         print("调用 %s(%s) …" % (tool, json.dumps(args, ensure_ascii=False)))

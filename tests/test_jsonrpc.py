@@ -6,7 +6,7 @@ import io
 import json
 import unittest
 
-from kitmcp import jsonrpc
+from nsa_mcp_hub import jsonrpc
 
 
 def run_serve(handlers, lines: list) -> list:

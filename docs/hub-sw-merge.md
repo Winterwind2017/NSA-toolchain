@@ -130,11 +130,11 @@
 ## 四、本轮已落地（可复现）
 
 ```
-kitmcp/adapters/hubsw/            # 6 个上游文件原样植入（MIT，未改动）
+nsa-mcp-hub/adapters/hubsw/            # 6 个上游文件原样植入（MIT，未改动）
   contracts.py / involute_gear.py / gearbox.py /
   feature_graph.py / part_generators.py / output_shaft.py
   ATTRIBUTION.md / LICENSE.upstream
-kitmcp/adapters/hubsw_tools.py    # 5 个工具 + 数学判据
+nsa-mcp-hub/adapters/hubsw_tools.py    # 5 个工具 + 数学判据
 ```
 
 实测（`m=2, z=20, α=20°`）：

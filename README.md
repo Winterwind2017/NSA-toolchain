@@ -1,24 +1,24 @@
-# kitmcp —— 六个 CAD/PLC 自动化内核的统一 MCP 封装
+# nsa-mcp-hub —— 六个 CAD/PLC 自动化内核的统一 MCP 封装
 
 把 nxkit / gxkit / acadkit / swkit / codesyskit / autoshopkit 收进**一个内核**，
 每个 kit 仍然是**独立进程**（COM 单实例、NX 冷启动、GX 抢焦点这些特性各自关在自己的进程里）。
 
 ```
-                          ┌── kitmcp-nx        （NX 2512，146 条能力）
-   MCP 客户端（DSH 等）    ├── kitmcp-acad      （AutoCAD 2025，58 条能力）
-        │                 ├── kitmcp-gx        （GX Works3，42 条能力）
-        └── stdio JSON-RPC┼── kitmcp-sw        （SolidWorks 2025，165 个工具）
-                          ├── kitmcp-codesys   （CODESYS 3.5，15 条命令）
-                          └── kitmcp-autoshop  （汇川 AutoShop V4.11，13 个工具）
+                          ┌── nsa-mcp-hub-nx        （NX 2512，146 条能力）
+   MCP 客户端（DSH 等）    ├── nsa-mcp-hub-acad      （AutoCAD 2025，58 条能力）
+        │                 ├── nsa-mcp-hub-gx        （GX Works3，42 条能力）
+        └── stdio JSON-RPC┼── nsa-mcp-hub-sw        （SolidWorks 2025，165 个工具）
+                          ├── nsa-mcp-hub-codesys   （CODESYS 3.5，15 条命令）
+                          └── nsa-mcp-hub-autoshop  （汇川 AutoShop V4.11，13 个工具）
 ```
 
 ## 快速开始
 
 ```powershell
 $py = "C:\Users\yuche\AppData\Local\Programs\Python\Python312\python.exe"
-$env:PYTHONPATH = "D:\bililive\kitmcp"
-& $py -m kitmcp.servers.sw_mcp          # 单独起一个 kit
-& $py -m kitmcp.acceptance --kit sw     # 跑验收
+$env:PYTHONPATH = "D:\bililive\nsa-mcp-hub"
+& $py -m nsa_mcp_hub.servers.sw_mcp          # 单独起一个 kit
+& $py -m nsa_mcp_hub.acceptance --kit sw     # 跑验收
 ```
 
 > 本机 `pip install` 必然卡死，所以 `pyproject.toml` 里的 console script 装不上，
@@ -46,20 +46,20 @@ $env:PYTHONPATH = "D:\bililive\kitmcp"
 | 能力 | 说明 |
 |---|---|
 | 单飞锁（线程） | 同一 kit 的调用串行，避免 COM 会话被打乱 |
-| 单飞锁（跨进程） | `%TEMP%\kitmcp-<kit>.lock` 文件锁，5 s 拿不到就明确拒绝 |
+| 单飞锁（跨进程） | `%TEMP%\nsa-mcp-hub-<kit>.lock` 文件锁，5 s 拿不到就明确拒绝 |
 | 超时 + stuck 守卫 | 超时返回并记录；后续调用被挡，worker 结束后自动解除 |
 | `request_id` 幂等 | 工具声明 `idempotent=True` 后，900 s 内同 id 直接回放 |
 | `kit_runtime` | 每个服务器自带、**不占锁**：busy / queued / calls / stuck / 上次工具 |
 | `must_have_checks` | 声明后 `checks` 为空即判负，杜绝「跑完没判据也算成功」 |
-| 字段级校验 | `kitmcp/contracts.py` + schema 轻校验，报错点名参数 |
+| 字段级校验 | `nsa-mcp-hub/contracts.py` + schema 轻校验，报错点名参数 |
 | COM 线程初始化 | worker 线程里先 `CoInitializeEx(STA)`，否则 AutoCAD/SW 直接 `-2147221008` |
 
 ## 验收
 
 ```powershell
-& $py -m kitmcp.acceptance                          # 六家全跑
-& $py -m kitmcp.acceptance --kit sw --kit acad      # 只跑两家
-& $py -m kitmcp.acceptance --only sw.param.thickness
+& $py -m nsa_mcp_hub.acceptance                          # 六家全跑
+& $py -m nsa_mcp_hub.acceptance --kit sw --kit acad      # 只跑两家
+& $py -m nsa_mcp_hub.acceptance --only sw.param.thickness
 .\scripts\ci.ps1 -Kits sw,acad,codesys              # 单测 + 验收（带退出码）
 ```
 
@@ -197,8 +197,8 @@ sw_sim_read                # 步数 1，位移 max 5.47e-07 mm，应力 max 2102
 固定用例只有 42 条，能力/命令却有 285 条。因为每条能力自带 judge，可以机械展开：
 
 ```powershell
-python -m kitmcp.acceptance --kit acad --sweep            # 57 条（能力全扫）
-python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
+python -m nsa_mcp_hub.acceptance --kit acad --sweep            # 57 条（能力全扫）
+python -m nsa_mcp_hub.acceptance --kit nx --sweep --sweep-max 20
 ```
 
 扫描用例合计 **260 条**（acad 57 · nx 146 · gx 42 · codesys 15），加固定 42 条 = **302 条**。
@@ -222,8 +222,8 @@ python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
 
 ### 启动器（P8）
 
-`_tools\kitmcp-<kit>.cmd` 六个（不依赖 PYTHONPATH 设置），初始化返回
-`{"name": "kitmcp-sw", "version": "0.2.0"}`。
+`_tools\nsa-mcp-hub-<kit>.cmd` 六个（不依赖 PYTHONPATH 设置），初始化返回
+`{"name": "nsa-mcp-hub-sw", "version": "0.2.0"}`。
 
 
 ### 内核 0.2.0 的两个硬约束（2026-11-03 实测，踩过两次）
@@ -237,8 +237,8 @@ python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
    `ezdxf/lldxf/validator.py`）；DXF 判据因此卡 45 s+。修法：服务器启动时预热
    `import ezdxf`。
 
-排查手段（都留着，env 开关）：`KITMCP_DUMP_STACKS=10`（周期性打线程栈）、
-acadkit 的 `progress.txt`（每个用例阶段落盘）、`KITMCP_SYNC_TOOL_CALL` 已废弃。
+排查手段（都留着，env 开关）：`NSA_MCP_HUB_DUMP_STACKS=10`（周期性打线程栈）、
+acadkit 的 `progress.txt`（每个用例阶段落盘）、`NSA_MCP_HUB_SYNC_TOOL_CALL` 已废弃。
 
 
 ## 聚合网关：nsa-mcp-hub
@@ -246,7 +246,7 @@ acadkit 的 `progress.txt`（每个用例阶段落盘）、`KITMCP_SYNC_TOOL_CAL
 六个 kit 各是一个 MCP 服务器（各自独占 COM/UI 与崩溃域）。**日常用网关就够了**：
 
 ```powershell
-D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\kitmcp\_tools\nsa-mcp-hub.cmd
+D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\nsa-mcp-hub\_tools\nsa-mcp-hub.cmd
 ```
 
 * `tools/list` → **438 个工具**（六家合计，去重后）；`initialize` 返回
@@ -259,7 +259,7 @@ D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\kitmcp\_too
 * 子进程 lazy 启动（第一次需要时才起），hub 退出时一起收掉；子进程 stderr 由排空线程接住。
 
 DSH 里已经改成只挂这一条（`%USERPROFILE%\.dsh\cordis.patch.yml`），
-原来的六条 `kitmcp-*` 已摘掉；回退办法：同目录下 `cordis.patch.yml.bak-hub-*` 覆盖回去再重启 DSH。
+原来的六条 `nsa-mcp-hub-*` 已摘掉；回退办法：同目录下 `cordis.patch.yml.bak-hub-*` 覆盖回去再重启 DSH。
 六个单独的 `.cmd` 启动器仍保留在 `D:\bililive\DeepHarness\_tools\`，随时可以单挂。
 
 ## 环境坑（都踩过）

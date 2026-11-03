@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kitmcp"
+name = "nsa-mcp-hub"
 version = "0.1.0"
 description = "把多个 CAD/PLC 自动化内核统一包装成 MCP 服务器（一个共享内核 + 每 kit 一个进程）"
 readme = "README.md"
@@ -12,16 +12,16 @@ license = { text = "MIT" }
 dependencies = []
 
 [project.scripts]
-kitmcp-nx = "kitmcp.servers.nx_mcp:main"
-kitmcp-gx = "kitmcp.servers.gx_mcp:main"
-kitmcp-acad = "kitmcp.servers.acad_mcp:main"
-kitmcp-sw = "kitmcp.servers.sw_mcp:main"
-kitmcp-codesys = "kitmcp.servers.codesys_mcp:main"
-kitmcp-autoshop = "kitmcp.servers.autoshop_mcp:main"
-kitmcp-acceptance = "kitmcp.acceptance.__main__:main"
+nsa-mcp-hub-nx = "nsa_mcp_hub.servers.nx_mcp:main"
+nsa-mcp-hub-gx = "nsa_mcp_hub.servers.gx_mcp:main"
+nsa-mcp-hub-acad = "nsa_mcp_hub.servers.acad_mcp:main"
+nsa-mcp-hub-sw = "nsa_mcp_hub.servers.sw_mcp:main"
+nsa-mcp-hub-codesys = "nsa_mcp_hub.servers.codesys_mcp:main"
+nsa-mcp-hub-autoshop = "nsa_mcp_hub.servers.autoshop_mcp:main"
+nsa-mcp-hub-acceptance = "nsa_mcp_hub.acceptance.__main__:main"
 
 [tool.setuptools]
-packages = ["kitmcp", "kitmcp.adapters", "kitmcp.servers"]
+packages = ["nsa-mcp-hub", "nsa_mcp_hub.adapters", "nsa_mcp_hub.servers"]
 
 [tool.setuptools.package-data]
-kitmcp = ["py.typed"]
+nsa-mcp-hub = ["py.typed"]

@@ -42,7 +42,7 @@ if ($SkipApps) {
 }
 
 Write-Host "`n=== 2/2 真机验收：$($Kits -join ', ') ===" -ForegroundColor Cyan
-$accArgs = @("-m", "kitmcp.acceptance")
+$accArgs = @("-m", "nsa_mcp_hub.acceptance")
 foreach ($k in $Kits) { $accArgs += @("--kit", $k) }
 
 Push-Location $root
