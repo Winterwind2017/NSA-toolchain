@@ -176,7 +176,7 @@ sw_sim_read                # 步数 1，位移 max 5.47e-07 mm，应力 max 2102
 | codesys | 59 | 56 | **77 条真服务命令**里的 56 条（旧表 17 条里有 3 条根本不存在） |
 | autoshop | 41 | 40 | 24 个 CLI verb + 17 个聚焦变体（真实开关组合） |
 
-合计 **437 个工具（任务级 420）**，逐条清单见 [`docs/tool-surface.md`](docs/tool-surface.md)。
+合计 **437 个工具（任务级 420）**；经聚合网关 **438 个**（+nsa_hub_status），逐条清单见 [`docs/tool-surface.md`](docs/tool-surface.md)。
 
 三条约定：
 
@@ -194,14 +194,14 @@ sw_sim_read                # 步数 1，位移 max 5.47e-07 mm，应力 max 2102
 
 ### 能力扫描验收（P6）
 
-固定用例只有 39 条，能力/命令却有 285 条。因为每条能力自带 judge，可以机械展开：
+固定用例只有 42 条，能力/命令却有 285 条。因为每条能力自带 judge，可以机械展开：
 
 ```powershell
 python -m kitmcp.acceptance --kit acad --sweep            # 57 条（能力全扫）
 python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
 ```
 
-扫描用例合计 **260 条**（acad 57 · nx 146 · gx 42 · codesys 15）（acad 57 · nx 146 · gx 42 · codesys 22），加固定 42 条 = **302 条**。
+扫描用例合计 **260 条**（acad 57 · nx 146 · gx 42 · codesys 15），加固定 42 条 = **302 条**。
 
 ### 取消与进度（P7）
 

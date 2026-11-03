@@ -1,5 +1,8 @@
 # 工具表面（kitmcp 0.2.0 / P0–P8）
 
+> 自动生成，勿手改。聚合网关 `nsa-mcp-hub` 把下面六家合并成 **438 个工具**
+> （六家合计去重 + 1 个 `nsa_hub_status`；各家自带的 `kit_runtime` 被聚合层取代）。
+>
 > 自动生成，勿手改。生成器 `kitmcp/adapters/capgen.py`，策展清单 `capcuration.py`。
 
 | kit | 工具 | 任务级 | 说明 |

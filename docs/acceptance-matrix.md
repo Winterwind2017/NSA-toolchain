@@ -26,7 +26,7 @@ python -m kitmcp.acceptance --kit nx --sweep --sweep-max 20
 | kit | 扫描用例 | 实测 | 备注 |
 |---|---|---|---|
 | acad | 57 | **57/57**（472 s） | 58 条能力，1 条负例不扫 |
-| nx | 146 | **146/146** | 11 条制图曾因缺 `import NXOpen.Drawings` 全挂，已修 |
+| nx | 146 | **146/146**（1997 s，一轮干净全量） | 11 条制图曾因缺 `import NXOpen.Drawings` 全挂，已修；`_runs/acceptance-20261103-223706.json` |
 | gx | 42 | **42/42**（7242 s） | 干净全量一轮跑通；单条 57–595 s |
 | codesys | 15 | **15/15** | 23 条里 8 条需真机/网关（`online.*`、`symbols.create`），扫描跳过 |
 | autoshop | 0 | — | 不是能力表模型，只有固定用例 |
@@ -65,5 +65,6 @@ import_fb 434 s、batch.new_projects 386 s、multi_programs 366 s。
 
 ### 汇总（2026-11-03）
 
-固定 42/42、acad 57/57、nx 146/146、gx 42/42、codesys 15/15 =
-**全部 302 条都至少跑过一遍且通过**，0 失败。
+固定 42/42、acad 57/57、nx 146/146（一轮）、gx 42/42（一轮）、codesys 15/15 =
+**全部 302 条都至少跑过一遍且通过**，0 失败。nx 与 gx 都各自有**单轮干净全量**的报告。
+
