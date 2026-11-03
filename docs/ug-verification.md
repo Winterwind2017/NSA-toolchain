@@ -294,3 +294,59 @@ attribute 'BlankDefinitionType'`）。只有 UI 里那个下拉能改。
 `nsa_verify_cam.prt` 里现在有 11 条工序（含几个试出来的 `OP_POCKET2/3/4`、`OP_POCKET_NEW`），
 其中 2 条有刀路。许可包 `FSSSQ` 会话仍在运行，桥在 48161。
 
+## 10. 方案 A 的实测结果（2026-11-04 02:05–02:20）：**4/11**
+
+### 10.1 客户默认改不了（user.mtx 只有界面布局）
+
+查了默认设置落盘位置：
+
+```
+C:\Users\yuche\AppData\Local\Siemens\Designcenter2512\user.mtx   （186 KB）
+```
+
+里面只有 `<NX_PROFILES><Profile name="UG_APP_NOPART"><Layout>` 这类**界面布局**（Ribbon 标签、
+窗口列宽），没有一条 CAM「毛坯/包含毛坯」的默认值。也就是说：
+**改 NX 客户默认这条路对这个设置无效**，它要么来自工序模板 part
+（`mach\resource\template_part\metric\mill_planar.prt`），要么根本没有暴露成默认项。
+
+### 10.2 但 UI 逐条改是有效的——4 条通
+
+按第 9 节第 3 条，在 UI 里把工序的「毛坯」从 `3D IPW` 改成 `毛坯几何体`，每改一条立刻生成：
+
+| 工序 | 类型 | 改后 |
+|---|---|---|
+| OP_FLOOR_FACING | VolumeBased25DMillingOperation | ✅ repost / path_exists=true |
+| OP_FINAL | VolumeBased25DMillingOperation | ✅ repost / true |
+| OP_POCKET | VolumeBased25DMillingOperation | ✅ repost / true |
+| OP_TEST2 | VolumeBased25DMillingOperation | ✅ repost / true |
+
+```
+ug_inspect_cam_operations → 有刀路 ['OP_FLOOR_FACING','OP_TEST2','OP_POCKET','OP_FINAL']  4 / 11
+```
+
+**规律很干净：`VolumeBased25DMillingOperation`（腔铣 / 无壁底面加工）这一类，只要
+①几何体组毛坯=FromGeometry ②切削区含零件+毛坯两个顶面 ③工序毛坯=毛坯几何体，就能生成。**
+
+### 10.3 剩下 3 条真工序是另一类问题（面铣族）
+
+`FACE_MILL_1`（Face Mill Midpass）、`OP_PLANAR_MILL`（平面铣）、`OP_FACE_MILL_ZIGZAG`（面铣-单向往复）
+的对话框里**没有**「毛坯」下拉（`FacingBuilder` / `PlanarMillingBuilder` 连 `BlankGeometry`
+属性都没有），它们缺的是**「指定切削区域」的面**——对话框里那一栏是空的。
+
+API 侧补这一栏失败：
+
+```
+ug_set_cam_operation_geometry(FACE_MILL_1, cut_area_face_selectors=[stable_id...])
+  → ValueError: topology stable_id no longer exists and has no geometry fallback
+```
+
+原因是上游的 stable_id → 拓扑对象解析在这个零件上失效了（面被重排/新增体之后）。这条路需要
+上游修 stable_id 回退，或者在 UI 里点面。
+
+### 10.4 结论
+
+- 「许可」彻底排除（第 8 节）；「毛坯模式」是主因（第 9、10 节）；
+- 腔铣族已经能做到"建工序 → 配两面切削区 → 生成"只要工序的毛坯模式是毛坯几何体，
+  而这个模式目前只能 UI 改（API 无属性）；
+- 面铣族还差「切削区域的面」，API 侧的 stable_id 解析需要上游修。
+
