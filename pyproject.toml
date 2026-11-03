@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kitmcp"
+version = "0.1.0"
+description = "把多个 CAD/PLC 自动化内核统一包装成 MCP 服务器（一个共享内核 + 每 kit 一个进程）"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+kitmcp-nx = "kitmcp.servers.nx_mcp:main"
+kitmcp-gx = "kitmcp.servers.gx_mcp:main"
+kitmcp-acad = "kitmcp.servers.acad_mcp:main"
+kitmcp-sw = "kitmcp.servers.sw_mcp:main"
+kitmcp-codesys = "kitmcp.servers.codesys_mcp:main"
+kitmcp-autoshop = "kitmcp.servers.autoshop_mcp:main"
+kitmcp-acceptance = "kitmcp.acceptance.__main__:main"
+
+[tool.setuptools]
+packages = ["kitmcp", "kitmcp.adapters", "kitmcp.servers"]
+
+[tool.setuptools.package-data]
+kitmcp = ["py.typed"]
