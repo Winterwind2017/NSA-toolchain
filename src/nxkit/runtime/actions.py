@@ -10,6 +10,12 @@ import os
 import time
 
 import NXOpen
+try:
+    # NX 的 NXOpen 是**包**：Drawings/Drafting 这些子模块必须显式 import，
+    # 否则 `NXOpen.Drawings` 会报 AttributeError（实测：11 条制图能力全挂）。
+    import NXOpen.Drawings  # noqa: F401
+except Exception:
+    pass
 import NXOpen.Features
 
 

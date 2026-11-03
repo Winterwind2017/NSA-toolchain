@@ -68,7 +68,11 @@ def run(job: dict, timeout: float = 600.0) -> dict:
 
     cmd = [run_journal_path(), runner_path(), "-nx", "-args", job_path]
     t0 = time.time()
+    # **必须**断开 stdin：MCP 服务器的 stdin 是 JSON-RPC 管道，run_journal/NX
+    # 一旦继承它就会卡住（实测：通过 MCP 调用 300 s 超时，直跑 16 s 通过；
+    # 栈显示卡在 communicate() 等子进程）。
     proc = subprocess.Popen(cmd, cwd=workdir, env=env,
+                            stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             text=True, encoding="utf-8", errors="replace")
     try:
