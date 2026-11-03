@@ -317,12 +317,14 @@ def inspect_ladder(ctx: dict) -> dict:
     ctx["lang"] = 0                      # 梯形图工程
     s, _ = _new_and_save(ctx)
     _lad_build(s, s.proc.pid, [["NO", "X0"], ["NO", "X1"]], [], ["COIL", "Y0"])
+    # **先转换再存盘**：GX Works3 对"未转换"的工程拒绝存盘，只会弹一个框，
+    # 而 session.save 的等待循环每轮都要枚举 UIA 对话框 —— 实测这样一卡就是
+    # 10 分钟以上（栈：session.py:413 的 sleep，循环 3×12 次都没等到 mtime 变）。
+    s.convert_all()
     s.save()
     blocks = ladder.read_blocks(pathlib.Path(ctx["project"]))
     bodies = [b for b in blocks if b["blocktype"] == 0]
     kinds = ladder.count_kinds(bodies)
-    s.convert_all()
-    s.save()
     prog = read_progress(ctx["project"])
     return {"blocks": len(blocks), "bodies": len(bodies),
             "contacts_read": kinds.get("contact", 0),
@@ -349,12 +351,14 @@ def program_write_ladder(ctx: dict) -> dict:
     contacts = rungs[0]["contacts"]
     _lad_build_many(s, pid, rungs)
 
+    # **先转换再存盘**：GX Works3 对"未转换"的工程拒绝存盘，只会弹一个框，
+    # 而 session.save 的等待循环每轮都要枚举 UIA 对话框 —— 实测这样一卡就是
+    # 10 分钟以上（栈：session.py:413 的 sleep，循环 3×12 次都没等到 mtime 变）。
+    s.convert_all()
     s.save()
     blocks = ladder.read_blocks(pathlib.Path(ctx["project"]))
     bodies = [b for b in blocks if b["blocktype"] == 0]
     kinds = ladder.count_kinds(bodies)
-    s.convert_all()
-    s.save()
     prog = read_progress(ctx["project"])
     want_contacts = sum(len(r["contacts"]) + sum(len(b) for b in (r.get("parallel") or []))
                         for r in rungs)

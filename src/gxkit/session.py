@@ -112,7 +112,14 @@ class Session:
         kill_stray()          # 上一轮残留的实例会让新实例起不来
         for attempt in range(3):
             args = [self.exe] + ([str(self.project)] if self.project else [])
-            self.proc = subprocess.Popen(args, cwd=str(pathlib.Path(self.exe).parent))
+            # stdin 断开：不要继承 MCP 服务器的 JSON-RPC 管道
+            # 三个标准流全断开：GX Works3 会把启动日志写到继承来的 stdout，
+            # 那是 MCP 的 JSON-RPC 管道 —— 实测直接把协议流写脏，客户端读到
+            # "PASS project.save 57.3s | -" 这种行后报 "服务器无响应（退出码 1）"。
+            self.proc = subprocess.Popen(
+                args, cwd=str(pathlib.Path(self.exe).parent),
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL)
             uia.bind_pid(self.proc.pid)
             t0 = time.time()
             self.main = main_window(self.proc.pid, 180.0)
@@ -410,6 +417,11 @@ class Session:
             if target and target.exists() and target.stat().st_mtime_ns != before:
                 break
         after = target.stat().st_mtime_ns if target and target.exists() else None
+        if before is not None and after == before and                 self.project and pathlib.Path(self.project).exists():
+            # 三次 Ctrl+S 都没让 mtime 变：多半是"未转换/只读/对话框挡住"。
+            # 报错比继续空转有用（扫描和 agent 都能看到真实原因）。
+            titles = [w["title"] for w in self.dialogs()][:3]
+            raise RuntimeError("存盘没生效（mtime 未变）；当前对话框：%r" % (titles,))
         return {"saved": bool(target and target.exists()),
                 "changed": before != after,
                 "bytes": target.stat().st_size if target and target.exists() else 0,
