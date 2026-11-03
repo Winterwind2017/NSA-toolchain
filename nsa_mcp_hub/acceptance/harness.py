@@ -242,6 +242,7 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
     setup = spec.get("setup")
     context = {}
     results = []
+    pending: list = []
     client = None
     try:
         if setup:
@@ -251,19 +252,27 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
             for case in spec["cases"]:
                 if only and case["id"] not in only:
                     continue
+                # 纯计算类用例（例如不碰 COM 的 Feature Graph 生成器）不该因为
+                # CAD 没开而被跳过：用 no_setup 标记放行。
+                if case.get("no_setup"):
+                    pending.append(case)
+                    continue
                 results.append({"kit": kit_key, "id": case["id"],
                                 "title": case.get("title", ""), "verdict": "SKIP",
                                 "ms": 0, "detail": "环境不可用（setup 报不可用），整组跳过"})
                 if verbose:
                     print("  %-4s %-28s %5d ms  %s"
                           % ("SKIP", case["id"], 0, "环境不可用"), flush=True)
-            return {"kit": kit_key, "results": results, "passed": 0,
-                    "skipped": len(results), "total": len(results),
-                    "seconds": round(time.time() - started, 1)}
+            # 纯计算类用例（no_setup）放行；一条都没有才整组收工
+            if not pending:
+                return {"kit": kit_key, "results": results, "passed": 0,
+                        "skipped": len(results), "total": len(results),
+                        "seconds": round(time.time() - started, 1)}
 
         client = McpClient(spec["module"])
         tool_names = {t.get("name") for t in client.tools()}
-        for case in spec["cases"]:
+        # setup 不可用时只跑放行的那些；否则跑全部
+        for case in (pending if pending else spec["cases"]):
             if only and case["id"] not in only:
                 continue
             row = {"kit": kit_key, "id": case["id"], "title": case.get("title", "")}

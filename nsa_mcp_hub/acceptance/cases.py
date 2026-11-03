@@ -165,6 +165,17 @@ SW_CASES = [
      "expect_check_true": ["tokens_resolved", "selected_count"],
      "skip_if": _no_fixture},
 
+    {"id": "sw.sphere.plan", "tool": "sw_sphere_plan",
+     "title": "球体图生成器（上游 create_sphere 的图）：3 个特征 + 体积 4/3·π·r³",
+     "args": {"diameter_mm": 40.0},
+     "expect_ok": True,
+     "expect_reads": {"reads.feature_count": 3},
+     "expect_check_true": ["feature_count", "volume_formula"],
+     "expect_min_checks": 2,
+     # 纯计算（不碰 COM）：SolidWorks 没开也要跑
+     "no_setup": True,
+     "timeout_s": 180},
+
     {"id": "sw.graph.block", "tool": "sw_execute_feature_graph",
      "title": "Feature Graph 建块 100×60×20 → 体积 120000",
      "args": {"feature_graph": {"version": "1.0", "metadata": {"part_type": "block"},

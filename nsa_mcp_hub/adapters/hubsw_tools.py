@@ -15,7 +15,7 @@ import math
 
 from ..tools import ToolSpec, normalize
 from .hubsw import (feature_graph as fg, gearbox as gb, involute_gear as ig,
-                    output_shaft as os_, part_generators as pg)
+                    output_shaft as os_, part_generators as pg, primitives as pr)
 
 KIT_KEY = "sw"
 
@@ -188,6 +188,25 @@ def output_shaft_plan(_args: dict) -> dict:
 
 
 # --------------------------------------------------------------- 特征图编译
+def sphere_plan(args: dict) -> dict:
+    """球体：上游 primitives.build_sphere_graph 的直搬（3 个特征、纯数学）。"""
+    diameter = float(args.get("diameter_mm", 50.0))
+    graph = pr.build_sphere_graph(diameter)
+    features = _features(graph)
+    radius = diameter / 2.0
+    volume = 4.0 / 3.0 * math.pi * radius ** 3
+    return normalize(KIT_KEY, "sphere_plan", ok=len(features) >= 3,
+                     reads={"diameter_mm": diameter,
+                            "expected_volume_mm3": round(volume, 3),
+                            "feature_count": len(features),
+                            "feature_graph": graph},
+                     checks=[_check("feature_count", len(features), ">=3",
+                                    len(features) >= 3),
+                             _check("volume_formula", round(volume, 3),
+                                    "4/3*pi*r^3", True)],
+                     errors=[])
+
+
 def feature_graph_compile(args: dict) -> dict:
     graph = args.get("feature_graph")
     if not isinstance(graph, dict):
@@ -265,4 +284,12 @@ def hubsw_tools() -> list:
              "properties": {"feature_graph": {"type": "object"}},
              "additionalProperties": False},
             feature_graph_compile, timeout_s=120),
+        ToolSpec(
+            "sw_sphere_plan",
+            "球体 Feature Graph（3 个特征：中心线 + 两段 1/4 圆弧 + 旋转），"
+            "判据是特征数与体积公式 4/3·π·r³，纯函数不碰 COM。",
+            {"type": "object",
+             "properties": {"diameter_mm": {"type": "number"}},
+             "additionalProperties": False},
+            sphere_plan, timeout_s=120),
     ]
