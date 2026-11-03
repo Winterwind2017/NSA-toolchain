@@ -350,3 +350,45 @@ ug_set_cam_operation_geometry(FACE_MILL_1, cut_area_face_selectors=[stable_id...
   而这个模式目前只能 UI 改（API 无属性）；
 - 面铣族还差「切削区域的面」，API 侧的 stable_id 解析需要上游修。
 
+## 11. 面铣族打通，6/11（2026-11-04 02:20–02:35）
+
+### 11.1 面铣族缺的是「切削区域」的面
+
+`FACE_MILL_1`（Face Mill Midpass）和 `OP_FACE_MILL_ZIGZAG`（面铣-单向往复）对话框里
+**没有「毛坯」下拉**，只有「指定切削区域」——那一栏是空的。补上一个顶面后就出刀路了：
+
+```
+FACE_MILL_1          repost / path_exists=true
+OP_FACE_MILL_ZIGZAG  repost / path_exists=true   （面铣的刀路预览里能直接看到往复刀轨）
+```
+
+注意：**必须点对话框的「确定」，不能用 Esc 关**。Esc 会回滚未提交的几何改动，
+工序又变回 `regenerate`——我头一次就是这么把 ZIGZAG 打回原形的。
+
+### 11.2 当前状态：6 / 11
+
+```
+FACE_MILL_1          repost      true    ← 本轮打通
+OP_FLOOR_FACING      repost      true
+OP_FACE_MILL_ZIGZAG  repost      true    ← 本轮打通
+OP_TEST2             repost      true
+OP_POCKET            repost      true
+OP_FINAL             repost      true
+OP_PLANAR_MILL       regenerate  false   ← 唯一没通的真工序
+OP_POCKET2/3/4、OP_POCKET_NEW     false   （配方试验留下的）
+```
+
+### 11.3 平面铣（OP_PLANAR_MILL）卡在哪
+
+* 「部件边界」已经设好（选择方法=面 → 顶面 → 确定）；
+* 状态栏提示 **「未指定底面。」**——平面铣必须要底面；
+* API 侧 `PlanarMillingBuilder` 的几何属性只有
+  `PartBoundary` / `TrimBoundary` / `BlankBoundary` / `CheckBoundary`（都是 `BoundaryPlanarMill`），
+  以及 `Geometry`（`GeometryCiBuilder`）；**`CutAreaGeometry` 和 `PartGeometry` 都是 None**，
+  没有直接写底面的入口；
+* UI 侧可以用「指定底面 → 选顶面 → 偏置 −20mm」造出底面，但那个距离框是 NX 表达式控件，
+  盲点 + 粘贴会拼成 `0-20-20-` 这种脏值，需要更稳的输入方式（清空按钮 + 键盘输入）。
+
+结论：平面铣这一族**要底面**，且底面要么用 UI（含表达式输入），要么找 `GeometryCiBuilder`
+里未暴露的 floor 入口。其余三族（腔铣/无壁底面、面铣 Midpass、面铣单向往复）已经全线可生成。
+
