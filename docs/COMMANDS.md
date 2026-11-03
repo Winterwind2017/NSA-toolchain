@@ -36,11 +36,22 @@ Dispatch with `AutoShop.command(id)` (alias: `AutoShop.cmd("compile_all")`).
 
 | id | label | alias |
 | --- | --- | --- |
-| 32867 | 查看 → 指令列表(&I) | `view_il` |
-| 32868 | 查看 → 梯形图(&L) | `view_ladder` |
-| 32869 | 查看 → 顺序功能图(&F) | `view_sfc` |
+| 32883 | 切换为指令列表编辑器 | `view_il` |
+| 32884 | 切换为梯形图编辑器 | `view_ladder` |
+| 32885 | 切换为步进状态图编辑器 | `view_sfc` |
 | 33367 | 查看 → 符号编址(&A) | `view_symbols` |
 | 32953 | 内置梯形图(&O) | — |
+
+> **Correction (2026-10-26, runtime-verified).** An earlier revision of this table listed
+> `32867/32868/32869` as the view switches. That is wrong: those three IDs are the SFC
+> 并行分支 / 并行汇合 / 梯形图块 insert commands — posting them on a program document is a
+> silent no-op (or really inserts an SFC branch). The view switches are `32883/32884/32885`,
+> which is what `autoshopkit.app.CMD` has always used. `32867` also appears in the menu
+> resource labelled 查看 → 指令列表, which is how the stale rows got there.
+>
+> Separately: `CMD["run"]` (33009) currently collides with `CMD["upload"]`, while this table
+> says run=33600 / stop=33601. **Unverified** — do not trust either until measured; the
+> `run`/`stop` aliases are not used by any verified path today.
 
 ## PLC / build
 

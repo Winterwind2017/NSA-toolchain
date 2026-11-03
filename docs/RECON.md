@@ -261,6 +261,56 @@ Verified by `tools/e2e_symbols.py` (7/7): after writing `BTN_A = M200`,
 `LD BTN_A / OUT Y0` compiles with `统计 - (0)错误`, while `LD ZZZ_NOPE` still
 reports `符号未定义` (negative control).  Note the IL editor upper-cases operands.
 
+## 9c. Symbol table bulk I/O (符号表 导入/导出 Excel)  [runtime, solved 2026-10-26]
+
+The grid is capped at **19 data rows** when empty. `add_symbol(row=n)` for `n >= 19` does
+**not** create a row: the click lands outside the body and every later write **wraps back to
+row 1**, returning `True` while it corrupts row 1. A 74-row job written that way leaves
+rows 1..19 wrong and 20+ empty.
+
+Row creation through the UI was *not* solved: `Enter`/`Tab` do not commit cell edits here
+(§9), and a multi-row TSV paste (`Ctrl+V`) adds no rows at all (readback: 0 rows). Manually
+pressing Enter on the last row does append a row, but the automated equivalent was not found.
+
+The supported path is the document's own menu — **dispatch these to the frame**:
+
+| id | label |
+| --- | --- |
+| 33182 | 导出Excel |
+| 33183 | 导入Excel |
+
+(The document-local *toolbar* ids 33359/33360/33364/33480/33479 really do nothing when posted
+to the frame; these menu ids do work. The earlier blanket claim "document-local ids are
+inert via the frame" holds only for the toolbar ids.)
+
+The exported format is legacy BIFF8 `.xls`:
+
+```
+r0:  (blank) | 符号 | 地址 | 注释
+r1:  1       | NAME | X0   | note
+```
+
+Round trip verified 2026-10-26 on an H3U project: 74 symbols generated with `xlwt`, imported,
+saved, then `symbols(source="file")` parsed `VarList.gdt` back with **74/74 rows, 0 missing,
+0 extra**.
+
+Two dialog details bite:
+
+* the `另存为` filename edit is `cid=1001`, the `打开` filename edit is `cid=1148` — both are
+  `Edit`, nested one level below `ComboBoxEx32 → ComboBox → Edit`, so search recursively.
+  Getting this wrong leaves the modal open, and every later document command silently fails.
+* symbol names are truncated to 8 characters (§9) and truncation can collide, so normalise and
+  de-duplicate before importing.
+
+A program that references the imported symbols proves the mapping end to end: after
+`set_program_il("LD SB_START / AND CY01_RET / AND SN01_PRX / OUT Y0")` the IL readback shows
+`LD X61 / AND X1 / AND X42 / OUT Y0` — exactly the addresses assigned per symbol — and
+`compile()` reports `(0)错误`.
+
+Note: `scintilla()` is true for **any** H3U program document regardless of view mode, so it is
+not a "we are in IL mode" test. `no instruction-list editor in the active document` almost
+always means the active document is not `MAIN` (e.g. the symbol table is frontmost).
+
 ## 9b. UI Automation  [runtime]
 
 `UIAutomationCore` reached through comtypes works across the 32/64-bit boundary and
