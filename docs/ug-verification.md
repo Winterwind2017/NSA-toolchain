@@ -189,3 +189,72 @@ IPW 后台生成、加工时间计算。
 （该仓库没有任何 license 配置文件，只在文档里写"需要商业 CAD 软件"）。
 要真机验收 CAM，需要这台机器把 Siemens 许可服务跑起来（`ugslmd`）或换一台能签出
 CAM 特性的 NX。在那之前工具如实报 `generated_count=0 / path_exists=false`。
+
+## 8. 打通了：第一把真刀路（2026-11-04 01:35–02:00）
+
+### 8.1 重启与许可包实验
+
+按计划做了：存盘（`sheet_metal_model1` 存到 `D:\ProgramData\sheet_metal_model1_backup.prt`，82 KB）→
+关 NX → 带 `UGS_LICENSE_BUNDLE` 重启 → 重放 `start_bridge.py` → 桥活（pid 41548）。
+
+许可包实验结论（重要）：
+
+| 尝试 | syslog | 结果 |
+|---|---|---|
+| `UGS_LICENSE_BUNDLE=am_pb_cam_basic` | `Bundle name too long` + `Number of bundles in use : 0` | 名字超长被拒 |
+| `UGS_LICENSE_BUNDLE=FSSSQ`（5 字符） | `Number of bundles in use : 1`、`Bundle [ 0 ] : FSSSQ` | **包生效** |
+| 包生效后再生成 | 无任何许可拒绝记录 | 仍然 `path_exists=false` |
+
+→ **许可不是瓶颈**：包里 CAM 特性齐全（`CheckPresence` 全 True），包也成功挂上，
+syslog 里没有一条 denied/not-available。之前"缺许可"的判断彻底排除。
+
+### 8.2 真正的阻断点（NX 弹窗原话）
+
+UI 里右键「生成」时 NX 给出两条诊断，一条一条对上：
+
+```
+工序参数：当使用 3D IPW 时，毛坯几何体在几何体组被定义。
+信息窗口：将"包含毛坯"设置为"毛坯几何体"时，必须在几何体组中指定毛坯几何体。
+```
+
+即：**工序的「包含毛坯」模式**和**几何体组的毛坯定义**必须一致。3D IPW 模式下几何体组不许有毛坯；
+「毛坯几何体」模式下几何体组必须有毛坯。上游新建工序默认 3D IPW，而 `define_cam_workpiece`
+又把毛坯挂进了几何体组 → 两条互斥 → NX 静默拒绝（API 侧只看到 `GetPath` 的 1345083）。
+
+### 8.3 解法与验证
+
+把几何体组的毛坯模式改成 **FromGeometry（毛坯几何体）** 并确保毛坯几何集存在：
+
+```python
+wp  = setup.CAMGroupCollection.FindObject("MCP_WORKPIECE")
+b   = setup.CAMGroupCollection.CreateMillGeomBuilder(wp)
+b.BlankGeometry.BlankDefinitionType = \
+    NXOpen.CAM.GeometryGroup.BlankDefinitionTypes.FromGeometry
+# 已有空 GeometrySet 就 Selection.Add([毛坯体])，否则 CreateGeometrySet 再 Append
+b.Validate(); b.Commit()
+```
+
+然后生成——**通了**：
+
+```
+ug_generate_cam_toolpath({"operation_names":["OP_FLOOR_FACING"]})
+  ok=True  generated_count=1  validation_passed=true
+  status "repost"(1)  path_exists=true         ← 之前恒为 "regenerate"(2)/false
+
+ug_inspect_cam_operations
+  OP_FLOOR_FACING: status=repost path_exists=true
+  其余 6 条仍 regenerate/false（几何/模式还没逐条对齐）
+```
+
+`toolpath_length` / `cutting_length` 仍读 0.0（NX 未算统计，不代表无刀轨——`AskPathExists()` 与
+状态位翻转是硬证据）。
+
+### 8.4 还没解决的
+
+同一零件里另外 6 条工序（`FACE_MILL_1`、`OP_PLANAR_MILL`、`OP_FACE_MILL_ZIGZAG`、
+`OP_TEST2`、`OP_POCKET`、以及干净流程新建的 `OP_FINAL`）仍然生成不出来。
+它们的 builder 类型各不相同（`FacingBuilder` / `PlanarMillingBuilder` /
+`VolumeBased25DMillingOperationBuilder`），`BlankGeometry` 属性的类型也不同，
+"包含毛坯"模式要用各自的方式去设。下一步就是把这组差异逐个补齐，
+把"能生成"从 1/7 做到 7/7。
+
