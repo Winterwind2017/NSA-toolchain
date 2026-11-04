@@ -195,6 +195,20 @@ SW_CASES = [
      "call": lambda client, context: _sw_part_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.fillet", "tool": None,
+     "title": "SW 剧本二：圆 Ø40→拉伸 15→圆角 R2（判体积下降 0–5%）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_fillet_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.inspect", "tool": None,
+     "title": "SW 剧本三：块 40×25×10 + 读/视图类 7 个工具（12 步，判 10000 mm³）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_inspect_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -1065,6 +1079,102 @@ def _sw_part_flow(client, context):
     ]
     return {"ok": ok_volume, "reads": {"steps": done, "volume_m3": volume},
             "errors": [] if ok_volume else ["体积不符：%r（期望 2e-05 m³ = 20000 mm³）" % volume],
+            "checks": checks}
+
+
+def _sw_fillet_flow(client, context):
+    """SW 剧本二：圆 Ø40 → 拉伸 15 → 圆角 R2。
+
+    判据：7 步全 ok，且圆角让体积**下降**（实测 18849.56 → 18638.63 mm³，约 -1.12%）。
+    为什么不带切除：swkit 的 `sw_cut_extrude` 在本机 SW2025 上建出的是空特征
+    （体积不变、features +1），实测 `flip_side` 两种都无效——已记入待修，剧本绕开它。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_circle", {"cx": 0.0, "cy": 0.0, "radius": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 15}),
+        ("sw_fillet", {"radius": 2}),
+        ("sw_get_mass_properties", {}),
+    ]
+    done = []
+    fillet = {}
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_fillet":
+            fillet = payload.get("reads") or {}
+    before = fillet.get("volume_before_mm3")
+    after = fillet.get("volume_after_mm3")
+    dropped = (before and after and 0 < (before - after) / before < 0.05)
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "fillet_edges", "got": fillet.get("edges_selected"), "want": ">0",
+         "ok": bool(fillet.get("edges_selected"))},
+        {"check": "volume_dropped", "got": round((before - after), 3) if before and after else None,
+         "want": ">0 且 <5%", "ok": bool(dropped)},
+    ]
+    return {"ok": bool(dropped), "reads": {"steps": done,
+                                           "volume_before_mm3": before,
+                                           "volume_after_mm3": after},
+            "errors": [] if dropped else ["圆角没有让体积下降：%r → %r" % (before, after)],
+            "checks": checks}
+
+
+def _sw_inspect_flow(client, context):
+    """SW 剧本三：建块 40×25×10，然后把"读/视图"类工具跑一遍（12 步一条）。
+
+    判据：12 步全 ok，体积 = 10000 mm³（1e-05 m³）。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_document_info", {}),
+        ("sw_list_features", {}),
+        ("sw_list_bodies", {}),
+        ("sw_get_mass_properties", {}),
+        ("sw_set_view_orientation", {"view_name": "isometric"}),
+        ("sw_zoom_to_fit", {}),
+        ("sw_rebuild_model", {}),
+    ]
+    done = []
+    volume = None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_get_mass_properties":
+            volume = (payload.get("reads") or {}).get("volume_m3")
+    ok_volume = volume is not None and abs(float(volume) - 1e-05) <= 1e-6
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "volume_m3", "got": volume, "want": 1e-05, "ok": ok_volume},
+    ]
+    return {"ok": ok_volume, "reads": {"steps": done, "volume_m3": volume},
+            "errors": [] if ok_volume else ["体积不符：%r（期望 1e-05 m³ = 10000 mm³）" % volume],
             "checks": checks}
 
 
