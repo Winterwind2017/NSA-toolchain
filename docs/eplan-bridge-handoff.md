@@ -50,6 +50,17 @@ listener   = new Thread(Listen)          // NamedPipeServerStream(pipeName, InOu
 
 ## 二、装完平台后的四步（脚本都在 `MCP/EPLAN/addin/`）
 
+> 先跑自检，它会告诉你现在卡在第几步：
+>
+> ```powershell
+> python scripts\eplan_preflight.py          # 人看的清单
+> python scripts\eplan_preflight.py --json    # 机器读的
+> ```
+>
+> 检查 9 组：环境变量 / 平台本体（env → 常见路径 → 注册表 → PATH）/ 5 个 API 程序集 /
+> csc.exe / pywin32 / Add-in 源码与脚本 / 已编译产物 / 发现目录与在跑的 EPLAN /
+> private/artifacts。有阻塞项退出码 1，并给出「当前可到第几步 + 最先要解决的两条」。
+
 ### 0. 前置检查
 
 ```powershell
