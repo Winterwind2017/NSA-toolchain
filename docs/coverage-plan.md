@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 15:34 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 16:01 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 193 ｜ 契约 245 ｜ 合并 376 = 61.7% ｜ 快乐路径 154
-未覆盖 233：sw 83 ｜ acad 49 ｜ gx 42 ｜ ug 32 ｜ codesys 21 ｜ autoshop 4 ｜ nx 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ codesys 65.0% ｜ ug 61.9% ｜ sw 54.6%
+工具 609 ｜ 验收 198 ｜ 契约 245 ｜ 合并 380 = 62.4% ｜ 快乐路径 157
+未覆盖 229：sw 79 ｜ acad 49 ｜ gx 42 ｜ ug 32 ｜ codesys 21 ｜ autoshop 4 ｜ nx 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ codesys 65.0% ｜ ug 61.9% ｜ sw 56.8%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -145,3 +145,14 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 |---|---|---|---|
 | sw | `sw_export_iges` | 传 `p.iges` 会**归一成 `p.igs`**，按传入路径查文件永远 0 字节（工具本身 ok、写了 22 KB） | 判据改用 `reads.path` 返回的实际路径 |
 | codesys | `pou.member` / `project.io_export` | `E_SCRIPT 名称'Calc'对此对象无效` / `E_STATE path segment 'CODESYS Control Win V3' not found`（device 参数要的是树路径不是设备名） | 两个都没纳入剧本，记在这里 |
+
+## SW 在验收上下文里会卡死的三类组合（2026-11-04 实测，累计三条）
+
+| 组合 | 现象 | 结论 |
+|---|---|---|
+| 同会话里批量"建/关多个文档" | 600 s 超时 | 已废弃批量用例 |
+| `sw_scale_body` 紧跟 `sw_create_reference_axis` | >10 min 不返回 | 拆开后「只缩放+另存」仍卡 → 整个 misc 剧本撤掉 |
+| 带构造线时 `sw_exit_sketch` | 返回 `ok=false`，reads 里 `segments_after=1` | 判据（segments 变化）误判，不是几何问题 → 剧本不 exit |
+
+另记一处**静默失败**：`sw_sketch_text` 返回 `ok=false` 且 `errors` 为空（第 3 个此类违规，
+前两个是 `acad_status`、`sw_zoom_to_fit`）。

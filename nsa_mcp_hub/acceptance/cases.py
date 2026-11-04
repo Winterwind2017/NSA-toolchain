@@ -265,6 +265,13 @@ SW_CASES = [
      "call": lambda client, context: _sw_drawing2_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.sketch2", "tool": None,
+     "title": "SW 剧本十三：草图线/样条/构造线（3 工具，不 exit——判据问题已记录）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sketch2_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.sheet", "tool": None,
      "title": "SW 剧本十：钣金基体法兰 + 展开图信息（6 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -2039,6 +2046,42 @@ def _sw_drawing2_flow(client, context):
     return {"ok": ok_iges and ok_pdf and ok_dwg,
             "reads": {"steps": done, "files": sizes, "workdir": work},
             "errors": problems, "checks": checks}
+
+
+def _sw_sketch2_flow(client, context):
+    """SW 剧本十三：草图线/样条/构造线（3 个工具，开在第二张草图里）。
+
+    不做 exit_sketch：实测带构造线时 `sw_exit_sketch` 的判据（segments 变化）
+    会误判失败（reads 里 segments_after=1）——这是判据问题，不是几何问题。
+    文档由 cleanup 关掉（只关无路径的新建件）。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_line", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_sketch_spline", {"points": [[0, 0], [10, 5], [20, 0], [30, 8]]}),
+        ("sw_sketch_construction", {"length": 20.0}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
 
 
 def _flow(client, steps):
