@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 14:10 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 15:00 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 114 ｜ 契约 245 ｜ 合并 311 = 51.1% ｜ 快乐路径 72
-未覆盖 298：sw 93 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ nx 39 ｜ ug 32 ｜ autoshop 4
-逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ sw 49.2% ｜ nx 40.9%
+工具 609 ｜ 验收 120 ｜ 契约 245 ｜ 合并 317 = 52.1% ｜ 快乐路径 78
+未覆盖 292：sw 93 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ nx 33 ｜ ug 32 ｜ autoshop 4
+逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ nx 50.0% ｜ sw 49.2%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -116,3 +116,18 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 要跑通必须先 `project.create`（带 device_node）→ 但那会切工程，dirty 工程会弹保存对话框、
 把服务卡住。所以剧本留到下一轮：用 `project.create` 建**带 device 的新工程**再跑，
 且要显式跳过 `project.close`。
+
+## 两条运维级教训（2026-11-04 实测，都表现为"库好好的却卡死"）
+
+1. **中断探针会留下孤儿 kit 进程，把 kit 锁占死**。
+   症状：后续任何调用都返回
+   `另一个进程正在使用 swkit（文件锁 %TEMP%\nsa-mcp-hub-sw.lock 拿不到，已等 5 s）`。
+   原因：被 kill 的探针留下 `nsa_mcp_hub.servers.sw_mcp` + `swkit.mcp.server` 孤儿进程。
+   处理：`Get-CimInstance Win32_Process` 按命令行匹配后 `Stop-Process`，锁立刻释放
+   （hub 会按需重新拉起子进程，不用重启 DSH）。
+2. **SW 的"批量只读"用例在 setup 夹具打开时会卡死（>600 s）**。
+   单独用**新 client** 逐条调 17 个只读工具全部正常（0.9–14.5 s/条）；
+   但在同一个会话里、且 setup 已打开 450 隔音罩（几百个特征）时，
+   连续调 `sw_list_features` 之类会长时间不返回，随后管道失步、整条用例超时。
+   → 已撤掉 `sw.batch.inspect` / `sw.batch.index` 两条用例，批量类只保留
+   **不依赖夹具** 的 NX 形态（NX 每条能力自带独立会话，天然隔离）。

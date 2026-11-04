@@ -415,6 +415,14 @@ NX_CASES = [
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
 
     # ── 多步剧本：一条用例覆盖一串工具（快乐路径）──
+    {"id": "nx.batch.sketch_drawing", "tool": None,
+     "title": "NX 批量：草图约束/水平/尺寸 + A4 图纸/基础视图/尺寸标注（6 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_sketch_constraint", "nx_sketch_horizontal", "nx_sketch_dimension",
+         "nx_drawing_sheet_a4", "nx_drawing_base_view", "nx_drawing_dimension",
+     ])},
+
     {"id": "nx.batch.export", "tool": None,
      "title": "NX 批量：环形拉伸/整圆拉伸/布尔交/面面积/距离/边数/英制/IGES/STL/STEP-AP214（10 条）",
      "args": {}, "expect_ok": True, "timeout_s": 1200,
