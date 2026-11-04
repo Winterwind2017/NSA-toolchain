@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 23:05 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-05 00:05 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 615 ｜ 验收 340 ｜ 契约 245 ｜ 合并 508 = 82.6% ｜ 快乐路径 303
-未覆盖 107：sw 52 ｜ ug 32 ｜ codesys 10 ｜ gx 5 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜
-        gx 89.4% ｜ codesys 83.3% ｜ sw 72.2% ｜ ug 61.9%
+工具 617 ｜ 验收 348 ｜ 契约 245 ｜ 合并 516 = 83.6% ｜ 快乐路径 311
+未覆盖 101：sw 51 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ **gx 100%** ｜ nx 97.0% ｜ acad 96.4% ｜
+        autoshop 90.5% ｜ codesys 83.3% ｜ sw 73.0% ｜ ug 61.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -376,3 +376,14 @@ PASS gx.batch.offline   170 s
 结果：gx 14.9% → **89.4%**（42/47），只剩 5 个未覆盖
 （`batch_new_projects` / `program_read_st` / `program_fb_params` / `project_check` /
 `project_diff` 之外的内部项）。
+
+### gx 收尾（2026-11-04 23:50）
+
+`gx.flow.tail`（工程校验 / 工程比对 / 批量建工程 / 功能块带参数 / iQ-R 往返，6 步）
+**PASS 1396.8 s** → **gx 47/47 = 100%**（快乐路径 45）。
+
+### sw 钣金（2026-11-05 00:00）
+
+`sw.flow.sheet`（选面 → `insert_bends` → 展开信息 → 选边 → 圆角，10 步）
+**PASS 139 s** —— 靠新加的 `sw_select_faces` / `sw_select_edges` 才走得通。
+实测 `sw_hem` 判据不过（`feature_added=False`），仍不纳入。

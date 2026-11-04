@@ -648,6 +648,23 @@ def _gx_flow(client, steps, work_tag):
                         "want": len(done), "ok": not failures}]}
 
 
+def _gx_flow_tail(client, context):
+    """gx 剧本七：收尾五个工具（6 步）。
+
+    这五个都不带参数、自带工程创建：工程校验 / 工程比对 / 批量建工程 /
+    功能块带参数 / iQ-R 往返。
+    """
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_project_check", {}),
+        ("gx_project_diff", {}),
+        ("gx_batch_new_projects", {}),
+        ("gx_program_import_fb_params", {}),
+        ("gx_program_rcpu_roundtrip", {"series": 0, "model": 0}),
+    ]
+    return _gx_flow(client, steps, "tail")
+
+
 def _gx_flow_project(client, context):
     """gx 剧本一：四种工程创建 + 保存/重开/元信息（7 步）。"""
     work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_gx_proj_")
@@ -798,6 +815,10 @@ GX_CASES = [
      "title": "gx 剧本五：标签/结构体成员访问（8 步）",
      "args": {}, "expect_ok": True,
      "call": lambda client, context: _gx_flow_label(client, context)},
+    {"id": "gx.flow.tail", "timeout_s": 5400, "tool": None,
+     "title": "gx 剧本七：工程校验/比对/批量建工程/功能块参数/iQ-R 往返（6 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_tail(client, context)},
     {"id": "gx.flow.xml", "timeout_s": 3600, "tool": None,
      "title": "gx 剧本六：XML 建程序/功能块 + 多程序 + 批量工程（7 步）",
      "args": {}, "expect_ok": True,
@@ -3171,6 +3192,46 @@ def _sw_sketch_ops_flow(client, context):
     errors = [] if fillet_ok else ["圆角后线段数应为 3，实测 %r" % (segments,)]
     return {"ok": fillet_ok, "reads": {"steps": done, "segments": segments, "workdir": work},
             "errors": errors, "checks": checks}
+
+
+def _sw_sheet_flow(client, context):
+    """SW 剧本二十三：实体转钣金（选面 → insert_bends）+ 展开信息 + 选边圆角（12 步）。
+
+    靠 hub 侧新增的 `sw_select_faces` / `sw_select_edges` 才走得通：
+    `sw_insert_bends` 要求先选中一个固定面；`sw_fillet`/`sw_chamfer` 要选边。
+    实测：insert_bends 26.7 s、flat_pattern_info 15.4 s、fillet 38.9 s 全过；
+    `sw_hem` 判据不过（feature_added=False），不纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_sheet_")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_select_faces", {"indices": [0]}),
+        ("sw_insert_bends", {"radius": 5}),
+        ("sw_get_flat_pattern_info", {}),
+        ("sw_select_edges", {"indices": [0], "face_index": 0}),
+        ("sw_fillet", {"radius": 3}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    want = len(steps)
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": want,
+                        "ok": len(done) == want}]}
 
 
 def _flow(client, steps):
