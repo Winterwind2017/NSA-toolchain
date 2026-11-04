@@ -1,10 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 13:10 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 13:45 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 50 ｜ 契约 154 ｜ 合并 173 = 28.4% ｜ 快乐路径 8
-gated 436（danger / app_running / app_required / write_not_probed）
+工具 609 ｜ 验收 50 ｜ 契约 245 ｜ 合并 258 = 42.4% ｜ 快乐路径 31
+未覆盖 351：sw 123 ｜ nx 62 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ ug 32 ｜ autoshop 4
+逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ codesys 35.0% ｜ sw 32.8%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -78,3 +79,14 @@ per-kit 黑名单）。这一步能一次吃掉 300+ 个 `write_not_probed`。
 
 修法：`acad_status` 在未附着时返回 `ok=false` + `reads.error="ACAD_NOT_RUNNING"`，
 或在 `errors` 里给一句话。这条是**真问题**——调用方拿不到任何失败原因。
+
+## 本轮踩到的三个边界（都影响"能不能到 100%"）
+
+| kit | 边界 | 结论 |
+|---|---|---|
+| acad | kit **没有"新建图纸/关闭图纸"工具** | 剧本会画进用户当前图纸 → 不做 acad 快乐路径剧本；要么给 kit 加 new/close，要么用独立 AutoCAD 实例 |
+| gx | 写探针必须**已有 GX 会话**，否则每条都在等 UI 拉起（实测 31 条里 29 条 20 s 超时，白烧 10 分钟） | 已加 `HEAVY_WRITE_PROBE_KITS`，默认不发；要跑得加 `--allow-heavy` |
+| ug / autoshop | 宿主没运行 → 写工具**快速拒绝**，探针安全 | 已跑：ug 2 → **52**、autoshop 20 → **38** |
+
+另记一条 swkit 的真 bug：`sw_cut_extrude` 在本机 SW2025 上建出**空特征**（体积不变、
+features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕开切除。

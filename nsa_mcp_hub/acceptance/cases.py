@@ -209,6 +209,13 @@ SW_CASES = [
      "call": lambda client, context: _sw_inspect_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.export", "tool": None,
+     "title": "SW 剧本四：建块→存盘→导出 STEP/STL（判 ISO-10303-21 与 STL 大小）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_export_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -1176,6 +1183,63 @@ def _sw_inspect_flow(client, context):
     return {"ok": ok_volume, "reads": {"steps": done, "volume_m3": volume},
             "errors": [] if ok_volume else ["体积不符：%r（期望 1e-05 m³ = 10000 mm³）" % volume],
             "checks": checks}
+
+
+def _sw_export_flow(client, context):
+    """SW 剧本四：建块 → 存盘 → 导出 STEP / STL，并**验文件真写了**。
+
+    判据：8 步全 ok；STEP 首行是 ISO-10303-21；STL > 100 B；目录里三个文件都在。
+    临时目录随 cleanup 删掉，不留垃圾。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_export_")
+    part = os.path.join(work, "probe_part.SLDPRT")
+    step = os.path.join(work, "probe_part.step")
+    stl = os.path.join(work, "probe_part.stl")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_export_step", {"path": step}),
+        ("sw_export_stl", {"path": stl}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    sizes = {os.path.basename(f): (os.path.getsize(f) if os.path.exists(f) else 0)
+             for f in (part, step, stl)}
+    head = ""
+    if os.path.exists(step):
+        with open(step, "rb") as fh:
+            head = fh.read(32).decode("latin-1", "replace").strip()
+    ok_step = head.startswith("ISO-10303-21")
+    ok_stl = sizes.get("probe_part.stl", 0) > 100
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "step_header", "got": head[:24], "want": "ISO-10303-21", "ok": ok_step},
+        {"check": "stl_bytes", "got": sizes.get("probe_part.stl"), "want": ">100", "ok": ok_stl},
+    ]
+    problems = []
+    if not ok_step:
+        problems.append("STEP 头不对：%r" % head[:32])
+    if not ok_stl:
+        problems.append("STL 太小或没写：%s B" % sizes.get("probe_part.stl"))
+    return {"ok": ok_step and ok_stl,
+            "reads": {"steps": done, "files": sizes, "step_header": head[:32], "workdir": work},
+            "errors": problems, "checks": checks}
 
 
 def _flow(client, steps):

@@ -61,6 +61,10 @@ DANGER = re.compile(
 # run_capability），所以默认不发探针，需要显式 --allow-write-probes 并自行确保静态。
 SAFE_WRITE_PROBE_KITS = {"catia", "eplan"}
 
+# 这些 kit 的写工具**必须已有宿主会话**，否则每条都要等 UI 拉起 → 实测 gx 31 条写探针
+# 里 29 条是 20 s 超时，白烧 10 分钟。默认不跑，要跑得额外加 --allow-heavy。
+HEAVY_WRITE_PROBE_KITS = {"gx", "sw", "acad", "codesys", "nx"}
+
 APP_PROCESS = {
     "sw": ["SLDWORKS"], "acad": ["acad"], "nx": ["ugraf"], "ug": ["ugraf"],
     "catia": ["CNEXT"], "codesys": ["CODESYS"], "autoshop": ["AutoShop"],
@@ -205,6 +209,8 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=30.0, help="单工具超时秒数")
     parser.add_argument("--allow-write-probes", action="store_true",
                         help="给写类工具发非法参数探针（默认只跑读类）")
+    parser.add_argument("--allow-heavy", action="store_true",
+                        help="连 gx/sw/acad/codesys/nx 的写探针也发（很慢或会拉 UI）")
     parser.add_argument("--write", action="store_true", help="把报告写到 _runs/")
     args = parser.parse_args()
 
@@ -252,8 +258,10 @@ def main() -> int:
                     entry["gated"].append({"tool": name, "reason": "danger"})
                     continue
                 read_like = bool(READ_HINT.search(name))
-                write_probe_allowed = (args.allow_write_probes
-                                       or kit in SAFE_WRITE_PROBE_KITS)
+                write_probe_allowed = (kit in SAFE_WRITE_PROBE_KITS
+                                       or (args.allow_write_probes
+                                           and (kit not in HEAVY_WRITE_PROBE_KITS
+                                                or args.allow_heavy)))
                 # 宿主没开时，非"离线安全"的读类工具会卡在 attach 上（实测
                 # acad_projection_orthographic 就这样卡满 20 s）。这类直接标记
                 # app_required，理由写清楚，不假装执行过。
