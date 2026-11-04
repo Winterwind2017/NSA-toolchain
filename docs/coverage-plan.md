@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 19:35 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 19:40 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 613 ｜ 验收 298 ｜ 契约 245 ｜ 合并 466 = 76.0% ｜ 快乐路径 261
-未覆盖 147：sw 57 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+工具 613 ｜ 验收 302 ｜ 契约 245 ｜ 合并 470 = 76.7% ｜ 快乐路径 265
+未覆盖 143：sw 53 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
 逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜
-        codesys 83.3% ｜ sw 69.2% ｜ ug 61.9% ｜ gx 14.9%
+        codesys 83.3% ｜ sw 71.4% ｜ ug 61.9% ｜ gx 14.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -313,3 +313,15 @@ hub 侧修法（不改上游）：新增 `nsa_mcp_hub/adapters/hubsw_asm.py`，�
 * `sw_add_hole_table` 在装配图上**会卡死**（>10 min），不纳入；
 * 装配体出图整条链在验收长会话里 900 s 超时（单客户端直跑是通的），
   用例已删、函数保留并注明「未纳入验收」—— 与 SW COM 会话退化同源。
+
+## 用户要求「继续修」之后新增的四条剧本（2026-11-04 19:20–19:40）
+
+| 用例 | 步数 | 真机 | 覆盖到的新工具 |
+|---|---|---|---|
+| `sw.flow.asm_ops` | 16 | 40.7 s | 引用文档/显示状态/配置/建 CFG2/材质/自定义属性/组件阵列/组件镜像 |
+| `sw.batch.misc` | 14 | 47 s | connect / api / clear_selection / select_entity / start_3d_sketch / save_as_copy / save_all / activate_document / reload_runtime |
+| `sw.flow.revolve` | 12 | 49.9 s | revolve（体积 35342.917 mm³ 与 π·30·(20²−5²) 吻合）/ revolved_surface |
+| `sw.flow.dwgviews` | 9 | 36.4 s | add_drawing_view / add_auxiliary_view |
+
+**再确认三条不能用的**（都已排除）：`sw_move_component` 卡死（>9 min）、
+`sw_assign_material_full` 在装配体上判据不过、`sw_scan` 在 cmd_scan 里 getsize 抛错。

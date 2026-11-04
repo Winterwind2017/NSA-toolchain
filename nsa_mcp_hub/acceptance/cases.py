@@ -298,6 +298,20 @@ SW_CASES = [
                 ("sw_extrude", {"depth_mm": 8})]),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.dwgviews", "tool": None,
+     "title": "SW 剧本二十一：图纸加投影/辅助视图（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_dwgviews_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.revolve", "tool": None,
+     "title": "SW 剧本二十：旋转凸台（体积=π·30·(20²−5²)）+ 旋转曲面（12 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_revolve_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.batch.misc", "tool": None,
      "title": "SW 批量：环境/选择/保存/文档切换（14 步，全快工具）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -2846,6 +2860,103 @@ def _sw_misc_flow(client, context):
                                                "workdir": work},
             "errors": [] if copy_bytes > 1000 else ["副本没写出来：%d B" % copy_bytes],
             "checks": checks}
+
+
+def _sw_revolve_flow(client, context):
+    """SW 剧本二十：旋转凸台 + 旋转曲面（8 步）。
+
+    判据用数学：草图是"离轴 5–20、高 30"的矩形绕轴旋 360°，
+    体积应为 π·30·(20²−5²) = **35342.917 mm³**（实测 35342.917，吻合）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_rev_")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 5.0, "y1": 0.0, "x2": 20.0, "y2": 30.0}),
+        ("sw_sketch_centerline", {"x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": 40.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_revolve", {"angle_deg": 360}),
+        ("sw_get_mass_properties", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 5.0, "y1": 0.0, "x2": 20.0, "y2": 30.0}),
+        ("sw_sketch_centerline", {"x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": 40.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_revolved_surface", {"angle_deg": 180}),
+    ]
+    done, volume = [], None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_revolve":
+            volume = (payload.get("reads") or {}).get("volume_mm3")
+    expected = 35342.917
+    ok_vol = volume is not None and abs(float(volume) - expected) / expected < 0.001
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "revolve_volume", "got": volume, "want": expected, "ok": ok_vol},
+    ]
+    return {"ok": ok_vol, "reads": {"steps": done, "volume_mm3": volume, "workdir": work},
+            "errors": [] if ok_vol else ["旋转体积不对：%r（期望 %.3f）" % (volume, expected)],
+            "checks": checks}
+
+
+def _sw_dwgviews_flow(client, context):
+    """SW 剧本二十一：图纸里再加视图（8 步）。
+
+    实测：`sw_add_drawing_view`（指定 model_path）与 `sw_add_auxiliary_view` 可用；
+    `sw_add_broken_view` 在零件图上判据不过（break_lines 没增加）、
+    `sw_create_section_view` 直接 backend error —— 都不纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_dwgviews_")
+    part = os.path.join(work, "p.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_new_drawing", {"model": part}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    tail = [
+        ("sw_add_drawing_view", {"model_path": part, "view_name": "top",
+                                 "x": 0.28, "y": 0.2}),
+        ("sw_add_auxiliary_view", {}),
+    ]
+    for name, args in tail:
+        payload = client.call(name, args)
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    want = len(steps) + len(tail)
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": want,
+                        "ok": len(done) == want}]}
 
 
 def _flow(client, steps):
