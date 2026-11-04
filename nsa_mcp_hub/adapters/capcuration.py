@@ -42,6 +42,8 @@ ACAD: tuple = (
     "view.zoom", "projection.orthographic",
     # 导出 4
     "export.dwg", "export.dxf", "export.pdf", "export.pdf_multipage",
+    # 文档生命周期 2（2026-11-04 新增：新建/关闭图纸，用完即关，不碰用户图纸）
+    "doc.new", "doc.close",
 )
 
 # ── nx：146 条能力里挑 58 条（建模主链路 + 量测 + 出图 + 导出）─────────

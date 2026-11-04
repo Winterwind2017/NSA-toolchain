@@ -626,7 +626,103 @@ def acad_teardown(context: dict) -> None:
 def _acad_missing(context: dict) -> bool:
     return not context.get("available")
 
+def _acad_batch(client, tools):
+    """acad 批量：逐条调**生成出来的单能力工具**（acad_geom_line 之类）。
+
+    每条都是完整一轮 acadkit 用例（建临时图 → 画 → 存盘重开判 → 关图），
+    实测 7–9 s/条，所以一条验收用例能吃掉 8 个工具。
+    单条超时 180 s：projection / export 系比纯几何慢一档。
+    """
+    import threading
+    done, failures = [], []
+    for name in tools:
+        box: dict = {}
+
+        def _one(tool_name=name):
+            try:
+                box["payload"] = client.call(tool_name, {})
+            except Exception as exc:                   # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:120])
+
+        worker = threading.Thread(target=_one, daemon=True)
+        worker.start()
+        worker.join(180)
+        if worker.is_alive():
+            failures.append("%s 超时（>180 s）" % name)
+            done.append({"tool": name, "ok": False})
+            continue
+        if "error" in box:
+            failures.append("%s 抛异常：%s" % (name, box["error"]))
+            done.append({"tool": name, "ok": False})
+            continue
+        payload = box["payload"]
+        ok = bool(payload.get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            bad = [c.get("check") for c in (payload.get("checks") or [])
+                   if isinstance(c, dict) and c.get("ok") is False]
+            failures.append("%s 失败：%s" % (name, ", ".join(map(str, bad[:4])) or
+                                            str(payload.get("errors"))[:120]))
+    return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
+            "checks": [{"check": "acad_batch_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
+
+
 ACAD_CASES = [
+    # ── 2026-11-04：doc 族 + 按生成工具批量（每条 7–9 s）──────────────
+    # 注意：`acad_boolean_section_slice` 不进验收 —— 实测它会超过 case_timeout，
+    # acadkit 的看门狗随即 `taskkill /F /IM acad.exe`（16:14 真发生过，CAD 被强杀）。
+    {"id": "acad.doc.lifecycle", "timeout_s": 600, "tool": None,
+     "title": "文档生命周期：新建图纸（+1/空模型/回退）+ 关闭图纸（回原位/无模态）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(
+         client, ["acad_doc_new", "acad_doc_close"])},
+    {"id": "acad.batch.geom", "timeout_s": 900, "tool": None,
+     "title": "几何 8 条：直线/圆/弧/多段线/矩形/椭圆/样条/填充",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_geom_line", "acad_geom_circle", "acad_geom_arc", "acad_geom_polyline",
+         "acad_geom_rect", "acad_geom_ellipse", "acad_geom_spline", "acad_geom_hatch"])},
+    {"id": "acad.batch.text_dim", "timeout_s": 900, "tool": None,
+     "title": "文字 3 + 标注 4：单行/多行/样式 + 线性/对齐/直径/半径",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_text_single", "acad_text_mtext", "acad_text_style",
+         "acad_dim_linear", "acad_dim_aligned", "acad_dim_diametric", "acad_dim_radial"])},
+    {"id": "acad.batch.dim2", "timeout_s": 900, "tool": None,
+     "title": "标注续 6 + 形位公差：角度/坐标/弧长/基线/连续/公差 + FCF",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_dim_angular", "acad_dim_ordinate", "acad_dim_arc", "acad_dim_baseline",
+         "acad_dim_continuous", "acad_dim_tolerance", "acad_gdt_tolerance"])},
+    {"id": "acad.batch.symbol_table", "timeout_s": 900, "tool": None,
+     "title": "符号 5 + 表格 3：粗糙度/焊接/中心线/中心标记/气泡 + BOM/网格/中文表",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_symbol_roughness", "acad_symbol_weld", "acad_symbol_centerline",
+         "acad_symbol_centermark", "acad_symbol_balloon",
+         "acad_table_bom", "acad_table_grid", "acad_table_chinese"])},
+    {"id": "acad.batch.frame_layer", "timeout_s": 900, "tool": None,
+     "title": "图框/布局 2 + 图层 3 + 块 2：A3 标题栏/多页布局/建层/设当前/快照/块定义/块插入",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_frame_titleblock", "acad_layout_multipage",
+         "acad_layer_create", "acad_layer_set_current", "acad_layer_snapshot",
+         "acad_block_define", "acad_block_insert_with_attributes"])},
+    {"id": "acad.batch.solid", "timeout_s": 1200, "tool": None,
+     "title": "实体 2 + 布尔 3 + 视图 1：基本体/拉伸 + 并/差/交 + 缩放",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_solid_primitive", "acad_solid_extrude",
+         "acad_boolean_union", "acad_boolean_subtract",
+         "acad_boolean_intersect", "acad_view_zoom"])},
+    {"id": "acad.batch.export", "timeout_s": 900, "tool": None,
+     "title": "导出 4：DWG / DXF / PDF / 多页 PDF",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_export_dwg", "acad_export_dxf", "acad_export_pdf",
+         "acad_export_pdf_multipage"])},
+
     {"id": "acad.caps", "timeout_s": ACAD_CASE_TIMEOUT, "tool": "acad_list_caps",
      "title": "几何族能力清单",
      "args": {"family": "geom"},

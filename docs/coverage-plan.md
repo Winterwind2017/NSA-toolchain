@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 16:01 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 16:18 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 198 ｜ 契约 245 ｜ 合并 380 = 62.4% ｜ 快乐路径 157
-未覆盖 229：sw 79 ｜ acad 49 ｜ gx 42 ｜ ug 32 ｜ codesys 21 ｜ autoshop 4 ｜ nx 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ codesys 65.0% ｜ ug 61.9% ｜ sw 56.8%
+工具 611 ｜ 验收 247 ｜ 契约 245 ｜ 合并 429 = 70.2% ｜ 快乐路径 207
+未覆盖 182：sw 79 ｜ gx 42 ｜ ug 32 ｜ codesys 21 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 65.0% ｜ ug 61.9% ｜ sw 56.8%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -156,3 +156,21 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 
 另记一处**静默失败**：`sw_sketch_text` 返回 `ok=false` 且 `errors` 为空（第 3 个此类违规，
 前两个是 `acad_status`、`sw_zoom_to_fit`）。
+
+## acad 为什么卡了 8 轮、这轮怎么解开的（2026-11-04）
+
+原来 acad 不是"做不了"，而是**缺两个基础工具**：kit 里没有"新建图纸/关闭图纸"，
+于是任何剧本都会画进用户当前图纸、也没法安全收尾。这一轮给 acadkit 补了
+`doc.new` / `doc.close` 两条真机能力（自带判据与自清理），
+再用它们把 51 个生成工具分 8 批跑通：acad 4 → **53 / 55（96.4%）**。
+
+### 一个必须记住的危险动作
+
+`acad_boolean_section_slice`（SLICE）实测会**超过 case_timeout**，acadkit 的看门狗
+随即 `taskkill /F /IM acad.exe` —— 2026-11-04 16:14 真的把用户的 AutoCAD 强杀了一次
+（当时开着 3 个未保存图纸）。结论：
+
+* 该能力**不进验收**；
+* acadkit 的看门狗是"宁可杀 CAD 也不挂住"，跑 acad 批量时要意识到这个代价；
+* 事后处理：删掉 `%TEMP%\*.sv$`、用 `acadkit.core.launch.launch()` 重新拉起
+  （它会强制 `<<VANILLA>>`），再确认 `CPROFILE=<<VANILLA>>`。
