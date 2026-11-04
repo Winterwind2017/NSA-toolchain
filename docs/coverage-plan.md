@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 16:18 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 16:21 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 611 ｜ 验收 247 ｜ 契约 245 ｜ 合并 429 = 70.2% ｜ 快乐路径 207
-未覆盖 182：sw 79 ｜ gx 42 ｜ ug 32 ｜ codesys 21 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 65.0% ｜ ug 61.9% ｜ sw 56.8%
+工具 611 ｜ 验收 259 ｜ 契约 245 ｜ 合并 438 = 71.7% ｜ 快乐路径 219
+未覆盖 173：sw 75 ｜ gx 42 ｜ ug 32 ｜ codesys 16 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 73.3% ｜ ug 61.9% ｜ sw 59.0%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -174,3 +174,16 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 * acadkit 的看门狗是"宁可杀 CAD 也不挂住"，跑 acad 批量时要意识到这个代价；
 * 事后处理：删掉 `%TEMP%\*.sv$`、用 `acadkit.core.launch.launch()` 重新拉起
   （它会强制 `<<VANILLA>>`），再确认 `CPROFILE=<<VANILLA>>`。
+
+## CODESYS 在线链路的必要条件（2026-11-04 实测）
+
+`online.state` 报 `E_SCRIPT: 无法获取 IOnlineApplication 实例` 不是权限问题，而是
+**工程里还没有 application 实例**。顺序必须是：
+
+```
+project.create → pou.create → app.generate → online.simulation(True)
+→ online.login(autostart=True) → online.state → online.read → online.logout
+```
+
+开仿真后 `online.login` 不需要真 PLC，整条链 5.9 s（17 步剧本）。另记一处静默失败：
+`textlist.export` 返回 ok=False 且 errors 为空，但 CSV 确实写出来了（224 B）。

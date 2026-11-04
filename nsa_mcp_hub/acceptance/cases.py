@@ -279,6 +279,13 @@ SW_CASES = [
      "call": lambda client, context: _sw_sheet_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.annotate", "tool": None,
+     "title": "SW 剧本十五：出图注释族（中心线/粗糙度/注释×2/球标 + 导出 PDF）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_annotate_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -1043,6 +1050,80 @@ def _codesys_extras_flow(client, context):
             "checks": checks}
 
 
+def _codesys_objects_flow(client, context):
+    """CODESYS 剧本四：文本表 / 对象增删改名 / 在线仿真登录读值（17 步）。
+
+    判据：12 步全 ok；文本表语言 = [en, zh]；行数 ≥1。
+    实测不能用：`textlist.export` 返回 ok=False 且 errors 为空（**静默失败**，
+    虽然 CSV 确实写出来了 224 B）——不纳入，记在 docs/coverage-plan.md。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_objects_")
+    if isinstance(context, dict):
+        context["workdir"] = work
+    app = "/PLC/Plc Logic/Application"
+    project = os.path.join(work, "ac_objects.project")
+    steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccP5", "kind": "program",
+                               "language": "ST", "parent": app}),
+        ("codesys_textlist_create", {"name": "AccT5", "languages": ["en", "zh"]}),
+        ("codesys_textlist_languages", {"path": app + "/AccT5"}),
+        ("codesys_textlist_rows", {"path": app + "/AccT5", "limit": 5}),
+        ("codesys_folder_create", {"parent": app, "name": "AccF5"}),
+        ("codesys_object_rename", {"path": app + "/AccF5", "name": "AccF5b"}),
+        ("codesys_object_delete", {"path": app + "/AccF5b"}),
+        # 在线链路：必须先 app.generate 才有 application 实例，否则 online.state 报
+        # "无法获取 IOnlineApplication 实例"；开仿真后 login 不需要真 PLC。
+        ("codesys_app_generate", {}),
+        ("codesys_online_simulation", {"enabled": True}),
+        ("codesys_online_login", {"autostart": True}),
+        ("codesys_online_state", {}),
+        ("codesys_online_read", {"expression": "PLC_PRG.x"}),
+        ("codesys_online_logout", {}),
+        ("codesys_online_simulation", {"enabled": False}),
+        ("codesys_project_save", {}),
+        ("codesys_project_meta", {}),
+    ]
+    done = []
+    languages: list = []
+    rows: list = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        inner = (payload.get("reads") or {}).get("result") or {}
+        if name == "codesys_textlist_languages":
+            languages = list(inner.get("languages") or [])
+        if name == "codesys_textlist_rows":
+            rows = list(inner.get("items") or [])
+    ok_lang = sorted(languages) == ["en", "zh"]
+    ok_rows = len(rows) >= 1
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "textlist_languages", "got": languages, "want": ["en", "zh"], "ok": ok_lang},
+        {"check": "textlist_rows", "got": len(rows), "want": ">=1", "ok": ok_rows},
+    ]
+    problems = []
+    if not ok_lang:
+        problems.append("文本表语言不对：%r" % (languages,))
+    if not ok_rows:
+        problems.append("文本表没读到行")
+    return {"ok": ok_lang and ok_rows,
+            "reads": {"steps": done, "languages": languages, "rows": len(rows),
+                      "workdir": work},
+            "errors": problems, "checks": checks}
+
+
 def codesys_setup() -> dict:
     """起常驻服务（headless，约 8-10 s）；**确认服务真的应答**才复用。"""
     import json
@@ -1080,6 +1161,13 @@ CODESYS_CASES = [
     {"id": "codesys.ping", "tool": "codesys_ping",
      "title": "常驻服务往返（最轻量的存活判据）",
      "args": {}, "expect_ok": True, "timeout_s": 120},
+
+    {"id": "codesys.flow.objects", "tool": None,
+     "title": "CODESYS 剧本四：文本表 + 对象增删改名 + 在线仿真登录/读值/注销（17 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_objects_flow(client, context),
+     "cleanup": _codesys_cleanup},
 
     {"id": "codesys.flow.extras", "tool": None,
      "title": "CODESYS 剧本三：POU 成员/持久变量/库/文本表/原生导出（10 步）",
@@ -2178,6 +2266,63 @@ def _sw_sketch2_flow(client, context):
     return {"ok": True, "reads": {"steps": done}, "errors": [],
             "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
                         "ok": len(done) == len(steps)}]}
+
+
+def _sw_annotate_flow(client, context):
+    """SW 剧本十五：出图后再加注释/中心线/表面粗糙度/球标（11 步）。
+
+    判据：11 步全 ok；导出 PDF 首 4 字节 %PDF。
+    实测不能用的（都要先选中对象）：`sw_add_center_mark`、`sw_add_datum_feature`、
+    `sw_add_gtol`、`sw_add_weld_symbol`（三个返回 ok=False 且 errors 为空 —— 静默失败）、
+    `sw_add_hole_table`（backend error）—— 都没纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_annot_")
+    part = os.path.join(work, "p.SLDPRT")
+    pdf = os.path.join(work, "p.pdf")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_new_drawing", {"model": part}),
+        ("sw_add_centerline", {}),
+        ("sw_add_surface_finish", {"x": 0.05, "y": 0.05}),
+        ("sw_note", {"text": "验收注释", "x": 0.1, "y": 0.1}),
+        ("sw_add_annotation", {"text": "验收注释2", "x": 0.12, "y": 0.12}),
+        ("sw_add_balloon", {"x": 0.1, "y": 0.16}),
+        ("sw_export_drawing_pdf", {"path": pdf}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    head = b""
+    size = 0
+    if os.path.exists(pdf):
+        size = os.path.getsize(pdf)
+        with open(pdf, "rb") as fh:
+            head = fh.read(4)
+    ok_pdf = head == b"%PDF" and size > 1000
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "pdf_header", "got": head.decode("latin-1"), "want": "%PDF", "ok": head == b"%PDF"},
+        {"check": "pdf_bytes", "got": size, "want": ">1000", "ok": size > 1000},
+    ]
+    return {"ok": ok_pdf, "reads": {"steps": done, "pdf_bytes": size, "workdir": work},
+            "errors": [] if ok_pdf else ["PDF 不对：head=%r size=%d" % (head, size)],
+            "checks": checks}
 
 
 def _flow(client, steps):
