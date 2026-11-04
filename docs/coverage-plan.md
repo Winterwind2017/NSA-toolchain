@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-05 00:05 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-05 00:12 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 617 ｜ 验收 348 ｜ 契约 245 ｜ 合并 516 = 83.6% ｜ 快乐路径 311
-未覆盖 101：sw 51 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ **gx 100%** ｜ nx 97.0% ｜ acad 96.4% ｜
-        autoshop 90.5% ｜ codesys 83.3% ｜ sw 73.0% ｜ ug 61.9%
+工具 617 ｜ 验收 357 ｜ 契约 245 ｜ 合并 525 = 85.1% ｜ 快乐路径 320
+未覆盖 92：sw 42 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ acad 96.4% ｜
+        autoshop 90.5% ｜ codesys 83.3% ｜ sw 77.8% ｜ ug 61.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -387,3 +387,23 @@ PASS gx.batch.offline   170 s
 `sw.flow.sheet`（选面 → `insert_bends` → 展开信息 → 选边 → 圆角，10 步）
 **PASS 139 s** —— 靠新加的 `sw_select_faces` / `sw_select_edges` 才走得通。
 实测 `sw_hem` 判据不过（`feature_added=False`），仍不纳入。
+
+### sw 再吃三条（2026-11-05 00:05–00:12）
+
+| 用例 | 步数 | 真机 | 新覆盖 |
+|---|---|---|---|
+| `sw.flow.artifacts` | 10 | 42.8 s | `export_file`(PDF 172 KB) / `screenshot`(BMP 1.4 MB) / `capture_screenshot`(PNG) / `unsuppress_feature` |
+| `sw.flow.assemble` | 12 | 147.6 s | `edit_sketch` / `split_line`(96.5 s) / `create_assembly` / `open_document` / `assembly_add` |
+
+### sw 剩 42 个：按原因分类（这是真实天花板）
+
+| 类型 | 数量 | 例子与原因 |
+|---|---|---|
+| 需要"选中模型边/面并投影" | 4 | `sketch_convert_entities` / `sketch_circular_pattern` / `sketch_text` / `sketch_chamfer` —— 都要在**面草图**里选边，swkit 的 `create_sketch` 只接受基准面名 |
+| FEA / Motion | 7 | `sim_setup/mesh/run/read/faces`（单次 15 分钟）、`motion_list/read`（要运动算例） |
+| 出图细节要预选 | 8 | `add_gtol/datum/weld/center_mark`（要先选尺寸/面）、`add_bom_table`/`add_hole_table`（要装配图且 hole_table 会卡死）、`add_broken_view`/`create_section_view`（要选视图/剖面线） |
+| 删改/变换要选实体 | 8 | `delete_body`/`delete_equation`/`move_body`/`scale_body`/`mirror`/`combine_bodies`/`suppress_feature`/`pattern_feature` —— `suppress_feature` 实测 `suppressed=False`（名字对也不生效） |
+| 尺寸对象 | 3 | `get_dimension`/`set_dimension`/`measure_distance` —— 直接 backend error（要 3D 尺寸注释对象） |
+| 关文档 | 2 | `close_all`/`close_document` —— 会关用户的文档，主动不测 |
+| kit 自身判据不过 | 6 | `assign_material_full`(装配体上 assigned=False)、`activate_configuration`(activated=False)、`inspect_relations`、`replace_component`、`hide_component`、`create_parametric_part`/`create_output_shaft`(executed/saved=False) |
+| 其它 | 4 | `analyze_draft`(要分型线)、`flow_check`(要 Flow 插件)、`scan`(cmd_scan 抛错)、`vba_dump`(要 .swp) |

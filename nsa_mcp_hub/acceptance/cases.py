@@ -272,6 +272,20 @@ SW_CASES = [
      "call": lambda client, context: _sw_sketch2_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.assemble", "tool": None,
+     "title": "SW 剧本二十五：重入草图/分割线 + 直连装配（create_assembly/open_document/assembly_add）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_assemble_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.artifacts", "tool": None,
+     "title": "SW 剧本二十四：导出 PDF + 截图 BMP/PNG + 取消抑制（10 步，判文件头）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_artifacts_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.sheet", "tool": None,
      "title": "SW 剧本十：钣金基体法兰 + 展开图信息（6 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -3232,6 +3246,124 @@ def _sw_sheet_flow(client, context):
     return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
             "checks": [{"check": "flow_steps", "got": len(done), "want": want,
                         "ok": len(done) == want}]}
+
+
+def _sw_artifacts_flow(client, context):
+    """SW 剧本二十四：导出 PDF / 截图 BMP / 截图 PNG / 取消抑制（11 步）。
+
+    判据是**文件头**：PDF `%PDF`、BMP `BM`、PNG `\x89PNG` —— 不看返回值。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_art_")
+    part = os.path.join(work, "p.SLDPRT")
+    pdf = os.path.join(work, "p.pdf")
+    bmp = os.path.join(work, "p.bmp")
+    png = os.path.join(work, "cap.png")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_export_file", {"path": pdf}),
+        ("sw_screenshot", {"out_path": bmp, "width": 800, "height": 600}),
+        ("sw_capture_screenshot", {"path": png}),
+        ("sw_unsuppress_feature", {"name": "凸台-拉伸1"}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+
+    def _head(path, size):
+        if not os.path.exists(path):
+            return b"", 0
+        with open(path, "rb") as fh:
+            return fh.read(8), os.path.getsize(path)
+
+    head_pdf, size_pdf = _head(pdf, 0)
+    head_bmp, size_bmp = _head(bmp, 0)
+    head_png, size_png = _head(png, 0)
+    ok_pdf = head_pdf[:4] == b"%PDF" and size_pdf > 1000
+    ok_bmp = head_bmp[:2] == b"BM" and size_bmp > 1000
+    ok_png = head_png[:4] == b"\x89PNG" and size_png > 1000
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "pdf", "got": head_pdf[:4].decode("latin-1"), "want": "%PDF", "ok": ok_pdf},
+        {"check": "bmp", "got": head_bmp[:2].decode("latin-1"), "want": "BM", "ok": ok_bmp},
+        {"check": "png", "got": head_png[:4].hex(), "want": "89504e47", "ok": ok_png},
+    ]
+    problems = []
+    if not ok_pdf:
+        problems.append("PDF 不对：head=%r size=%d" % (head_pdf[:4], size_pdf))
+    if not ok_bmp:
+        problems.append("BMP 不对：head=%r size=%d" % (head_bmp[:2], size_bmp))
+    if not ok_png:
+        problems.append("PNG 不对：head=%r size=%d" % (head_png[:4], size_png))
+    return {"ok": ok_pdf and ok_bmp and ok_png,
+            "reads": {"steps": done, "pdf_bytes": size_pdf, "bmp_bytes": size_bmp,
+                      "png_bytes": size_png, "workdir": work},
+            "errors": problems, "checks": checks}
+
+
+def _sw_assemble_flow(client, context):
+    """SW 剧本二十五：草图重入 + 分割线 + 直连装配三件套（12 步）。
+
+    这条覆盖的是"底层三件套"：`sw_create_assembly` / `sw_open_document` /
+    `sw_assembly_add`（前面 `sw_assembly_build` 是在内部调它们，顶层工具没被计到）。
+    实测 `sw_split_line` 96.5 s（改模型后要重算），`sw_edit_sketch`/`sw_exit_sketch` 快。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_asm3_")
+    part = os.path.join(work, "p.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_edit_sketch", {"sketch_name": "草图1"}),
+        ("sw_exit_sketch", {}),
+        ("sw_split_line", {}),
+        ("sw_create_assembly", {}),
+        ("sw_open_document", {"path": part}),
+    ]
+    done, components = [], None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    added = client.call("sw_assembly_add", {"parts": [part]})
+    done.append({"tool": "sw_assembly_add", "ok": bool(added.get("ok"))})
+    components = (added.get("reads") or {}).get("components_after")
+    want = len(steps) + 1
+    ok = bool(added.get("ok")) and components == 1
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": want, "ok": len(done) == want},
+        {"check": "components", "got": components, "want": 1, "ok": components == 1},
+    ]
+    return {"ok": ok, "reads": {"steps": done, "components": components, "workdir": work},
+            "errors": [] if ok else ["组件数 %r（期望 1）；add 错误：%s"
+                                     % (components, str(added.get("errors"))[:150])],
+            "checks": checks}
 
 
 def _flow(client, steps):
