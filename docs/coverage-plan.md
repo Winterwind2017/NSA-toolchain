@@ -98,3 +98,12 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 * **NX**：每条能力**独立开一次 `run_journal` 会话**（实测 13 s/条、各自一个 `_runs/<ts>` 工作目录），
   能力之间不共享文档——`nx_measure_mass` 会自己建块再量。所以 NX 只能写"批量冒烟"
   （`nx.batch.model` 一次跑 10 条），不能用 SW 那种链式剧本。
+
+## 装配剧本为什么没做（实测结论）
+
+`sw_insert_component` 要求**零件预先在同一个 SolidWorks 会话里打开**（否则
+`AddComponent5` 返回 None，报 "零件未预先打开时会这样"）。但实测 `sw_create_assembly`
+之后文档列表里只剩装配体——零件被关掉了；`sw_open_document` 想重新打开又直接失败。
+所以"建零件→存盘→建装配→插组件"这条链在 swkit 当前实现下走不通，
+要么改 kit（保持零件打开 / 用 InsertComponent 前显式 OpenDoc6），要么接受装配类工具
+只能停在契约覆盖层。
