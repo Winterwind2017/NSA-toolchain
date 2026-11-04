@@ -165,6 +165,14 @@ SW_CASES = [
      "expect_check_true": ["tokens_resolved", "selected_count"],
      "skip_if": _no_fixture},
 
+    {"id": "sw.status", "tool": "sw_status",
+     "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
+     "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
+
+    {"id": "sw.registry", "tool": "sw_registry",
+     "title": "工具注册表：哪些真的能用、依据是什么",
+     "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
+
     {"id": "sw.sphere.plan", "tool": "sw_sphere_plan",
      "title": "球体图生成器（上游 create_sphere 的图）：3 个特征 + 体积 4/3·π·r³",
      "args": {"diameter_mm": 40.0},
@@ -175,6 +183,48 @@ SW_CASES = [
      # 纯计算（不碰 COM）：SolidWorks 没开也要跑
      "no_setup": True,
      "timeout_s": 180},
+
+    # ── 从上游 test_*.py 搬来的判据（纯几何，不需要 SolidWorks 在跑）──
+    {"id": "sw.plan.gear", "tool": "sw_gear_involute_plan",
+     "title": "上游 test_involute_gear：m2 z20 → 分度 R20 / 外径 R22 / 齿根 R17.5 / 基圆 R18.79",
+     "args": {"module_mm": 2, "tooth_count": 20, "pressure_angle_deg": 20,
+              "thickness_mm": 10, "bore_diameter_mm": 10},
+     "expect_ok": True,
+     "expect_reads": {"reads.spec_valid": True, "reads.feature_count": 9,
+                      "reads.spec.pitch_radius_mm": 20.0,
+                      "reads.spec.outer_radius_mm": 22.0,
+                      "reads.spec.root_radius_mm": 17.5,
+                      "reads.spec.base_radius_mm": 18.79385241571817},
+     "no_setup": True, "timeout_s": 120},
+
+    {"id": "sw.plan.gearbox", "tool": "sw_gearbox_plan",
+     "title": "上游 test_gearbox：传动比 6.0、两级中心距 60/80",
+     "args": {},
+     "expect_ok": True,
+     "expect_reads": {"reads.metadata.total_ratio": 6.0,
+                      "reads.metadata.stage1_center_distance_mm": 60.0,
+                      "reads.metadata.stage2_center_distance_mm": 80.0},
+     "no_setup": True, "timeout_s": 120},
+
+    {"id": "sw.plan.flange", "tool": "sw_part_plan",
+     "title": "上游 test_part_generators：法兰 8 孔 → 5 个特征",
+     "args": {"part_type": "flange", "parameters": {"outer_diameter_mm": 120,
+                                                    "bore_diameter_mm": 40,
+                                                    "thickness_mm": 12,
+                                                    "bolt_circle_diameter_mm": 90,
+                                                    "bolt_hole_diameter_mm": 10,
+                                                    "bolt_count": 8}},
+     "expect_ok": True,
+     "expect_reads": {"reads.part_type": "flange", "reads.feature_count": 5},
+     "no_setup": True, "timeout_s": 120},
+
+    {"id": "sw.plan.output_shaft", "tool": "sw_output_shaft_plan",
+     "title": "上游 test_output_shaft：总长 333、7 段直径 [55,60,65,60,55,50,45]",
+     "args": {},
+     "expect_ok": True,
+     "expect_reads": {"reads.metadata.total_length_mm": 333.0,
+                      "reads.feature_count": 12},
+     "no_setup": True, "timeout_s": 120},
 
     {"id": "sw.create.sphere.live", "tool": "sw_create_sphere",
      "title": "一步到位（真机）：球 Ø40 → 体积 33510.3 mm³（解析解误差 <0.05%）",
@@ -280,6 +330,10 @@ NX_CASES = [
      "args": {},
      "expect_reads": {"reads.cap_count": 146}},
 
+    {"id": "nx.selftest", "tool": "nx_selftest",
+     "title": "离线自检：每条能力的动作与判据是否齐全（不开 NX）",
+     "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
+
     {"id": "nx.block", "tool": "nx_run_capability",
      "title": "真机建块 100×50×20 → 体积 100000",
      "args": {"ids": ["block.create"]},
@@ -290,6 +344,10 @@ NX_CASES = [
 
 # ------------------------------------------------------------------------ GX
 GX_CASES = [
+    {"id": "gx.selftest", "tool": "gx_selftest",
+     "title": "离线自检：动作与判据是否齐全（不开 GX Works3）",
+     "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
+
     {"id": "gx.paste_st", "tool": "gx_run_capability",
      "title": "把 ST 粘进程序并转换（判据：步数 2-200）",
      "args": {"ids": ["program.paste_st"], "keep": True},
@@ -391,6 +449,12 @@ ACAD_CASES = [
      "title": "块定义 + 属性定义",
      "args": {"ids": ["block.define"]},
      "expect_check_true": ["new_block", "attdef_count"]},
+
+    # acad_status 在 AutoCAD 没开时返回 ok=false（真实的"没接上"，不是通过），
+    # 所以这条必须依赖 setup 门禁：没开就整组 SKIP，而不是硬判 True。
+    {"id": "acad.status", "tool": "acad_status",
+     "title": "AutoCAD 环境自检（只附加不启动）",
+     "args": {}, "expect_ok": True, "timeout_s": 180},
 
     {"id": "acad.line", "timeout_s": ACAD_CASE_TIMEOUT, "tool": "acad_run_capability",
      "title": "真机画 60mm 线 → 长度/重开判据",
@@ -530,6 +594,10 @@ def codesys_setup() -> dict:
 
 
 CODESYS_CASES = [
+    {"id": "codesys.ping", "tool": "codesys_ping",
+     "title": "常驻服务往返（最轻量的存活判据）",
+     "args": {}, "expect_ok": True, "timeout_s": 120},
+
     {"id": "codesys.status", "tool": "codesys_status",
      "title": "常驻服务可达 + 版本",
      "args": {},
@@ -687,6 +755,10 @@ def _apply_fixture() -> str:
 
 
 AUTOSHOP_CASES = [
+    {"id": "autoshop.doctor", "tool": "autoshop_doctor",
+     "title": "环境自检：工程 / UIA / frida / 编辑器",
+     "args": {}, "expect_ok": True, "timeout_s": 180},
+
     {"id": "autoshop.status", "tool": "autoshop_status",
      "title": "attach 到 AutoShop",
      "args": {},
@@ -974,6 +1046,30 @@ EPLAN_CASES = [
      "expect_ok": True,
      "timeout_s": 180},
 
+    {"id": "eplan.runtime.no_snapshot", "tool": "eplan_runtime_status",
+     "title": "没有快照时 runtime_status 明确返回 ok=false（不假装读过原生）",
+     "args": {}, "expect_ok": False,
+     "expect_reads": {"reads.snapshot.available": False,
+                      "reads.snapshot.live_verified_this_call": False},
+     "no_setup": True, "timeout_s": 120},
+
+    {"id": "eplan.snapshot.reject_empty", "tool": "eplan_native_snapshot_validate",
+     "title": "空快照必须被拒：scope=provided_full_snapshot_offline、construction_ready=false",
+     "args": {"capture": {}, "plan": {}},
+     "expect_ok": False,
+     "expect_reads": {"reads.scope": "provided_full_snapshot_offline",
+                      "reads.native_read_this_call": False,
+                      "reads.construction_ready": False,
+                      "reads.commissioning_ready": False},
+     "no_setup": True, "timeout_s": 120},
+
+    {"id": "eplan.help.not_built", "tool": "eplan_help_search",
+     "title": "没建索引时 help_search 明确拒绝（HELP_INDEX_NOT_BUILT），不假装查过",
+     "args": {"query": "Generate"},
+     "expect_ok": False,
+     "expect_reads": {"reads.error": "HELP_INDEX_NOT_BUILT"},
+     "no_setup": True, "timeout_s": 120},
+
     {"id": "eplan.intent.validate", "tool": "eplan_design_intent_validate",
      "title": "离线设计意图校验：6 根线分成 4 组、给出 14 条告警",
      "args": {"model": _EPLAN_INTENT_MODEL},
@@ -994,6 +1090,10 @@ def _catia_missing(context: dict) -> bool:
 
 
 CATIA_CASES = [
+    {"id": "catia.operation.status", "tool": "catia_operation_status",
+     "title": "COM worker 状态（不进队列，不启动 CATIA）",
+     "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
+
     {"id": "catia.health", "tool": "catia_health_check",
      "title": "CATIA 可用性自检",
      "args": {},

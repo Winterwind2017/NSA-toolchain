@@ -142,8 +142,15 @@ sw_feature_graph_compile(graph) → ok, step_count=3
 **性能现实**：`GetCurveParams2` 一次约 **0.24 s**（实测 879 条边用 211.5 s）。
 所以齿轮这种上千边的模型，带收尾要多花 **3–4 分钟**；`include_finishing` 默认关，
 需要时显式传 `true`。选择器已支持 `max_edges` 早停。
-2. **EPLAN 真机读工程**：本机装了 EPLAN，但没开；`eplan_bridge_discover` 返回 `[]`。
-   要读真实工程需要起 bridge（上游 `bridge.py` 的 named pipe 协议）。
+2. **EPLAN 真机读工程**：本机只装了 License Client，**没有平台本体**（`Eplan.exe`
+   不存在），所以 `eplan_bridge_discover` 恒为 `[]`。要读真实工程得先装
+   EPLAN Platform 2.9，再按 `docs/eplan-bridge-handoff.md` 四步接桥；
+   上机前先跑 `python scripts\eplan_preflight.py` 看卡在哪一环。
 3. **上游后续提交**：已有 `scripts/sync_upstream.py` 处理——
    `--check` 报差异、`--verify` 验补丁重放等价、`--regen-patches` 重生成补丁、
    `--apply --yes` 备份后真同步并编译。用法与三条硬规则见 `docs/upstream-sync.md`。
+4. **上游测试对照**：`tests/parity/run_parity.py` 跑三组上游测试，实测
+   **145 通过 / 0 失败**（hubsw 18 + EPLAN 68 + CATIA 59），见 `docs/parity-tests.md`。
+   没搬的部分（要真机/编译器/上游 server 进程）逐条写了原因。
+   验收覆盖率由 `scripts/coverage_report.py` 统计：当前 **41/609 = 6.7%**
+   （`docs/acceptance-coverage.md`）。
