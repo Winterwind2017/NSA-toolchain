@@ -60,18 +60,49 @@ def case_tools() -> dict[str, dict]:
     return out
 
 
-def sweep_ok(path: Path | None) -> dict[str, set[str]]:
+def sweep_ok(path) -> dict[str, set[str]]:
+    """契约覆盖取**所有**扫描报告的并集（分 kit 跑的多份报告要合起来看）。"""
     out: dict[str, set[str]] = {}
-    if path is None or not path.is_file():
-        return out
-    data = json.loads(path.read_text(encoding="utf-8"))
-    for entry in data.get("kits") or []:
-        out[entry.get("kit")] = {item["tool"] for item in (entry.get("c1") or [])
-                                 if item.get("verdict") == "ok"}
+    paths = ([path] if isinstance(path, Path) else list(path or []))
+    for item in paths:
+        if item is None or not item.is_file():
+            continue
+        try:
+            data = json.loads(item.read_text(encoding="utf-8"))
+        except Exception:                              # noqa: BLE001
+            continue
+        for entry in data.get("kits") or []:
+            bucket = out.setdefault(entry.get("kit"), set())
+            bucket.update(item2["tool"] for item2 in (entry.get("c1") or [])
+                          if item2.get("verdict") == "ok")
     return out
 
 
-def happy_tools(path: Path | None) -> dict[str, set[str]]:
+def happy_tools(path) -> dict[str, set[str]]:
+    """快乐路径取**所有**验收报告的并集（一次跑只覆盖一部分 kit，并集才代表"曾经过"）。"""
+    out: dict[str, set[str]] = {}
+    paths = ([path] if isinstance(path, Path) else list(path or []))
+    for item in paths:
+        if item is None or not item.is_file():
+            continue
+        try:
+            data = json.loads(item.read_text(encoding="utf-8"))
+        except Exception:                              # noqa: BLE001
+            continue
+        for entry in data.get("kits") or []:
+            kit = entry.get("kit")
+            tools: set[str] = out.setdefault(kit, set())
+            for row in entry.get("results") or []:
+                if row.get("verdict") != "PASS" or row.get("mode") == "refusal":
+                    continue
+                if row.get("tool"):
+                    tools.add(row["tool"])
+                for name in row.get("covered_tools") or []:
+                    tools.add(name)
+    return out
+
+
+def _unused(path: Path | None) -> dict[str, set[str]]:
     out: dict[str, set[str]] = {}
     if path is None or not path.is_file():
         return out
@@ -98,10 +129,12 @@ def main() -> int:
     parser.add_argument("--only", default="")
     args = parser.parse_args()
 
-    sweep_path = Path(args.sweep) if args.sweep else latest("contract-sweep-*.json")
-    accept_path = Path(args.accept) if args.accept else latest("acceptance-*.json")
-    sweep = sweep_ok(sweep_path)
-    happy = happy_tools(accept_path)
+    sweep_paths = ([Path(args.sweep)] if args.sweep
+                   else sorted(RUNS.glob("contract-sweep-*.json")))
+    accept_paths = ([Path(args.accept)] if args.accept
+                    else sorted(RUNS.glob("acceptance-*.json")))
+    sweep = sweep_ok(sweep_paths)
+    happy = happy_tools(accept_paths)
     cases = case_tools()
 
     wanted = {name.strip() for name in args.only.split(",") if name.strip()}
@@ -142,8 +175,8 @@ def main() -> int:
           % (total["tools"], total["acc"], total["c1"], total["union"],
              pct(total["union"]), total["happy"], total["tools"] - total["union"]))
     print("\n数据来源：")
-    print("  契约扫描：%s" % (sweep_path.relative_to(HUB) if sweep_path else "（无）"))
-    print("  验收报告：%s" % (accept_path.relative_to(HUB) if accept_path else "（无）"))
+    print("  契约扫描：%d 份（并集）" % len(sweep_paths))
+    print("  验收报告：%d 份（并集）" % len(accept_paths))
 
     if args.write:
         out = HUB / "docs" / "acceptance-coverage.md"
@@ -166,8 +199,8 @@ def main() -> int:
                      % (total["tools"], total["acc"], total["c1"], total["union"],
                         pct(total["union"]), total["happy"], total["tools"] - total["union"]))
         lines += ["", "数据来源：", "",
-                  "- 契约扫描：`%s`" % (sweep_path.relative_to(HUB) if sweep_path else "无"),
-                  "- 验收报告：`%s`" % (accept_path.relative_to(HUB) if accept_path else "无"),
+                  "- 契约扫描：`_runs/contract-sweep-*.json` 共 %d 份（并集）" % len(sweep_paths),
+                  "- 验收报告：`_runs/acceptance-*.json` 共 %d 份（并集）" % len(accept_paths),
                   "",
                   "## gated 是什么",
                   "",

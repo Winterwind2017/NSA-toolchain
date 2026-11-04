@@ -45,12 +45,12 @@ def _solidworks_running() -> bool:
 def sw_setup() -> dict:
     if not os.path.isfile(SW_FIXTURE):
         print("  [warn] 找不到 SolidWorks 夹具：%s" % SW_FIXTURE, flush=True)
-        return {"available": False}
+        return {"available": False, "solidworks": False}
     # 绝不为跑验收去“启动”SolidWorks——没开就跳过，避免制造副作用
     if not _solidworks_running():
         print("  [warn] SolidWorks 没在运行，SolidWorks 组跳过（本套件不会替你启动它）",
               flush=True)
-        return {"available": False}
+        return {"available": False, "solidworks": False}
     workdir = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_")
     copy_path = os.path.join(workdir, os.path.basename(SW_FIXTURE))
     shutil.copy2(SW_FIXTURE, copy_path)
@@ -62,8 +62,30 @@ def sw_setup() -> dict:
         warn = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
         model = app.OpenDoc6(copy_path, 1, 1, "", err, warn)   # 1 = Silent
         if model is None:
+            # 这份夹具可能已经开着（上一轮 setup 打开没关）——OpenDoc6 会 return None
+            # 且 err=65536。按路径找一下已打开的文档，别再报错。
+            model = None
+            # 注意：GetDocuments 在晚绑定下是**属性**不是方法（调它会 TypeError）。
+            # 而且每轮 setup 的临时目录不同，不能比全路径——比**文件名**即可：
+            # 夹具副本是丢弃品，同名开着的那个就是上次留下的。
+            wanted = os.path.basename(copy_path).lower()
+            docs = app.GetDocuments
+            for item in (docs or []):
+                try:
+                    # 这两个在晚绑定下都是**属性**，加括号会 TypeError
+                    path = str(item.GetPathName or "")
+                    title = str(item.GetTitle or "")
+                    if path and os.path.basename(path).lower() == wanted:
+                        model = item
+                        break
+                    if not path and title.lower() == os.path.splitext(wanted)[0].lower():
+                        model = item
+                        break
+                except Exception:                      # noqa: BLE001
+                    continue
+        if model is None:
             raise RuntimeError("打开夹具失败（err=%s）" % err.value)
-        return {"available": True, "workdir": workdir,
+        return {"available": True, "solidworks": True, "workdir": workdir,
                 "copy": copy_path, "title": _sw_title(model)}
     except Exception:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -164,6 +186,14 @@ SW_CASES = [
      "prepare": _select_args,
      "expect_check_true": ["tokens_resolved", "selected_count"],
      "skip_if": _no_fixture},
+
+    {"id": "sw.flow.part", "tool": None,
+     "title": "SW 剧本：新建零件→矩形草图 40×25→拉伸 20→量体积（判 20000 mm³）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     # 用 lambda 延迟解析：_sw_part_flow 定义在 SW_CASES 之后（模块加载顺序）
+     "call": lambda client, context: _sw_part_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
@@ -980,6 +1010,62 @@ def nx_setup() -> dict:
     判成 False → 剧本被误判成"该拒绝"，反过来 FAIL。所以这里直接放行。
     """
     return {"available": True, "nx": True}
+
+
+def _close_unsaved_docs(client):
+    """关掉所有"没路径"的文档——那是剧本自己新建的临时零件，不是用户的文件。"""
+    closed = []
+    reads = client.call("sw_list_open_documents", {}).get("reads") or {}
+    for item in reads.get("documents") or []:
+        if item.get("path"):
+            continue
+        try:
+            client.call("sw_close_document", {"title": item.get("title")})
+            closed.append(item.get("title"))
+        except Exception:                              # noqa: BLE001
+            pass
+    return closed
+
+
+def _sw_part_flow(client, context):
+    """SolidWorks 剧本：新建零件 → 前视基准面矩形 40×25 → 拉伸 20 → 量体积。
+
+    单位坑：swkit 的草图坐标是 **mm**（第一次按米传 0.04/0.025 直接失败）。
+    判据：6 步全 ok 且体积 = 40×25×20 = 20000 mm³ = 2e-05 m³。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 20}),
+        ("sw_get_mass_properties", {}),
+    ]
+    done = []
+    last = {}
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        last = payload
+    volume = (last.get("reads") or {}).get("volume_m3")
+    ok_volume = volume is not None and abs(float(volume) - 2e-05) <= 1e-6
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "volume_m3", "got": volume, "want": 2e-05, "ok": ok_volume},
+    ]
+    return {"ok": ok_volume, "reads": {"steps": done, "volume_m3": volume},
+            "errors": [] if ok_volume else ["体积不符：%r（期望 2e-05 m³ = 20000 mm³）" % volume],
+            "checks": checks}
 
 
 def _flow(client, steps):

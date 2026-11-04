@@ -68,6 +68,41 @@ APP_PROCESS = {
 }
 
 
+def snapshot_pids() -> dict[str, set[int]]:
+    """当前进程名 → PID 集合，用来发现"探针把宿主拉起来了"。"""
+    try:
+        out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True,
+                             text=True, encoding="utf-8", errors="replace", timeout=60).stdout
+    except Exception:                                  # noqa: BLE001
+        return {}
+    snapshot: dict[str, set[int]] = {}
+    for line in out.splitlines():
+        fields = [f.strip('"') for f in line.split('","')]
+        if len(fields) < 2:
+            continue
+        name, pid = fields[0].strip('"').lower(), fields[1]
+        try:
+            snapshot.setdefault(name, set()).add(int(pid))
+        except ValueError:
+            continue
+    return snapshot
+
+
+def kill_new_hosts(before: dict[str, set[int]], names: list[str]) -> list[dict]:
+    """杀掉探针期间**新出现**的宿主进程（只杀新增 PID，不碰用户原有实例）。"""
+    after = snapshot_pids()
+    killed = []
+    for name in names:
+        key = ("%s.exe" % name).lower()
+        old = before.get(key, set())
+        new = after.get(key, set()) - old
+        for pid in sorted(new):
+            subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True,
+                           text=True, timeout=60)
+            killed.append({"process": key, "pid": pid})
+    return killed
+
+
 def processes_running(names: list[str]) -> list[str]:
     try:
         out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True,
@@ -186,6 +221,9 @@ def main() -> int:
         if wanted and kit not in wanted:
             continue
         running = processes_running(APP_PROCESS.get(kit, []))
+        host_names = APP_PROCESS.get(kit, [])
+        guard_enabled = bool(args.allow_write_probes) and bool(host_names)
+        snapshot = snapshot_pids() if guard_enabled else {}
         client = McpClient(module)
         try:
             tools = client.tools()
@@ -228,7 +266,7 @@ def main() -> int:
                     entry["gated"].append({"tool": name, "reason": "write_not_probed"})
                     continue
                 if not read_like and running:
-                    # 写类探针 + 宿主在跑 = 有真实副作用风险，宁可不动
+                    # 写类探针 + 宿主已经在跑 = 会真改用户状态，一律不动
                     c1_by_tool[name] = {"verdict": "gated", "reason": "app_running"}
                     entry["gated"].append({"tool": name, "reason": "app_running"})
                     continue
@@ -278,6 +316,13 @@ def main() -> int:
         finally:
             client.close()
 
+        if guard_enabled:
+            killed = kill_new_hosts(snapshot, host_names)
+            entry["launched_hosts"] = killed
+            if killed:
+                print("     !! 探针把宿主拉起来了，已终止：%s"
+                      % ", ".join("%s:%s" % (k["process"], k["pid"]) for k in killed),
+                      flush=True)
         entry["c1"] = [{"tool": name, **item} for name, item in c1_by_tool.items() if item]
         counts = Counter(item["verdict"] for item in c1_by_tool.values() if item)
         grand.update(counts)
