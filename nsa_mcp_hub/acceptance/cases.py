@@ -245,6 +245,26 @@ SW_CASES = [
      "call": lambda client, context: _sw_drawing_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.light.reads", "tool": None,
+     "title": "SW 只读 12 连：状态/注册表/文档/索引/模型信息/包围盒（夹具打开时也安全）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_light_reads(client, context)},
+
+    {"id": "sw.flow.surface", "tool": None,
+     "title": "SW 剧本九：曲面族（平面区域→加厚→拉伸曲面→偏移曲面，判实体与曲面都存在）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_surface_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.sheet", "tool": None,
+     "title": "SW 剧本十：钣金基体法兰 + 展开图信息（6 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sheet_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -1571,6 +1591,140 @@ def _sw_drawing_flow(client, context):
     ]
     return {"ok": ok_pdf, "reads": {"steps": done, "pdf_bytes": size, "workdir": work},
             "errors": [] if ok_pdf else ["PDF 不对：head=%r size=%d" % (head, size)],
+            "checks": checks}
+
+
+def _sw_light_reads(client, context):
+    """SW 只读"轻"工具批量（不建不改不关文档，因此在夹具打开时也安全）。
+
+    实测：夹具（450 隔音罩，几百特征）打开时这 12 个都 0–11 s 返回；
+    真正会卡死的是"同会话里建/关文档"的那类操作（见 docs/coverage-plan.md）。
+    """
+    import threading
+    tools = ["sw_get_status", "sw_operation_status", "sw_proxy_tools",
+             "sw_list_open_documents", "sw_list_materials", "sw_docs_stats",
+             "sw_docs_query", "sw_registry", "sw_inspect_active",
+             "sw_list_documents_dirty", "sw_get_model_info", "sw_bounding_box"]
+    done, failures = [], []
+    for name in tools:
+        box: dict = {}
+
+        def _one(tool_name=name):
+            try:
+                box["payload"] = client.call(tool_name, {})
+            except Exception as exc:                   # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:110])
+
+        worker = threading.Thread(target=_one, daemon=True)
+        worker.start()
+        worker.join(60)
+        if worker.is_alive():
+            failures.append("%s 超时（>60 s）" % name)
+            done.append({"tool": name, "ok": False})
+            continue
+        if "error" in box:
+            failures.append("%s 抛异常：%s" % (name, box["error"]))
+            done.append({"tool": name, "ok": False})
+            continue
+        ok = bool(box["payload"].get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (name, str(box["payload"].get("errors"))[:120]))
+    return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
+            "checks": [{"check": "light_reads_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
+
+
+def _sw_surface_flow(client, context):
+    """SW 剧本九：曲面族（平面区域→加厚→拉伸曲面→偏移曲面）11 步。
+
+    判据：11 步全 ok，且实体/曲面体都存在（sw_list_bodies 里两类计数都 >0）。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_planar_surface", {}),
+        ("sw_thicken_surface", {"thickness": 0.002}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_circle", {"cx": 10.0, "cy": 10.0, "radius": 5.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extruded_surface", {"depth": 20}),
+        ("sw_offset_surface", {"distance": 0.002}),
+        ("sw_list_bodies", {}),
+    ]
+    done = []
+    body_counts: dict = {}
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_list_bodies":
+            body_counts = payload.get("reads") or {}
+    solid = int(body_counts.get("solid_bodies") or body_counts.get("solids") or 0)
+    surface = int(body_counts.get("surface_bodies") or body_counts.get("surfaces") or 0)
+    ok_bodies = solid >= 1 and surface >= 1
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "body_kinds", "got": {"solid": solid, "surface": surface},
+         "want": "两者都 >0", "ok": ok_bodies},
+    ]
+    return {"ok": ok_bodies, "reads": {"steps": done, "bodies": body_counts},
+            "errors": [] if ok_bodies else ["实体/曲面计数异常：%r" % (body_counts,)],
+            "checks": checks}
+
+
+def _sw_sheet_flow(client, context):
+    """SW 剧本十：钣金基体法兰 → 展开图信息（6 步）。
+
+    判据：6 步全 ok，且 get_flat_pattern_info 认到 FlatPattern（或至少报出厚度）。
+    注：`sw_hem` 实测 backend error（需要先选边），本剧本不含它。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 100.0, "y2": 60.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_base_flange", {"thickness_mm": 2, "radius_mm": 2, "depth_mm": 30}),
+        ("sw_get_flat_pattern_info", {}),
+    ]
+    done = []
+    flat: dict = {}
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_get_flat_pattern_info":
+            flat = payload.get("reads") or {}
+    # 实际键是 flat_pattern_feature（例如 '平展型式6'），别再猜别的名字
+    has_flat = bool(flat.get("flat_pattern_feature") or flat.get("flat_pattern")
+                    or flat.get("has_flat_pattern") or flat.get("feature")
+                    or flat.get("thickness_mm"))
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "flat_pattern", "got": flat, "want": "认到展开图或厚度", "ok": has_flat},
+    ]
+    return {"ok": has_flat, "reads": {"steps": done, "flat_pattern": flat},
+            "errors": [] if has_flat else ["展开图信息为空：%r" % (flat,)],
             "checks": checks}
 
 
