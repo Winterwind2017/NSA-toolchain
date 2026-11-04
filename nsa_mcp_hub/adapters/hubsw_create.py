@@ -133,7 +133,10 @@ def create_involute_gear(args: dict) -> dict:
                           args.get("thickness_mm", 10.0),
                           args.get("bore_diameter_mm", 10.0),
                           args.get("root_fillet_mm"), args.get("tip_chamfer_mm"))
-        graph = ig.build_involute_gear_graph(spec)
+        # 收尾（齿根圆角 + 齿顶倒角）默认关掉：上游那一步用 FeatureFillet，
+        # 而 SW 2025 已删掉该成员（实测报「找不到成员 -2147352573」）。
+        graph = ig.build_involute_gear_graph(
+            spec, include_finishing=bool(args.get("include_finishing", False)))
     except Exception as exc:                                   # noqa: BLE001
         return normalize(KIT_KEY, "create_involute_gear", ok=False,
                          errors=["%s: %s" % (type(exc).__name__, exc)])
@@ -222,7 +225,9 @@ def create_tools() -> list:
              {"module_mm": _TYPE_NUM, "tooth_count": _TYPE_NUM,
               "pressure_angle_deg": _TYPE_NUM, "thickness_mm": _TYPE_NUM,
               "bore_diameter_mm": _TYPE_NUM, "root_fillet_mm": _TYPE_NUM,
-              "tip_chamfer_mm": _TYPE_NUM, **_COMMON},
+              "tip_chamfer_mm": _TYPE_NUM,
+              # 默认 false：SW2025 没有 FeatureFillet，收尾那步必失败
+              "include_finishing": _TYPE_BOOL, **_COMMON},
              create_involute_gear),
 
         spec("sw_create_sphere",

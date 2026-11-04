@@ -22,13 +22,20 @@
 上游 `create_*` 是**一步到位**；hub 原来是两步（`*_plan` → `execute_feature_graph`）。
 现在补了 5 个封装工具，**一次调用就出图并直接建到 SolidWorks**：
 
-| 一步到位工具 | 内部步骤 | 出图特征数（实测） |
-|---|---|---|
-| `sw_create_involute_gear` | `InvoluteGearSpec`（半径按 ISO 自动推）→ 图 → 执行 | 11 |
-| `sw_create_sphere` | `primitives` → 图 → 执行 | 3（附解析体积 33510.322 mm³ @Ø40） |
-| `sw_create_parametric_part` | `part_generators` → 图 → 执行 | 3（block） |
-| `sw_create_two_stage_reducer` | `gearbox` → 图 → 执行 | 16（传动比 6.0、一级中心距 60） |
-| `sw_create_output_shaft` | `output_shaft` → 图 → 执行 | 12 |
+| 一步到位工具 | 出图特征 | **真机建模实测**（2026-11-04 10:00–10:15，SW 2025 SP4.1） |
+|---|---|---|---|
+| `sw_create_sphere` | 3 | ✅ Ø40 → **33510.322 mm³**（与解析值 4/3·π·r³ **完全一致**），17.8 s |
+| `sw_create_parametric_part` | 3 | ✅ block 40×30×10 → **120000.0 mm³**（精确），9.6 s |
+| `sw_create_involute_gear` | 9 | ✅ m2 z20 t10 bore10 → **11474.079 mm³**，22.2 s |
+| `sw_create_two_stage_reducer` | 16 | ✅ → **113982.282 mm³**，142.9 s（传动比 6.0、中心距 60/80） |
+| `sw_create_output_shaft` | 12 | ✅ → **768065.555 mm³**，26.1 s |
+
+**齿轮为什么是 9 个特征而不是上游的 11 个**：上游最后两步是齿根圆角 + 齿顶倒角，
+用的是 `IFeatureManager.FeatureFillet` —— **SW 2025 已经删掉这个成员**，实测报
+`com_error (-2147352573, '找不到成员')` 并让整条链失败（那一次跑了 496 s）。
+所以 `sw_create_involute_gear` 默认 `include_finishing=false`；要收尾就传 `true`，
+但在 SW2025 上那一步仍会失败（swkit 里的正解是走 comtypes 调 14 参 `FeatureFillet3`，
+hub 的 `hubsw/native_features.edge_fillet` 还没改过来，见下）。
 
 参数：`execute`（默认 true；`false` 只出图，不用开 SolidWorks）、`save_path`、
 `expected_volume_mm3`、`include_graph`。执行仍走 `sw_execute_feature_graph` 的语义：
@@ -109,9 +116,11 @@ sw_feature_graph_compile(graph) → ok, step_count=3
 
 ## 四、还没做的
 
-1. ~~SW 一步到位的 `create_*` 封装~~ —— **已做**（见 2.1），且没动第三个仓库：
-   封装放在 hub 的 `adapters/hubsw_create.py`，组合「图生成器 + 执行器」两半。
-   待办只剩一件事：`execute=true` 的实际建模还没在真机跑过（本机 SolidWorks 没开）。
+1. ~~SW 一步到位的 `create_*` 封装~~ —— **已做并真机验证**（见 2.1）。
+2. **`hubsw/native_features.edge_fillet` 仍用废弃 API**：调 `FeatureFillet`（7 参），
+   SW2025 已无此成员。swkit 有实测解法（comtypes 调 14 参 `FeatureFillet3`，
+   见 `solidworks-agent-kit/src/swkit/verified/features.py:182`），
+   搬过来即可让齿轮收尾（齿根圆角/齿顶倒角）在 SW2025 上跑通。
 2. **EPLAN 真机读工程**：本机装了 EPLAN，但没开；`eplan_bridge_discover` 返回 `[]`。
    要读真实工程需要起 bridge（上游 `bridge.py` 的 named pipe 协议）。
 3. **上游后续提交**：已有 `scripts/sync_upstream.py` 处理——
