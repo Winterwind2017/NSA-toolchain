@@ -202,8 +202,22 @@ def normalize(kit: str, capability: str, *, ok: bool, reads: dict | None = None,
     """六个 kit 共用返回结构；``ok`` 只由 checks + 执行错误决定。"""
     checks = checks or []
     errors = errors or []
+    failed = [c for c in checks if not _check_ok(c)]
+    payload_ok = bool(ok and not failed and not errors)
+    # 静默失败兜底：ok=False 却一条 errors 都没有，调用方只能看到"失败了"。
+    # 这里按失败判据自动补一条可读原因（acad_status / sw_zoom_to_fit /
+    # sw_add_gtol / textlist.export 都属于这一类）。
+    if not payload_ok and not errors:
+        if failed:
+            names = []
+            for item in failed[:4]:
+                name = item.get("check") if isinstance(item, dict) else None
+                names.append(str(name) if name else "未命名判据")
+            errors = ["判据未通过：%s" % "、".join(names)]
+        else:
+            errors = ["工具返回失败，但没有给出原因"]
     payload = {
-        "ok": bool(ok and all(_check_ok(c) for c in checks) and not errors),
+        "ok": payload_ok,
         "kit": kit,
         "capability": capability,
         "reads": reads or {},
@@ -250,6 +264,18 @@ def apply_checks(payload: dict, checks: list) -> dict:
     payload["ok"] = (bool(payload.get("ok"))
                      and all(_check_ok(c) for c in checks)
                      and not (payload.get("errors") or []))
+    # 静默失败兜底（与 normalize 同一套规则）：ok 掉下来了却没有原因，
+    # 就按失败判据补一条可读 errors，别让调用方只看到 ok=false。
+    if not payload["ok"] and not (payload.get("errors") or []):
+        failed = [c for c in checks if not _check_ok(c)]
+        if failed:
+            names = []
+            for item in failed[:4]:
+                name = item.get("check") if isinstance(item, dict) else None
+                names.append(str(name) if name else "未命名判据")
+            payload["errors"] = ["判据未通过：%s" % "、".join(names)]
+        else:
+            payload["errors"] = ["工具返回失败，但没有给出原因"]
     return payload
 
 

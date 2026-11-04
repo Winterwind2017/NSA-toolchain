@@ -298,6 +298,13 @@ SW_CASES = [
                 ("sw_extrude", {"depth_mm": 8})]),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.assembly", "tool": None,
+     "title": "SW 剧本十六：装配链（建装配→插两件→干涉/树/固定/抑制/爆炸，14 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_assembly_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.annotate", "tool": None,
      "title": "SW 剧本十五：出图注释族（中心线/粗糙度/注释×2/球标 + 导出 PDF）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -2567,6 +2574,147 @@ def _sw_batch_tools(client, tools, setup=None):
     return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
             "checks": [{"check": "batch_ok", "got": len(done) - len(failures),
                         "want": len(done), "ok": not failures}]}
+
+
+def _sw_assembly_flow(client, context):
+    """SW 剧本十六：装配链（hub 侧修复后打通）—— 建件→建装配→插两件→干涉/树/固定/
+    隐藏开关/抑制/爆炸（14 步）。
+
+    为什么这条以前做不了：swkit 的 `AddComponent5` 只传了 7 个参数（应为 8 个），
+    且要求零件预先打开、装配体是 ActiveDoc。hub 侧的 `sw_assembly_build`
+    把"开零件 → 激活装配 → 8 参插入"缝在一起，判据是组件数读回。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_asm_")
+    part = os.path.join(work, "asm_part.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 5}),
+        ("sw_save_document", {"path": part}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": []}
+
+    built = client.call("sw_assembly_build", {"parts": [part, part], "spacing_mm": 60})
+    done.append({"tool": "sw_assembly_build", "ok": bool(built.get("ok"))})
+    if not built.get("ok"):
+        return {"ok": False, "reads": {"steps": done, "workdir": work},
+                "errors": ["sw_assembly_build 失败：%s" % str(built.get("errors"))[:200]],
+                "checks": built.get("checks") or []}
+
+    # 先读装配树拿到**真实组件名**（名字由零件文件名决定，写死会失败）
+    tree = client.call("sw_get_assembly_tree", {})
+    done.append({"tool": "sw_get_assembly_tree", "ok": bool(tree.get("ok"))})
+    names = [c.get("name") for c in ((tree.get("reads") or {}).get("components") or [])
+             if isinstance(c, dict) and c.get("name")]
+    target = names[1] if len(names) > 1 else (names[0] if names else "")
+    tail = [
+        ("sw_check_interference", {"expected": 0}),
+        ("sw_fix_component", {"component_index": 0}),
+        ("sw_show_all_components", {}),
+        ("sw_suppress_component", {"name": target, "suppress": True}),
+        ("sw_suppress_component", {"name": target, "suppress": False}),
+        ("sw_explode_assembly", {}),
+    ]
+    components = (built.get("reads") or {}).get("components_after")
+    for name, args in tail:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_check_interference":
+            pass
+    ok_count = components == 2
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps) + 2 + len(tail),
+         "ok": len(done) == len(steps) + 2 + len(tail)},
+        {"check": "components", "got": components, "want": 2, "ok": ok_count},
+    ]
+    return {"ok": ok_count, "reads": {"steps": done, "components": components,
+                                      "workdir": work},
+            "errors": [] if ok_count else ["组件数不对：%r（期望 2）" % (components,)],
+            "checks": checks}
+
+
+def _sw_asm_drawing_flow(client, context):
+    """SW 剧本十七：装配体出图（**未纳入验收** —— 在验收长会话里 900 s 超时，
+    单独用同一个客户端跑是通的；原因见 docs/coverage-plan.md 的"执行边界"一节） —— BOM/球标/尺寸/中心线/粗糙度/辅助视图/断裂视图（17 步）。
+
+    装配链修好之后才有这条：`sw_add_bom_table` 需要装配图、`sw_add_balloon` 需要
+    BOM 项。实测 `sw_add_hole_table` 在装配图上会**卡死**（>10 min），不纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_asmdwg_")
+    part = os.path.join(work, "p.SLDPRT")
+    asm = os.path.join(work, "a.SLDASM")
+    pdf = os.path.join(work, "a.pdf")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 5}),
+        ("sw_save_document", {"path": part}),
+        ("sw_assembly_build", {"parts": [part, part], "spacing_mm": 60}),
+        ("sw_save_document", {"path": asm}),
+        ("sw_new_drawing", {"model": asm}),
+        ("sw_add_bom_table", {"x": 0.1, "y": 0.16}),
+        ("sw_add_balloon", {"x": 0.1, "y": 0.16}),
+        ("sw_add_drawing_dimension", {"x": 0.12, "y": 0.12}),
+        ("sw_add_centerline", {}),
+        ("sw_add_surface_finish", {"x": 0.05, "y": 0.05}),
+        ("sw_add_auxiliary_view", {}),
+        ("sw_add_broken_view", {}),
+        ("sw_export_drawing_pdf", {"path": pdf}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    head, size = b"", 0
+    if os.path.exists(pdf):
+        size = os.path.getsize(pdf)
+        with open(pdf, "rb") as fh:
+            head = fh.read(4)
+    ok_pdf = head == b"%PDF" and size > 1000
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "pdf_header", "got": head.decode("latin-1"), "want": "%PDF",
+         "ok": head == b"%PDF"},
+        {"check": "pdf_bytes", "got": size, "want": ">1000", "ok": size > 1000},
+    ]
+    return {"ok": ok_pdf, "reads": {"steps": done, "pdf_bytes": size, "workdir": work},
+            "errors": [] if ok_pdf else ["PDF 不对：head=%r size=%d" % (head, size)],
+            "checks": checks}
 
 
 def _flow(client, steps):

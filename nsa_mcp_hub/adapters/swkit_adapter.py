@@ -92,6 +92,22 @@ def build_kit() -> Kit:
                 checks)
         return handler
 
+    def remote_call(remote_name: str, call_args: dict) -> dict:
+        """给 hub 侧组合工具用的最小代理调用器（只要 ok/reads/errors）。"""
+        result = child.call_tool(remote_name, call_args or {})
+        payload, is_error = unwrap(result)
+        inner = payload.get("result")
+        if not isinstance(inner, dict):
+            inner = payload
+        reads = inner.get("detail") if isinstance(inner.get("detail"), dict) else {}
+        if not reads:
+            reads = {k: v for k, v in inner.items()
+                     if k not in ("ok", "checks", "tool", "api")}
+        ok = bool(not is_error and inner.get("ok", True))
+        errors = [] if ok else [str(payload.get("text") or inner.get("error")
+                                    or "backend error")[:300]]
+        return {"ok": ok, "reads": reads, "errors": errors}
+
     for tool in remote_tools:
         remote_name = tool.get("name") or ""
         if not remote_name:
@@ -146,6 +162,14 @@ def build_kit() -> Kit:
             kit.add(spec)
     except Exception as exc:                          # noqa: BLE001
         log("hubsw 执行工具加载失败：%s" % exc)
+
+    # 装配链修复（先建装配 → 开零件 → 插组件）：绕开 swkit 要求零件预先打开
+    try:
+        from .hubsw_asm import asm_tools
+        for spec in asm_tools(remote_call):
+            kit.add(spec)
+    except Exception as exc:                          # noqa: BLE001
+        log("hubsw 装配工具加载失败：%s" % exc)
 
     # Phase 3：一步到位封装（plan + execute 缝成一次调用）
     try:

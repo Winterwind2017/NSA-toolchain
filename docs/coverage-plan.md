@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 16:32 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 19:20 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 611 ｜ 验收 275 ｜ 契约 245 ｜ 合并 448 = 73.3% ｜ 快乐路径 238
-未覆盖 163：sw 73 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 83.3% ｜ ug 61.9% ｜ sw 60.1% ｜ gx 14.9%
+工具 613 ｜ 验收 282 ｜ 契约 245 ｜ 合并 453 = 73.9% ｜ 快乐路径 245
+未覆盖 160：sw 70 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 83.3% ｜ ug 61.9% ｜ sw 62.2% ｜ gx 14.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -264,3 +264,51 @@ TIMEOUT sw.flow.inspect     600 s   ← 单条用例超过 600 s，已放弃并�
   （`--kit sw --only <组>`），这也正是本文件里各条剧本的验证方式。
 
 这条不是"覆盖率造假"，而是**验收执行方式的边界**，记在这里避免下次误判成回归。
+
+## 修掉的两个真 bug（2026-11-04 收尾轮，用户要求「继续修」）
+
+### ① swkit 的 `AddComponent5` 少了参数（装配链全废的根因）
+
+```python
+# swkit/api/app.py 现状（错的）
+doc.AddComponent5(file_path, 0, "", fixed, x, y, z)      # 7 个参数
+# IAssemblyDoc::AddComponent5 实际是 8 个：
+AddComponent5(CompConfig, UseConfigForPart, NewPartPath, ConfigOption, InsertedOption, X, Y, Z)
+```
+
+少一个 → 晚绑定报「非选择性的参数」→ 返回 None → 所有装配相关工具都只看到
+`components_after = 0` + "backend error"。**这就是 sw 装配族 12 个工具一直覆盖不了的根因。**
+
+hub 侧修法（不改上游）：新增 `nsa_mcp_hub/adapters/hubsw_asm.py`，直接在本进程用 COM，
+按实测的三个必要顺序执行 —— **打开零件 → `ActivateDoc3` 把装配体切回活动 → 8 参插入**，
+判据用 `GetComponents` 数读回。新增两个工具：
+
+| 工具 | 判据 | 真机 |
+|---|---|---|
+| `sw_assembly_build` | parts_inserted = N、component_count = N | 2/2、组件 p-1/p-2 ✅ |
+| `sw_assembly_add` | 同上（往已有装配体追加） | 未单独跑 |
+
+新验收用例 `sw.flow.assembly`（14 步：建件→建装配→插两件→干涉 0→读树→固定→
+显示全部→抑制/解抑制→爆炸）**真机 43.5 s PASS**，顺带覆盖
+`sw_check_interference` / `sw_get_assembly_tree` / `sw_fix_component` /
+`sw_show_all_components` / `sw_suppress_component` / `sw_explode_assembly`。
+
+### ② 静默失败（ok=false 但 errors 为空）
+
+根因不在工具，而在内核收口：`normalize()` / `apply_checks()` 只把 `ok` 算成
+`all(checks) and not errors`，**判据失败时不会补 errors**，于是
+`sw_zoom_to_fit` / `sw_add_gtol` / `acad_status` 这类返回 `ok=false, errors=[]`。
+
+修法（`nsa_mcp_hub/tools.py`，两处同一套规则）：ok 掉下来却没有 errors 时，
+按失败判据自动补一条可读原因。实测效果：
+
+```
+修前：sw_zoom_to_fit ok=False errors=[]
+修后：sw_zoom_to_fit ok=False errors=["判据未通过：scale_changed"]
+```
+
+### 顺带确认的两条边界
+
+* `sw_add_hole_table` 在装配图上**会卡死**（>10 min），不纳入；
+* 装配体出图整条链在验收长会话里 900 s 超时（单客户端直跑是通的），
+  用例已删、函数保留并注明「未纳入验收」—— 与 SW COM 会话退化同源。
