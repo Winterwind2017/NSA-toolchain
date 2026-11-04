@@ -146,4 +146,12 @@ def build_kit() -> Kit:
             kit.add(spec)
     except Exception as exc:                          # noqa: BLE001
         log("hubsw 执行工具加载失败：%s" % exc)
+
+    # Phase 3：一步到位封装（plan + execute 缝成一次调用）
+    try:
+        from .hubsw_create import create_tools
+        for spec in create_tools():
+            kit.add(spec)
+    except Exception as exc:                          # noqa: BLE001
+        log("hubsw create 封装加载失败：%s" % exc)
     return kit

@@ -12,15 +12,39 @@
 |---|---|---|---|---|
 | **ug** | 82 | 84 | **0** | 已对齐（hub 多 2 个是 `kit_runtime` / `proxy_tools`） |
 | **catia** | 55 | 57 | **0** | 已对齐 |
-| **sw** | 40 | 178 | **19 → 0** | 见第二节，逐个定性 |
+| **sw** | 40 | **183** | **19 → 0** | 见第二节；含 5 个一步到位封装 |
 | **eplan** | 67（review 17 / trial 77） | **0 → 17 / 77** | **0** | 新 kit，见 `docs/eplan-kit.md` |
 
 ## 二、SW 那 19 个的定性
 
-### 2.1 其实是「规划 + 执行」的组合（6 个）
+### 2.1 曾是「规划 + 执行」两步，现已补成一步（6 个）
 
-上游 `create_*` 是**一步到位**；hub 是两步（`*_plan` → `execute_feature_graph`）。
-功能等价，只是少一层封装。实测证据：
+上游 `create_*` 是**一步到位**；hub 原来是两步（`*_plan` → `execute_feature_graph`）。
+现在补了 5 个封装工具，**一次调用就出图并直接建到 SolidWorks**：
+
+| 一步到位工具 | 内部步骤 | 出图特征数（实测） |
+|---|---|---|
+| `sw_create_involute_gear` | `InvoluteGearSpec`（半径按 ISO 自动推）→ 图 → 执行 | 11 |
+| `sw_create_sphere` | `primitives` → 图 → 执行 | 3（附解析体积 33510.322 mm³ @Ø40） |
+| `sw_create_parametric_part` | `part_generators` → 图 → 执行 | 3（block） |
+| `sw_create_two_stage_reducer` | `gearbox` → 图 → 执行 | 16（传动比 6.0、一级中心距 60） |
+| `sw_create_output_shaft` | `output_shaft` → 图 → 执行 | 12 |
+
+参数：`execute`（默认 true；`false` 只出图，不用开 SolidWorks）、`save_path`、
+`expected_volume_mm3`、`include_graph`。执行仍走 `sw_execute_feature_graph` 的语义：
+**永远新建文档**，不碰用户已打开的文件。
+
+验收（不需要开 SolidWorks，标了 `no_setup`）：
+
+```
+sw.sphere.plan      PASS 43 ms
+sw.create.gear      PASS  2 ms
+sw.create.reducer   PASS  1 ms
+sw.create.sphere    PASS  1 ms
+sw：4/4 通过（1.2s）
+```
+
+功能等价论证（原两步路径）：
 
 ```
 sw_gear_involute_plan(m=2, z=20) → feature_graph(9 个特征)
@@ -85,9 +109,9 @@ sw_feature_graph_compile(graph) → ok, step_count=3
 
 ## 四、还没做的
 
-1. **SW 一步到位的 `create_*` 封装**：现在要两次调用。若要单次调用，需在
-   `swkit` 仓库加组合工具（改第三个仓库，且要开 SolidWorks 验证）。
-   hub 侧的图生成器与执行器都已就绪，属于纯封装工作。
+1. ~~SW 一步到位的 `create_*` 封装~~ —— **已做**（见 2.1），且没动第三个仓库：
+   封装放在 hub 的 `adapters/hubsw_create.py`，组合「图生成器 + 执行器」两半。
+   待办只剩一件事：`execute=true` 的实际建模还没在真机跑过（本机 SolidWorks 没开）。
 2. **EPLAN 真机读工程**：本机装了 EPLAN，但没开；`eplan_bridge_discover` 返回 `[]`。
    要读真实工程需要起 bridge（上游 `bridge.py` 的 named pipe 协议）。
 3. **上游后续提交**：以 `c051b72` 为基线，之后上游再有改动需要重新 `git fetch` 并重放补丁。
