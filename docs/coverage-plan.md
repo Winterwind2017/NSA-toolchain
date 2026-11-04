@@ -1,11 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 19:20 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 19:35 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 613 ｜ 验收 282 ｜ 契约 245 ｜ 合并 453 = 73.9% ｜ 快乐路径 245
-未覆盖 160：sw 70 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 83.3% ｜ ug 61.9% ｜ sw 62.2% ｜ gx 14.9%
+工具 613 ｜ 验收 298 ｜ 契约 245 ｜ 合并 466 = 76.0% ｜ 快乐路径 261
+未覆盖 147：sw 57 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜
+        codesys 83.3% ｜ sw 69.2% ｜ ug 61.9% ｜ gx 14.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。

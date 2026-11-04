@@ -82,8 +82,20 @@ def build_kit() -> Kit:
                 reads = {k: v for k, v in inner.items()
                          if k not in ("ok", "checks", "tool", "api")}
 
-            errors = [] if not is_error and inner.get("ok", True) else [
-                str(payload.get("text") or inner.get("error") or "backend error")[:400]]
+            if not is_error and inner.get("ok", True):
+                errors = []
+            else:
+                text = str(payload.get("text") or inner.get("error") or "").strip()
+                if not text:
+                    # 后端只回 ok=false、不给原因时，用失败判据拼一条可读原因
+                    bad = [c.get("check") for c in checks
+                           if isinstance(c, dict) and c.get("ok") is False]
+                    bad = [str(x) for x in bad if x]
+                    if bad:
+                        text = "后端判据未通过：%s" % "、".join(bad[:4])
+                    else:
+                        text = "backend error（后端未给出原因）"
+                errors = [text[:400]]
 
             return apply_checks(
                 normalize(KIT_KEY, remote_name,

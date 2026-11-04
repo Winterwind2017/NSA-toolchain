@@ -298,6 +298,20 @@ SW_CASES = [
                 ("sw_extrude", {"depth_mm": 8})]),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.batch.misc", "tool": None,
+     "title": "SW 批量：环境/选择/保存/文档切换（14 步，全快工具）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_misc_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.asm_ops", "tool": None,
+     "title": "SW 剧本十八：装配体读取/配置/组件阵列镜像（16 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_asm_ops_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.assembly", "tool": None,
      "title": "SW 剧本十六：装配链（建装配→插两件→干涉/树/固定/抑制/爆炸，14 步）",
      "args": {}, "expect_ok": True, "timeout_s": 900,
@@ -2714,6 +2728,123 @@ def _sw_asm_drawing_flow(client, context):
     ]
     return {"ok": ok_pdf, "reads": {"steps": done, "pdf_bytes": size, "workdir": work},
             "errors": [] if ok_pdf else ["PDF 不对：head=%r size=%d" % (head, size)],
+            "checks": checks}
+
+
+def _sw_asm_ops_flow(client, context):
+    """SW 剧本十八：装配体上的读取与配置/组件操作（13 步）。
+
+    这条是靠装配链修复才好用的：`sw_get_referenced_documents` / 组件阵列 /
+    组件镜像都要求有装配体。实测 `sw_move_component` 会**卡死**（>9 min），
+    `sw_assign_material_full` 在装配体上判据不过（assigned=False），都不纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_asmops_")
+    part = os.path.join(work, "p.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 5}),
+        ("sw_save_document", {"path": part}),
+        ("sw_assembly_build", {"parts": [part, part], "spacing_mm": 60}),
+        ("sw_get_referenced_documents", {}),
+        ("sw_list_display_states", {}),
+        ("sw_activate_display_state", {"name": ""}),
+        ("sw_list_configurations", {}),
+        ("sw_create_configuration_full", {"name": "CFG2", "activate": True}),
+        ("sw_get_material", {}),
+        ("sw_set_custom_properties", {"props": {"料号": "A-01"}}),
+        ("sw_pattern_component", {"kind": "linear", "count": 2, "spacing": 0.05,
+                                  "component_index": 1}),
+        ("sw_mirror_component", {"filter": "", "mirror_type": 2}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
+def _sw_misc_flow(client, context):
+    """SW 剧本十九：环境/选择/保存/文档切换（13 步，全快工具）。
+
+    实测可用：connect / api(list_operations) / clear_selection / select_entity(PLANE) /
+    start_3d_sketch / save_as_copy / save_all / document_info / activate_document /
+    reload_runtime。
+    `sw_scan` 在本机以其 cwd 相关实现会崩（cmd_scan 里 getsize 抛错）、
+    `sw_assembly_add` 需要有装配体，都不放在这条里。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_misc_")
+    part = os.path.join(work, "p.SLDPRT")
+    copy = os.path.join(work, "p_copy.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 5}),
+        ("sw_save_document", {"path": part}),
+        ("sw_connect", {}),
+        ("sw_api", {"op": "list_operations"}),
+        ("sw_clear_selection", {}),
+        ("sw_select_entity", {"name": "前视基准面", "kind": "PLANE"}),
+        ("sw_start_3d_sketch", {}),
+        ("sw_save_as_copy", {"path": copy}),
+        ("sw_save_all", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    info = client.call("sw_document_info", {})
+    done.append({"tool": "sw_document_info", "ok": bool(info.get("ok"))})
+    title = (info.get("reads") or {}).get("title")
+    tail = []
+    if title:
+        tail.append(("sw_activate_document", {"title": title}))
+    tail.append(("sw_reload_runtime", {}))
+    for name, args in tail:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    want = len(steps) + 1 + len(tail)
+    copy_bytes = os.path.getsize(copy) if os.path.exists(copy) else 0
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": want, "ok": len(done) == want},
+        {"check": "copy_bytes", "got": copy_bytes, "want": ">1000", "ok": copy_bytes > 1000},
+    ]
+    return {"ok": copy_bytes > 1000, "reads": {"steps": done, "copy_bytes": copy_bytes,
+                                               "workdir": work},
+            "errors": [] if copy_bytes > 1000 else ["副本没写出来：%d B" % copy_bytes],
             "checks": checks}
 
 
