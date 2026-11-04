@@ -279,6 +279,25 @@ SW_CASES = [
      "call": lambda client, context: _sw_assemble_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.bodies", "tool": None,
+     "title": "SW 剧本二十八：实体平移/缩放/镜像/组合（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_bodies_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.modify", "tool": None,
+     "title": "SW 剧本二十六：抑制/解抑制/删特征（8 步，中文特征名直传）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_modify_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.delete_body", "tool": None,
+     "title": "SW 剧本二十七：建件后删实体（6 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_delete_body_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.artifacts", "tool": None,
      "title": "SW 剧本二十四：导出 PDF + 截图 BMP/PNG + 取消抑制（10 步，判文件头）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -3364,6 +3383,135 @@ def _sw_assemble_flow(client, context):
             "errors": [] if ok else ["组件数 %r（期望 1）；add 错误：%s"
                                      % (components, str(added.get("errors"))[:150])],
             "checks": checks}
+
+
+def _sw_modify_flow(client, context):
+    """SW 剧本二十六：抑制/解抑制/删特征 + 删实体（两条脚本各管一件）。
+
+    实测：`sw_suppress_feature` / `sw_unsuppress_feature` / `sw_delete_feature` 用
+    **中文特征名**（如 凸台-拉伸1）直接可用；`sw_delete_body` 也可用。
+    `sw_delete_equation` 仍 backend error（没有方程对象）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_mod_")
+    feature = "凸台-拉伸1"
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 15.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 8}),
+        ("sw_suppress_feature", {"name": feature}),
+        ("sw_unsuppress_feature", {"name": feature}),
+        ("sw_delete_feature", {"name": feature}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
+def _sw_delete_body_flow(client, context):
+    """SW 剧本二十七：建件后删实体（6 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_del_")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 15.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 8}),
+        ("sw_delete_body", {"body_index": 0}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
+def _flow_steps(client, steps, tag):
+    """通用顺序剧本：任一步失败即停，返回统一结构（给下面两条短剧本用）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_%s_" % tag)
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
+def _sw_bodies_flow(client, context):
+    """SW 剧本二十八：实体变换/镜像/组合（9 步）。"""
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 15.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 8}),
+        ("sw_move_body", {"dx_mm": 50}),
+        ("sw_scale_body", {"factor": 2}),
+        ("sw_mirror", {"plane": "前视基准面"}),
+        ("sw_combine_bodies", {"operation": "add"}),
+    ]
+    return _flow_steps(client, steps, "bodies")
+
+
+def _sw_sim_setup_flow(client, context):
+    """SW 剧本二十九：赋材质 + 建静力研究并划网格（9 步，**未纳入验收**）。
+
+    单客户端直跑 9.8 s 通过，但在验收会话里 900 s 超时（与 SW COM 会话退化同源），
+    所以用例删掉、函数保留。
+
+    实测关键：**没有材质时 sim_setup 直接报"该零件没有材质"**
+    （Simulation 要求先有材质，否则 RunAnalysis 返回 19）。
+    加 `sw_set_material(AISI 304)` 之后 sim_setup 9.8 s 成功。
+    `sw_sim_read` 在没有求解结果时返回 False（"没有结果（求解未成功）"），不纳入。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 15.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 8}),
+        ("sw_set_material", {"name": "AISI 304"}),
+        ("sw_get_material", {}),
+        ("sw_sim_status", {}),
+        ("sw_sim_setup", {"restraint_face": 0, "force_face": 1, "force_n": 100,
+                          "mesh": True, "size": 0.006}),
+    ]
+    return _flow_steps(client, steps, "sim")
 
 
 def _flow(client, steps):

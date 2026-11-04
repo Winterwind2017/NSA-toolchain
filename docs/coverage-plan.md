@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-05 00:12 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-05 00:40 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 617 ｜ 验收 357 ｜ 契约 245 ｜ 合并 525 = 85.1% ｜ 快乐路径 320
-未覆盖 92：sw 42 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+工具 617 ｜ 验收 360 ｜ 契约 245 ｜ 合并 528 = 85.6% ｜ 快乐路径 323
+未覆盖 89：sw 39 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
 逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ acad 96.4% ｜
-        autoshop 90.5% ｜ codesys 83.3% ｜ sw 77.8% ｜ ug 61.9%
+        autoshop 90.5% ｜ codesys 83.3% ｜ sw 79.4% ｜ ug 61.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -407,3 +407,18 @@ PASS gx.batch.offline   170 s
 | 关文档 | 2 | `close_all`/`close_document` —— 会关用户的文档，主动不测 |
 | kit 自身判据不过 | 6 | `assign_material_full`(装配体上 assigned=False)、`activate_configuration`(activated=False)、`inspect_relations`、`replace_component`、`hide_component`、`create_parametric_part`/`create_output_shaft`(executed/saved=False) |
 | 其它 | 4 | `analyze_draft`(要分型线)、`flow_check`(要 Flow 插件)、`scan`(cmd_scan 抛错)、`vba_dump`(要 .swp) |
+
+### sw 最后一轮短剧本（2026-11-05 00:15–00:40）
+
+| 用例 | 步数 | 真机 | 新覆盖 |
+|---|---|---|---|
+| `sw.flow.modify` | 8 | 63.6 s | `suppress_feature` / `unsuppress_feature` / `delete_feature`（**中文特征名直传可用**）|
+| `sw.flow.delete_body` | 6 | 36.8 s | `delete_body` |
+| `sw.flow.bodies` | 9 | 89.9 s | `move_body` / `scale_body` / `mirror` / `combine_bodies` |
+
+另外两条实测结论（都已排除）：
+
+* `sw_sim_setup` 单客户端直跑 **9.8 s 通过**（关键前提：**先赋材质**，否则报"该零件没有材质"，
+  RunAnalysis 返回 19），但在验收会话里 900 s 超时 —— 用例删掉、函数保留；
+* `sw_select_features` 对中文特征名**仍然选不中**（`SelectByID2` 与特征树遍历两种都试过），
+  但 `suppress_feature` / `delete_feature` 不需要选中就能用，所以这批不影响覆盖。

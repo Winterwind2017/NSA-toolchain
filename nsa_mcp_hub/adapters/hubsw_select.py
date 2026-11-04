@@ -177,14 +177,30 @@ def select_tools() -> List[Any]:
                 doc.ClearSelection2(True)
             hits = []
             for name in names:
+                picked = False
                 for kind in ("BODYFEATURE", "SKETCH"):
                     try:
                         if doc.Extension.SelectByID2(name, kind, 0, 0, 0,
                                                      True, 0, None, 0):
                             hits.append(name)
+                            picked = True
                             break
                     except Exception:    # noqa: BLE001
                         continue
+                if picked:
+                    continue
+                # SelectByID2 对"凸台-拉伸1"这类中文特征名不生效，改为遍历特征树
+                # 直接 IFeature::Select2（实测这条最稳）。
+                try:
+                    feat = doc.FirstFeature()
+                    while feat is not None:
+                        if str(getattr(feat, "Name", "")) == name:
+                            if feat.Select2(True, 0):
+                                hits.append(name)
+                            break
+                        feat = feat.GetNextFeature()
+                except Exception:        # noqa: BLE001
+                    pass
             count = _selected_count(doc)
             checks = [
                 {"check": "selected", "got": count, "want": len(names),
