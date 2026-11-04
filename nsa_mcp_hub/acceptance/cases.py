@@ -7,6 +7,7 @@ NX / AutoCAD 的用例走各自 kit 的 `*_run_capability`，本来就自带几�
 from __future__ import annotations
 
 import glob
+import json
 import os
 import shutil
 import tempfile
@@ -221,6 +222,13 @@ SW_CASES = [
      "args": {}, "expect_ok": True, "timeout_s": 600,
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_props_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.equations", "tool": None,
+     "title": "SW 剧本六：方程/全局变量/镜向/回滚/显示模式（12 步，判 W=40 与 H=10）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_equations_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
     {"id": "sw.status", "tool": "sw_status",
@@ -1341,6 +1349,62 @@ def _nx_batch(client, tools):
     return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
             "checks": [{"check": "batch_ok", "got": len(done) - len(failures),
                         "want": len(tools), "ok": not failures}]}
+
+
+def _sw_equations_flow(client, context):
+    """SW 剧本六：方程 / 全局变量 / 镜向 / 回滚 / 抑制-解除 / 显示模式（12 步）。
+
+    判据：12 步全 ok；方程表里 W=40 与 H=10 都在（count=2）。
+    注：`sw_pattern_feature` 需要先选中特征，实测直接调会 backend error → 本剧本不含它。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_add_equation", {"expression": '"W" = 40'}),
+        ("sw_get_equations", {}),
+        ("sw_set_global_variable", {"name": "H", "value": 10}),
+        ("sw_list_global_variables", {}),
+        ("sw_mirror_feature", {"plane": "前视基准面"}),
+        ("sw_feature_rollback", {"location": "end"}),
+        ("sw_set_display_mode", {"mode": "shaded"}),
+    ]
+    done = []
+    equations: list = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_list_global_variables":
+            equations = (payload.get("reads") or {}).get("equations") or []
+    # 用**原始方程文本**比，别比 json.dumps（会多出 \" 转义，把自己坑了）
+    text = " | ".join(str(item.get("equation", "")) for item in equations
+                      if isinstance(item, dict))
+    ok_w = '"W" = 40' in text
+    ok_h = '"H" = 10' in text
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "equation_count", "got": len(equations), "want": 2, "ok": len(equations) >= 2},
+        {"check": "equations_present", "got": text[:120], "want": "W=40 与 H=10", "ok": ok_w and ok_h},
+    ]
+    problems = []
+    if not ok_w:
+        problems.append("方程 W=40 没读到：%s" % text[:120])
+    if not ok_h:
+        problems.append("全局变量 H=10 没读到：%s" % text[:120])
+    return {"ok": ok_w and ok_h, "reads": {"steps": done, "equations": equations},
+            "errors": problems, "checks": checks}
 
 
 def _flow(client, steps):
