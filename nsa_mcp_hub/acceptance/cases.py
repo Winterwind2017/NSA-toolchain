@@ -741,6 +741,145 @@ def _codesys_service_alive(state: str) -> bool:
         return False
 
 
+def _codesys_flow(client, context):
+    """CODESYS 剧本：project.create（带 device）→ POU 写入/读回 → 编译 → 导出 XML。
+
+    关键实测：POU 路径必须是**全路径** `/PLC/Plc Logic/Application/<名字>`，
+    写 `/AcPlay` 会 E_STATE（path segment not found）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_")
+    project = os.path.join(work, "ac_play.project")
+    xml = os.path.join(work, "export.xml")
+    app = "/PLC/Plc Logic/Application"
+    pou = app + "/AccPlay"
+    steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccPlay", "kind": "program",
+                               "language": "ST", "parent": app}),
+        ("codesys_pou_write", {"path": pou, "part": "declaration",
+                               "text": "PROGRAM AccPlay\nVAR\n    x : INT;\nEND_VAR\n"}),
+        ("codesys_pou_write", {"path": pou, "part": "implementation",
+                               "text": "x := x + 1;\n"}),
+        ("codesys_pou_read", {"path": pou, "part": "implementation"}),
+        ("codesys_app_generate", {}),
+        ("codesys_app_status", {}),
+        ("codesys_export_xml", {"path": xml, "target": app}),
+    ]
+    done = []
+    impl = ""
+    uptodate = None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        reads = payload.get("reads") or {}
+        inner = reads.get("result") or {}          # codesys 的读数都在 result 里
+        if name == "codesys_pou_read":
+            impl = str(inner.get("text") or reads.get("text") or "")
+        if name == "codesys_app_status":
+            uptodate = inner.get("is_uptodate", reads.get("is_uptodate"))
+    size = os.path.getsize(xml) if os.path.exists(xml) else 0
+    ok_impl = "x := x + 1" in impl
+    ok_xml = size > 200
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "pou_readback", "got": impl.strip()[:40], "want": "x := x + 1", "ok": ok_impl},
+        {"check": "app_uptodate", "got": uptodate, "want": "bool", "ok": uptodate is not None},
+        {"check": "xml_bytes", "got": size, "want": ">200", "ok": ok_xml},
+    ]
+    problems = []
+    if not ok_impl:
+        problems.append("POU 读回不含目标语句：%r" % impl[:80])
+    if not ok_xml:
+        problems.append("PLCopenXML 太小/没写：%s B" % size)
+    return {"ok": ok_impl and ok_xml,
+            "reads": {"steps": done, "pou_text": impl, "is_uptodate": uptodate,
+                      "xml_bytes": size, "workdir": work},
+            "errors": problems, "checks": checks}
+
+
+def _codesys_cleanup(client, context):
+    """删掉剧本自己的临时目录（里面有 29 MB 归档，不删会堆）。"""
+    work = context.get("workdir") if isinstance(context, dict) else None
+    if work and os.path.isdir(work):
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _codesys_ops_flow(client, context):
+    """CODESYS 剧本二：任务/文件夹/改名/保存/另存/归档/搜文本/对象信息（11 步）。
+
+    注：`codesys_symbols_create` 实测 E_SCRIPT（父对象不接受符号配置对象），未纳入。
+
+    全部在临时工程里做；归档产物落在剧本自己的临时目录，cleanup 会删掉。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_ops_")
+    if isinstance(context, dict):
+        context["workdir"] = work
+    app = "/PLC/Plc Logic/Application"
+    archive = os.path.join(work, "ac.archive")
+    saved = os.path.join(work, "ac_saved.project")
+    steps = [
+        ("codesys_tasks", {}),
+        ("codesys_task_create", {"name": "AccTask", "pous": [app + "/AccPlay"],
+                                 "interval": 10, "priority": 5, "unit": "ms"}),
+        ("codesys_folder_create", {"parent": app, "name": "AccFolder"}),
+        ("codesys_object_rename", {"path": app + "/AccFolder", "name": "AccFolder2"}),
+        ("codesys_project_meta", {}),
+        ("codesys_libraries", {}),
+        ("codesys_object_info", {"path": app + "/AccPlay"}),
+        ("codesys_find_text", {"pattern": "x := x + 1", "limit": 3}),
+        ("codesys_project_save", {}),
+        ("codesys_project_save_as", {"path": saved}),
+        ("codesys_project_archive", {"path": archive}),
+    ]
+    done = []
+    matches: list = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        inner = (payload.get("reads") or {}).get("result") or {}
+        if name == "codesys_find_text":
+            matches = inner.get("items") or []
+    archive_bytes = os.path.getsize(archive) if os.path.exists(archive) else 0
+    saved_bytes = os.path.getsize(saved) if os.path.exists(saved) else 0
+    ok_find = any("x := x + 1" in str(m.get("text", "")) for m in matches if isinstance(m, dict))
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "find_text", "got": len(matches), "want": ">=1 且含目标语句", "ok": ok_find},
+        {"check": "saved_bytes", "got": saved_bytes, "want": ">1000", "ok": saved_bytes > 1000},
+        {"check": "archive_bytes", "got": archive_bytes, "want": ">1000", "ok": archive_bytes > 1000},
+    ]
+    problems = []
+    if not ok_find:
+        problems.append("find_text 没命中目标语句：%r" % (matches,)[:120])
+    if not (saved_bytes > 1000 and archive_bytes > 1000):
+        problems.append("另存/归档文件异常：saved=%d archive=%d" % (saved_bytes, archive_bytes))
+    return {"ok": ok_find and saved_bytes > 1000 and archive_bytes > 1000,
+            "reads": {"steps": done, "matches": matches, "saved_bytes": saved_bytes,
+                      "archive_bytes": archive_bytes, "workdir": work},
+            "errors": problems, "checks": checks}
+
+
 def codesys_setup() -> dict:
     """起常驻服务（headless，约 8-10 s）；**确认服务真的应答**才复用。"""
     import json
@@ -778,6 +917,19 @@ CODESYS_CASES = [
     {"id": "codesys.ping", "tool": "codesys_ping",
      "title": "常驻服务往返（最轻量的存活判据）",
      "args": {}, "expect_ok": True, "timeout_s": 120},
+
+    {"id": "codesys.flow.ops", "tool": None,
+     "title": "CODESYS 剧本二：任务/文件夹/改名/符号/保存/另存/归档/搜文本（12 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_ops_flow(client, context),
+     "cleanup": _codesys_cleanup},
+
+    {"id": "codesys.flow.pou", "tool": None,
+     "title": "CODESYS 剧本：建带 device 工程 → POU 写入/读回 → 编译 → 导出 PLCopenXML（8 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_flow(client, context)},
 
     {"id": "codesys.status", "tool": "codesys_status",
      "title": "常驻服务可达 + 版本",
@@ -1134,6 +1286,27 @@ UG_CASES = [
 ]
 
 # ── eplan（CAD-Agent-Hub 的 EPLAN 2.9 MCP：电气设计 / 审图）──────────────
+def codesys_setup() -> dict:
+    """CODESYS 是否"空着"——project.create 会关掉当前工程，绝不能关用户的。
+
+    只有当前没有工程、或当前工程在临时目录里（我们自己的），才允许跑剧本。
+    """
+    from nsa_mcp_hub.acceptance.harness import McpClient
+    client = McpClient("nsa_mcp_hub.servers.codesys_mcp")
+    try:
+        payload = client.call("codesys_projects", {})
+    finally:
+        client.close()
+    result = (payload.get("reads") or {}).get("result") or {}
+    path = str((result.get("primary") or {}).get("path") or "")
+    temp = os.environ.get("TEMP", "").lower()
+    ours = (not path) or (temp and path.lower().startswith(temp))
+    if not ours:
+        print("  [warn] CODESYS 里有非临时工程，剧本跳过（不会关你的工程）：%s" % path,
+              flush=True)
+    return {"available": True, "codesys_free": bool(ours), "project": path}
+
+
 def nx_setup() -> dict:
     """nxkit 的 `nx_run_capability` 会自己拉起 NX，所以不能靠"进程在不在"判断。
 

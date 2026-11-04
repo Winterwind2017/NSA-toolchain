@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 15:28 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 15:30 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 166 ｜ 契约 245 ｜ 合并 354 = 58.1% ｜ 快乐路径 127
-未覆盖 255：sw 87 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ ug 32 ｜ nx 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ ug 61.9% ｜ sw 52.5%
+工具 609 ｜ 验收 184 ｜ 契约 245 ｜ 合并 368 = 60.4% ｜ 快乐路径 145
+未覆盖 241：sw 87 ｜ acad 49 ｜ gx 42 ｜ ug 32 ｜ codesys 25 ｜ nx 2 ｜ autoshop 4
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ ug 61.9% ｜ codesys 58.3% ｜ sw 52.5%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -108,46 +108,28 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 要么改 kit（保持零件打开 / 用 InsertComponent 前显式 OpenDoc6），要么接受装配类工具
 只能停在契约覆盖层。
 
-## CODESYS 剧本为什么暂缓（实测）
+## CODESYS 剧本：打通了（2026-11-04 15:30 实测）
 
-`codesys_projects` 显示当前开着的是 `nsa_mcp_hub_accept_codesys.project`（**本套件自己的临时工程**，
-`dirty=true`），而且它**没有 device / application**——`codesys_pou_create` 直接
-`E_STATE: no active application (add a device first)`。
-要跑通必须先 `project.create`（带 device_node）→ 但那会切工程，dirty 工程会弹保存对话框、
-把服务卡住。所以剧本留到下一轮：用 `project.create` 建**带 device 的新工程**再跑，
-且要显式跳过 `project.close`。
+原先卡住的不是权限而是**工程内容**：当时打开的临时工程没有 device / application
+（`E_STATE: no active application`）。用 `project.create` 带上
+`device="CODESYS Control Win V3"` 建**带 device 的新工程**后一切正常，
+两条剧本合计 **3.9 s** 跑完（CODESYS 是最快的 kit，不是最慢的）：
 
-## 两条运维级教训（2026-11-04 实测，都表现为"库好好的却卡死"）
-
-1. **中断探针会留下孤儿 kit 进程，把 kit 锁占死**。
-   症状：后续任何调用都返回
-   `另一个进程正在使用 swkit（文件锁 %TEMP%\nsa-mcp-hub-sw.lock 拿不到，已等 5 s）`。
-   原因：被 kill 的探针留下 `nsa_mcp_hub.servers.sw_mcp` + `swkit.mcp.server` 孤儿进程。
-   处理：`Get-CimInstance Win32_Process` 按命令行匹配后 `Stop-Process`，锁立刻释放
-   （hub 会按需重新拉起子进程，不用重启 DSH）。
-2. **SW 的"批量只读"用例在 setup 夹具打开时会卡死（>600 s）**。
-   单独用**新 client** 逐条调 17 个只读工具全部正常（0.9–14.5 s/条）；
-   但在同一个会话里、且 setup 已打开 450 隔音罩（几百个特征）时，
-   连续调 `sw_list_features` 之类会长时间不返回，随后管道失步、整条用例超时。
-   → 已撤掉 `sw.batch.inspect` / `sw.batch.index` 两条用例，批量类只保留
-   **不依赖夹具** 的 NX 形态（NX 每条能力自带独立会话，天然隔离）。
-
-## NX 为什么能到 97%（对比 SW 卡在 49%）
-
-NX 的每条能力**自带独立 `run_journal` 会话**（16 s/条、各自 `_runs/<ts>` 目录），
-所以"批量冒烟"完全安全——一条用例串 8–10 条能力，33 条未覆盖工具分四批吃完：
-
-| 批量用例 | 条数 | 耗时 |
+| 剧本 | 步数 | 覆盖 |
 |---|---|---|
-| `nx.batch.model` | 10 | 134 s |
-| `nx.batch.export` | 10 | 134 s |
-| `nx.batch.sketch_drawing` | 6 | 98 s |
-| `nx.batch.solid` | 10 | 166 s |
-| `nx.batch.boolean` | 10 | 161 s |
-| `nx.batch.export_asm` | 8 | 177 s |
-| `nx.batch.asm` | 3 | 49 s |
+| `codesys.flow.pou` | 8 | project.create / pou.create / pou.write×2 / pou.read / app.generate / app.status / export.xml |
+| `codesys.flow.ops` | 11 | tasks / task.create / folder.create / object.rename / object.info / project.meta / libs / find.text / save / save_as / archive |
 
-剩 2 个：`nx_solid_delete_face`（危险，永不执行）+ `kit_runtime`（内部）。
+三个必记的坑：
+
+1. **POU 路径必须写全路径** `/PLC/Plc Logic/Application/<名字>`，写 `/AcPlay` 会
+   `E_STATE: path segment not found`（而且 `pou_create` 仍然返回 ok）。
+2. **读数都在 `reads.result` 里**（`result.text` / `result.is_uptodate`），
+   顶层 `reads.text` 是空的——我第一版就是这么写错的。
+3. `codesys_symbols_create` 实测 `E_SCRIPT: 父对象不接受符号配置对象`，
+   不传 parent 建不出来，已从剧本移除。
+4. 安全门禁：`codesys_setup` 会先查当前工程路径，**只有没有工程或工程在临时目录**才跑剧本
+   （`project.create` 会 `closed_previous: true`，绝不能关你的工程）。
 
 ## SW 的"能批量"与"不能批量"（这轮实测划清）
 
