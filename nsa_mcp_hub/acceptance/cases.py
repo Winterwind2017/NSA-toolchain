@@ -258,6 +258,13 @@ SW_CASES = [
      "call": lambda client, context: _sw_surface_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.drawing2", "tool": None,
+     "title": "SW 剧本十一：IGES 导出 + 出图注释 + 视图旋转 + 导出 PDF/DWG（12 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_drawing2_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.sheet", "tool": None,
      "title": "SW 剧本十：钣金基体法兰 + 展开图信息（6 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -880,6 +887,59 @@ def _codesys_ops_flow(client, context):
             "errors": problems, "checks": checks}
 
 
+def _codesys_extras_flow(client, context):
+    """CODESYS 剧本三：POU 成员/持久变量表/库/文本表/原生导出（10 步）。
+
+    实测不可用的两个：`pou.member`（E_SCRIPT 名称无效）、`project.io_export`
+    （device 参数要的是树路径不是设备名），都没纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_extras_")
+    if isinstance(context, dict):
+        context["workdir"] = work
+    app = "/PLC/Plc Logic/Application"
+    pou = app + "/AccPlay2"
+    native = os.path.join(work, "app.export")
+    project = os.path.join(work, "ac_extras.project")
+    steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccPlay2", "kind": "program",
+                               "language": "ST", "parent": app}),
+        ("codesys_pou_write", {"path": pou, "part": "declaration",
+                               "text": "PROGRAM AccPlay2\nVAR\n    y : INT;\nEND_VAR\n"}),
+        ("codesys_pou_members", {"path": pou}),
+        ("codesys_pou_persistent", {"name": "PersistVars"}),
+        ("codesys_library_add", {"name": "Standard"}),
+        ("codesys_textlist_create", {"name": "AccTexts", "languages": ["en", "zh"]}),
+        ("codesys_libraries", {}),
+        ("codesys_export_native", {"path": native, "target": app}),
+        ("codesys_project_meta", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    native_bytes = os.path.getsize(native) if os.path.exists(native) else 0
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "native_bytes", "got": native_bytes, "want": ">1000", "ok": native_bytes > 1000},
+    ]
+    return {"ok": native_bytes > 1000, "reads": {"steps": done, "native_bytes": native_bytes,
+                                                 "workdir": work},
+            "errors": [] if native_bytes > 1000 else ["原生导出太小：%d B" % native_bytes],
+            "checks": checks}
+
+
 def codesys_setup() -> dict:
     """起常驻服务（headless，约 8-10 s）；**确认服务真的应答**才复用。"""
     import json
@@ -917,6 +977,13 @@ CODESYS_CASES = [
     {"id": "codesys.ping", "tool": "codesys_ping",
      "title": "常驻服务往返（最轻量的存活判据）",
      "args": {}, "expect_ok": True, "timeout_s": 120},
+
+    {"id": "codesys.flow.extras", "tool": None,
+     "title": "CODESYS 剧本三：POU 成员/持久变量/库/文本表/原生导出（10 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_extras_flow(client, context),
+     "cleanup": _codesys_cleanup},
 
     {"id": "codesys.flow.ops", "tool": None,
      "title": "CODESYS 剧本二：任务/文件夹/改名/符号/保存/另存/归档/搜文本（12 步）",
@@ -1899,6 +1966,79 @@ def _sw_sheet_flow(client, context):
     return {"ok": has_flat, "reads": {"steps": done, "flat_pattern": flat},
             "errors": [] if has_flat else ["展开图信息为空：%r" % (flat,)],
             "checks": checks}
+
+
+def _sw_drawing2_flow(client, context):
+    """SW 剧本十一：零件→IGES→出图→注释→旋转视图→导出 PDF/DWG（12 步）。
+
+    判据：12 步全 ok；IGES > 1 KB；PDF 头 %PDF；DWG 头 AC10xx（AutoCAD 版本标记）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_dwg2_")
+    part = os.path.join(work, "p.SLDPRT")
+    pdf = os.path.join(work, "p.pdf")
+    dwg = os.path.join(work, "p.dwg")
+    iges = os.path.join(work, "p.iges")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_export_iges", {"path": iges}),
+        ("sw_new_drawing", {"model": part}),
+        ("sw_note", {"text": "验收注释", "x": 0.1, "y": 0.1}),
+        ("sw_view_rotate", {"angle_deg": 15}),
+        ("sw_export_drawing_pdf", {"path": pdf}),
+        ("sw_export_drawing_dwg", {"path": dwg}),
+    ]
+    done = []
+    iges_actual = iges
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        # sw_export_iges 会把 .iges 归一成 .igs，实际路径在 reads.path 里
+        if name == "sw_export_iges":
+            iges_actual = (payload.get("reads") or {}).get("path") or iges
+
+    def head(path, n=8):
+        if not os.path.exists(path):
+            return b""
+        with open(path, "rb") as fh:
+            return fh.read(n)
+
+    sizes = {os.path.basename(f): (os.path.getsize(f) if os.path.exists(f) else 0)
+             for f in (iges_actual, pdf, dwg)}
+    iges_key = os.path.basename(iges_actual)
+    ok_iges = sizes.get(iges_key, 0) > 1000
+    ok_pdf = head(pdf, 4) == b"%PDF"
+    ok_dwg = head(dwg, 4).startswith(b"AC10")
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "iges_bytes", "got": sizes.get(iges_key), "want": ">1000", "ok": ok_iges},
+        {"check": "pdf_header", "got": head(pdf, 4).decode("latin-1"), "want": "%PDF", "ok": ok_pdf},
+        {"check": "dwg_header", "got": head(dwg, 6).decode("latin-1"), "want": "AC10xx", "ok": ok_dwg},
+    ]
+    problems = []
+    if not ok_iges:
+        problems.append("IGES 太小/没写：%r" % (sizes,))
+    if not ok_pdf:
+        problems.append("PDF 头不对：%r" % head(pdf, 4))
+    if not ok_dwg:
+        problems.append("DWG 头不对：%r" % head(dwg, 6))
+    return {"ok": ok_iges and ok_pdf and ok_dwg,
+            "reads": {"steps": done, "files": sizes, "workdir": work},
+            "errors": problems, "checks": checks}
 
 
 def _flow(client, steps):

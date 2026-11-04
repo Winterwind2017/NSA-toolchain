@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 15:30 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 15:34 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 184 ｜ 契约 245 ｜ 合并 368 = 60.4% ｜ 快乐路径 145
-未覆盖 241：sw 87 ｜ acad 49 ｜ gx 42 ｜ ug 32 ｜ codesys 25 ｜ nx 2 ｜ autoshop 4
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ ug 61.9% ｜ codesys 58.3% ｜ sw 52.5%
+工具 609 ｜ 验收 193 ｜ 契约 245 ｜ 合并 376 = 61.7% ｜ 快乐路径 154
+未覆盖 233：sw 83 ｜ acad 49 ｜ gx 42 ｜ ug 32 ｜ codesys 21 ｜ autoshop 4 ｜ nx 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ codesys 65.0% ｜ ug 61.9% ｜ sw 54.6%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -138,3 +138,10 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 | 只读轻工具（状态/注册表/索引/包围盒/模型信息） | **能** | 夹具（几百特征）打开时 12 个工具 0–11 s 全过 → `sw.light.reads` |
 | 建文档 + 改几何的链式剧本 | **能** | 9 条剧本每条 30–100 s 全过 |
 | 同会话里"建/关多个文档"的批量 | **不能** | 上轮 600 s 卡死；疑似 CloseDoc 触发模态对话框 |
+
+## 本轮又抓到两个"返回值骗人"的坑
+
+| kit | 工具 | 现象 | 处理 |
+|---|---|---|---|
+| sw | `sw_export_iges` | 传 `p.iges` 会**归一成 `p.igs`**，按传入路径查文件永远 0 字节（工具本身 ok、写了 22 KB） | 判据改用 `reads.path` 返回的实际路径 |
+| codesys | `pou.member` / `project.io_export` | `E_SCRIPT 名称'Calc'对此对象无效` / `E_STATE path segment 'CODESYS Control Win V3' not found`（device 参数要的是树路径不是设备名） | 两个都没纳入剧本，记在这里 |
