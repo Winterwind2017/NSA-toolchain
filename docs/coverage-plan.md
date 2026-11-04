@@ -198,3 +198,69 @@ project.create → pou.create → app.generate → online.simulation(True)
 
 一条 `gx.batch.offline`（5 条，172 s）把 gx 从 10.6% 拉到 14.9%；
 再往上就只能接受"每 5–6 个工具花 10 分钟且 GX 会被打开"。
+
+## 剩余未覆盖逐类归因（2026-11-04 定稿）
+
+`docs/acceptance-coverage.md` 里"未覆盖"是**并集口径**（验收 ∪ 契约都没跑过）。
+按原因分四类，其中只有第 1 类是真能再吃的：
+
+### 1) 时间成本型（能覆盖，只是慢）—— gx 41 个
+全部是 `build.*` / `program.*` / `label.*` / `datatype.*` / `project.*` 家族，
+单条 57–595 s（`write_ladder` 595 s、`import_fb` 434 s），且每条都要拉起 GX Works3 抢焦点。
+把 41 条跑完约 2–3 小时。**不是不能，是不划算**；需要时用
+`python -m nsa_mcp_hub.acceptance --kit gx` 单独跑。
+
+### 2) 环境不具备型 —— ug 32 个（全部）、autoshop 4 个
+ug 的 32 个都是 `app_required`：kit 要求 **NX 里装入 `NXMcPRemotingServer.dll`
+（在 NX 里按 Ctrl+U 加载）**，否则 `ug_ping` 直接报
+
+```
+cannot reach the non-blocking NX bridge at http://127.0.0.1:48161/NXOpenSession;
+load NXMcPRemotingServer.dll in NX with Ctrl+U
+```
+
+这是**NX 内的手工步骤**，脚本无法代劳 —— 所以 ug 停在 61.9%（52/84 靠"宿主缺失时快速拒绝"吃到）。
+autoshop 剩下的 4 个是 `danger`（永不执行）。AutoShop 宿主没开时另外 33 个是
+`app_required`，已在契约层用写探针覆盖（38/42）。
+
+### 3) kit 自身缺陷型 —— sw 装配族、codesys 若干
+| 现象 | 工具 | 结论 |
+|---|---|---|
+| 要零件**预先在 SW 会话里打开**才插得进去；`create_assembly` 之后文档列表只剩装配体、`sw_open_document` 又失败 | `sw_insert_component` / `create_assembly` / 组件族 12 个 | 要改 swkit（保持零件打开），现在做不了 |
+| `ok=false` 且 `errors` 为空（静默失败） | `sw_sketch_text` / `sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` / `textlist.export` | kit 缺陷，判据拿不到原因 |
+| 工具自身直接报错 | `codesys_symbols_create`(E_SCRIPT 父对象不接受) / `import_xml`(未找到可导入对象) / `object_move`(index 必须 -1) / `project_open`(文件被本会话占用) / `pou_member`(名称无效) | kit 缺陷，需修 |
+
+### 4) 主动不测型（危险）—— acad 2、nx 2、sw 仿真/删改 ~15
+| 工具 | 原因 |
+|---|---|
+| `acad_boolean_section_slice` | 超时触发 acadkit 看门狗 `taskkill /F /IM acad.exe`，**真杀过用户的 CAD 一次** |
+| `nx_solid_delete_face` | 删面愈合，会破坏模型 |
+| `sw_delete_body` / `delete_feature` / `delete_equation` / `sim_solve`… | 删改不可逆；FEA 单次 15 分钟 |
+| `kit_runtime` | 内部工具，不是业务能力 |
+
+### 天花板结论
+
+* **100% 不可达**，原因不在测试写得不够，而在上面三类硬约束；
+* 当前 73.3%（448/611）里，**除第 1 类外能吃的已经吃完**；
+* 若要继续，性价比排序是：gx（时间）→ 修 swkit 装配（代码）→ 装 NX bridge（环境）。
+
+## 全量回归的实测结论（2026-11-04 17:00 收尾轮）
+
+跑 `python -m nsa_mcp_hub.acceptance --report _runs/acceptance-full-regression.json`
+（全部 kit / 全部用例）时出现一个必须写下来的现象：
+
+```
+PASS  sw.inspect.topology   69 s
+PASS  sw.param.thickness      3.6 s
+PASS  sw.flow.part           33 s
+PASS  sw.flow.fillet         66 s
+TIMEOUT sw.flow.inspect     600 s   ← 单条用例超过 600 s，已放弃并重启该 kit 服务器
+```
+
+* `sw.flow.inspect` **单跑 66 s 通过**（本轮早前实测），在长会话里 600 s 超时；
+* 同一条链路上另外两条（`sw.flow.part`/`fillet`）也正常，说明不是代码坏了，
+  而是 **SW 的 COM 会话在连续跑十几条用例后会退化**（与第 4 轮"同会话批量卡死"同源）；
+* 所以全量回归**不适合一条命令跑完 SW 全部 39 条**：建议按 kit 分批
+  （`--kit sw --only <组>`），这也正是本文件里各条剧本的验证方式。
+
+这条不是"覆盖率造假"，而是**验收执行方式的边界**，记在这里避免下次误判成回归。
