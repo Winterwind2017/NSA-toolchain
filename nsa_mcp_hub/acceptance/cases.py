@@ -231,6 +231,20 @@ SW_CASES = [
      "call": lambda client, context: _sw_equations_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.sketch", "tool": None,
+     "title": "SW 剧本七：草图类 10 工具（弧/多边形/椭圆/中心线/偏移/阵列），判体积不变",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sketch_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
+    {"id": "sw.flow.drawing", "tool": None,
+     "title": "SW 剧本八：零件→出图→标注→导出 PDF（判 %PDF 头与 >1 KB）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_drawing_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -401,6 +415,15 @@ NX_CASES = [
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
 
     # ── 多步剧本：一条用例覆盖一串工具（快乐路径）──
+    {"id": "nx.batch.export", "tool": None,
+     "title": "NX 批量：环形拉伸/整圆拉伸/布尔交/面面积/距离/边数/英制/IGES/STL/STEP-AP214（10 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 1200,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_extrude_ring", "nx_sketch_circle_extrude", "nx_boolean_intersect",
+         "nx_measure_face_area", "nx_measure_distance", "nx_inspect_edge_count",
+         "nx_part_inch", "nx_export_iges", "nx_export_stl", "nx_export_step_ap214",
+     ])},
+
     {"id": "nx.batch.model", "tool": None,
      "title": "NX 批量：拉伸/布尔并/布尔差/块/圆柱/量质量/周长/面类型/拓扑/导出 STEP（10 条）",
      "args": {}, "expect_ok": True, "timeout_s": 1200,
@@ -1405,6 +1428,108 @@ def _sw_equations_flow(client, context):
         problems.append("全局变量 H=10 没读到：%s" % text[:120])
     return {"ok": ok_w and ok_h, "reads": {"steps": done, "equations": equations},
             "errors": problems, "checks": checks}
+
+
+def _sw_sketch_flow(client, context):
+    """SW 剧本七：草图类 10 个工具（弧/多边形/椭圆/中心线/偏移/线性阵列…）。
+
+    先建块（体积可校验），再开第二张草图把草图工具跑一遍；草图不改体积，
+    所以末了仍判 10000 mm³——用体积确认"没把实体搞坏"。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_arc", {"cx": 10.0, "cy": 10.0, "radius": 5.0,
+                           "start_angle_deg": 0, "end_angle_deg": 180}),
+        ("sw_sketch_polygon", {"cx": 20.0, "cy": 20.0, "num_sides": 6,
+                               "circumscribed_radius": 5.0}),
+        ("sw_sketch_ellipse", {"cx": 30.0, "cy": 10.0, "semi_major": 5.0,
+                               "semi_minor": 3.0}),
+        ("sw_sketch_centerline", {"x1": 0.0, "y1": -5.0, "x2": 0.0, "y2": 30.0}),
+        ("sw_sketch_offset", {"offset_mm": 2.0}),
+        ("sw_sketch_linear_pattern", {"x_count": 2, "y_count": 1,
+                                       "x_spacing_mm": 20.0, "y_spacing_mm": 0.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_get_mass_properties", {}),
+    ]
+    done = []
+    volume = None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_get_mass_properties":
+            volume = (payload.get("reads") or {}).get("volume_m3")
+    ok_volume = volume is not None and abs(float(volume) - 1e-05) <= 1e-6
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "volume_m3", "got": volume, "want": 1e-05, "ok": ok_volume},
+    ]
+    return {"ok": ok_volume, "reads": {"steps": done, "volume_m3": volume},
+            "errors": [] if ok_volume else ["体积被改坏了：%r（期望 1e-05）" % volume],
+            "checks": checks}
+
+
+def _sw_drawing_flow(client, context):
+    """SW 剧本八：零件 → 存盘 → 出图（主视图）→ 尺寸标注 → 导出 PDF。
+
+    判据：8 步全 ok；PDF 首字节是 %PDF 且 > 1000 B。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_dwg_")
+    part = os.path.join(work, "dwg_part.SLDPRT")
+    pdf = os.path.join(work, "dwg_out.pdf")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_new_drawing", {"model": part}),
+        ("sw_add_drawing_dimension", {}),
+        ("sw_export_drawing_pdf", {"path": pdf}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    size = os.path.getsize(pdf) if os.path.exists(pdf) else 0
+    head = b""
+    if size:
+        with open(pdf, "rb") as fh:
+            head = fh.read(4)
+    ok_pdf = head == b"%PDF" and size > 1000
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "pdf_header", "got": head.decode("latin-1"), "want": "%PDF", "ok": head == b"%PDF"},
+        {"check": "pdf_bytes", "got": size, "want": ">1000", "ok": size > 1000},
+    ]
+    return {"ok": ok_pdf, "reads": {"steps": done, "pdf_bytes": size, "workdir": work},
+            "errors": [] if ok_pdf else ["PDF 不对：head=%r size=%d" % (head, size)],
+            "checks": checks}
 
 
 def _flow(client, steps):

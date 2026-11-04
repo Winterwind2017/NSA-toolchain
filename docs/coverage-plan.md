@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 13:55 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 14:10 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 90 ｜ 契约 245 ｜ 合并 289 = 47.5% ｜ 快乐路径 47
-未覆盖 320：sw 106 ｜ acad 49 ｜ nx 48 ｜ gx 42 ｜ codesys 39 ｜ ug 32 ｜ autoshop 4
-逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ sw 42.1% ｜ codesys 35.0%
+工具 609 ｜ 验收 114 ｜ 契约 245 ｜ 合并 311 = 51.1% ｜ 快乐路径 72
+未覆盖 298：sw 93 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ nx 39 ｜ ug 32 ｜ autoshop 4
+逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ sw 49.2% ｜ nx 40.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -107,3 +107,12 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
 所以"建零件→存盘→建装配→插组件"这条链在 swkit 当前实现下走不通，
 要么改 kit（保持零件打开 / 用 InsertComponent 前显式 OpenDoc6），要么接受装配类工具
 只能停在契约覆盖层。
+
+## CODESYS 剧本为什么暂缓（实测）
+
+`codesys_projects` 显示当前开着的是 `nsa_mcp_hub_accept_codesys.project`（**本套件自己的临时工程**，
+`dirty=true`），而且它**没有 device / application**——`codesys_pou_create` 直接
+`E_STATE: no active application (add a device first)`。
+要跑通必须先 `project.create`（带 device_node）→ 但那会切工程，dirty 工程会弹保存对话框、
+把服务卡住。所以剧本留到下一轮：用 `project.create` 建**带 device 的新工程**再跑，
+且要显式跳过 `project.close`。
