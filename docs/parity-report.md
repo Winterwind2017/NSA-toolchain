@@ -114,4 +114,6 @@ sw_feature_graph_compile(graph) → ok, step_count=3
    待办只剩一件事：`execute=true` 的实际建模还没在真机跑过（本机 SolidWorks 没开）。
 2. **EPLAN 真机读工程**：本机装了 EPLAN，但没开；`eplan_bridge_discover` 返回 `[]`。
    要读真实工程需要起 bridge（上游 `bridge.py` 的 named pipe 协议）。
-3. **上游后续提交**：以 `c051b72` 为基线，之后上游再有改动需要重新 `git fetch` 并重放补丁。
+3. **上游后续提交**：已有 `scripts/sync_upstream.py` 处理——
+   `--check` 报差异、`--verify` 验补丁重放等价、`--regen-patches` 重生成补丁、
+   `--apply --yes` 备份后真同步并编译。用法与三条硬规则见 `docs/upstream-sync.md`。

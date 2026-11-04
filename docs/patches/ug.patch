@@ -1,7 +1,7 @@
-diff --git "a/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-upstream\\MCP\\UG\\nx_remote_ops.py" "b/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-work\\MCP\\UG\\nx_remote_ops.py"
+diff --git a/MCP/UG/nx_remote_ops.py b/MCP/UG/nx_remote_ops.py
 index 73b22fc..1c4b763 100644
---- "a/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-upstream\\MCP\\UG\\nx_remote_ops.py"
-+++ "b/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-work\\MCP\\UG\\nx_remote_ops.py"
+--- a/MCP/UG/nx_remote_ops.py
++++ b/MCP/UG/nx_remote_ops.py
 @@ -428,6 +428,39 @@ def _resolve_topology_object(work, params, kind, selector):
      matches = []
      if stable_id:
@@ -240,10 +240,10 @@ index 73b22fc..1c4b763 100644
          )
      ):
          raise ValueError("at least one milling geometry or cutting parameter is required")
-diff --git "a/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-upstream\\MCP\\UG\\server.py" "b/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-work\\MCP\\UG\\server.py"
+diff --git a/MCP/UG/server.py b/MCP/UG/server.py
 index 30b5bd3..34e08f7 100644
---- "a/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-upstream\\MCP\\UG\\server.py"
-+++ "b/C:\\Users\\yuche\\AppData\\Local\\Temp\\cad-hub-work\\MCP\\UG\\server.py"
+--- a/MCP/UG/server.py
++++ b/MCP/UG/server.py
 @@ -1100,6 +1100,9 @@ async def set_cam_operation_geometry(
      cut_feed: float | None = None,
      approach_feed: float | None = None,
