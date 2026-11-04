@@ -117,10 +117,31 @@ sw_feature_graph_compile(graph) → ok, step_count=3
 ## 四、还没做的
 
 1. ~~SW 一步到位的 `create_*` 封装~~ —— **已做并真机验证**（见 2.1）。
-2. **`hubsw/native_features.edge_fillet` 仍用废弃 API**：调 `FeatureFillet`（7 参），
-   SW2025 已无此成员。swkit 有实测解法（comtypes 调 14 参 `FeatureFillet3`，
-   见 `solidworks-agent-kit/src/swkit/verified/features.py:182`），
-   搬过来即可让齿轮收尾（齿根圆角/齿顶倒角）在 SW2025 上跑通。
+2. ~~`hubsw/native_features.edge_fillet` 用废弃 API~~ —— **已修**，见下面的
+   「SW2025 API 变更与适配」。收尾圆角现在能建出特征（实测特征名 `ProbeFillet`），
+   但因为边枚举慢，`sw_create_involute_gear` 的 `include_finishing` 仍默认 `false`。
+
+## 五、SW2025 API 变更与适配（2026-11-04 实测）
+
+在 SolidWorks Premium 2025 SP4.1（`RevisionNumber 33.4.1`）上，上游 vendored 代码里有
+**三处** pywin32 调用已经不成立，我把它们逐个换掉了：
+
+| 原调用 | 症状 | 现方案 |
+|---|---|---|
+| `edge.GetStartVertex()` / `GetEndVertex()` | `com_error(-2147352573, '找不到成员')` | 退到 `edge.GetCurveParams2()`，返回的前 6 个数就是起点 + 终点（米） |
+| `SelectionManager.CreateSelectData()` | 同上（成员解析不到） | 用 comtypes `ISelectionMgr.CreateSelectData()` 造 `ISelectData`，再 `pythoncom.WrapObject(..., IID_IDispatch, IID_IDispatch)` 桥回 pywin32，`edge.Select4(True, bridged)` 实测返回 `True` |
+| `FeatureManager.FeatureFillet(195, r, 0,0, None,None,None)` | 同上 | comtypes 14 参 `FeatureFillet3(2, r, 0,0, 0,0,0, None×7)`（swkit 同款），边必须先选中 |
+
+细节坑（都试过才定下来）：
+* `doc.SelectionManager` 在 comtypes 里是 `_Dispatch`，`CreateSelectData` 会被当成属性
+  → 必须 `QueryInterface(module.ISelectionMgr)` 才有方法；
+* `GetBodies2` 在 **`IPartDoc`** 上，不在 `IModelDoc2`；而 comtypes 调
+  `IPartDoc.GetBodies2` 会因 `VT_DISPATCH` 数组（vt=9）抛 `KeyError` →
+  所以「拿边」仍走 pywin32，只有「选边 / 建圆角」走 comtypes。
+
+**性能现实**：`GetCurveParams2` 一次约 **0.24 s**（实测 879 条边用 211.5 s）。
+所以齿轮这种上千边的模型，带收尾要多花 **3–4 分钟**；`include_finishing` 默认关，
+需要时显式传 `true`。选择器已支持 `max_edges` 早停。
 2. **EPLAN 真机读工程**：本机装了 EPLAN，但没开；`eplan_bridge_discover` 返回 `[]`。
    要读真实工程需要起 bridge（上游 `bridge.py` 的 named pipe 协议）。
 3. **上游后续提交**：已有 `scripts/sync_upstream.py` 处理——

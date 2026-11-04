@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import array
 import math
 from typing import Any, Iterable
@@ -618,23 +620,60 @@ def circular_pattern(
     return rename_feature(feature, name)
 
 
-def _solid_edges(model: Any) -> list[Any]:
+def _edge_endpoints(edge: Any) -> tuple[tuple[float, float, float],
+                                         tuple[float, float, float]] | None:
+    """取边的两个端点（米）。
+
+    实测（SW 2025 SP4.1）：`edge.GetStartVertex()` / `GetEndVertex()` 在 pywin32
+    晚绑定下会抛 `com_error(-2147352573, "找不到成员")`——DISPID 解析不到 IVertex。
+    退路是 `GetCurveParams2()`，前 6 个数就是起点 + 终点（米）。
+    """
+    try:
+        start_vertex = _com_value(edge, "GetStartVertex")
+        end_vertex = _com_value(edge, "GetEndVertex")
+        if start_vertex is not None and end_vertex is not None:
+            start = tuple(float(value) for value in _com_value(start_vertex, "GetPoint"))
+            end = tuple(float(value) for value in _com_value(end_vertex, "GetPoint"))
+            return start, end
+    except Exception:                                  # noqa: BLE001
+        pass
+    try:
+        params = _com_value(edge, "GetCurveParams2")
+        if params and len(params) >= 6:
+            return ((float(params[0]), float(params[1]), float(params[2])),
+                    (float(params[3]), float(params[4]), float(params[5])))
+    except Exception:                                  # noqa: BLE001
+        pass
+    return None
+
+
+def _edge_geometry(model: Any) -> list[tuple[Any, tuple[float, float, float],
+                                              tuple[float, float, float]]]:
+    """一次遍历拿到 (edge, start, end)，并按端点去重。
+
+    性能：`GetCurveParams2` 每次 COM 往返都要几百毫秒（齿轮这种上千条边的模型
+    会到分钟级），所以端点只算一遍，别在 select 里再算第二次。
+    """
     bodies = _com_value(model, "GetBodies2", 0, True) or []
-    edges: list[Any] = []
+    result = []
     seen: set[tuple[tuple[float, float, float], tuple[float, float, float]]] = set()
     for body in bodies:
         for edge in (_com_value(body, "GetEdges") or []):
-            start_vertex = _com_value(edge, "GetStartVertex")
-            end_vertex = _com_value(edge, "GetEndVertex")
-            if start_vertex is None or end_vertex is None:
+            points = _edge_endpoints(edge)
+            if points is None:
                 continue
-            start = tuple(float(value) for value in _com_value(start_vertex, "GetPoint"))
-            end = tuple(float(value) for value in _com_value(end_vertex, "GetPoint"))
-            key = tuple(sorted((tuple(round(value, 10) for value in start), tuple(round(value, 10) for value in end))))
-            if key not in seen:
-                seen.add(key)
-                edges.append(edge)
-    return edges
+            start, end = points
+            key = tuple(sorted((tuple(round(value, 10) for value in start),
+                                tuple(round(value, 10) for value in end))))
+            if key in seen:
+                continue
+            seen.add(key)
+            result.append((edge, start, end))
+    return result
+
+
+def _solid_edges(model: Any) -> list[Any]:
+    return [edge for edge, _start, _end in _edge_geometry(model)]
 
 
 def select_edges_by_geometry(model: Any, selector: dict[str, Any]) -> list[Any]:
@@ -648,9 +687,10 @@ def select_edges_by_geometry(model: Any, selector: dict[str, Any]) -> list[Any]:
     z_levels = [float(level) * MM for level in selector.get("z_levels_mm", [])]
     selected: list[Any] = []
 
-    for edge in _solid_edges(model):
-        start = tuple(float(value) for value in _com_value(_com_value(edge, "GetStartVertex"), "GetPoint"))
-        end = tuple(float(value) for value in _com_value(_com_value(edge, "GetEndVertex"), "GetPoint"))
+    limit = int(selector.get("max_edges", 0) or 0)
+    for edge, start, end in _edge_geometry(model):
+        if limit and len(selected) >= limit:
+            break
         dx, dy, dz = (end[index] - start[index] for index in range(3))
         if orientation == "axial" and not (abs(dx) <= tolerance and abs(dy) <= tolerance and abs(dz) > tolerance):
             continue
@@ -678,21 +718,143 @@ def select_edges_by_geometry(model: Any, selector: dict[str, Any]) -> list[Any]:
     return selected
 
 
+def _select_data(model: Any) -> Any:
+    """造 ISelectData 给 `Entity.Select4` 用。
+
+    SW2025 上 pywin32 拿不到它：`SelectionManager.CreateSelectData()` 抛
+    `com_error(-2147352573, "找不到成员")`，而 `Select4(True, None)` 会报
+    「类型不匹配」（第二参必须是真 selectData）。
+    实测可行的路：用 comtypes 的 `ISelectionMgr` 造 `ISelectData`，
+    再 `pythoncom.WrapObject` 桥回 pywin32 —— 桥回来的对象 `Select4` 直接吃。
+    """
+    try:
+        select_data = model.SelectionManager.CreateSelectData()
+        select_data.Mark = 0
+        return select_data
+    except Exception:                                  # noqa: BLE001
+        pass
+    try:
+        import comtypes.automation as ca
+        import pythoncom
+        module, _app = _comtypes_bundle()
+        doc = _comtypes_active_doc()
+        selection_mgr = doc.SelectionManager.QueryInterface(module.ISelectionMgr)
+        comtypes_data = selection_mgr.CreateSelectData()
+        bridged = pythoncom.WrapObject(comtypes_data.QueryInterface(ca.IDispatch),
+                                       pythoncom.IID_IDispatch,
+                                       pythoncom.IID_IDispatch)
+        try:
+            bridged.Mark = 0
+        except Exception:                              # noqa: BLE001
+            pass
+        return bridged
+    except Exception:                                  # noqa: BLE001
+        return None
+
+
 def _select_edges(model: Any, edges: list[Any]) -> None:
     model.ClearSelection2(True)
-    select_data = model.SelectionManager.CreateSelectData()
-    select_data.Mark = 0
+    select_data = _select_data(model)
     for edge in edges:
-        if not bool(edge.Select4(True, select_data)):
+        ok = edge.Select4(True, select_data)
+        if not bool(ok):
             raise RuntimeError("SolidWorks failed to select an edge")
 
 
+# ── FeatureFillet3（SW2025 唯一可用的圆角入口）─────────────────────────────
+# 实测（2026-11-04，SW 2025 SP4.1 / 33.4.1）：
+#   * 老接口 `IFeatureManager.FeatureFillet`（7 参）**已被删除**，
+#     调用直接 `com_error(-2147352573, "找不到成员")`；
+#   * `FeatureFillet3` 有两套同名签名：底层 9 参版在 pywin32 下第 7 参（Radii 数组）
+#     永远报类型不匹配；**必须走 comtypes 强类型的高层 14 参版**（Options 开头）。
+# 与 swkit `verified/features.py:fillet` 的做法一致（那边实测定型）。
+_SW_TLB = (os.environ.get("SW_TLB")
+           or r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb")
+_COMTYPES_CACHE: dict[str, Any] = {}
+
+
+def _comtypes_bundle():
+    if "bundle" not in _COMTYPES_CACHE:
+        import comtypes.client
+        module = comtypes.client.GetModule(_SW_TLB)
+        app = comtypes.client.CreateObject(module.SldWorks)
+        _COMTYPES_CACHE["bundle"] = (module, app)
+    return _COMTYPES_CACHE["bundle"]
+
+
+def _comtypes_active_doc():
+    module, app = _comtypes_bundle()
+    doc = app.ActiveDoc
+    if doc is None:
+        raise RuntimeError("comtypes 侧看不到活动文档")
+    return doc.QueryInterface(module.IModelDoc2)
+
+
+def _fillet3(radius_mm: float) -> Any:
+    """14 参 FeatureFillet3：Options=2（等半径）, R1, R2, Rho, Ftyp, Overflow, Conic。"""
+    doc = _comtypes_active_doc()
+    return doc.FeatureManager.FeatureFillet3(
+        2,                        # Options = swFeatureFilletUniformRadius
+        float(radius_mm) / 1000.0,
+        0.0, 0.0,                 # R2, Rho
+        0, 0, 0,                  # Ftyp(Simple), OverflowType, ConicRhoType
+        None, None, None, None, None, None, None)
+
+
+def _comtypes_select_and_fillet(selector: dict[str, Any], radius_mm: float) -> Any:
+    """comtypes 全链路：选边 → FeatureFillet3。
+
+    pywin32 在 SW2025 上没法走这条路：`SelectionManager.CreateSelectData()` 不存在，
+    而 `Select4(True, None)` 报类型不匹配（第二参必须是真 selectData）。
+    comtypes 的强类型接口两者都能拿到。
+    """
+    module, app = _comtypes_bundle()
+    doc = _comtypes_active_doc()
+    doc.ClearSelection2(True)
+    # 注意：`doc.SelectionManager` 拿到的是 _Dispatch，方法被当成属性，
+    # 必须 QueryInterface 到 ISelectionMgr 才有 CreateSelectData()。
+    selection_mgr = doc.SelectionManager.QueryInterface(module.ISelectionMgr)
+    select_data = selection_mgr.CreateSelectData()
+    orientation = str(selector.get("orientation", "any")).lower()
+    tolerance = float(selector.get("tolerance_mm", 0.05)) / 1000.0
+    chosen = 0
+    # GetBodies2 在 IPartDoc 上，不在 IModelDoc2 上
+    part_doc = doc.QueryInterface(module.IPartDoc)
+    for body in (part_doc.GetBodies2(0, True) or ()):
+        for edge in (body.GetEdges() or ()):
+            edge = edge.QueryInterface(module.IEdge)
+            params = edge.GetCurveParams2()
+            start = (float(params[0]), float(params[1]), float(params[2]))
+            end = (float(params[3]), float(params[4]), float(params[5]))
+            dx, dy, dz = (end[i] - start[i] for i in range(3))
+            if orientation == "axial" and not (abs(dx) <= tolerance
+                                               and abs(dy) <= tolerance
+                                               and abs(dz) > tolerance):
+                continue
+            if orientation == "planar" and abs(dz) > tolerance:
+                continue
+            if bool(edge.Select4(True, select_data)):
+                chosen += 1
+    if not chosen:
+        raise RuntimeError("comtypes 选边为 0（selector=%r）" % (selector,))
+    feature = doc.FeatureManager.FeatureFillet3(
+        2, float(radius_mm) / 1000.0, 0.0, 0.0, 0, 0, 0,
+        None, None, None, None, None, None, None)
+    return feature
+
+
 def edge_fillet(model: Any, name: str, radius_mm: float, selector: dict[str, Any]) -> Any:
-    edges = select_edges_by_geometry(model, selector)
-    _select_edges(model, edges)
-    feature = model.FeatureManager.FeatureFillet(
-        195, radius_mm * MM, 0, 0, None, None, None
-    )
+    feature = None
+    try:
+        edges = select_edges_by_geometry(model, selector)
+        _select_edges(model, edges)
+        feature = model.FeatureManager.FeatureFillet(
+            195, radius_mm * MM, 0, 0, None, None, None
+        )
+    except Exception:                                  # noqa: BLE001
+        feature = None
+    if feature is None:
+        feature = _fillet3(radius_mm)                  # 边已选中，直接 FeatureFillet3
     return rename_feature(feature, name)
 
 
