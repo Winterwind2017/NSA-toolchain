@@ -3,9 +3,9 @@
 现状（2026-11-04 16:32 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 611 ｜ 验收 270 ｜ 契约 245 ｜ 合并 443 = 72.5% ｜ 快乐路径 233
-未覆盖 168：sw 73 ｜ gx 40 ｜ ug 32 ｜ codesys 15 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 75.0% ｜ ug 61.9% ｜ sw 60.1% ｜ gx 14.9%
+工具 611 ｜ 验收 275 ｜ 契约 245 ｜ 合并 448 = 73.3% ｜ 快乐路径 238
+未覆盖 163：sw 73 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜ codesys 83.3% ｜ ug 61.9% ｜ sw 60.1% ｜ gx 14.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。

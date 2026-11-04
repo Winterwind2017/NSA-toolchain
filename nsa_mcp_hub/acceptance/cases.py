@@ -1246,6 +1246,65 @@ def _codesys_io_flow(client, context):
             "errors": problems, "checks": checks}
 
 
+def _codesys_runtime_flow(client, context):
+    """CODESYS 剧本六：仿真下的 下载/启动/监控/停止/注销/关工程（11 步）。
+
+    实测顺序很关键：
+      project.create → pou.create → app.generate → simulation(True)
+      → login → download → start → monitor → stop → logout
+      → simulation(False) → project.close
+    `simulation(False)` 必须在 `project.close` **之前**：工程一关再调就
+    `E_STATE: no project is open`。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_rt_")
+    if isinstance(context, dict):
+        context["workdir"] = work
+    app = "/PLC/Plc Logic/Application"
+    project = os.path.join(work, "ac_rt.project")
+    steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccRT", "kind": "program",
+                               "language": "ST", "parent": app}),
+        ("codesys_app_generate", {}),
+        ("codesys_online_simulation", {"enabled": True}),
+        ("codesys_online_login", {"autostart": False}),
+        ("codesys_online_download", {}),
+        ("codesys_online_start", {}),
+        ("codesys_online_monitor", {"expression": "PLC_PRG.x", "samples": 2,
+                                    "interval_ms": 100}),
+        ("codesys_online_stop", {}),
+        ("codesys_online_logout", {}),
+        ("codesys_online_simulation", {"enabled": False}),
+        ("codesys_project_close", {}),
+    ]
+    done = []
+    samples: list = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "codesys_online_monitor":
+            inner = (payload.get("reads") or {}).get("result") or {}
+            samples = list(inner.get("samples") or inner.get("series") or [])
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "monitor_samples", "got": len(samples), "want": ">=1（或为空但调用成功）",
+         "ok": True},
+    ]
+    return {"ok": True, "reads": {"steps": done, "samples": samples, "workdir": work},
+            "errors": [], "checks": checks}
+
+
 def codesys_setup() -> dict:
     """起常驻服务（headless，约 8-10 s）；**确认服务真的应答**才复用。"""
     import json
@@ -1283,6 +1342,13 @@ CODESYS_CASES = [
     {"id": "codesys.ping", "tool": "codesys_ping",
      "title": "常驻服务往返（最轻量的存活判据）",
      "args": {}, "expect_ok": True, "timeout_s": 120},
+
+    {"id": "codesys.flow.runtime", "tool": None,
+     "title": "CODESYS 剧本六：仿真下载/启动/监控/停止/注销/关工程（12 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_runtime_flow(client, context),
+     "cleanup": _codesys_cleanup},
 
     {"id": "codesys.flow.io", "tool": None,
      "title": "CODESYS 剧本五：工程列表 + I/O 映射导出（device=/PLC）+ 另存为（6 步）",
