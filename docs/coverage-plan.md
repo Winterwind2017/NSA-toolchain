@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 19:40 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 23:05 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 613 ｜ 验收 302 ｜ 契约 245 ｜ 合并 470 = 76.7% ｜ 快乐路径 265
-未覆盖 143：sw 53 ｜ gx 40 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+工具 615 ｜ 验收 340 ｜ 契约 245 ｜ 合并 508 = 82.6% ｜ 快乐路径 303
+未覆盖 107：sw 52 ｜ ug 32 ｜ codesys 10 ｜ gx 5 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
 逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ acad 96.4% ｜ autoshop 90.5% ｜
-        codesys 83.3% ｜ sw 71.4% ｜ ug 61.9% ｜ gx 14.9%
+        gx 89.4% ｜ codesys 83.3% ｜ sw 72.2% ｜ ug 61.9%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -325,3 +325,54 @@ hub 侧修法（不改上游）：新增 `nsa_mcp_hub/adapters/hubsw_asm.py`，�
 
 **再确认三条不能用的**（都已排除）：`sw_move_component` 卡死（>9 min）、
 `sw_assign_material_full` 在装配体上判据不过、`sw_scan` 在 cmd_scan 里 getsize 抛错。
+
+## 选择类工具：解锁"必须先选中"的那批 sw 工具（2026-11-04 21:00）
+
+之前把「草图圆角/倒角/剪裁/转换实体/圆周阵列、特征阵列/镜像」记成 kit 缺陷，
+其实是**缺一层选择能力**：swkit 这些工具内部不自己选，而它没有"按名字/序号选中"的工具。
+
+hub 侧新增（`nsa_mcp_hub/adapters/hubsw_select.py`，直接 COM）：
+
+| 工具 | 判据 | 实测 |
+|---|---|---|
+| `sw_select_sketch_segments(indices, append)` | SelectionManager 选中数 = 期望 | 2 条线 → selected_count=2 ✅ |
+| `sw_select_features(names, append)` | 同上 | 按名字选特征（BODYFEATURE/SKETCH 都试） |
+
+**验证结论**（真机）：
+
+* 选中 2 条线 → `sw_sketch_fillet(5)` 成功，segments 2→3；
+* 选中 1 条线 → `sw_sketch_trim` 成功；
+* 仍然不行：`sw_sketch_chamfer`（segment_added=False）、`sw_sketch_convert_entities`、
+  `sw_sketch_circular_pattern`（这两个要模型边/中心点，不是草图线段）。
+
+新用例 `sw.flow.sketch_ops`（9 步，真机 24 s）PASS。
+
+## gx 的六条剧本（2026-11-04 21:00 起跑）
+
+gx 40 个未覆盖工具全是时间成本（单条 57–595 s），所以按能力族拆成 6 条剧本，
+每条自带工程上下文、失败即停：
+
+| 用例 | 步数 | 覆盖 |
+|---|---|---|
+| `gx.flow.project` | 7 | 四种工程创建 + 保存/元信息/重开（实测 **924 s** PASS）|
+| `gx.flow.program` | 7 | ST 粘贴/读回 + 梯级/并联/应用指令 |
+| `gx.flow.build` | 7 | 全部转换 + 程序检查 + 编译诊断/定位坏行 |
+| `gx.flow.inspect` | 7 | 读程序/梯形图/IL/源码映射 |
+| `gx.flow.label` | 8 | 标签多类型 + 结构体成员/数组/XML 导入 |
+| `gx.flow.xml` | 7 | XML 建程序/功能块/实例 + 多程序 + 批量工程 |
+
+### gx 六条剧本实测（2026-11-04 21:06–23:03，共 7021 s）
+
+```
+PASS gx.flow.program   1580 s
+PASS gx.flow.build     1145 s
+PASS gx.flow.inspect   1046 s
+PASS gx.flow.label     1457 s
+PASS gx.flow.xml       1622 s
+PASS gx.batch.offline   170 s
+6/6 通过（7021 s）+ gx.flow.project 924 s
+```
+
+结果：gx 14.9% → **89.4%**（42/47），只剩 5 个未覆盖
+（`batch_new_projects` / `program_read_st` / `program_fb_params` / `project_check` /
+`project_diff` 之外的内部项）。
