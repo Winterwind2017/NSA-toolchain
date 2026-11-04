@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from .build import ae as b_ae
 from .build import block_table as b_bt
 from .build import boolean as b_bool
+from .build import doc as b_doc
 from .build import dim as b_dim
 from .build import envvars as b_env
 from .build import export as b_export
@@ -40,6 +41,7 @@ from .judges import ae as j_ae
 from .judges import block_table as j_bt
 from .judges import dim as j_dim
 from .judges import dim_extra as j_dx
+from .judges import doc as j_doc
 from .judges import env as j_env
 from .judges import export as j_export
 from .judges import fit as j_fit
@@ -507,10 +509,20 @@ def _cap_export() -> List[Cap]:
     ]
 
 
+# ── 文档 ────────────────────────────────────────────────────────────
+def _cap_doc() -> List[Cap]:
+    return [
+        Cap("doc.new", "doc", "新建图纸：文档数 +1 / 名称 / 空模型空间 / 用完即关", "L1–L3",
+            b_doc.build_new_drawing, j_doc.judge_new_drawing, {}),
+        Cap("doc.close", "doc", "关闭图纸：文档数回到原位 / 无模态 / 活动文档回退", "L1–L3",
+            b_doc.build_close_drawing, j_doc.judge_close_drawing, {}),
+    ]
+
+
 def _all() -> List[Cap]:
     return (_cap_geom() + _cap_text() + _cap_dim() + _cap_gdt_symbol()
             + _cap_table_block_frame() + _cap_layer_env() + _cap_solid()
-            + _cap_view_lisp() + _cap_export())
+            + _cap_view_lisp() + _cap_export() + _cap_doc())
 
 
 CAPS: List[Cap] = _all()

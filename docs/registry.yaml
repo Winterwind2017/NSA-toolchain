@@ -501,3 +501,19 @@ capabilities:
     source: ""
     judge: "INTERFERE 命令不存在。替代：布尔求交（INTERSECT）后看结果体积，>0 即干涉"
     evidence: "matrix #2.2"
+
+  # ── 文档生命周期（2026-11-04 新增）────────────────────────
+  - id: doc.new
+    family: doc
+    backend: [com]
+    status: verified
+    source: "acadkit build/doc.py:build_new_drawing"
+    judge: "文档数 +1；新文档 Name 非空且 ModelSpace.Count=0；ActiveDocument 指向它；关掉后文档数回到原位"
+    evidence: "P1 真机 2026-11-04：文档数 4→5→4、Name=Drawing11.dwg、ModelSpace=0、ActiveDocument 回退、关闭 0.36 s、profile 前后均 <<VANILLA>>"
+  - id: doc.close
+    family: doc
+    backend: [com]
+    status: verified
+    source: "acadkit build/doc.py:build_close_drawing"
+    judge: "开一张临时图再关；文档数回到原位、ActiveDocument 回退到用例文档、关文档耗时 ≤5 s（弹模态会超时）"
+    evidence: "P1 真机 2026-11-04：临时图开→关、文档数 4→5→4、关闭 0.38 s、ActiveDocument 回退到用例文档"
