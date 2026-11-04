@@ -564,7 +564,53 @@ NX_CASES = [
 
 
 # ------------------------------------------------------------------------ GX
+def _gx_batch(client, tools):
+    """gx 批量：逐条调**不建工程**的离线/自检类工具。
+
+    gxkit 的每条用例要么拉起 GX Works3 读模板（114 s/条），要么纯离线（0 s/条），
+    所以这里只放"不建工程、不改工程"的那几个，避免它去抢焦点跑梯形图。
+    """
+    import threading
+    done, failures = [], []
+    for name in tools:
+        box: dict = {}
+
+        def _one(tool_name=name):
+            try:
+                box["payload"] = client.call(tool_name, {})
+            except Exception as exc:                   # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:120])
+
+        worker = threading.Thread(target=_one, daemon=True)
+        worker.start()
+        worker.join(240)                               # 读设备模板实测 114 s
+        if worker.is_alive():
+            failures.append("%s 超时（>240 s）" % name)
+            done.append({"tool": name, "ok": False})
+            continue
+        if "error" in box:
+            failures.append("%s 抛异常：%s" % (name, box["error"]))
+            done.append({"tool": name, "ok": False})
+            continue
+        ok = bool(box["payload"].get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (name, str(box["payload"].get("errors"))[:130]))
+    return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
+            "checks": [{"check": "gx_batch_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
+
+
 GX_CASES = [
+    # 2026-11-04：离线/自检类批量（不建工程，不抢焦点跑梯形图）
+    {"id": "gx.batch.offline", "timeout_s": 900, "tool": None,
+     "title": "gx 离线批量：能力表/自检/环境 + FX5U 与 iQ-R 设备模板（5 条）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_batch(client, [
+         "gx_list_caps", "gx_selftest", "gx_status",
+         "gx_inspect_devices", "gx_inspect_devices_rcpu"])},
+
+
     {"id": "gx.selftest", "tool": "gx_selftest",
      "title": "离线自检：动作与判据是否齐全（不开 GX Works3）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -1143,6 +1189,63 @@ def _codesys_objects_flow(client, context):
             "errors": problems, "checks": checks}
 
 
+def _codesys_io_flow(client, context):
+    """CODESYS 剧本五：I/O 映射导出 / 工程列表 / 另存为（6 步）。
+
+    实测踩到的点：`project.io_export` 的 device 参数要的是**树路径**（`/PLC`），
+    传设备名 `CODESYS Control Win V3` 会 E_STATE path segment not found。
+    `project.open` 对"正被本会话占用"的文件会报"正由 CANGLONGYU 上的 yuche 使用"，
+    所以另存之后不再回打开，避免把会话搞乱。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_io_")
+    if isinstance(context, dict):
+        context["workdir"] = work
+    app = "/PLC/Plc Logic/Application"
+    project = os.path.join(work, "ac_io.project")
+    saved = os.path.join(work, "ac_io_saved.project")
+    csv = os.path.join(work, "io.csv")
+    steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccP7", "kind": "program",
+                               "language": "ST", "parent": app}),
+        ("codesys_projects", {}),
+        ("codesys_project_io_export", {"path": csv, "device": "/PLC"}),
+        ("codesys_project_save_as", {"path": saved}),
+        ("codesys_project_info", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    csv_bytes = os.path.getsize(csv) if os.path.exists(csv) else 0
+    saved_bytes = os.path.getsize(saved) if os.path.exists(saved) else 0
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "io_csv_bytes", "got": csv_bytes, "want": ">50", "ok": csv_bytes > 50},
+        {"check": "saved_bytes", "got": saved_bytes, "want": ">1000", "ok": saved_bytes > 1000},
+    ]
+    problems = []
+    if csv_bytes <= 50:
+        problems.append("I/O 映射 CSV 太小/没写：%d B" % csv_bytes)
+    if saved_bytes <= 1000:
+        problems.append("另存工程太小/没写：%d B" % saved_bytes)
+    return {"ok": csv_bytes > 50 and saved_bytes > 1000,
+            "reads": {"steps": done, "io_csv_bytes": csv_bytes, "saved_bytes": saved_bytes,
+                      "workdir": work},
+            "errors": problems, "checks": checks}
+
+
 def codesys_setup() -> dict:
     """起常驻服务（headless，约 8-10 s）；**确认服务真的应答**才复用。"""
     import json
@@ -1180,6 +1283,13 @@ CODESYS_CASES = [
     {"id": "codesys.ping", "tool": "codesys_ping",
      "title": "常驻服务往返（最轻量的存活判据）",
      "args": {}, "expect_ok": True, "timeout_s": 120},
+
+    {"id": "codesys.flow.io", "tool": None,
+     "title": "CODESYS 剧本五：工程列表 + I/O 映射导出（device=/PLC）+ 另存为（6 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_io_flow(client, context),
+     "cleanup": _codesys_cleanup},
 
     {"id": "codesys.flow.objects", "tool": None,
      "title": "CODESYS 剧本四：文本表 + 对象增删改名 + 在线仿真登录/读值/注销（17 步）",
