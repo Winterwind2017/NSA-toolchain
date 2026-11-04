@@ -78,6 +78,27 @@ def sweep_ok(path) -> dict[str, set[str]]:
     return out
 
 
+def touched_tools(path) -> dict[str, set[str]]:
+    """验收**真的调过**的工具（含剧本子步骤，不论通过与否）——用于"验收覆盖"列。"""
+    out: dict[str, set[str]] = {}
+    paths = ([path] if isinstance(path, Path) else list(path or []))
+    for item in paths:
+        if item is None or not item.is_file():
+            continue
+        try:
+            data = json.loads(item.read_text(encoding="utf-8"))
+        except Exception:                              # noqa: BLE001
+            continue
+        for entry in data.get("kits") or []:
+            bucket = out.setdefault(entry.get("kit"), set())
+            for row in entry.get("results") or []:
+                if row.get("tool"):
+                    bucket.add(row["tool"])
+                for name in row.get("covered_tools") or []:
+                    bucket.add(name)
+    return out
+
+
 def happy_tools(path) -> dict[str, set[str]]:
     """快乐路径取**所有**验收报告的并集（一次跑只覆盖一部分 kit，并集才代表"曾经过"）。"""
     out: dict[str, set[str]] = {}
@@ -135,6 +156,7 @@ def main() -> int:
                     else sorted(RUNS.glob("acceptance-*.json")))
     sweep = sweep_ok(sweep_paths)
     happy = happy_tools(accept_paths)
+    touched = touched_tools(accept_paths)
     cases = case_tools()
 
     wanted = {name.strip() for name in args.only.split(",") if name.strip()}
@@ -148,7 +170,7 @@ def main() -> int:
         except Exception as exc:                      # noqa: BLE001
             print("!! %s 起不来：%s" % (kit, exc))
             continue
-        acc = set(cases.get(kit, {})) & tools
+        acc = (set(cases.get(kit, {})) | touched.get(kit, set())) & tools
         c1 = sweep.get(kit, set()) & tools
         union = acc | c1
         hp = happy.get(kit, set()) & tools
@@ -185,7 +207,7 @@ def main() -> int:
             "",
             "`python scripts\\coverage_report.py --write` 生成。**三列分开算，不混报**：",
             "",
-            "- **验收覆盖**：被验收用例引用到的工具（含「明确拒绝」模式）；",
+            "- **验收覆盖**：验收用例引用到 + 剧本真的调过的工具（含「明确拒绝」模式）；",
             "- **契约覆盖**：契约扫描里真执行过、且返回合统一契约的工具；",
             "- **快乐路径**：验收判定 PASS 且不是拒绝模式、工具被真的调成功；",
             "- **合并**：验收 ∪ 契约；**未覆盖** = 三者都没碰到。",

@@ -216,6 +216,13 @@ SW_CASES = [
      "call": lambda client, context: _sw_export_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.props", "tool": None,
+     "title": "SW 剧本五：倒角/抽壳/自定义属性/配置/材料/重建诊断（14 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_props_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.status", "tool": "sw_status",
      "title": "连接状态 + 打开文档数 + 注册表摘要（不建模）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
@@ -386,6 +393,16 @@ NX_CASES = [
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
 
     # ── 多步剧本：一条用例覆盖一串工具（快乐路径）──
+    {"id": "nx.batch.model", "tool": None,
+     "title": "NX 批量：拉伸/布尔并/布尔差/块/圆柱/量质量/周长/面类型/拓扑/导出 STEP（10 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 1200,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_extrude_rect", "nx_boolean_union", "nx_boolean_subtract",
+         "nx_block_create", "nx_cylinder_create", "nx_measure_mass",
+         "nx_measure_perimeter", "nx_inspect_face_types", "nx_body_topo",
+         "nx_export_step",
+     ])},
+
     {"id": "nx.flow.block", "tool": None, "title": "NX 剧本：新建零件→矩形草图→拉伸→量质量",
      "args": {}, "expect_ok": True, "timeout_s": 900,
      "call": lambda client, context: _flow(client, [
@@ -1240,6 +1257,90 @@ def _sw_export_flow(client, context):
     return {"ok": ok_step and ok_stl,
             "reads": {"steps": done, "files": sizes, "step_header": head[:32], "workdir": work},
             "errors": problems, "checks": checks}
+
+
+def _sw_props_flow(client, context):
+    """SW 剧本五：建块 → 倒角 → 抽壳 → 自定义属性 → 配置 → 材料 → 重建诊断（14 步）。
+
+    判据：14 步全 ok；自定义属性"料号"读回 A-001；激活配置是 CFG_TEST。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_chamfer", {"distance": 2}),
+        ("sw_shell", {"thickness": 2, "face_index": -1}),
+        ("sw_set_custom_property", {"name": "料号", "value": "A-001"}),
+        ("sw_get_custom_properties", {}),
+        ("sw_add_configuration", {"name": "CFG_TEST"}),
+        ("sw_list_configurations", {}),
+        ("sw_set_material", {"name": "AISI 304"}),
+        ("sw_get_material", {}),
+        ("sw_rebuild_diagnostics", {"full": True}),
+    ]
+    done = []
+    properties: dict = {}
+    active = None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        reads = payload.get("reads") or {}
+        if name == "sw_get_custom_properties":
+            properties = reads.get("properties") or {}
+        if name == "sw_list_configurations":
+            active = reads.get("active")
+    stored = str(properties.get("料号", ""))
+    ok_prop = "A-001" in stored
+    ok_cfg = active == "CFG_TEST"
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "custom_property", "got": stored, "want": "A-001", "ok": ok_prop},
+        {"check": "active_configuration", "got": active, "want": "CFG_TEST", "ok": ok_cfg},
+    ]
+    problems = []
+    if not ok_prop:
+        problems.append("自定义属性没读到：%r" % stored)
+    if not ok_cfg:
+        problems.append("激活配置不是 CFG_TEST：%r" % active)
+    return {"ok": ok_prop and ok_cfg,
+            "reads": {"steps": done, "properties": properties, "active_configuration": active},
+            "errors": problems, "checks": checks}
+
+
+def _nx_batch(client, tools):
+    """NX 批量冒烟：每条能力都**独立开一次 run_journal 会话**（实测 13 s/条）。
+
+    和 SW 不同，NX 的能力之间不共享文档——`nx_measure_mass` 那条会自己建块再量，
+    所以这里只要求"每条都跑通、判据都过"，不做跨步断言。
+    """
+    done = []
+    failures = []
+    for name in tools:
+        try:
+            payload = client.call(name, {})
+        except Exception as exc:                       # noqa: BLE001
+            failures.append("%s 抛异常：%s: %s" % (name, type(exc).__name__, str(exc)[:120]))
+            done.append({"tool": name, "ok": False})
+            continue
+        ok = bool(payload.get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (name, str(payload.get("errors"))[:160]))
+    return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
+            "checks": [{"check": "batch_ok", "got": len(done) - len(failures),
+                        "want": len(tools), "ok": not failures}]}
 
 
 def _flow(client, steps):

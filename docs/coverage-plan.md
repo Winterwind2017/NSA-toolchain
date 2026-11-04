@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 13:45 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 13:55 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 50 ｜ 契约 245 ｜ 合并 258 = 42.4% ｜ 快乐路径 31
-未覆盖 351：sw 123 ｜ nx 62 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ ug 32 ｜ autoshop 4
-逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ codesys 35.0% ｜ sw 32.8%
+工具 609 ｜ 验收 90 ｜ 契约 245 ｜ 合并 289 = 47.5% ｜ 快乐路径 47
+未覆盖 320：sw 106 ｜ acad 49 ｜ nx 48 ｜ gx 42 ｜ codesys 39 ｜ ug 32 ｜ autoshop 4
+逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ sw 42.1% ｜ codesys 35.0%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -90,3 +90,11 @@ per-kit 黑名单）。这一步能一次吃掉 300+ 个 `write_not_probed`。
 
 另记一条 swkit 的真 bug：`sw_cut_extrude` 在本机 SW2025 上建出**空特征**（体积不变、
 features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕开切除。
+
+## NX 与 SW 的结构性差异（影响剧本写法）
+
+* **SW**：一条剧本里多个工具共享同一个文档（create_part → sketch → extrude …），
+  能跨步断言体积；所以每条剧本 6–14 步、1–2 分钟。
+* **NX**：每条能力**独立开一次 `run_journal` 会话**（实测 13 s/条、各自一个 `_runs/<ts>` 工作目录），
+  能力之间不共享文档——`nx_measure_mass` 会自己建块再量。所以 NX 只能写"批量冒烟"
+  （`nx.batch.model` 一次跑 10 条），不能用 SW 那种链式剧本。
