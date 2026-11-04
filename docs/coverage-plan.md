@@ -1,0 +1,80 @@
+# 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
+
+现状（2026-11-04 13:10 实测，`docs/acceptance-coverage.md`）：
+
+```
+工具 609 ｜ 验收 50 ｜ 契约 154 ｜ 合并 173 = 28.4% ｜ 快乐路径 8
+gated 436（danger / app_running / app_required / write_not_probed）
+```
+
+三列分开算，**不混报**——这是这份文档的前提。
+
+## 口径
+
+| 列 | 定义 | 上限 |
+|---|---|---|
+| 验收覆盖 | 验收用例引用到的工具（含「明确拒绝」模式） | 取决于写多少用例 |
+| 契约覆盖 | 契约扫描真执行、且返回合统一契约 | **100% 可达** |
+| 快乐路径 | 真把功能做对（体积/特征数/编译 0 错/文件头） | **≈89%**（catia 57 + eplan 10 无软件） |
+
+## 为什么现在只有 28.4%
+
+`gated` 436 个，只有四种原因，都写在扫描报告的 `gated` 数组里：
+
+| 原因 | 数量级 | 为什么门禁 |
+|---|---|---|
+| `app_running` | 少 | 宿主在跑，写探针会真改东西 |
+| `app_required` | 多 | 宿主没开，读也会卡在 attach（实测 `acad_projection_orthographic` 卡满 20 s） |
+| `write_not_probed` | 最多 | 写类探针可能**把宿主拉起来**（sw 的 COM Dispatch、gx 的 run_capability） |
+| `danger` | 12 | 删/停/下载/卸载，永不执行 |
+
+## 到 100% 调用覆盖的两条路
+
+### 路线 A：宿主关闭时开写探针（最快，但要注意拉起）
+
+```powershell
+# 先确保这些进程全关：SLDWORKS / acad / CODESYS / AutoShop / GX Works3 / ugraf
+python scripts\contract_sweep.py --allow-write-probes --timeout 25 --write
+```
+
+写类工具收到的是**故意非法**的参数（`__contract_probe__`），正常情况下会被参数校验挡住；
+需要观察的是它们**有没有偷偷把宿主拉起来**（tasklist 里出现新进程就说明这条路线要加
+per-kit 黑名单）。这一步能一次吃掉 300+ 个 `write_not_probed`。
+
+### 路线 B：per-kit 沙箱剧本（稳，也是快乐路径的正路）
+
+每个 kit 一条"生命周期剧本"，在隔离环境里把写工具跑一遍：
+
+| kit | 沙箱 | 剧本骨架 |
+|---|---|---|
+| sw | 新建零件（不保存，跑完关闭） | new_part → sketch → extrude → fillet → pattern → mass → export → close |
+| ug | 新建 part | create_part → sketch → extrude → hole → mass → export_step → close |
+| nx | nxkit 自拉起 | part_new → sketch_rect → sketch_extrude → measure → export_step |
+| acad | 新建 Drawing（不保存） | new → line → circle → dim → table → export dxf → close |
+| codesys | 临时工程到 `_runs/sandbox/` | project_create → pou_create → pou_write → task_create → app_generate → export_xml |
+| autoshop | 临时 .hcp | new → symbols_add → il_write → check → save |
+| gx | 临时 .gx3 | project_new → paste_st → convert → program_check → save → reopen |
+
+剧本用 `_flow()`（`cases.py` 里的多步辅助），一条覆盖 5–15 个工具；
+每个 kit 的 `cleanup` 钩子负责删沙箱、关文档。
+
+## 已具备的地基（本轮完成）
+
+| 能力 | 位置 | 状态 |
+|---|---|---|
+| `expect_error_code` | `harness.evaluate` | ✅ 已用于 eplan 两条用例 |
+| `expect_refusal`（ok=False 必须有证据） | `harness.evaluate` + `refusal_evidence` | ✅ |
+| `requires` 降级（依赖缺失→拒绝断言，不 SKIP） | `harness.run_kit` | ✅ |
+| `cleanup` 钩子（用例级/kit 级，含 TIMEOUT 后） | `harness._run_cleanup` | ✅ 自测 3/3 |
+| 多步剧本 `_flow` + `covered_tools` 记账 | `cases.py` / `harness.py` | ✅ nx 两条剧本 2/2 |
+| 契约扫描（C0 静态 / C1 真调 / 门禁） | `scripts/contract_sweep.py` | ✅ C0 609/609，C1 154 |
+| 两列覆盖率 | `scripts/coverage_report.py` | ✅ |
+
+## 已知契约违规（扫描抓到，待修）
+
+| kit | 工具 | 问题 |
+|---|---|---|
+| acad | `acad_status` | AutoCAD 没开时返回 `ok=false` 但 `errors` 为空（静默失败），违反统一契约 |
+
+修法：`acad_status` 在未附着时返回 `ok=false` + `reads.error="ACAD_NOT_RUNNING"`，
+或在 `errors` 里给一句话。这条是**真问题**——调用方拿不到任何失败原因。

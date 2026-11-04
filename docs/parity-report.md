@@ -152,5 +152,7 @@ sw_feature_graph_compile(graph) → ok, step_count=3
 4. **上游测试对照**：`tests/parity/run_parity.py` 跑三组上游测试，实测
    **145 通过 / 0 失败**（hubsw 18 + EPLAN 68 + CATIA 59），见 `docs/parity-tests.md`。
    没搬的部分（要真机/编译器/上游 server 进程）逐条写了原因。
-   验收覆盖率由 `scripts/coverage_report.py` 统计：当前 **41/609 = 6.7%**
-   （`docs/acceptance-coverage.md`）。
+   覆盖率由 `scripts/coverage_report.py` 三列统计：**验收 50 ｜ 契约 154 ｜
+   合并 173 = 28.4% ｜ 快乐路径 8**（`docs/acceptance-coverage.md`）。
+   提升路线（到 100% 调用覆盖 / 89% 快乐路径）见 `docs/coverage-plan.md`；
+   契约扫描还抓到一处真问题：`acad_status` 未附着时 ok=false 但错误为空。

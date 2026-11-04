@@ -1,44 +1,43 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""验收覆盖度报告：每个 kit 有多少工具、有多少被验收用例真的调过。
+"""覆盖度报告 v2：三列分开算，绝不混着报。
 
-数字来源（都是实打实的，不估）：
-
-* 工具数：起一个 kit 的 MCP 进程，问 `tools/list`；
-* 用例数与被覆盖的工具：直接读 `nsa_mcp_hub.acceptance.cases.KITS`（同一份注册表，
-  不多算也不少算）。
+| 列 | 含义 | 数据来源 |
+|---|---|---|
+| **验收覆盖** | 被验收用例引用到的工具（含"明确拒绝"模式） | `acceptance.cases.KITS` |
+| **契约覆盖** | 契约扫描里真的执行过、且返回合契约的工具 | `_runs/contract-sweep-*.json` |
+| **快乐路径** | 验收里 verdict=PASS 且不是拒绝模式，工具被真的调用成功 | `_runs/acceptance-*.json` |
+| **合并** | 验收 ∪ 契约 | 上面两者 |
 
 用法：
-    python scripts/coverage_report.py                 # 打表
-    python scripts/coverage_report.py --write         # 同时写 docs/acceptance-coverage.md
-    python scripts/coverage_report.py --only sw,eplan # 只看几个 kit
+    python scripts/coverage_report.py --write
+    python scripts/coverage_report.py --sweep <json> --accept <json>
+    python scripts/coverage_report.py --only sw,eplan
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 HUB = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HUB))
+RUNS = HUB / "_runs"
+
+
+def latest(pattern: str) -> Path | None:
+    files = sorted(RUNS.glob(pattern))
+    return files[-1] if files else None
 
 
 def kit_modules() -> dict[str, str]:
-    """从 hub 的 KITS 注册表取 kit → module。"""
     from nsa_mcp_hub.hub import KITS
     return dict(KITS)
 
 
-def kit_cases() -> dict[str, list[dict]]:
-    """验收注册表是 kit → {module, setup, cases}；这里只取 cases。"""
-    from nsa_mcp_hub.acceptance import cases
-    return {kit: list(spec.get("cases") or [])
-            for kit, spec in cases.KITS.items()}
-
-
-def tools_of(kit: str, module: str) -> list[str]:
+def tools_of(module: str) -> list[str]:
     from nsa_mcp_hub.acceptance.harness import McpClient
     client = McpClient(module)
     try:
@@ -47,93 +46,144 @@ def tools_of(kit: str, module: str) -> list[str]:
         client.close()
 
 
-def cases_of() -> dict[str, list[dict]]:
-    return kit_cases()
+def case_tools() -> dict[str, dict]:
+    """kit → {tool: case_id}。剧本用例（tool=None）不在这里，由运行报告补。"""
+    from nsa_mcp_hub.acceptance import cases
+    out: dict[str, dict] = {}
+    for kit, spec in cases.KITS.items():
+        mapping = {}
+        for item in spec.get("cases") or []:
+            tool = item.get("tool")
+            if tool:
+                mapping.setdefault(tool, item["id"])
+        out[kit] = mapping
+    return out
+
+
+def sweep_ok(path: Path | None) -> dict[str, set[str]]:
+    out: dict[str, set[str]] = {}
+    if path is None or not path.is_file():
+        return out
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for entry in data.get("kits") or []:
+        out[entry.get("kit")] = {item["tool"] for item in (entry.get("c1") or [])
+                                 if item.get("verdict") == "ok"}
+    return out
+
+
+def happy_tools(path: Path | None) -> dict[str, set[str]]:
+    out: dict[str, set[str]] = {}
+    if path is None or not path.is_file():
+        return out
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for entry in data.get("kits") or []:
+        kit = entry.get("kit")
+        tools: set[str] = set()
+        for row in entry.get("results") or []:
+            if row.get("verdict") != "PASS" or row.get("mode") == "refusal":
+                continue
+            if row.get("tool"):
+                tools.add(row["tool"])
+            for name in row.get("covered_tools") or []:
+                tools.add(name)
+        out[kit] = tools
+    return out
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="验收覆盖度报告")
-    parser.add_argument("--write", action="store_true", help="写 docs/acceptance-coverage.md")
-    parser.add_argument("--only", default="", help="逗号分隔的 kit 名")
+    parser = argparse.ArgumentParser(description="覆盖度报告 v2（验收 / 契约 / 快乐路径）")
+    parser.add_argument("--write", action="store_true")
+    parser.add_argument("--sweep", default="")
+    parser.add_argument("--accept", default="")
+    parser.add_argument("--only", default="")
     args = parser.parse_args()
 
-    wanted = {name.strip() for name in args.only.split(",") if name.strip()}
-    modules = kit_modules()
-    cases = cases_of()
+    sweep_path = Path(args.sweep) if args.sweep else latest("contract-sweep-*.json")
+    accept_path = Path(args.accept) if args.accept else latest("acceptance-*.json")
+    sweep = sweep_ok(sweep_path)
+    happy = happy_tools(accept_path)
+    cases = case_tools()
 
+    wanted = {name.strip() for name in args.only.split(",") if name.strip()}
     rows = []
-    total_tools = total_covered = total_cases = 0
-    for kit, module in modules.items():
+    total = {"tools": 0, "acc": 0, "c1": 0, "union": 0, "happy": 0}
+    for kit, module in kit_modules().items():
         if wanted and kit not in wanted:
             continue
         try:
-            tools = tools_of(kit, module)
-        except Exception as exc:                       # noqa: BLE001
+            tools = set(tools_of(module))
+        except Exception as exc:                      # noqa: BLE001
             print("!! %s 起不来：%s" % (kit, exc))
             continue
-        items = cases.get(kit, [])
-        # 有的用例走 call 钩子（多步），没有 tool 字段——单独计，不算未覆盖
-        single = [item for item in items if item.get("tool")]
-        referenced = {item["tool"] for item in single if item["tool"] in tools}
-        extra = sorted({item["tool"] for item in single if item["tool"] not in tools})
-        total_tools += len(tools)
-        total_covered += len(referenced)
-        total_cases += len(items)
-        rows.append({
-            "kit": kit, "tools": len(tools), "cases": len(items),
-            "covered": len(referenced),
-            "pct": (100.0 * len(referenced) / len(tools)) if tools else 0.0,
-            "multi_step": len(items) - len(single),
-            "skipped": sum(1 for item in items if item.get("skip_if")),
-            "no_setup": sum(1 for item in items if item.get("no_setup")),
-            "unknown_tools": extra,
-            "uncovered": [t for t in tools if t not in referenced],
-        })
+        acc = set(cases.get(kit, {})) & tools
+        c1 = sweep.get(kit, set()) & tools
+        union = acc | c1
+        hp = happy.get(kit, set()) & tools
+        rows.append({"kit": kit, "tools": len(tools), "acc": len(acc), "c1": len(c1),
+                     "union": len(union), "happy": len(hp), "gated": len(tools - union)})
+        for key, value in (("tools", len(tools)), ("acc", len(acc)), ("c1", len(c1)),
+                           ("union", len(union)), ("happy", len(hp))):
+            total[key] += value
 
-    print("| kit | 工具数 | 用例数 | 覆盖到的工具 | 覆盖率 | skip_if | no_setup |")
+    def pct(part: int) -> str:
+        return "%.1f%%" % (100.0 * part / total["tools"]) if total["tools"] else "0%"
+
+    def line(row: dict) -> str:
+        share = 100.0 * row["union"] / row["tools"] if row["tools"] else 0.0
+        return ("| **%s** | %d | %d | %d | %d (%.1f%%) | %d | %d |"
+                % (row["kit"], row["tools"], row["acc"], row["c1"], row["union"],
+                   share, row["happy"], row["gated"]))
+
+    print("| kit | 工具 | 验收覆盖 | 契约覆盖 | 合并 | 快乐路径 | 未覆盖 |")
     print("|---|---|---|---|---|---|---|")
     for row in rows:
-        print("| **%s** | %d | %d | %d | %.1f%% | %d | %d |"
-              % (row["kit"], row["tools"], row["cases"], row["covered"], row["pct"],
-                 row["skipped"], row["no_setup"]))
-    pct = (100.0 * total_covered / total_tools) if total_tools else 0.0
-    print("| **合计** | %d | %d | %d | **%.1f%%** | | |"
-          % (total_tools, total_cases, total_covered, pct))
-
-    for row in rows:
-        if row["unknown_tools"]:
-            print("\n!! %s 的用例引用了不存在的工具：%s" % (row["kit"], row["unknown_tools"]))
-        if row["uncovered"]:
-            head = ", ".join(row["uncovered"][:8])
-            more = " …" if len(row["uncovered"]) > 8 else ""
-            print("\n%s 未覆盖（%d）：%s%s"
-                  % (row["kit"], len(row["uncovered"]), head, more))
+        print(line(row))
+    print("| **合计** | %d | %d | %d | %d (%s) | %d | %d |"
+          % (total["tools"], total["acc"], total["c1"], total["union"],
+             pct(total["union"]), total["happy"], total["tools"] - total["union"]))
+    print("\n数据来源：")
+    print("  契约扫描：%s" % (sweep_path.relative_to(HUB) if sweep_path else "（无）"))
+    print("  验收报告：%s" % (accept_path.relative_to(HUB) if accept_path else "（无）"))
 
     if args.write:
         out = HUB / "docs" / "acceptance-coverage.md"
-        lines = ["# 验收覆盖度（自动生成，别手改）",
-                 "",
-                 "由 `python scripts\\coverage_report.py --write` 生成。工具数来自真实 `tools/list`，",
-                 "用例来自 `nsa_mcp_hub.acceptance.cases.KITS`。",
-                 "",
-                 "| kit | 工具数 | 用例数 | 覆盖到的工具 | 覆盖率 | skip_if | no_setup |",
-                 "|---|---|---|---|---|---|---|"]
+        lines = [
+            "# 覆盖度（自动生成，别手改）",
+            "",
+            "`python scripts\\coverage_report.py --write` 生成。**三列分开算，不混报**：",
+            "",
+            "- **验收覆盖**：被验收用例引用到的工具（含「明确拒绝」模式）；",
+            "- **契约覆盖**：契约扫描里真执行过、且返回合统一契约的工具；",
+            "- **快乐路径**：验收判定 PASS 且不是拒绝模式、工具被真的调成功；",
+            "- **合并**：验收 ∪ 契约；**未覆盖** = 三者都没碰到。",
+            "",
+            "| kit | 工具 | 验收覆盖 | 契约覆盖 | 合并 | 快乐路径 | 未覆盖 |",
+            "|---|---|---|---|---|---|---|",
+        ]
         for row in rows:
-            lines.append("| **%s** | %d | %d | %d | %.1f%% | %d | %d |"
-                         % (row["kit"], row["tools"], row["cases"], row["covered"],
-                            row["pct"], row["skipped"], row["no_setup"]))
-        lines.append("| **合计** | %d | %d | %d | **%.1f%%** | | |"
-                     % (total_tools, total_cases, total_covered, pct))
-        lines += ["", "## 未覆盖的工具", ""]
-        for row in rows:
-            if row["uncovered"]:
-                lines.append("### %s（%d / %d 未覆盖）" % (row["kit"], len(row["uncovered"]), row["tools"]))
-                lines.append("")
-                for name in row["uncovered"]:
-                    lines.append("- `%s`" % name)
-                lines.append("")
+            lines.append(line(row))
+        lines.append("| **合计** | %d | %d | %d | %d (%s) | %d | %d |"
+                     % (total["tools"], total["acc"], total["c1"], total["union"],
+                        pct(total["union"]), total["happy"], total["tools"] - total["union"]))
+        lines += ["", "数据来源：", "",
+                  "- 契约扫描：`%s`" % (sweep_path.relative_to(HUB) if sweep_path else "无"),
+                  "- 验收报告：`%s`" % (accept_path.relative_to(HUB) if accept_path else "无"),
+                  "",
+                  "## gated 是什么",
+                  "",
+                  "契约扫描里没执行的工具，原因记录在报告的 `gated` 数组里，只有四种：",
+                  "",
+                  "| 原因 | 含义 |",
+                  "|---|---|",
+                  "| `danger` | 危险工具（删/停/下载/卸载），永不执行 |",
+                  "| `app_running` | 宿主正在跑，写探针有真实副作用 |",
+                  "| `app_required` | 宿主没开，连读都会卡在 attach 上 |",
+                  "| `write_not_probed` | 写类工具默认不发探针（可能把宿主拉起来） |",
+                  "",
+                  "要把这些计入覆盖，得按 kit 起宿主并用沙箱剧本执行——见 `docs/coverage-plan.md`。",
+                  ""]
         out.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-        print("\n已写 %s" % out.relative_to(HUB))
+        print("已写 %s" % out.relative_to(HUB))
     return 0
 
 

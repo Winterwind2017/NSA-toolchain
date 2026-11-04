@@ -334,6 +334,26 @@ NX_CASES = [
      "title": "离线自检：每条能力的动作与判据是否齐全（不开 NX）",
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
 
+    # ── 多步剧本：一条用例覆盖一串工具（快乐路径）──
+    {"id": "nx.flow.block", "tool": None, "title": "NX 剧本：新建零件→矩形草图→拉伸→量质量",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "call": lambda client, context: _flow(client, [
+         ("nx_part_new", {}),
+         ("nx_sketch_rect", {}),
+         ("nx_sketch_extrude", {}),
+         ("nx_measure_mass", {}),
+     ])},
+
+    {"id": "nx.flow.inspect", "tool": None,
+     "title": "NX 剧本：实体拓扑 + 面积/周长 + 能力清单",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "call": lambda client, context: _flow(client, [
+         ("nx_body_topo", {}),
+         ("nx_measure_face_area", {}),
+         ("nx_measure_perimeter", {}),
+         ("nx_list_caps", {}),
+     ])},
+
     {"id": "nx.block", "tool": "nx_run_capability",
      "title": "真机建块 100×50×20 → 体积 100000",
      "args": {"ids": ["block.create"]},
@@ -953,6 +973,38 @@ UG_CASES = [
 ]
 
 # ── eplan（CAD-Agent-Hub 的 EPLAN 2.9 MCP：电气设计 / 审图）──────────────
+def nx_setup() -> dict:
+    """nxkit 的 `nx_run_capability` 会自己拉起 NX，所以不能靠"进程在不在"判断。
+
+    实测教训：用 tasklist 找 ugraf.exe 判 nx，结果 NX 明明能跑（4 个能力全 True），
+    判成 False → 剧本被误判成"该拒绝"，反过来 FAIL。所以这里直接放行。
+    """
+    return {"available": True, "nx": True}
+
+
+def _flow(client, steps):
+    """顺序调用若干工具；任一步失败就带着证据停，全过则合成一个 payload。
+
+    一条用例覆盖 3–6 个工具，失败点明确（不会只看到最后一步的错）。
+    """
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                      # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
 def _eplan_missing(context: dict) -> bool:
     """没有 EPLAN **平台本体** 时跳过真机读取类用例。
 
@@ -1106,7 +1158,8 @@ CATIA_CASES = [
 KITS = {
     "sw": {"module": "nsa_mcp_hub.servers.sw_mcp", "setup": sw_setup,
            "teardown": sw_teardown, "cases": SW_CASES},
-    "nx": {"module": "nsa_mcp_hub.servers.nx_mcp", "cases": NX_CASES},
+    "nx": {"module": "nsa_mcp_hub.servers.nx_mcp", "setup": nx_setup,
+           "cases": NX_CASES},
     "acad": {"module": "nsa_mcp_hub.servers.acad_mcp", "setup": acad_setup, "between": acad_between, "teardown": acad_teardown, "cases": ACAD_CASES},
     "gx": {"module": "nsa_mcp_hub.servers.gx_mcp", "cases": GX_CASES},
     "codesys": {"module": "nsa_mcp_hub.servers.codesys_mcp", "setup": codesys_setup,

@@ -185,6 +185,58 @@ def _equal(got, want, tol: float = 1e-3) -> bool:
     return got == want
 
 
+REFUSE_CODES_DEFAULT = (
+    "ENV", "NOT_ATTACHED", "UNAVAILABLE", "INVALID", "NOT_FOUND", "MISSING",
+    "HELP_INDEX_NOT_BUILT", "no_instance", "NO_INSTANCE", "backend error",
+    "未运行", "不可用", "未连接", "不存在", "ECOM", "DISPATCH",
+)
+
+
+def error_text(payload: dict) -> str:
+    """把 payload 里所有像错误码/错误信息的东西拼成一段文本。
+
+    三种来源都收：`errors`（字符串或 dict 列表）、`reads.error`（字符串或
+    `{code,message}`）、顶层 `error`。拒绝断言就靠它做匹配。
+    """
+    parts: list[str] = []
+    errors = payload.get("errors")
+    if isinstance(errors, str):
+        parts.append(errors)
+    elif isinstance(errors, list):
+        for item in errors:
+            parts.append(item if isinstance(item, str)
+                         else json.dumps(item, ensure_ascii=False))
+    reads = payload.get("reads")
+    if isinstance(reads, dict):
+        for key in ("error", "error_code", "code"):
+            value = reads.get(key)
+            if isinstance(value, str):
+                parts.append(value)
+            elif isinstance(value, dict):
+                parts.append(json.dumps(value, ensure_ascii=False))
+    for key in ("error", "code"):
+        value = payload.get(key)
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, dict):
+            parts.append(json.dumps(value, ensure_ascii=False))
+    return " | ".join(part for part in parts if part)
+
+
+def refusal_evidence(payload: dict) -> str | None:
+    """ok=False 时必须有"为什么"的证据；没有就是静默失败，拒绝断言不该放过。"""
+    if payload.get("ok"):
+        return None
+    text = error_text(payload)
+    if text.strip():
+        return text
+    checks = [c for c in (payload.get("checks") or []) if isinstance(c, dict)]
+    failed = [str(c.get("check")) for c in checks if not c.get("ok")]
+    if failed:
+        return "失败判据：" + ", ".join(failed)
+    return None
+
+
 def evaluate(case: dict, payload: dict) -> list:
     """返回失败列表；空列表 = 通过。"""
     failures = []
@@ -228,6 +280,23 @@ def evaluate(case: dict, payload: dict) -> list:
         if got is _MISSING or not (low <= float(got) <= high):
             failures.append("reads.%s = %r（期望在 [%s, %s]）" % (path, got, low, high))
 
+    # 明确拒绝：ok 必须为假，且必须给出证据（不能静默失败）
+    if case.get("expect_refusal"):
+        if payload.get("ok"):
+            failures.append("期望明确拒绝，但 ok=True")
+        else:
+            evidence = refusal_evidence(payload)
+            if evidence is None:
+                failures.append("ok=False 但没有任何错误证据（errors / reads.error 都为空）")
+
+    codes = case.get("expect_error_code")
+    if codes:
+        text = error_text(payload)
+        wanted = codes if isinstance(codes, (list, tuple)) else [codes]
+        if not any(str(code) in text for code in wanted):
+            failures.append("错误码不匹配：期望其中之一 %s，实际 %r"
+                            % (list(wanted), text[:200]))
+
     minimum = case.get("expect_min_checks")
     if minimum is not None and len(checks) < minimum:
         failures.append("判据条数 %d < %d" % (len(checks), minimum))
@@ -235,6 +304,23 @@ def evaluate(case: dict, payload: dict) -> list:
 
 
 # --------------------------------------------------------------------- 运行器
+def _run_cleanup(case: dict, spec: dict, client, context: dict, verbose: bool) -> None:
+    """每条用例后恢复基线。用例级 cleanup 优先，其次是 kit 级 cleanup。
+
+    写类用例必须提供 cleanup（关新建文档 / 删沙箱工程），否则会污染后续用例；
+    这里允许它抛异常——只警告，不把原本的判据结果带崩。
+    """
+    hook = case.get("cleanup") or spec.get("cleanup")
+    if not hook:
+        return
+    try:
+        hook(client, context)
+    except Exception as exc:                       # noqa: BLE001
+        if verbose:
+            print("  [warn] cleanup 失败：%s: %s" % (type(exc).__name__, str(exc)[:160]),
+                  flush=True)
+
+
 def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
             verbose: bool = True) -> dict:
     """跑一个 kit 的全部用例，返回汇总。"""
@@ -254,7 +340,9 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
                     continue
                 # 纯计算类用例（例如不碰 COM 的 Feature Graph 生成器）不该因为
                 # CAD 没开而被跳过：用 no_setup 标记放行。
-                if case.get("no_setup"):
+                # 纯计算（no_setup）和带 requires 的用例都放行：后者在主循环里
+                # 会降级成"明确拒绝"断言，而不是 SKIP（SKIP 不计覆盖）。
+                if case.get("no_setup") or case.get("requires"):
                     pending.append(case)
                     continue
                 results.append({"kit": kit_key, "id": case["id"],
@@ -275,7 +363,8 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
         for case in (pending if pending else spec["cases"]):
             if only and case["id"] not in only:
                 continue
-            row = {"kit": kit_key, "id": case["id"], "title": case.get("title", "")}
+            row = {"kit": kit_key, "id": case["id"], "title": case.get("title", ""),
+                   "tool": case.get("tool"), "mode": "normal"}
             skip_if = case.get("skip_if")
             if skip_if and skip_if(context):
                 row.update(verdict="SKIP", ms=0, detail="前置条件不满足，已跳过")
@@ -284,13 +373,30 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
                     print("  %-4s %-28s %5d ms  %s" % ("SKIP", row["id"], 0, row["detail"]),
                           flush=True)
                 continue
-            if case.get("call") is None and case["tool"] not in tool_names:
+            # requires：依赖的软件/能力不在时，不 SKIP（SKIP 不计覆盖），而是降级成
+            # "明确拒绝"断言——工具被真的调到了，且必须给出拒绝证据。
+            unmet = [name for name in (case.get("requires") or [])
+                     if not context.get(name)]
+            effective = case
+            if unmet:
+                row["mode"] = "refusal"
+                row["unmet"] = unmet
+                # 保留 tool/call/args/timeout（否则调不动），只把"期望"换成拒绝断言
+                effective = dict(case)
+                for key in ("expect_checks", "expect_check_true", "expect_reads",
+                            "expect_ratio", "expect_between", "expect_min_checks"):
+                    effective.pop(key, None)
+                effective["expect_ok"] = False
+                effective["expect_refusal"] = True
+
+            if effective.get("call") is None and effective.get("tool") and \
+                    effective["tool"] not in tool_names:
                 row.update(verdict="FAIL", ms=0,
                            detail="工具不存在：%s" % case["tool"])
                 results.append(row)
                 continue
             prepare = case.get("prepare")
-            if case.get("call") is not None:
+            if effective.get("call") is not None:
                 args = None
             elif prepare is not None:
                 try:
@@ -301,20 +407,20 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
                     results.append(row)
                     continue
             else:
-                args = case.get("args", {})
+                args = effective.get("args", {})
                 if callable(args):
                     args = args(context)
             t0 = time.time()
-            timeout_s = float(case.get("timeout_s") or 300)
+            timeout_s = float(effective.get("timeout_s") or 300)
             box = {}
 
             def _invoke():
                 try:
-                    hook = case.get("call")
+                    hook = effective.get("call")
                     if hook is not None:
                         box["payload"] = hook(client, context)
                     else:
-                        box["payload"] = client.call(case["tool"], args)
+                        box["payload"] = client.call(effective["tool"], args)
                 except Exception as exc:               # noqa: BLE001
                     box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:300])
 
@@ -330,6 +436,7 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
                 if verbose:
                     print("  %-4s %-28s %5d ms  %s" % ("TIMEOUT", row["id"], row["ms"],
                                                        row["detail"]), flush=True)
+                _run_cleanup(case, spec, client, context, verbose)
                 try:
                     client.close()
                 except Exception:                      # noqa: BLE001
@@ -340,15 +447,21 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
                 if "error" in box:
                     raise RuntimeError(box["error"])
                 payload = box["payload"]
-                failures = evaluate(case, payload)
+                failures = evaluate(effective, payload)
                 if failures and case.get("xfail"):
                     verdict = "XFAIL"
                     detail = "已知问题：%s" % case["xfail"]
                 else:
                     verdict = "PASS" if not failures else "FAIL"
                     detail = "; ".join(failures)[:400] or case.get("note", "")
+                # 剧本用例（call 钩子）把子步骤也记下来，覆盖率才能算到工具级
+                steps = (payload.get("reads") or {}).get("steps") if isinstance(payload, dict) else None
+                covered = [s.get("tool") for s in steps
+                           if isinstance(s, dict) and s.get("ok")] if isinstance(steps, list) else None
                 row.update(verdict=verdict, ms=int((time.time() - t0) * 1000),
                            detail=detail, checks=len(payload.get("checks") or []))
+                if covered:
+                    row["covered_tools"] = covered
             except Exception as exc:                   # noqa: BLE001
                 row.update(verdict="ERROR", ms=int((time.time() - t0) * 1000),
                            detail="%s: %s" % (type(exc).__name__, str(exc)[:300]))
@@ -356,6 +469,7 @@ def run_kit(kit_key: str, spec: dict, *, only: list | None = None,
             if verbose:
                 print("  %-4s %-28s %5d ms  %s"
                       % (row["verdict"], row["id"], row["ms"], row["detail"]), flush=True)
+            _run_cleanup(case, spec, client, context, verbose)
             between = spec.get("between")
             if between:
                 try:
