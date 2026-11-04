@@ -848,10 +848,74 @@ UG_CASES = [
 
 # ── eplan（CAD-Agent-Hub 的 EPLAN 2.9 MCP：电气设计 / 审图）──────────────
 def _eplan_missing(context: dict) -> bool:
-    """本机没装 EPLAN 就跳过（实测装在 C:\\Program Files\\EPLAN）。"""
-    import os
-    return not any(os.path.isdir(r) for r in
-                   (r"C:\Program Files\EPLAN", r"D:\Program Files\EPLAN"))
+    """没有 EPLAN **平台本体** 时跳过真机读取类用例。
+
+    注意：光看 EPLAN 目录会误判——本机只装了 EPLAN License Client
+    （Common\\EClientService.exe），没有 Platform，Eplan.exe 不存在。
+    所以这里查注册表里的平台条目。
+    """
+    import winreg
+    keys = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+            r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")
+    for path in keys:
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path) as root:
+                for index in range(winreg.QueryInfoKey(root)[0]):
+                    try:
+                        name = winreg.EnumKey(root, index)
+                        with winreg.OpenKey(root, name) as item:
+                            display = winreg.QueryValueEx(item, "DisplayName")[0]
+                    except OSError:
+                        continue
+                    if "EPLAN" not in str(display):
+                        continue
+                    lowered = str(display).lower()
+                    if "license" in lowered or "identity" in lowered:
+                        continue
+                    return False
+        except OSError:
+            continue
+    return not any(os.path.isfile(p) for p in
+                   (r"C:\Program Files\EPLAN\Platform\2.9.4\Bin\Eplan.exe",
+                    r"C:\Program Files\EPLAN\Electric P8\2.9.4\Bin\Eplan.exe"))
+
+
+_EPLAN_INTENT_MODEL = {
+    "schema_version": "eplan-design-intent-1",
+    "devices": [
+        {"tag": "PS1", "kind": "psu", "part_number": None,
+         "ports": [{"id": "24V", "conductor": "DC24", "required": True, "physical_pin": None},
+                   {"id": "0V", "conductor": "DC0", "required": True, "physical_pin": None}]},
+        {"tag": "PLC1", "kind": "plc", "part_number": None,
+         "ports": [{"id": "L+", "conductor": "DC24", "required": True, "physical_pin": None},
+                   {"id": "M", "conductor": "DC0", "required": True, "physical_pin": None},
+                   {"id": "Q0.0", "conductor": "SIGNAL", "required": True,
+                    "physical_pin": None, "plc_address": "Q0.0"},
+                   {"id": "Q0.1", "conductor": "SIGNAL", "required": True,
+                    "physical_pin": None, "plc_address": "Q0.1"}],
+         "io_groups": [{"id": "DO", "channels": ["Q0.0", "Q0.1"], "common_port": "M",
+                        "supply_port": "L+", "common_conductor": "DC0", "type": "PNP"}]},
+        {"tag": "KA1", "kind": "relay", "part_number": None,
+         "ports": [{"id": "A1", "conductor": "SIGNAL", "required": True, "physical_pin": None},
+                   {"id": "A2", "conductor": "DC0", "required": True, "physical_pin": None}]},
+        {"tag": "KA2", "kind": "relay", "part_number": None,
+         "ports": [{"id": "A1", "conductor": "SIGNAL", "required": True, "physical_pin": None},
+                   {"id": "A2", "conductor": "DC0", "required": True, "physical_pin": None}]},
+    ],
+    "connections": [
+        {"id": "W1", "from": "PS1:24V", "to": "PLC1:L+"},
+        {"id": "W2", "from": "PS1:0V", "to": "PLC1:M"},
+        {"id": "W3", "from": "PLC1:Q0.0", "to": "KA1:A1"},
+        {"id": "W4", "from": "PLC1:Q0.1", "to": "KA2:A1"},
+        {"id": "W5", "from": "PS1:0V", "to": "KA1:A2"},
+        {"id": "W6", "from": "PS1:0V", "to": "KA2:A2"},
+    ],
+    "forbidden_pairs": [["PLC1:Q0.0", "PLC1:Q0.1"], ["PS1:24V", "PS1:0V"]],
+    "forward_reverse": {"forward_output": "PLC1:Q0.0", "reverse_output": "PLC1:Q0.1",
+                        "mutual_exclusion": True,
+                        "restart_requires_new_start_edge": True,
+                        "reversal_requires_standstill": True},
+}
 
 
 EPLAN_CASES = [
@@ -861,23 +925,28 @@ EPLAN_CASES = [
      "expect_ok": True,
      "expect_reads": {"reads.profile": "review",
                       "reads.server": "eplan29-lab"},
-     "timeout_s": 180,
-     "skip_if": _eplan_missing},
+     "timeout_s": 180},
 
     {"id": "eplan.tool_catalog", "tool": "eplan_tool_catalog",
      "title": "工具目录（review 画像应给出 15 条）",
      "args": {},
      "expect_ok": True,
      "expect_reads": {"reads.profile": "review", "reads.count": 15},
-     "timeout_s": 180,
-     "skip_if": _eplan_missing},
+     "timeout_s": 180},
 
     {"id": "eplan.bridge.discover", "tool": "eplan_bridge_discover",
      "title": "原生 bridge 发现（EPLAN 没开时应是空列表而不是报错）",
      "args": {},
      "expect_ok": True,
-     "timeout_s": 180,
-     "skip_if": _eplan_missing},
+     "timeout_s": 180},
+
+    {"id": "eplan.intent.validate", "tool": "eplan_design_intent_validate",
+     "title": "离线设计意图校验：6 根线分成 4 组、给出 14 条告警",
+     "args": {"model": _EPLAN_INTENT_MODEL},
+     "expect_ok": True,
+     "expect_reads": {"reads.wire_groups": 4,
+                      "reads.scope": "offline_declared_wire_graph_and_constraints_only"},
+     "timeout_s": 180},
 ]
 
 

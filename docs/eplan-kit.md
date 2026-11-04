@@ -25,9 +25,17 @@
 
 默认用 `review` 是刻意的：这套 kit 的写操作只允许在 trial 工程里，且要先 `bridge_hello` 校验构建号。
 
-## 前置条件
+## 前置条件（2026-11-04 真机核对后的更正）
 
-1. 装了 EPLAN 2.9（本机：`C:\Program Files\EPLAN\Common`，`EPLAN Client Service` 在跑）；
+> **更正**：本机其实**没有装 EPLAN 平台本体**。实测证据：
+> `C:\Program Files\EPLAN` 下只有 License Client 组件（`Common\EClientService.exe`
+> + `IdentityClient` + `Configurator`），注册表里只有一条
+> `EPLAN License Client 2024.0.3.225`，`Platform` / `Electric P8` 目录都不存在，
+> 全盘也没有 `Eplan.exe`。所以 `eplan_bridge_discover` 恒为 `[]`，
+> `projects_list` / `pages_list` / `page_inventory` / `functions_list` 这些**真机读取不可用**；
+> 离线的那一半（能力自报、工具目录、设计意图校验、快照对比、help 检索）不受影响。
+
+1. 要读真实工程，先装 EPLAN Platform 2.9（本机目前只有 License Client）；
 2. 读真实工程要有**原生 bridge**（`eplan_bridge_discover` 能列出实例）。
    没开 EPLAN 时 `instances: []` —— 这是**正常结果**，不是失败；
 3. 可选环境变量：
@@ -56,12 +64,28 @@ _tools\nsa-mcp-hub-eplan.cmd                   # Windows 包装
 === eplan（nsa_mcp_hub.servers.eplan_mcp）===
   PASS eplan.capabilities      46 ms
   PASS eplan.tool_catalog       3 ms
-  PASS eplan.bridge.discover    3 ms
-eplan：3/3 通过（0.9s）
-报告：_runs/acceptance-20261104-031521.json
+  PASS eplan.bridge.discover    4 ms
+  PASS eplan.intent.validate    4 ms
+eplan：4/4 通过（0.9s）
+报告：_runs/acceptance-20261104-094350.json
 ```
 
-没装 EPLAN 的机器靠 `skip_if` 整组跳过（检测 `C:\Program Files\EPLAN`）。
+这 4 条都是**离线**用例，任何机器都能跑（判据分别是画像/工具数/空实例/线组数）。
+将来加真机读取类用例时，用 `skip_if=_eplan_missing`——它查注册表里的**平台**条目，
+不会被 License Client 骗过去。
+
+## 真机探测实测（2026-11-04 09:35）
+
+| 调用 | 结果 |
+|---|---|
+| `eplan_capabilities` | `profile=review`、`configured_executable=null`、`native_writes=disabled`、help roots 0 |
+| `eplan_tool_catalog` | 15 条（review 画像） |
+| `eplan_bridge_discover` | `instances: []`（没有平台，必然为空） |
+| `eplan_runtime_status` | `code_stale=false`（源码指纹全对），但 `ok=false`——因为没有 `private/artifacts` 快照，这是"还没抓过证据"的语义，不是坏了 |
+| `eplan_design_intent_validate` | **真的跑起来了**：6 根线归成 4 组、14 条告警（PART_NOT_SELECTED / PHYSICAL_PIN_UNVERIFIED）、`model_sha256=901e625b…` |
+
+顺带建了 `MCP/EPLAN/private/{artifacts,help}`（上游默认工作目录），否则 `runtime_status`
+会因目录不存在而报错。
 
 ## 已知边界
 
