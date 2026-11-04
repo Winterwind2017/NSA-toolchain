@@ -175,6 +175,14 @@ def build_kit() -> Kit:
     except Exception as exc:                          # noqa: BLE001
         log("hubsw 执行工具加载失败：%s" % exc)
 
+    # 选择类（草图线段/特征）：解锁 swkit 里"必须先选中"的那批工具
+    try:
+        from .hubsw_select import select_tools
+        for spec in select_tools():
+            kit.add(spec)
+    except Exception as exc:                          # noqa: BLE001
+        log("hubsw 选择工具加载失败：%s" % exc)
+
     # 装配链修复（先建装配 → 开零件 → 插组件）：绕开 swkit 要求零件预先打开
     try:
         from .hubsw_asm import asm_tools

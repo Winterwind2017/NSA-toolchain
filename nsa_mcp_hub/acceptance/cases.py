@@ -298,6 +298,13 @@ SW_CASES = [
                 ("sw_extrude", {"depth_mm": 8})]),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.sketch_ops", "tool": None,
+     "title": "SW 剧本二十二：草图圆角/剪裁（靠新的选中工具，9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sketch_ops_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.dwgviews", "tool": None,
      "title": "SW 剧本二十一：图纸加投影/辅助视图（9 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -599,6 +606,139 @@ NX_CASES = [
 
 
 # ------------------------------------------------------------------------ GX
+def _gx_flow(client, steps, work_tag):
+    """gx 多步剧本：按顺序调工具，首个失败即停（每条 57–595 s，别把时间浪费在后续）。
+
+    steps 里的 args 可以用 "{work}" 占位，会被替换成本次沙箱目录。
+    """
+    import threading
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_gx_%s_" % work_tag)
+    done, failures = [], []
+    for name, args in steps:
+        real = {}
+        for key, value in (args or {}).items():
+            real[key] = work if value == "{work}" else value
+        box: dict = {}
+
+        def _one(tool_name=name, tool_args=real):
+            try:
+                box["payload"] = client.call(tool_name, tool_args)
+            except Exception as exc:                   # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:140])
+
+        worker = threading.Thread(target=_one, daemon=True)
+        worker.start()
+        worker.join(600)
+        if worker.is_alive():
+            failures.append("%s 超时（>600 s）" % name)
+            done.append({"tool": name, "ok": False})
+            break
+        if "error" in box:
+            failures.append("%s 抛异常：%s" % (name, box["error"]))
+            done.append({"tool": name, "ok": False})
+            break
+        ok = bool(box["payload"].get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (name, str(box["payload"].get("errors"))[:160]))
+            break
+    return {"ok": not failures, "reads": {"steps": done, "workdir": work},
+            "errors": failures,
+            "checks": [{"check": "gx_flow_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
+
+
+def _gx_flow_project(client, context):
+    """gx 剧本一：四种工程创建 + 保存/重开/元信息（7 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_gx_proj_")
+    base = work.replace("\\", "/")
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_project_save", {}),
+        ("gx_project_meta", {}),
+        ("gx_project_new_fx5s", {"series": 0, "model": 0}),
+        ("gx_project_new_rcpu", {"series": 0, "model": 0}),
+        ("gx_project_new_language", {}),
+        ("gx_project_reopen", {}),
+    ]
+    return _gx_flow(client, steps, "proj")
+
+
+def _gx_flow_program(client, context):
+    """gx 剧本二：ST 粘贴/读回 + 梯级/并联/应用指令（7 步）。"""
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_program_paste_st", {}),
+        ("gx_program_read_st", {}),
+        ("gx_program_write_ladder", {}),
+        ("gx_program_write_ladder_multi", {"rungs": []}),
+        ("gx_program_write_ladder_parallel", {"contacts": [], "parallel": [], "out": []}),
+        ("gx_program_write_ladder_appl", {"contacts": [], "parallel": [], "out": []}),
+    ]
+    return _gx_flow(client, steps, "prog")
+
+
+def _gx_flow_build(client, context):
+    """gx 剧本三：全部转换 + 程序检查 + 编译诊断（7 步）。"""
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_program_paste_st", {}),
+        ("gx_build_convert_all", {}),
+        ("gx_build_program_check", {}),
+        ("gx_build_error_messages", {}),
+        ("gx_build_error_detail", {}),
+        ("gx_build_locate_error_line", {"bad_line": 3, "total_lines": 6}),
+    ]
+    return _gx_flow(client, steps, "build")
+
+
+def _gx_flow_inspect(client, context):
+    """gx 剧本四：读程序/梯形图/IL/源码映射（6 步）。"""
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_program_paste_st", {}),
+        ("gx_build_convert_all", {}),
+        ("gx_inspect_programs", {}),
+        ("gx_inspect_ladder", {}),
+        ("gx_inspect_mil", {}),
+        ("gx_inspect_source_map", {}),
+    ]
+    return _gx_flow(client, steps, "insp")
+
+
+def _gx_flow_label(client, context):
+    """gx 剧本五：标签/结构体（8 步）。"""
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_label_multi_type", {}),
+        ("gx_datatype_import", {"struct_name": "ST_ACC", "program_name": "PrgGen"}),
+        ("gx_datatype_custom_members", {"struct_name": "ST_ACC", "program_name": "PrgGen",
+                                        "var_name": "stAcc"}),
+        ("gx_datatype_member_var", {"struct_name": "ST_ACC", "program_name": "PrgGen",
+                                    "var_name": "stAcc"}),
+        ("gx_datatype_member_access", {"struct_name": "ST_ACC", "program_name": "PrgGen",
+                                       "label_name": "stAcc"}),
+        ("gx_datatype_struct_array", {}),
+        ("gx_label_import_xml", {}),
+    ]
+    return _gx_flow(client, steps, "label")
+
+
+def _gx_flow_xml(client, context):
+    """gx 剧本六：XML 建程序/功能块 + 多程序 + 手写骨架（7 步）。"""
+    steps = [
+        ("gx_project_new", {}),
+        ("gx_xmlgen_manual_template", {}),
+        ("gx_program_import_xml", {"program_name": "PrgAcc"}),
+        ("gx_program_import_fb", {"program_name": "PrgAcc", "fb_name": "FbAcc"}),
+        ("gx_program_import_fb_instance", {"program_name": "PrgAcc", "fb_name": "FbAcc",
+                                           "inst_name": "fbAcc"}),
+        ("gx_program_multi_programs", {}),
+        ("gx_batch_projects", {"batch_count": 2}),
+    ]
+    return _gx_flow(client, steps, "xml")
+
+
 def _gx_batch(client, tools):
     """gx 批量：逐条调**不建工程**的离线/自检类工具。
 
@@ -637,6 +777,33 @@ def _gx_batch(client, tools):
 
 
 GX_CASES = [
+    # ── 2026-11-04：按族拆成 6 条剧本（单条 57–595 s，失败即停）─────────────
+    {"id": "gx.flow.project", "timeout_s": 3600, "tool": None,
+     "title": "gx 剧本一：四种工程创建 + 保存/元信息/重开（7 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_project(client, context)},
+    {"id": "gx.flow.program", "timeout_s": 3600, "tool": None,
+     "title": "gx 剧本二：ST 粘贴/读回 + 梯级/并联/应用指令（7 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_program(client, context)},
+    {"id": "gx.flow.build", "timeout_s": 3600, "tool": None,
+     "title": "gx 剧本三：全部转换 + 程序检查 + 编译诊断（7 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_build(client, context)},
+    {"id": "gx.flow.inspect", "timeout_s": 3600, "tool": None,
+     "title": "gx 剧本四：读程序/梯形图/IL/源码映射（7 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_inspect(client, context)},
+    {"id": "gx.flow.label", "timeout_s": 3600, "tool": None,
+     "title": "gx 剧本五：标签/结构体成员访问（8 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_label(client, context)},
+    {"id": "gx.flow.xml", "timeout_s": 3600, "tool": None,
+     "title": "gx 剧本六：XML 建程序/功能块 + 多程序 + 批量工程（7 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _gx_flow_xml(client, context)},
+
+
     # 2026-11-04：离线/自检类批量（不建工程，不抢焦点跑梯形图）
     {"id": "gx.batch.offline", "timeout_s": 900, "tool": None,
      "title": "gx 离线批量：能力表/自检/环境 + FX5U 与 iQ-R 设备模板（5 条）",
@@ -2957,6 +3124,53 @@ def _sw_dwgviews_flow(client, context):
     return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
             "checks": [{"check": "flow_steps", "got": len(done), "want": want,
                         "ok": len(done) == want}]}
+
+
+def _sw_sketch_ops_flow(client, context):
+    """SW 剧本二十二：草图选择类操作（圆角/剪裁）+ 实体镜像（12 步）。
+
+    靠 hub 侧新增的 `sw_select_sketch_segments` 才走得通：swkit 的草图圆角/剪裁
+    内部不自己选，必须有"按序号选中线段"的前置动作。
+    实测：圆角后 segments 2→3；剪裁需要 1 条选中；`sw_sketch_chamfer` 仍判据不过
+    （segment_added=False）、`sw_sketch_convert_entities` / `sw_sketch_circular_pattern`
+    需要模型边而不是草图线段，都不纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_sketchops_")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_line", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 0.0}),
+        ("sw_sketch_line", {"x1": 40.0, "y1": 0.0, "x2": 40.0, "y2": 30.0}),
+        ("sw_select_sketch_segments", {"indices": [0, 1]}),
+        ("sw_sketch_fillet", {"radius": 5}),
+        ("sw_select_sketch_segments", {"indices": [0]}),
+        ("sw_sketch_trim", {"x": 20.0, "y": 0.0}),
+    ]
+    done, segments = [], None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "sw_select_sketch_segments":
+            segments = (payload.get("reads") or {}).get("segments")
+    # 圆角后线段数应从 2 变 3
+    fillet_ok = segments == 3
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "fillet_segments", "got": segments, "want": 3, "ok": fillet_ok},
+    ]
+    errors = [] if fillet_ok else ["圆角后线段数应为 3，实测 %r" % (segments,)]
+    return {"ok": fillet_ok, "reads": {"steps": done, "segments": segments, "workdir": work},
+            "errors": errors, "checks": checks}
 
 
 def _flow(client, steps):
