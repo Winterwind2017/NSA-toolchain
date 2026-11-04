@@ -415,6 +415,40 @@ NX_CASES = [
      "args": {}, "expect_ok": True, "no_setup": True, "timeout_s": 120},
 
     # ── 多步剧本：一条用例覆盖一串工具（快乐路径）──
+    {"id": "nx.batch.asm", "tool": None,
+     "title": "NX 批量：装配三组件/组件名/约束参考（3 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_asm_three_components", "nx_asm_component_names", "nx_asm_constraint_refs",
+     ])},
+
+    {"id": "nx.batch.export_asm", "tool": None,
+     "title": "NX 批量：DWG/DXF 导出/另存副本/引导扫掠/修剪实体/投影视图/装配两组件/加组件（8 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 1200,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_export_dwg", "nx_export_dxf", "nx_file_save_copy", "nx_feature_sweep_guide",
+         "nx_solid_trim_body", "nx_drawing_projected_view", "nx_asm_two_components",
+         "nx_asm_add_component",
+     ])},
+
+    {"id": "nx.batch.boolean", "tool": None,
+     "title": "NX 批量：布尔差保留/双工具/三体并/双实体/移动/文字/筋/两面/体类型/Parasolid（10 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 1200,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_boolean_subtract_retain", "nx_boolean_two_tools", "nx_boolean_unite_three",
+         "nx_block_two_bodies", "nx_solid_move_body", "nx_feature_text", "nx_feature_rib",
+         "nx_measure_faces_two", "nx_inspect_body_type", "nx_export_parasolid",
+     ])},
+
+    {"id": "nx.batch.solid", "tool": None,
+     "title": "NX 批量：圆锥/球/孔/倒角/边倒圆/线性阵列/实体状态/基准面/基准轴/ACIS（10 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 1200,
+     "call": lambda client, context: _nx_batch(client, [
+         "nx_solid_cone", "nx_solid_sphere", "nx_feature_hole", "nx_feature_chamfer",
+         "nx_feature_edge_blend", "nx_feature_pattern_linear", "nx_inspect_body_state",
+         "nx_datum_plane", "nx_datum_axis", "nx_export_acis",
+     ])},
+
     {"id": "nx.batch.sketch_drawing", "tool": None,
      "title": "NX 批量：草图约束/水平/尺寸 + A4 图纸/基础视图/尺寸标注（6 条）",
      "args": {}, "expect_ok": True, "timeout_s": 900,

@@ -1,11 +1,11 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-04 15:00 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-04 15:20 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 609 ｜ 验收 120 ｜ 契约 245 ｜ 合并 317 = 52.1% ｜ 快乐路径 78
-未覆盖 292：sw 93 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ nx 33 ｜ ug 32 ｜ autoshop 4
-逐 kit：catia 100% ｜ eplan 100% ｜ autoshop 90.5% ｜ ug 61.9% ｜ nx 50.0% ｜ sw 49.2%
+工具 609 ｜ 验收 151 ｜ 契约 245 ｜ 合并 348 = 57.1% ｜ 快乐路径 109
+未覆盖 261：sw 93 ｜ acad 49 ｜ gx 42 ｜ codesys 39 ｜ ug 32 ｜ nx 2
+逐 kit：catia 100% ｜ eplan 100% ｜ nx 97.0% ｜ autoshop 90.5% ｜ ug 61.9% ｜ sw 49.2%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -131,3 +131,20 @@ features +1），`flip_side` 两种都无效；`sw.flow.fillet` 剧本因此绕�
    连续调 `sw_list_features` 之类会长时间不返回，随后管道失步、整条用例超时。
    → 已撤掉 `sw.batch.inspect` / `sw.batch.index` 两条用例，批量类只保留
    **不依赖夹具** 的 NX 形态（NX 每条能力自带独立会话，天然隔离）。
+
+## NX 为什么能到 97%（对比 SW 卡在 49%）
+
+NX 的每条能力**自带独立 `run_journal` 会话**（16 s/条、各自 `_runs/<ts>` 目录），
+所以"批量冒烟"完全安全——一条用例串 8–10 条能力，33 条未覆盖工具分四批吃完：
+
+| 批量用例 | 条数 | 耗时 |
+|---|---|---|
+| `nx.batch.model` | 10 | 134 s |
+| `nx.batch.export` | 10 | 134 s |
+| `nx.batch.sketch_drawing` | 6 | 98 s |
+| `nx.batch.solid` | 10 | 166 s |
+| `nx.batch.boolean` | 10 | 161 s |
+| `nx.batch.export_asm` | 8 | 177 s |
+| `nx.batch.asm` | 3 | 49 s |
+
+剩 2 个：`nx_solid_delete_face`（危险，永不执行）+ `kit_runtime`（内部）。
