@@ -279,6 +279,25 @@ SW_CASES = [
      "call": lambda client, context: _sw_sheet_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.batch.plans", "tool": None,
+     "title": "SW 纯函数批量：球/渐开线齿轮/两级减速器/输出轴 计划 + 单文件属性（5 条，不开 COM）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "call": lambda client, context: _sw_batch_tools(client, [
+         "sw_sphere_plan", "sw_gear_involute_plan", "sw_gearbox_plan",
+         "sw_output_shaft_plan", "sw_props"])},
+    {"id": "sw.batch.doc_reads", "tool": None,
+     "title": "SW 文档级只读批量：DimXpert 读取/仿真列表与状态/特征树自省（4 条）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_batch_tools(client, [
+         "sw_dxp", "sw_sim_list", "sw_sim_status", "sw_feature_inspect"],
+         setup=[("sw_create_part", {}),
+                ("sw_create_sketch", {"plane": "前视基准面"}),
+                ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 30.0, "y2": 20.0}),
+                ("sw_exit_sketch", {}),
+                ("sw_extrude", {"depth_mm": 8})]),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.annotate", "tool": None,
      "title": "SW 剧本十五：出图注释族（中心线/粗糙度/注释×2/球标 + 导出 PDF）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -2323,6 +2342,55 @@ def _sw_annotate_flow(client, context):
     return {"ok": ok_pdf, "reads": {"steps": done, "pdf_bytes": size, "workdir": work},
             "errors": [] if ok_pdf else ["PDF 不对：head=%r size=%d" % (head, size)],
             "checks": checks}
+
+
+def _sw_batch_tools(client, tools, setup=None):
+    """SW 通用小批量：先跑 setup（可选），再逐条调只读/纯函数工具。
+
+    与 `_sw_batch` 的区别：不碰文档生命周期（不新建、不关闭），
+    只在已有文档上读，避免踩"同会话建/关文档会卡死"这个坑。
+    """
+    import threading
+    done, failures = [], []
+    for name, args in (setup or []):
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:150])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:180])],
+                    "checks": []}
+    for name in tools:
+        box: dict = {}
+
+        def _one(tool_name=name):
+            try:
+                box["payload"] = client.call(tool_name, {})
+            except Exception as exc:                   # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:120])
+
+        worker = threading.Thread(target=_one, daemon=True)
+        worker.start()
+        worker.join(120)
+        if worker.is_alive():
+            failures.append("%s 超时（>120 s）" % name)
+            done.append({"tool": name, "ok": False})
+            continue
+        if "error" in box:
+            failures.append("%s 抛异常：%s" % (name, box["error"]))
+            done.append({"tool": name, "ok": False})
+            continue
+        ok = bool(box["payload"].get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (name, str(box["payload"].get("errors"))[:130]))
+    return {"ok": not failures, "reads": {"steps": done}, "errors": failures,
+            "checks": [{"check": "batch_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
 
 
 def _flow(client, steps):
