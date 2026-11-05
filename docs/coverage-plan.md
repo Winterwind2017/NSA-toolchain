@@ -1041,3 +1041,14 @@ blockers = ['channel_axis_assignments_missing']   ← 只剩许可证那条
 覆盖维持 **620/620 = 100%**（验收 495 ｜ 契约 245 ｜ 快乐路径 468）。
 
 剩：`machine_kit_archive_not_exported`（`.mtk` 导出，`ug_export_machine_kit_from_reference` 报后端拒绝，待查）。
+
+## `.mtk` 导出与许可：两条"看起来能打通"的路，实测都收掉（2026-11-05 23:45）
+
+| 尝试 | 结论 |
+|---|---|
+| `ug_export_machine_kit_from_reference` | confirmation 是 **`EXPORT_MACHINE_KIT`**；用手工配方（build → save → 换新 MCP 会话 → activate → export）**成功过一次**，产出 1,527,313 B 的 `.mtk`，随后 `ug_import_machine_kit_readback`（**`IMPORT_MACHINE_KIT_ISOLATED`**）ok=True、`isolated_import=True`、`global_machine_database_unchanged=True`；但之后同会话/新会话重试**恒定** `MOM_TCL：用户选择了中止` → **不进剧本**，只留手工配方 |
+| 许可当第二条路 | `Reserve(isv_full)` + `Reserve(nx_isv_mtb)` + 切 MTB 应用之后，低层路线**仍然**绑不上通道（`GetAssignedAxes()` 全空、Commit 丢通道）→ 许可不是瓶颈，**自动 Reserve 无收益只会白占席位**，不做 |
+
+最终 ug 五件套：kinematics / static collisions **正通过**，readiness / start 断言
+CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
+覆盖维持 **620/620 = 100%**。

@@ -2824,6 +2824,16 @@ def _ug_machine_validate_flow(client, context):
             "source_profile": profile, "workspace_file_name": workspace,
             "evaluate_geometry": True,
             "confirmation": "EVALUATE_STATIC_MACHINE_COLLISIONS"}, True, None),
+        # 注意：`.mtk` 导出（`ug_export_machine_kit_from_reference`）在本机**不可稳定自动化** ——
+        # 它内部走 MOM_TCL 打包，实测在自动化调用里恒定报
+        # `NXOpen.NXException: MOM_TCL：用户选择了中止。`
+        # （手工/单独一次调用曾经成功过一次，产出 1.5 MB 的 .mtk，回读也 OK，
+        #  见 docs 里的配方；但它不进剧本，避免偶发红。）
+        # 这里用不存在的 kit 名验证 readback **报错而不是假成功**。
+        ("ug_import_machine_kit_readback", {
+            "machine_kit_file_name": "no_such_kit.mtk", "source_profile": profile,
+            "dry_run": True, "confirmation": "IMPORT_MACHINE_KIT_READBACK"},
+         False, "does not exist"),
         ("ug_initialize_cam_setup", {"template_name": "mill_planar",
                                      "switch_to_manufacturing": False}, True, None),
         ("ug_inspect_machine_simulation_readiness", {
@@ -2833,15 +2843,12 @@ def _ug_machine_validate_flow(client, context):
             "program_name": "NC_PROGRAM",
             "required_axes": ["X", "Y", "Z", "B", "C"],
             "play_immediately": False}, False, "no operations"),
-        ("ug_import_machine_kit_readback", {
-            "machine_kit_file_name": "no_such_kit.mtk", "source_profile": profile,
-            "dry_run": True, "confirmation": "IMPORT_MACHINE_KIT_READBACK"},
-         False, "does not exist"),
     ]
     records = []
     checks = []
     kinematics_reads = {}
     static_reads = {}
+    step_reads = {}
     for name, args, expect_ok, needle in steps:
         payload = client.call(name, args)
         actual_ok = bool(payload.get("ok"))
@@ -2852,6 +2859,7 @@ def _ug_machine_validate_flow(client, context):
             kinematics_reads = payload.get("reads") or {}
         if name == "ug_validate_machine_static_collisions":
             static_reads = payload.get("reads") or {}
+        step_reads[name] = payload.get("reads") or {}
         records.append({"tool": name, "ok": ok, "expect_ok": expect_ok,
                         "actual_ok": actual_ok, "needle": needle, "matched": matched,
                         "errors": errors[:200]})
@@ -2893,6 +2901,7 @@ def _ug_machine_validate_flow(client, context):
     checks.append({"check": "static_collision_no_blockers",
                    "got": static_reads.get("blockers"), "want": [],
                    "ok": static_reads.get("blockers") == []})
+
     return {"ok": all(c["ok"] for c in checks),
             "reads": {"workspace": workspace, "steps": records,
                       "kinematics": {
