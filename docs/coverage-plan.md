@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-05 10:05 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-05 11:00 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 617 ｜ 验收 415 ｜ 契约 245 ｜ 合并 552 = 89.5% ｜ 快乐路径 379
-未覆盖 65：sw 39 ｜ ug 15 ｜ codesys 3 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ acad 96.4% ｜
-        codesys 95.0% ｜ autoshop 90.5% ｜ ug 82.1% ｜ sw 79.4%
+工具 618 ｜ 验收 422 ｜ 契约 245 ｜ 合并 558 = 90.3% ｜ 快乐路径 386
+未覆盖 60：sw 37 ｜ ug 13 ｜ autoshop 4 ｜ codesys 2 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ codesys 96.7% ｜ nx 97.0% ｜
+        acad 96.4% ｜ autoshop 90.5% ｜ ug 84.5% ｜ sw 80.5%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -478,3 +478,18 @@ CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_comp
 （`边必须切向连续` / `该面不是有效的钣金面`，几何相关）、`revolve_sketch`
 （矩形+轴线不是有效回转剖面）、`shell_body`/`boolean_bodies`（要多实体）、
 `set_feature_expression`（要已命名表达式）。
+
+## SW 三件事的结论（2026-11-05 11:00）
+
+| 计划 | 结果 |
+|---|---|
+| ① 参数/前置状态 | `sw_measure_distance` **是我们给错点**（角点不在面上），改面中心点后 10.0 mm 通过；`sw_scan` 改成扫"没被 SW 打开"的副本目录后通过 |
+| ② 上游 swkit 小 bug | `insert_component` 三层坑全修（8 参签名 + 晚绑定 + 自己找装配体文档）→ 0→1→2 组件真通；`cmd_scan` 的 getsize 加保护 |
+| ③ 面草图 | hub 新增 `sw_create_sketch_on_face`（选面 → `SketchManager.InsertSketch`）→ `sw_sketch_convert_entities` **第一次真通过**（segments 0→4） |
+
+**仍然卡住的（诚实记录）**：
+* `get_dimension` / `set_dimension`：我们建出来的模型里**根本没有命名尺寸**（矩形草图不会生成 `D1@草图1`），要先用 `AddDimension2` 造一个尺寸才有得读——需要再加一个 hub 工具（`sw_add_sketch_dimension`）；
+* `add_gtol`/`datum`/`weld`/`center_mark`：`drawing.symbol()` 要**先选中尺寸或视图**，还没做这层选择；
+* `sketch_text`（`text_matches` 判据不过）、`sketch_circular_pattern`（backend error）、第二块面草图（InsertSketch 返回 False）仍未解决；
+* `sw_close_document` 单跑能用，但在验收会话里会弹"是否保存"模态框把用例卡住 → 验收里不测；
+* FEA（`sim_solve` 15 分钟）与 Motion 仍按"时间成本"排除。

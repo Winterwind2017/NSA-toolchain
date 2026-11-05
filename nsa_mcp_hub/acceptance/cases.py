@@ -273,6 +273,13 @@ SW_CASES = [
      "call": lambda client, context: _sw_sketch2_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.face_sketch", "tool": None,
+     "title": "SW 剧本三十二：面上开草图 + 转换实体引用（8 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_face_sketch_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.assembly_b", "tool": None,
      "title": "SW 剧本三十：装配插入两件 + 面到面距离（12 步，上游已修）",
      "args": {}, "expect_ok": True, "timeout_s": 900,
@@ -3990,6 +3997,44 @@ def _sw_scan_flow(client, context):
     return {"ok": True, "reads": {"steps": done, "copy": copy, "workdir": work},
             "errors": [], "checks": [{"check": "flow_steps", "got": len(done),
                                       "want": want, "ok": len(done) == want}]}
+
+
+def _sw_face_sketch_flow(client, context):
+    """SW 剧本三十二：在实体面上开草图 + 转换实体引用（8 步）。
+
+    swkit 的 `sw_create_sketch` 只认基准面名，所以这批"要在面上画"的工具一直
+    不可用。hub 侧补了 `sw_create_sketch_on_face`（选面 → SketchManager.InsertSketch）
+    之后，`sw_sketch_convert_entities` **第一次真通过**（segments 0→4）。
+    `sw_sketch_text` 仍判据不过（text_matches）、`sw_sketch_circular_pattern`
+    backend error，都不纳入。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_face_sketch_")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_create_sketch_on_face", {"face_index": 0}),
+        ("sw_sketch_convert_entities", {"chain": True}),
+        ("sw_exit_sketch", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
 
 
 def _flow(client, steps):

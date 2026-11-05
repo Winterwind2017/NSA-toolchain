@@ -98,6 +98,17 @@ def _seq(obj: Any, name: str) -> List[Any]:
         return []
 
 
+_ONFACE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "face_index": {"type": "integer", "description": "面序号（从 0 开始）"},
+        "body_index": {"type": "integer", "description": "实体序号，默认 0"},
+    },
+    "required": ["face_index"],
+    "additionalProperties": False,
+}
+
+
 def _attach() -> Any:
     import pythoncom
     import win32com.client
@@ -303,6 +314,54 @@ def select_tools() -> List[Any]:
             return normalize(KIT, "select_edges", ok=False,
                              errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
 
+    def _sketch_on_face(args: Dict[str, Any]) -> Dict[str, Any]:
+        """在实体面上开草图。
+
+        swkit 的 `sw_create_sketch` 只接受**基准面名**，所以
+        `sketch_text` / `convert_entities` / `circular_pattern` / `chamfer`
+        这批"要在面上画"的工具一直用不了。这里补一层：选面 → InsertSketch(True)。
+        """
+        try:
+            app = _attach()
+            doc = app.ActiveDoc
+            if doc is None:
+                return normalize(KIT, "create_sketch_on_face", ok=False,
+                                 errors=["没有打开的文档"])
+            body_index = int(args.get("body_index") or 0)
+            bodies = doc.GetBodies2(0, True) or []
+            if body_index >= len(bodies):
+                return normalize(KIT, "create_sketch_on_face", ok=False,
+                                 errors=["实体序号越界（共 %d 个）" % len(bodies)])
+            faces = _seq(bodies[body_index], "GetFaces")
+            index = int(args.get("face_index", 0))
+            if not (0 <= index < len(faces)):
+                return normalize(KIT, "create_sketch_on_face", ok=False,
+                                 errors=["面序号越界（共 %d 个）" % len(faces)])
+            doc.ClearSelection2(True)
+            picked = bool(faces[index].Select2(True, 0))
+            opened = bool(doc.SketchManager.InsertSketch(True))
+            sketch = doc.SketchManager.ActiveSketch
+            name = None
+            try:
+                name = getattr(sketch, "Name", None) if sketch is not None else None
+            except Exception:            # noqa: BLE001
+                name = None
+            checks = [
+                {"check": "face_selected", "got": picked, "want": True, "ok": picked},
+                {"check": "sketch_open", "got": sketch is not None, "want": True,
+                 "ok": sketch is not None},
+            ]
+            ok = all(c["ok"] for c in checks)
+            return normalize(KIT, "create_sketch_on_face", ok=ok,
+                             reads={"faces": len(faces), "face_index": index,
+                                    "insert_returned": opened, "sketch": name},
+                             checks=checks,
+                             errors=[] if ok else ["选面=%s 开草图=%s"
+                                                   % (picked, sketch is not None)])
+        except Exception as exc:         # noqa: BLE001
+            return normalize(KIT, "create_sketch_on_face", ok=False,
+                             errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
+
     return [
         ToolSpec("sw_select_sketch_segments",
                  "在当前编辑中的草图里按序号选线段（草图圆角/倒角/剪裁/转换实体/"
@@ -319,4 +378,8 @@ def select_tools() -> List[Any]:
                  "按序号选边（可先指定 face_index 取该面的边；倒角/圆角/转换实体用）。"
                  "判据 = 选中数。",
                  _EDGE_SCHEMA, _edges, timeout_s=180),
+        ToolSpec("sw_create_sketch_on_face",
+                 "在实体面上开草图（swkit 的 create_sketch 只认基准面名，"
+                 "面草图四件套靠它）。判据 = 选中面 + ActiveSketch 非空。",
+                 _ONFACE_SCHEMA, _sketch_on_face, timeout_s=180),
     ]
