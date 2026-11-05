@@ -150,6 +150,31 @@ def insert_component(asm_doc: Any, part_path: str, x_mm: float = 0.0,
                      fixed: bool = False) -> Dict[str, Any]:
     """插入组件（`AddComponent5` 8 参）。判据：组件数 +1 且路径读回一致。"""
     out = _result("sw_insert_component", "IAssemblyDoc.AddComponent5")
+    # `_with_doc` 传进来的是 **ActiveDoc**，而插入前通常刚打开了零件 →
+    # ActiveDoc 是零件（IModelDoc2 上没有 AddComponent5，调用报 E_NOINTERFACE）。
+    # 所以这里必须自己找到真正的装配体文档。
+    def _doc_type(doc: Any) -> Optional[int]:
+        try:
+            value = val(doc, "GetType")
+            return int(value() if callable(value) else value)
+        except Exception:                       # noqa: BLE001
+            return None
+
+    if _doc_type(asm_doc) != 2:
+        candidate = None
+        try:
+            app_w = pyw().Dispatch("SldWorks.Application")
+            docs = val(app_w, "GetDocuments") or []
+            for doc in docs:
+                if _doc_type(doc) == 2:
+                    candidate = doc
+                    break
+        except Exception:                       # noqa: BLE001
+            candidate = None
+        if candidate is None:
+            out["detail"]["error"] = "当前没有装配体文档（先 sw_create_assembly）"
+            return out
+        asm_doc = candidate
     activated = _activate(asm_doc)
     before = len(_components(asm_doc))
     path = os.path.abspath(part_path)
@@ -160,10 +185,31 @@ def insert_component(asm_doc: Any, part_path: str, x_mm: float = 0.0,
         return out
     try:
         _sw, md = com_doc()
-        asm_ct = md.QueryInterface(_sw.IAssemblyDoc)
-        comp = asm_ct.AddComponent5(path, 0, "", bool(fixed), "",
-                                    float(x_mm) / 1000.0, float(y_mm) / 1000.0,
-                                    float(z_mm) / 1000.0)
+        # 真签名（8 参，顺序别搞错）：
+        #   AddComponent5(CompConfig, UseConfigForPart, NewPartPath,
+        #                 ConfigOption, InsertedOption, X, Y, Z)
+        # 两个坑：① 以前把 path 塞进第一个参数 CompConfig → 返回 None；
+        # ② 先 QueryInterface(IAssemblyDoc) 再调会报 "不支持此接口"(E_NOINTERFACE)，
+        #    **直接在 doc 上调**才行（本机实测；QueryInterface 只作兜底）。
+        args = ("", False, path, 0, 0,
+                float(x_mm) / 1000.0, float(y_mm) / 1000.0, float(z_mm) / 1000.0)
+        # 必须用 **晚绑定**（pywin32 Dispatch）调：comtypes 的 IModelDoc2 指针
+        # 上调 IAssemblyDoc 的方法会报 E_NOINTERFACE "不支持此接口"（本机实测）。
+        comp = None
+        last_error = None
+        try:
+            app_w = pyw().Dispatch("SldWorks.Application")
+            comp = app_w.ActiveDoc.AddComponent5(*args)
+        except Exception as exc:                    # noqa: BLE001
+            last_error = exc
+        if comp is None:
+            try:
+                asm_ct = md.QueryInterface(_sw.IAssemblyDoc)
+                comp = asm_ct.AddComponent5(*args)
+            except Exception as exc:                # noqa: BLE001
+                last_error = exc
+        if comp is None and last_error is not None:
+            raise last_error
     except Exception as exc:                        # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out

@@ -191,7 +191,14 @@ def cmd_scan(args):
     app = connect()
     rows, t0 = [], time.time()
     for i, path in enumerate(files, 1):
-        row = {"file": path, "bytes": os.path.getsize(path)}
+        try:
+            size = os.path.getsize(path)
+        except OSError as exc:
+            # 目录里有刚被删/没权限的条目时 getsize 会抛错，整条 scan 直接崩
+            rows.append({"file": path, "bytes": None, "ok": False,
+                         "stat_error": "%s: %s" % (type(exc).__name__, exc)})
+            continue
+        row = {"file": path, "bytes": size}
         try:
             doc, err, warn = open_ro(app, path)
             if doc is None:

@@ -911,8 +911,13 @@ class SolidWorksApp(BaseCADApp):
                          fixed: bool = False):
         """Insert a component into the active assembly."""
         doc = self._require_doc()
+        # IAssemblyDoc::AddComponent5 是 **8 参**：
+        #   (CompConfig, UseConfigForPart, NewPartPath, ConfigOption,
+        #    InsertedOption, X, Y, Z)
+        # 以前写成 7 参（把 file_path 当第一个参数），晚绑定报
+        # "非选择性的参数" → 返回 None → 所有装配插入都失败。
         comp = doc.AddComponent5(
-            file_path, 0, "", fixed,
+            "", False, file_path, 0, 0,
             _m(x), _m(y), _m(z),
         )
         if comp is None:
