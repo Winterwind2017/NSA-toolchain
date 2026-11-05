@@ -1018,3 +1018,26 @@ blockers = ['channel_axis_assignments_missing']   ← 只剩许可证那条
 `ug.cam.recipe` 复跑仍 PASS。
 
 覆盖维持 **620/620 = 100%**（验收 495 ｜ 契约 245 ｜ 快乐路径 468）。
+
+## ug 机床五件套：从"有序拒绝"变成"真通过"（2026-11-05 23:40）
+
+换路线成功：`blank_smart_machine_kit`（导入 NX 官方 **5 Axis Dual Table BC Mill** 模板）
+→ 通道 `TNC_640` 自带 6 根轴绑定，`ug_validate_machine_kinematics` **ok=True**，
+`ug_validate_machine_static_collisions` **ok=True**（4 对全评估、0 干涉）。
+
+踩过的三层：
+
+| 层 | 事实 |
+|---|---|
+| 许可 | 许可文件里 `isv_full` / `nx_isv_mtb` 都有（permanent/uncounted），`CheckPresence` True、`Reserve` 能签出 → **不用另开许可** |
+| 应用 | 通道要在 `UG_APP_MACHINE_TOOL_BUILDER` 里定义（NX 弹窗原文："在机床构建器中定义通道"） |
+| 路线 | `source_part_copy` 的轴绑不上通道（`GetAssignedAxes()` 返回空串，Commit 时通道被判无效）；官方模板导入的轴自带绑定 |
+
+顺带修的上游 bug：模板路径里把轴编号按 1..n 重排会和模板已有编号撞号
+（`NXException 3779335「轴编号已存在」`）→ 改成**沿用模板编号**，只在当前编号 <=0 时才写。
+
+剧本 `ug.flow.machine_validate` 已改成模板路线（10 步，5.6 s），断言：
+运动学无阻塞 + 6 轴全绑 + 静态碰撞 4 对全评估 0 干涉；后三个工具仍断言拒绝原因。
+覆盖维持 **620/620 = 100%**（验收 495 ｜ 契约 245 ｜ 快乐路径 468）。
+
+剩：`machine_kit_archive_not_exported`（`.mtk` 导出，`ug_export_machine_kit_from_reference` 报后端拒绝，待查）。

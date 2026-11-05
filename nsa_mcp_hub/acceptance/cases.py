@@ -2773,40 +2773,37 @@ def _ug_machine_build_flow(client, context):
 
 
 def _ug_machine_validate_flow(client, context):
-    """ug 剧本十三：机床校验五件套（12 步，断言"拒绝必须带确定原因"）。
+    """ug 剧本十三：机床校验五件套（走**官方 BC 模板**路线，真正通过）。
 
-    这台机器的五个校验/仿真工具都卡在**许可证**或**前置条件**上，实测结论：
+    关键结论（2026-11-05 打通）：
+    * 许可不用另开：`LicenseManager.CheckPresence("isv_full"/"nx_isv_mtb")` 都是 True，
+      `Reserve(feature, "nsapro<pad>")` 能签出；NX 自带的 SSQ 许可文件里就有这两条。
+    * 通道定义要在 **Machine Tool Builder 应用**里做：
+      `ApplicationSwitchImmediate("UG_APP_MACHINE_TOOL_BUILDER")`；NX 自己弹的提示原文
+      就是"要处理程序管理器中的 INI 文件，在机床构建器中定义通道"。
+    * `source_part_copy` 路线建出来的轴**绑不上通道**（`SetAssignedAxes(["X",...])` 后
+      `GetAssignedAxes()` 返回一串空串，`Commit()` 时通道被判无效丢掉）；换成
+      `blank_smart_machine_kit` 路线（导入 NX 官方 "5 Axis Dual Table BC Mill" 模板）
+      后，通道 `TNC_640` 自带 6 根轴（X/Y/Z/S/B/C）绑定，`IsAxisAssignedToChannel` 全 True。
 
-    * `validate_machine_kinematics`：组件/轴/几何/接合/系统类/链条**全过**，
-      唯一阻塞是 `channel_axis_assignments_missing` —— 通道建得出来
-      （`GetChannels()` = `["TNC_640"]`），但 `IsAxisAssignedToChannel` 恒 False。
-      `KinematicChannelBuilder.SetAssignedAxes` 的 API 文档写明需要
-      **ug_isv_full** 或 **nx_isv_mtb** 许可；本机没有，所以赋值静默不生效，
-      而用 `KinematicChannelConfigurationBuilder.Commit()` 提交还会把通道清空。
-      → 上游已改成"链提交之后再补注册通道"，保证通道不丢、阻塞项收敛成一条。
-    * `validate_machine_static_collisions`：同上，再加 `collision_pairs_missing`
-      （`.mch` 里没定义碰撞对）。
-    * `inspect_machine_simulation_readiness` / `start_machine_simulation_...`：
-      要 CAM 程序组里**有工序**；本剧本不建工序（建工序还得先建 mill context），
-      它们如实拒绝。
-    * `import_machine_kit_readback`：需要真实 `.mtk`，这里用不存在的名字
-      验证它**报错而不是假成功**。
-
-    因此本剧本断言的是"每条拒绝都带**确定的原因**"，不是"校验通过"。
+    因此本剧本断言的是**正结果**：
+      运动学校验 ok=True、静态碰撞 4 对全评估且 0 干涉；
+    后三个工具（readiness / start / import readback）在没有 CAM 工序、没有 .mtk 时
+    如实拒绝，这里断言拒绝原因。
     """
     _s = uuid.uuid4().hex[:6]
-    workspace = "acc_val_%s.prt" % _s
+    workspace = "acc_kit_%s.prt" % _s
     profile = "nsa_simple"
-    created = client.call("ug_create_machine_build_workspace", {
+    created = client.call("ug_create_smart_machine_kit_workspace", {
         "source_profile": profile, "workspace_file_name": workspace,
-        "dry_run": False, "confirmation": "CREATE_MACHINE_BUILD_WORKSPACE"})
+        "dry_run": False, "confirmation": "CREATE_SMART_MACHINE_KIT_WORKSPACE"})
     if not created.get("ok"):
-        return {"ok": False, "reads": {"failed_at": "ug_create_machine_build_workspace"},
-                "errors": ["建工作区失败：%s" % str(created.get("errors"))[:200]],
+        return {"ok": False, "reads": {"failed_at": "ug_create_smart_machine_kit_workspace"},
+                "errors": ["建模板工作区失败：%s" % str(created.get("errors"))[:200]],
                 "checks": []}
     token = ((created.get("reads") or {}).get("recovery_token") or "")
 
-    setup_steps = [
+    steps = [
         ("ug_save_work_part", {}, True, None),
         ("ug_activate_machine_build_workspace", {
             "workspace_file_name": workspace, "recovery_token": token,
@@ -2819,15 +2816,14 @@ def _ug_machine_validate_flow(client, context):
         ("ug_build_machine_kinematics_from_profile", {
             "source_profile": profile, "workspace_file_name": workspace,
             "dry_run": False, "confirmation": "BUILD_MACHINE_KINEMATICS"}, True, None),
-        # 五个被覆盖工具：这里断言的是"拒绝原因"
+        # 这条现在是**真通过**（不是拒绝）
         ("ug_validate_machine_kinematics", {
             "source_profile": profile, "workspace_file_name": workspace,
-            "require_geometry": True}, False, "channel_axis_assignments_missing"),
+            "require_geometry": True}, True, None),
         ("ug_validate_machine_static_collisions", {
             "source_profile": profile, "workspace_file_name": workspace,
             "evaluate_geometry": True,
-            "confirmation": "EVALUATE_STATIC_MACHINE_COLLISIONS"}, False,
-         "channel_axis_assignments_missing"),
+            "confirmation": "EVALUATE_STATIC_MACHINE_COLLISIONS"}, True, None),
         ("ug_initialize_cam_setup", {"template_name": "mill_planar",
                                      "switch_to_manufacturing": False}, True, None),
         ("ug_inspect_machine_simulation_readiness", {
@@ -2844,30 +2840,45 @@ def _ug_machine_validate_flow(client, context):
     ]
     records = []
     checks = []
+    kinematics_reads = {}
     static_reads = {}
-    for name, args, expect_ok, needle in setup_steps:
+    for name, args, expect_ok, needle in steps:
         payload = client.call(name, args)
         actual_ok = bool(payload.get("ok"))
         errors = " ".join(str(x) for x in (payload.get("errors") or []))
         matched = needle is None or needle.lower() in errors.lower()
         ok = (actual_ok == expect_ok) and matched
+        if name == "ug_validate_machine_kinematics":
+            kinematics_reads = payload.get("reads") or {}
         if name == "ug_validate_machine_static_collisions":
             static_reads = payload.get("reads") or {}
-        # "ok" 字段给 harness 用：只有 ok=True 的步骤才计入覆盖（拒绝路径也算覆盖，
-        # 前提是本剧本**断言过**这条拒绝）
         records.append({"tool": name, "ok": ok, "expect_ok": expect_ok,
                         "actual_ok": actual_ok, "needle": needle, "matched": matched,
-                        "errors": errors[:160]})
+                        "errors": errors[:200]})
         checks.append({"check": "%s %s" % (name, "ok" if expect_ok else "refusal"),
                        "got": actual_ok, "want": expect_ok, "ok": ok})
 
-    # 静态碰撞现在**真的跑完了**：`.mch` 里 4 个碰撞对全部评估，初始位置 0 干涉。
-    # 唯一剩余阻塞是轴-通道绑定（受 ug_isv_full / nx_isv_mtb 许可证限制）。
+    # 运动学：结构化校验必须通过，且 6 根轴都绑到通道上
+    assignments = (kinematics_reads.get("channel_axis_assignments") or {})
+    axis_flags = {}
+    for channel, axis_map in assignments.items():
+        if isinstance(axis_map, dict):
+            axis_flags.update({str(k): bool(v) for k, v in axis_map.items()})
+    checks.append({"check": "kinematics_structural_passed",
+                   "got": kinematics_reads.get("structural_validation_passed"),
+                   "want": True,
+                   "ok": bool(kinematics_reads.get("structural_validation_passed"))})
+    checks.append({"check": "channel_axis_assignments_all_true",
+                   "got": axis_flags, "want": "all true",
+                   "ok": bool(axis_flags) and all(axis_flags.values())})
+    checks.append({"check": "kinematics_no_blockers",
+                   "got": kinematics_reads.get("blockers"), "want": [],
+                   "ok": kinematics_reads.get("blockers") == []})
+
+    # 静态碰撞：碰撞对全部评估、初始位置 0 干涉
     evaluation = static_reads.get("static_collision_evaluation") or {}
-    configuration = static_reads.get("collision_configuration") or {}
-    # 注意：`collision_configuration.pair_count` 是**NX 里持久化的**碰撞集（我们没写进去，
-    # 还是 0）；真正用的是 `.mch` 里的 OEM 配置，所以以 pair_results 为准。
     pair_results = evaluation.get("pair_results") or []
+    configuration = static_reads.get("collision_configuration") or {}
     checks.append({"check": "static_collision_pairs_configured",
                    "got": len(pair_results),
                    "want": ">=1", "ok": len(pair_results) >= 1})
@@ -2879,8 +2890,15 @@ def _ug_machine_validate_flow(client, context):
     checks.append({"check": "static_collision_no_initial_interference",
                    "got": evaluation.get("interfering_pair_count"),
                    "want": 0, "ok": evaluation.get("interfering_pair_count") == 0})
+    checks.append({"check": "static_collision_no_blockers",
+                   "got": static_reads.get("blockers"), "want": [],
+                   "ok": static_reads.get("blockers") == []})
     return {"ok": all(c["ok"] for c in checks),
             "reads": {"workspace": workspace, "steps": records,
+                      "kinematics": {
+                          "channels": (kinematics_reads.get("kinematics") or {}).get("channels"),
+                          "chains": (kinematics_reads.get("kinematics") or {}).get("chain_names"),
+                          "axis_assignments": axis_flags},
                       "static_collision": {
                           "pair_count": len(pair_results),
                           "evaluated": evaluation.get("evaluated_pair_count"),
@@ -2889,8 +2907,9 @@ def _ug_machine_validate_flow(client, context):
                                      "second": item.get("second"),
                                      "hard": item.get("hard"),
                                      "clearance": item.get("configured_clearance")}
-                                    for item in (evaluation.get("pair_results") or [])]}},
+                                    for item in pair_results]}},
             "errors": [], "checks": checks}
+
 
 
 UG_CASES = [
@@ -2972,7 +2991,7 @@ UG_CASES = [
      "skip_if": _ug_no_live_nx},
 
     {"id": "ug.flow.machine_validate", "timeout_s": 900, "tool": None,
-     "title": "ug 剧本十三：机床校验五件套（12 步，断言拒绝原因）",
+     "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
      "args": {}, "expect_ok": True,
      "call": lambda client, context: _ug_machine_validate_flow(client, context)},
 ]
