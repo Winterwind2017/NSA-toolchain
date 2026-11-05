@@ -782,3 +782,27 @@ text_matches)`」的工具会被误判：本机 `InsertSketchText` 的 `GetText`
 | `import_machine_kit_readback` | 需要一个 `.mtk` 文件（本机磁盘上没有） |
 
 NX 恢复办法：`Stop-Process -Name ugraf` → 设 `UGII_USER_DIR` 重开 → 约 5–45 s 桥回来。
+
+## 最后四个工具（2026-11-05 19:25）
+
+| 工具 | 结果 | 配方 / 卡点 |
+|---|---|---|
+| `nx_run_capability` | ✅ 13.6 s | `{"id": "solid.delete_face"}`，分发器按能力 id 真跑 |
+| `nx_solid_delete_face` | ✅ 13.8 s | 直接调；判据是"删孔面后愈合回 100000 / 6 面" |
+| `acad_status` | ✅ | 需要**已打开文档**（系统变量是文档级）；还要 `CMDDIA=0`（基线是 0，新文档会回到 1） |
+| `acad_boolean_section_slice` | ✅ 26 s 整条剧本 | 历史上超时过（看门狗会 `taskkill acad.exe`），这次给 900 s、单独跑、实测 26 s 通过、acad 没被杀 |
+
+### 两个环境发现
+
+1. **AutoCAD 装的是 2025、在 `D:\Program Files\Autodesk\AutoCAD 2025\`**
+   （注册表 `HKLM\SOFTWARE\Autodesk\AutoCAD\R25.0\ACAD-8107:804\AcadLocation`），
+   `C:\Program Files\Autodesk\AutoCAD 2025` 是空的。启动命令：
+   `acad.exe /p "<<VANILLA>>"`，实测 `CPROFILE = <<VANILLA>>`。
+2. `%TEMP%` 里有一个 2026-11-04 的 `Drawing2_1_29790_3f894360.sv$`（自动保存残留），
+   它让 `acad_status` 一直判 `sv_count` 漂移。已**移到备份目录**
+   `D:\bililive\acad_out\sv_backup\`（没删），status 随即通过。
+
+### 收尾后的"未覆盖"是什么
+
+`nx` 与 `acad` 现在各剩 1 个"未覆盖"，那个工具叫 **`kit_runtime`** ——
+它是内核给每个 kit 自动挂的合成工具（不是真能力），所以两个 kit 实质都是 **100%**。

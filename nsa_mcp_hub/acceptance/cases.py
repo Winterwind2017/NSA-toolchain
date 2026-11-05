@@ -679,6 +679,14 @@ SW_CASES = [
 
 # ------------------------------------------------------------------------ NX
 NX_CASES = [
+    {"id": "nx.tool.delete_face", "tool": "nx_solid_delete_face",
+     "title": "NX 删孔面愈合（93716.8 → 100000 / 6 面）",
+     "args": {}, "expect_ok": True, "timeout_s": 600},
+
+    {"id": "nx.tool.run_capability", "tool": "nx_run_capability",
+     "title": "NX 能力分发器：按 id 跑 solid.delete_face",
+     "args": {"id": "solid.delete_face"}, "expect_ok": True, "timeout_s": 600},
+
     {"id": "nx.status", "tool": "nx_status",
      "title": "NX 环境（run_journal 路径 + 能力数）",
      "args": {},
@@ -1136,6 +1144,16 @@ def _acad_batch(client, tools):
 
 
 ACAD_CASES = [
+    # 2026-11-05：`acad_status` + `acad_boolean_section_slice`。
+    # 注意：slice 历史上超时过（看门狗会 taskkill acad.exe），所以单独一条、给 900 s。
+    # status 需要"已有文档 + CMDDIA/FILEDIA=0"才能判过，所以先 doc_new 再 status。
+    {"id": "acad.batch.status_slice", "timeout_s": 900, "tool": None,
+     "title": "环境自检 + 剖切：新图 → 实体 → SLICE → status（4 条）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _acad_batch(client, [
+         "acad_doc_new", "acad_solid_primitive", "acad_boolean_section_slice",
+         "acad_status"])},
+
     # ── 2026-11-04：doc 族 + 按生成工具批量（每条 7–9 s）──────────────
     # 注意：`acad_boolean_section_slice` 不进验收 —— 实测它会超过 case_timeout，
     # acadkit 的看门狗随即 `taskkill /F /IM acad.exe`（16:14 真发生过，CAD 被强杀）。
