@@ -128,6 +128,18 @@ def build_proxy_kit(*, key: str, name: str, argv: list, cwd: str,
                     if bits:
                         text = "；".join(bits)[:360]
                     else:
+                        # swkit 这类上游把原因放在 reads.error / reads.detail.error 里
+                        for field in ("error", "detail", "message"):
+                            value = reads.get(field)
+                            if isinstance(value, str) and value.strip():
+                                bits.append(value.strip()[:160])
+                            elif isinstance(value, dict):
+                                inner_err = value.get("error")
+                                if isinstance(inner_err, str) and inner_err.strip():
+                                    bits.append(inner_err.strip()[:160])
+                        if bits:
+                            text = "；".join(bits)[:360]
+                    if not bits:
                         bad = [c.get("check") for c in checks
                                if isinstance(c, dict)
                                and (c.get("ok") is False or c.get("got") is False)

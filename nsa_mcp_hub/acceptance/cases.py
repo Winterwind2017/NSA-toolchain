@@ -318,6 +318,11 @@ SW_CASES = [
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_refs_select_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.refusals", "tool": None,
+     "title": "SW 剧本五十五：分型线/空装配两条拒绝路径（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_refusal_flow(client, context)},
     {"id": "sw.flow.param_dimension", "tool": None,
      "title": "SW 剧本五十四：参数化零件改尺寸（4 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -684,6 +689,9 @@ SW_CASES = [
                                                "nsa_mcp_hub_accept_450.step")},
      "expect_ok": True,
      "skip_if": _no_fixture},
+
+    {"id": "sw.tool.runtime", "tool": "kit_runtime",
+     "title": "SW 内核运行状态（kit_runtime）", "args": {}, "expect_ok": True, "timeout_s": 120},
 ]
 
 
@@ -792,6 +800,9 @@ NX_CASES = [
      "args": {"ids": ["block.create"]},
      "expect_check_true": ["volume_mm3", "faces", "edges"],
      "expect_min_checks": 3},
+
+    {"id": "nx.tool.runtime", "tool": "kit_runtime",
+     "title": "NX 内核运行状态（kit_runtime）", "args": {}, "expect_ok": True, "timeout_s": 120},
 ]
 
 
@@ -1314,6 +1325,9 @@ ACAD_CASES = [
      "title": "多页 PDF：逐布局出图（每页 A3 且有墨）",
      "args": {"ids": ["export.pdf_multipage"]},
      "expect_min_checks": 3},
+
+    {"id": "acad.tool.runtime", "tool": "kit_runtime",
+     "title": "AutoCAD 内核运行状态（kit_runtime）", "args": {}, "expect_ok": True, "timeout_s": 120},
 ]
 
 
@@ -2081,6 +2095,9 @@ CODESYS_CASES = [
      "args": {"cmd": "tree", "args": {"path": "", "depth": 2}},
      "expect_check_true": ["result_present"],
      "skip_if": _codesys_available},
+
+    {"id": "codesys.tool.runtime", "tool": "kit_runtime",
+     "title": "CODESYS 内核运行状态（kit_runtime）", "args": {}, "expect_ok": True, "timeout_s": 120},
 ]
 
 
@@ -4939,6 +4956,49 @@ def _sw_param_dimension_flow(client, context):
         ("sw_get_dimension", {"name": "D1@BlockBoss"}),
     ]
     return _sw_flow_any(client, steps, "param_dimension", work)
+
+
+def _sw_refusal_flow(client, context):
+    """SW 剧本五十五：两条"先决条件不满足就明确拒绝"的工具（9 步）。
+
+    * `sw_analyze_draft` 需要零件里**已有分型线特征**（API 建不出来），
+      没有时它给出 `特征树里没有分型线特征（需先手工建一个）`；
+    * `sw_move_component` 需要装配里**有组件**，空装配给 `装配里没有组件`
+      （以前这里会卡 300 s，现在 0.1 s 就拒）。
+
+    这两个工具的价值恰恰在于"拒绝得清楚"，所以本剧本断言拒绝原因。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_refuse_")
+    steps = [
+        ("sw_close_all", {"save": False}, True, None),
+        ("sw_create_part", {}, True, None),
+        ("sw_create_sketch", {"plane": "前视基准面"}, True, None),
+        ("sw_sketch_rectangle", {"x1": 0, "y1": 0, "x2": 40, "y2": 25}, True, None),
+        ("sw_exit_sketch", {}, True, None),
+        ("sw_extrude", {"depth_mm": 10}, True, None),
+        ("sw_analyze_draft", {"angle_deg": 1.0, "feature_name": ""}, False, "分型线"),
+        ("sw_create_assembly", {}, True, None),
+        ("sw_move_component", {"delta_x": 0.05, "part_path": ""}, False, "组件"),
+    ]
+    records = []
+    checks = []
+    for name, args, expect_ok, needle in steps:
+        payload = client.call(name, args)
+        actual_ok = bool(payload.get("ok"))
+        errors = " ".join(str(x) for x in (payload.get("errors") or []))
+        reads = payload.get("reads") or {}
+        detail = str(reads.get("error") or "")
+        haystack = errors + " " + detail
+        matched = needle is None or needle in haystack
+        ok = (actual_ok == expect_ok) and matched
+        records.append({"tool": name, "ok": ok, "expect_ok": expect_ok,
+                        "actual_ok": actual_ok, "needle": needle,
+                        "matched": matched, "detail": (errors or detail)[:160]})
+        checks.append({"check": "%s %s" % (name, "ok" if expect_ok else "refusal"),
+                       "got": actual_ok, "want": expect_ok, "ok": ok})
+    return {"ok": all(c["ok"] for c in checks),
+            "reads": {"steps": records, "workdir": work},
+            "errors": [], "checks": checks}
 
 
 def _sw_flow_any(client, steps, tag, work):

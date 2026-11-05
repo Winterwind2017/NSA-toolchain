@@ -971,3 +971,25 @@ autoshop 90.5% → **100%**；全库 **98.2%**。
 新剧本 `ug.flow.machine_validate`（12 步，4.8 s）。
 ug 94.0% → **100%**；全库 **99.0%**（614/620）。
 剩 6：`kit_runtime` ×4（合成项）+ sw `analyze_draft` / `move_component`。
+
+## 收尾：620/620 = 100%（2026-11-05 22:35）
+
+最后两个真缺口（sw）用**拒绝路径**盖住：
+
+| 工具 | 事实 |
+|---|---|
+| `sw_analyze_draft` | 需要零件里**已有分型线特征**（API 建不出来），没有时如实报 `特征树里没有分型线特征（需先手工建一个）` |
+| `sw_move_component` | 空装配里如实报 `装配里没有组件`（0.1 s 就拒，不再卡 300 s） |
+
+新剧本 `sw.flow.refusals`（9 步，8.6 s）：建零件 → 草图 → 拉伸 → `analyze_draft`（拒绝）
+→ 建装配 → `move_component`（拒绝）。
+
+剩下四个 `kit_runtime` 是内核自带的运行状态探针（零参、0 ms），一个 kit 加一条
+`<kit>.tool.runtime` 用例即可：sw / nx / codesys 直接过；
+**acad 需要 AutoCAD 在跑**（`acad.exe /p "<<VANILLA>>"`，否则整组 SKIP 不算覆盖）。
+
+顺带把 `proxymcp` 的兜底再补一层：上游把原因放在 `reads.error` / `reads.detail.error`
+里时（swkit 基本都这样），也抬进 errors，不再统一显示「backend error（后端未给出原因）」。
+
+最终：**620 工具 ｜ 验收 495 ｜ 契约 245 ｜ 合并 620 = 100.0% ｜ 快乐路径 468 ｜ 未覆盖 0**
+九个 kit 全部 100%。
