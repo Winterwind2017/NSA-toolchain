@@ -747,19 +747,48 @@ def cmd_export_xml(args):
 
 
 def cmd_import_xml(args):
+    """导入 PLCopenXML。
+
+    **实测坑**：`project.import_xml(path, None)` 在本机会抛
+    `E_SCRIPT: 未找到可导入的对象` —— 第二个参数不是"可选父对象"，而是
+    **导入目标对象**，必须给一个真实对象。给 `Application` 最稳（导出的 XML
+    本来就是 Application 子树）。这里支持 `target` 指定任意路径，默认 Application。
+    """
     project = primary_project()
     path = args.get("path")
     if not path:
         raise CmdError("E_ARGS", "import.xml needs 'path'")
     if not os.path.exists(path):
         raise CmdError("E_STATE", "no such xml: %s" % path)
+    target = args.get("target")
+    if target:
+        target_obj = walk(project, target)
+    else:
+        _, target_obj = active_application()
     before = len(children(project))
-    try:
-        project.import_xml(path, None)
-    except TypeError:
-        project.import_xml(path)
+    attempts = []
+    for label, call in (
+        ("target", lambda: project.import_xml(path, target_obj)),
+        ("one-arg", lambda: project.import_xml(path)),
+    ):
+        try:
+            call()
+            attempts.append({"variant": label, "ok": True})
+            break
+        except TypeError as exc:
+            attempts.append({"variant": label, "error": "TypeError: %s" % str(exc)[:80]})
+            continue
+        except Exception as exc:                   # noqa: BLE001
+            attempts.append({"variant": label, "error": "%s: %s" % (type(exc).__name__,
+                                                                   str(exc)[:100])})
+            continue
+    else:
+        raise CmdError("E_SCRIPT", "import.xml 两种调用都失败：%s"
+                       % json.dumps(attempts, ensure_ascii=False))
     after = len(children(project))
-    return {"path": path, "children_before": before, "children_after": after}
+    return {"path": path, "attempts": attempts,
+            "children_before": before, "children_after": after,
+            "target": target or "Application"}
 
 
 def cmd_export_native(args):
