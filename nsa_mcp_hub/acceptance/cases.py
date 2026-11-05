@@ -273,6 +273,43 @@ SW_CASES = [
      "call": lambda client, context: _sw_sketch2_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.constraint", "tool": None,
+     "title": "SW 剧本三十八：草图约束（6 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 300,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_constraint_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.part_ops", "tool": None,
+     "title": "SW 剧本三十三：切除/移动/缩放/镜像/材料/关系/DimXpert/Flow（18 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 1200,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_part_ops_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.sim", "tool": None,
+     "title": "SW 剧本三十四：FEA 建研究+约束+力+划网格（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sim_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.asm_ops", "tool": None,
+     "title": "SW 剧本三十五：装配插入两件 + 隐藏/替换（15 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_asm_ops_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.sketch_extras", "tool": None,
+     "title": "SW 剧本三十六：草图约束/倒角/圆周阵列（10 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sketch_extras_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.plan_only", "tool": None,
+     "title": "SW 剧本三十七：只出计划的工具 + 关全部（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_plan_only_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.face_sketch", "tool": None,
      "title": "SW 剧本三十二：面上开草图 + 转换实体引用（8 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -4035,6 +4072,159 @@ def _sw_face_sketch_flow(client, context):
     return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
             "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
                         "ok": len(done) == len(steps)}]}
+
+
+def _sw_flow_any(client, steps, tag, work):
+    """SW 多步剧本通用执行器：任一步失败即停，返回逐步记录。"""
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False,
+                    "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False,
+                    "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "tag": tag, "workdir": work},
+            "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
+def _sw_part_ops_flow(client, context):
+    """SW 剧本三十三：切除/移动实体/缩放/镜像/材料/关系/DimXpert/Flow/Sim 面（14 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_partops_")
+    part = os.path.join(work, "p.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_create_sketch_on_face", {"face_index": 1}),
+        ("sw_sketch_circle", {"cx": 20.0, "cy": 12.5, "radius": 6.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_cut_extrude", {"through_all": True}),
+        ("sw_move_body", {"dx_mm": 5, "dy_mm": 0, "dz_mm": 0}),
+        ("sw_scale_body", {"factor": 1.2}),
+        ("sw_mirror", {"plane": "前视基准面"}),
+        ("sw_assign_material_full", {"name": "AISI 304"}),
+        ("sw_inspect_relations", {}),
+        ("sw_dxp", {"create": False}),
+        ("sw_flow_check", {}),
+        ("sw_sim_faces", {"limit": 6}),
+    ]
+    return _sw_flow_any(client, steps, "partops", work)
+
+
+def _sw_sim_flow(client, context):
+    """SW 剧本三十四：FEA 建研究+固定+力+划网格（9 步）。
+
+    关键：约束面/受力面必须给**能站的平面**（restraint_face=1、force_face=0），
+    给反了 `InsertRestraint` 直接 code=1；材质必须先赋（`sw_assign_material_full`）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_sim_")
+    part = os.path.join(work, "s.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_assign_material_full", {"name": "AISI 304"}),
+        ("sw_sim_setup", {"open_path": part, "restraint_face": 1, "force_face": 0,
+                          "force_n": 100, "material": "AISI 304", "mesh": False}),
+        ("sw_sim_mesh", {"open_path": part, "size": 0.002, "tol": 0.0002}),
+    ]
+    return _sw_flow_any(client, steps, "sim", work)
+
+
+def _sw_asm_ops_flow(client, context):
+    """SW 剧本三十五：装配插入两件 + 隐藏/替换（12 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_asmops_")
+    part = os.path.join(work, "x.SLDPRT")
+    copy = os.path.join(work, "y.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 30.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 8}),
+        ("sw_save_document", {"path": part}),
+        ("sw_save_as_copy", {"path": copy}),
+        ("sw_create_assembly", {}),
+        ("sw_open_document", {"path": part}),
+        ("sw_insert_component", {"part": part, "x": 0, "y": 0, "z": 0}),
+        ("sw_insert_component", {"part": copy, "x": 80, "y": 0, "z": 0}),
+        ("sw_get_assembly_tree", {}),
+        ("sw_hide_component", {"name": "x-1", "hide": True}),
+        ("sw_hide_component", {"name": "x-1", "hide": False}),
+        # 不做 sw_replace_component：它单独跑能过（probe 实测 0.5 s），
+        # 但接在"插入两件 + 隐藏"之后会把 SW 卡住（900 s 超时）。
+    ]
+    return _sw_flow_any(client, steps, "asmops", work)
+
+
+def _sw_sketch_extras_flow(client, context):
+    """SW 剧本三十六：草图约束/倒角/圆周阵列（9 步）。"""
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "上视基准面"}),
+        ("sw_sketch_line", {"x1": 0.0, "y1": 0.0, "x2": 30.0, "y2": 0.0}),
+        ("sw_sketch_line", {"x1": 30.0, "y1": 0.0, "x2": 30.0, "y2": 20.0}),
+        ("sw_sketch_chamfer", {"distance": 2.0}),
+        ("sw_sketch_circular_pattern", {"count": 2, "radius": 10.0, "angle_deg": 360}),
+        ("sw_exit_sketch", {}),
+        ("sw_close_all", {"save": True}),
+    ]
+    return _sw_flow_any(client, steps, "sketch_extras", None)
+
+
+def _sw_constraint_flow(client, context):
+    """SW 剧本三十八：草图约束（单独一条，避免和前一条脚本互相干扰）。
+
+    实测：`sw_add_sketch_constraint` 在"矩形草图刚画完"的状态下 ok；
+    但把它夹在"画线 + 倒角 + 阵列"中间会把 SW 卡住（600 s 超时）。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_add_sketch_constraint", {"constraint": "sgHORIZONTAL",
+                                      "plane": "前视基准面"}),
+        # 不加 sw_exit_sketch：约束工具跑完 SW 认为草图已不在编辑态，
+        # 再调 exit 会判 sketch_closed=false。收尾统一走 close_all。
+        ("sw_close_all", {"save": True}),
+    ]
+    return _sw_flow_any(client, steps, "constraint", None)
+
+
+def _sw_plan_only_flow(client, context):
+    """SW 剧本三十七：只出计划的工具（不真建几何）+ 出图 BOM 空表（6 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_plan_")
+    part = os.path.join(work, "z.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 5}),
+        ("sw_save_document", {"path": part}),
+        ("sw_create_parametric_part", {"part_type": "cylinder",
+                                       "parameters": {"diameter": 20, "height": 30},
+                                       "execute": False}),
+        ("sw_create_output_shaft", {"execute": False}),
+        ("sw_close_all", {"save": True}),
+    ]
+    return _sw_flow_any(client, steps, "plan_only", work)
 
 
 def _flow(client, steps):

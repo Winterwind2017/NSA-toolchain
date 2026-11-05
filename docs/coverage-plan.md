@@ -542,3 +542,57 @@ CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_comp
 `sw_scan` 走的是 **`D:\bililive\mcp-patches\sw_adv.py`**（`sw_scripts._run_script`
 用 PATCH_DIR），不是 `swkit/_legacy/sw_adv.py`。两处都已加 `getsize` 保护；
 之前"改了但没生效"就是改错了副本。
+
+## SW 剩余 46 个工具逐个探完（2026-11-05 12:10）
+
+分 5 批真机探（每批独立子进程 + 90–120 s 单调用超时；卡死就杀 sw MCP 服务、不动 SW 本体）。
+**结论先给**：能通的 21 个已写成 6 条剧本并全部 PASS；不能通的分三类，全部有实测依据。
+
+### 已通（新增 21 个工具，6 条剧本）
+
+| 剧本 | 真机 | 覆盖的新工具 |
+|---|---|---|
+| `sw.flow.part_ops` | 40.9 s | `cut_extrude` / `move_body` / `scale_body` / `mirror` / `assign_material_full` / `inspect_relations` / `dxp` / `flow_check` / `sim_faces`（+ 面上草图） |
+| `sw.flow.sim` | 15.0 s | `sim_setup` / `sim_mesh`（**约束面=1、受力面=0** 才不报 code=1；且必须先赋材质） |
+| `sw.flow.asm_ops` | 19.1 s | `hide_component`（插入两件后隐藏/显示） |
+| `sw.flow.sketch_extras` | 7.7 s | `sketch_chamfer` / `sketch_circular_pattern`（上视草图画两条线后） |
+| `sw.flow.constraint` | 4.0 s | `add_sketch_constraint`（**不能跟着调用 exit_sketch**，会判 sketch_closed=false） |
+| `sw.flow.plan_only` | 12.1 s | `create_parametric_part(execute=False)` / `create_output_shaft(execute=False)` / `close_all` |
+| 另有（单条实测通过，未入剧本） | — | `add_bom_table`（空装配图也能插表）、`replace_component`（0.5 s）、`measure_distance`、`close_document`、`insert_component` |
+
+### 不能通（三类，共 25 个）
+
+**① 尺寸/标注 = UI 驱动（6 个，定论，见上一节）**
+`get_dimension` `set_dimension` `add_gtol` `add_datum_feature` `add_weld_symbol` `add_center_mark`
+
+**② 图纸里"先选视图/尺寸"才动（5 个）**
+`add_balloon`（120 s 卡死）、`view_rotate`（卡死）、`add_hole_table`（判据 table_added）、
+`create_section_view`（backend error）、`add_broken_view`（判据 break_lines_increased）。
+共同点：swkit 依赖 `SelectByID2` 选视图，本机选不中 → 要么无操作，要么把 SW 卡住。
+
+**③ kit / 判据缺陷（14 个）**
+| 工具 | 现象 |
+|---|---|
+| `select_features` | 中文特征名（`凸台-拉伸1`）和英文名（`Boss-Extrude1`）都选不中 → 0 个 |
+| `pattern_feature` | backend error（依赖 select_features） |
+| `move_component` | backend error（缺 IMathUtility 写位姿能力，见 MEMORY） |
+| `replace_component` | 单独 0.5 s 过；接在"插入两件+隐藏"后卡死 |
+| `suppress_component` | 单独能过；在装配序列里 90 s×2 卡死 |
+| `delete_equation` | backend error（没有方程可删也给 backend error） |
+| `combine_bodies` | 判据 feature_created / bodies_decreased 不过（要先选主实体） |
+| `hem` / `base_flange` / `insert_bends` | 钣金判据全不过（后端 feature_added / sheet_metal_created 为 false） |
+| `get_flat_pattern_info` | 判据 flat_pattern_present（前面钣金没建起来） |
+| `analyze_draft` | backend error（要零件里已有分型线） |
+| `sketch_text` | 判据 text_matches（文字建了但读回不匹配） |
+| `motion_list` | 退出码 1：`<unknown>.GetComponents` |
+| `motion_read` / `sim_read` | 一个 backend error，一个"没有结果（求解未成功）" |
+| `feature_graph_compile` | 契约要求 `version='1.0'` 且 `features` 非空数组；给空数组被 ContractError 挡住 |
+| `sim_solve` | 单次约 11–15 分钟（时间成本，按约定排除） |
+| `vba_dump` | 需要一个 `.swp` 文件作输入（没有样本） |
+
+### 一个操作教训（写进流程）
+
+SW 一旦在某次调用里卡住，**sw MCP 服务进程会被那条调用永久占住**，后续调用全部
+"上一次调用还在后台"。正确处置：`Stop-Process` 掉
+`CommandLine -match 'swkit|nsa_mcp_hub.servers.sw'` 的 python 进程，**不要杀 SLDWORKS**；
+新会话立刻可用（本轮做了 4 次，SW 一直活着）。
