@@ -150,3 +150,22 @@ Set myHoleTable = myView.InsertHoleTable2(False, 0.10027, 0.19557, 1, "A", "D:\.
    可靠判据是"返回值非空 且 `result.GetAnnotation().GetType == 14`（孔表注解）"。
 
 实测：选中 6 条边 → 返回 CDispatch → 注解类型 14 → 通过。
+
+
+## 关掉最后一张工程图会让 SW 变成"没有活动文档"（2026-11-05）
+
+`app.CloseDoc(图纸标题)` 关掉**当前活动**的工程图之后，SW 会进入一个怪状态：
+`GetDocumentCount` 甚至返回 0、`ActiveDoc` 返回 None、窗口标题只剩
+"SOLIDWORKS Premium 2025 SP4.1"，但画图区还显示着内容，而且**界面基本不可操作**
+（切不了文档、命令发灰）。
+
+实测有效的恢复办法（什么都不丢）：
+
+```python
+app.CloseDoc("hw_hole")          # 先把残留的"打开但非活动"的零件再关一次
+doc = app.OpenDoc(part_path, 1)  # 重新打开
+# -> GetDocumentCount=1, ActiveDoc=hw_hole, GetActiveSketch=None
+```
+
+结论：自动化收尾时**别把最后一张图纸关掉**；要么先关图纸再关零件（顺序反过来），
+要么关完图纸后立刻把零件重新 OpenDoc 一次把活动文档指针立起来。
