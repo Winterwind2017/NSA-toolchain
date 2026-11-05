@@ -1109,3 +1109,11 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 * `ug.cam.capabilities` 去掉"建块"步骤（块建模已被 `ug.flow.model` 覆盖，且它在大序列里
   偶发 45 s 超时）。
 * 待办：加 `ug_close_test_parts`（只关 `acc_*`/`cap_*`/`nsa_accept_*`），在 CAM 用例开头清理会话。
+
+## 会话减负：`close_test_parts` 让 `cam.capabilities` 稳定（2026-11-06 02:30）
+
+* 新增 `ug_close_test_parts`（白名单前缀 `acc_/cap_/nsa_accept_/nsa_probe_/fill_/...`，
+  默认 dry_run，真关要 `CLOSE_TEST_PARTS`），用 `part.Close(TrueValue, CloseModified, None)`。
+* 接在 `ug.cam.capabilities` / `ug.cam.recipe` 开头：capabilities 从"45 s 超时"
+  变 **PASS 2.5 s**；两条连跑 2.6 s / 10.1 s。
+* 剩余：全量序列里 `ug.cam.recipe` 仍偶发 300 s（单步已限 60 s，日志会点名步骤）。

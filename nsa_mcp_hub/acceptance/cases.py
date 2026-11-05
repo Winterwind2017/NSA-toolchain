@@ -2402,6 +2402,9 @@ def _ug_cam_recipe(client, context: dict) -> dict:
         raise RuntimeError("body %d 没有 +Z 顶面" % body_index)
 
     try:
+        # 0. 先关测试零件，避免会话里堆太多零件把 CAM 初始化拖死
+        call("ug_close_test_parts", {"dry_run": False,
+                                     "confirmation": "CLOSE_TEST_PARTS"}, "cleanup")
         # 1. 独立零件：零件体 100×60×20，毛坯体 104×64×24（顶面同为 z=20）
         call("ug_create_part", {"file_name": part_name}, "create_part")
         call("ug_create_block", {"length": 100.0, "width": 60.0, "height": 20.0,
@@ -3200,6 +3203,10 @@ UG_CASES = [
      "timeout_s": 300,
      "skip_if": _ug_no_live_nx,
      "call": lambda client, context: _ug_flow(client, [
+         # 先关掉此前用例留下的测试零件：会话里堆十几个零件后，再进 CAM
+         # 会挂死（2026-11-06 实测，见 docs 第 14 节）
+         ("ug_close_test_parts", {"dry_run": False,
+                                 "confirmation": "CLOSE_TEST_PARTS"}),
          ("ug_create_part", {"file_name": "cap_%s.prt" % uuid.uuid4().hex[:6]}),
          # 不建块：只要有一个普通零件就能读 CAM 模板表；建块在大序列里偶发
          # 45 s 超时（2026-11-06），而块建模已被 ug.flow.model 覆盖。
