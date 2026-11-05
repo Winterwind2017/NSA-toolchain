@@ -1117,3 +1117,14 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 * 接在 `ug.cam.capabilities` / `ug.cam.recipe` 开头：capabilities 从"45 s 超时"
   变 **PASS 2.5 s**；两条连跑 2.6 s / 10.1 s。
 * 剩余：全量序列里 `ug.cam.recipe` 仍偶发 300 s（单步已限 60 s，日志会点名步骤）。
+
+## ug 16/16 全绿（2026-11-06 02:56，149 s）
+
+| 修复 | 关键点 |
+|---|---|
+| kit 级自救 | `McpClient.restart()`：单步超时→重启 kit 子进程（旧线程读 EOF 退出），不再让泄漏线程把后续步骤逐个拖死 |
+| 单步上限 | `_ug_flow` 45 s、`cam.recipe` 60 s；`close_test_parts` 60 s 且 tolerate（清理卡住不算失败） |
+| 倒角不再靠序号 | `modeling2` 用 `inspect_body_topology` 挑"相邻两面都是平面 + 边长≥20"的直边，按长度试 |
+| fixture 保护 | `close_test_parts` 默认保护 `acc_kit_61ab27`（关掉会导致 `start_machine_simulation` 报 641073 加载部件失败） |
+
+覆盖：**621/621 = 100%**（验收 497 ｜ 契约 245 ｜ 快乐路径 470 ｜ 未覆盖 0）。

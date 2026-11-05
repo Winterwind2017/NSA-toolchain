@@ -33,8 +33,11 @@ class McpClient:
         self.module = module
         self.timeout_s = timeout_s
         self._id = 0
+        # 记下拉起参数，restart() 要用同一套（含 env）
+        self._spawn_args = [sys.executable, "-u", "-m", module]
+        self._spawn_env = env
         self.proc = subprocess.Popen(
-            [sys.executable, "-u", "-m", module],
+            self._spawn_args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, encoding="utf-8", errors="replace", env=env, cwd=ROOT)
         # **必须一直排空 stderr**：acadkit 这类 kit 每跑一条能力就往 stderr 写进度
@@ -42,6 +45,32 @@ class McpClient:
         # 不读就写满 → 服务器进程卡在 write() 上 → 工具调用永不返回。
         # 实测症状：acad 组跑到第 12 条（projection）必"超时 120 s"，而单跑 9 s 就过。
         self._stderr_tail: "deque[str]" = collections.deque(maxlen=400)
+        self._stderr_thread = threading.Thread(target=self._drain_stderr, daemon=True)
+        self._stderr_thread.start()
+        self.handshake()
+
+    def restart(self) -> None:
+        """杀掉卡住的子进程并重新拉起（同一套参数/环境），然后重新握手。
+
+        用途：某个工具调用在 NX 里挂死时，等待线程会一直抱着 stdout 管道，
+        后续每次调用都会再卡一次（实测把 6 步流程拖成 300 s 超时）。
+        `restart()` 把子进程换掉，旧线程读到 EOF 自然退出，kit 立刻恢复可用。
+        """
+        try:
+            self.proc.kill()
+        except Exception:                          # noqa: BLE001
+            pass
+        try:
+            self.proc.wait(timeout=10)
+        except Exception:                          # noqa: BLE001
+            pass
+        self._stderr_tail.clear()
+        self._id = 0
+        self.proc = subprocess.Popen(
+            self._spawn_args,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, encoding="utf-8", errors="replace",
+            env=self._spawn_env, cwd=ROOT)
         self._stderr_thread = threading.Thread(target=self._drain_stderr, daemon=True)
         self._stderr_thread.start()
         self.handshake()

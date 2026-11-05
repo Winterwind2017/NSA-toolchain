@@ -2381,7 +2381,13 @@ def _ug_cam_recipe(client, context: dict) -> dict:
         worker.join(60)
         if worker.is_alive():
             steps.append({"step": label, "tool": tool, "ok": False})
-            raise RuntimeError("%s 超时（>60 s）" % label)
+            # 挂死的等待线程会一直抱着 stdout 管道：重启 kit 子进程让旧线程读到 EOF，
+            # 否则后面每一步都要再等 60 s（实测把 6 步流程拖成 300 s 超时）。
+            try:
+                client.restart()
+            except Exception:                       # noqa: BLE001
+                pass
+            raise RuntimeError("%s 超时（>60 s，已重启 kit）" % label)
         if "error" in box:
             steps.append({"step": label, "tool": tool, "ok": False})
             raise RuntimeError("%s 抛异常：%s" % (label, box["error"]))
@@ -2403,7 +2409,7 @@ def _ug_cam_recipe(client, context: dict) -> dict:
 
     try:
         # 0. 先关测试零件，避免会话里堆太多零件把 CAM 初始化拖死
-        call("ug_close_test_parts", {"dry_run": False,
+        call("ug_close_test_parts", {"dry_run": False, "time_limit_s": 60,
                                      "confirmation": "CLOSE_TEST_PARTS"}, "cleanup")
         # 1. 独立零件：零件体 100×60×20，毛坯体 104×64×24（顶面同为 z=20）
         call("ug_create_part", {"file_name": part_name}, "create_part")
@@ -2519,10 +2525,21 @@ def _ug_flow(client, steps, tag, tolerate=()):
         # 单步 45 s 足够（正常 0.4–15 s）；这样卡住时能**报出是哪一步**，
         # 而不是把整条用例的 300 s 预算烧光（2026-11-06 实测：卡住的是
         # ug_get_cam_capabilities 前面的建件/建块，见 docs）。
-        worker.join(45)
+        # 例外：`ug_close_test_parts` 要逐个关零件（含带刀路的大件），给 180 s。
+        worker.join(60 if name == "ug_close_test_parts" else 45)
         if worker.is_alive():
-            failures.append("%s 超时（>45 s）" % name)
+            try:
+                client.restart()
+            except Exception:                       # noqa: BLE001
+                pass
+            limit = 60 if name == "ug_close_test_parts" else 45
             done.append({"tool": name, "ok": False})
+            if name in tolerate:
+                # 清理是"锦上添花"：卡住就重启 kit 继续跑，不算用例失败
+                tolerated.append({"tool": name,
+                                  "errors": "超时（>%s s，已重启 kit）" % limit})
+                continue
+            failures.append("%s 超时（>%s s，已重启 kit）" % (name, limit))
             break
         if "error" in box:
             failures.append("%s 抛异常：%s" % (name, box["error"]))
@@ -2544,8 +2561,19 @@ def _ug_flow(client, steps, tag, tolerate=()):
 
 
 def _ug_modeling2_flow(client, context):
-    """ug 剧本五：草图拉伸→孔→圆角→倒角→抽面→偏置面→齿轮→特征自省（12 步）。"""
-    _s = uuid.uuid4().hex[:6]
+    """ug 剧本五：草图拉伸→孔→圆角→倒角→抽面→偏置面→齿轮→特征自省（12 步）。
+
+    倒角这一步**不能写死边序号**：做过圆角之后，边的顺序和"是否可倒角"都会变，
+    实测同一条用例会在两种错之间漂：
+      * `此边不适合倒斜角。请检查几何体。`
+      * `要对选定边倒斜角，也必须对相邻边倒斜角。`
+
+    所以改成**按几何挑边**：先 `inspect_body_topology`，只挑"相邻两个面都是平面
+    且边长 ≥ 20 mm"的直边（圆角的切边相邻面含圆柱面，会被排除），
+    再按长度从长到短逐个试，第一个成功即停。
+    """
+    import uuid as _uuid
+    _s = _uuid.uuid4().hex[:6]
     steps = [
         ("ug_create_part", {"file_name": "m2_%s.prt" % _s}),
         ("ug_create_parametric_sketch", {"name": "SK2", "plane": "XY",
@@ -2556,15 +2584,73 @@ def _ug_modeling2_flow(client, context):
         ("ug_create_cylindrical_hole", {"origin": [30.0, 20.0, 20.0], "diameter": 10,
                                         "depth": 20, "target_body_index": 0}),
         ("ug_fillet_edges", {"edge_indices": [0], "radius": 2}),
-        ("ug_chamfer_edges", {"edge_indices": [1], "distance": 1.5}),
-        ("ug_extract_face_surface", {"face_indices": [0]}),
-        ("ug_offset_surface", {"face_indices": [0], "distance": 2}),
-        ("ug_create_involute_gear", {"module": 2, "teeth": 20, "face_width": 10}),
-        ("ug_inspect_feature", {"feature_id": "0"}),
-        ("ug_inspect_body_topology", {}),
-        ("ug_proxy_tools", {}),
     ]
-    return _ug_flow(client, steps, "modeling2")
+    done, failures = [], []
+
+    def run(tool, args):
+        payload = client.call(tool, args or {})
+        ok = bool(payload.get("ok"))
+        done.append({"tool": tool, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (tool, str(payload.get("errors"))[:160]))
+        return payload
+
+    for tool, args in steps:
+        run(tool, args)
+        if failures:
+            break
+
+    if not failures:
+        topology = client.call("ug_inspect_body_topology", {"body_index": 0})
+        reads = topology.get("reads") or {}
+        faces = {face.get("stable_id"): int(face.get("uf_type") or 0)
+                 for face in (reads.get("faces") or [])}
+        # 22 = UF 平面面类型；只挑相邻两面都是平面的直边
+        planar = 22
+        candidates = []
+        for edge in reads.get("edges") or []:
+            adjacent = edge.get("adjacent_face_stable_ids") or []
+            if len(adjacent) != 2:
+                continue
+            if any(faces.get(sid, 0) != planar for sid in adjacent):
+                continue
+            length = float(edge.get("length") or 0.0)
+            if length < 20.0:
+                continue
+            candidates.append((length, int(edge.get("index"))))
+        candidates.sort(reverse=True)
+        chamfered = False
+        tried = []
+        for _length, index in candidates[:4]:
+            tried.append(index)
+            payload = client.call("ug_chamfer_edges",
+                                  {"edge_indices": [index], "distance": 1.5})
+            ok = bool(payload.get("ok"))
+            done.append({"tool": "ug_chamfer_edges", "ok": ok})
+            if ok:
+                chamfered = True
+                break
+        if not chamfered:
+            failures.append("ug_chamfer_edges 失败：候选边 %s 全部不可倒角" % tried)
+
+    if not failures:
+        for tool, args in [
+            ("ug_extract_face_surface", {"face_indices": [0]}),
+            ("ug_offset_surface", {"face_indices": [0], "distance": 2}),
+            ("ug_create_involute_gear", {"module": 2, "teeth": 20, "face_width": 10}),
+            ("ug_inspect_feature", {"feature_id": "0"}),
+            ("ug_inspect_body_topology", {}),
+            ("ug_proxy_tools", {}),
+        ]:
+            run(tool, args)
+            if failures:
+                break
+
+    return {"ok": not failures, "reads": {"steps": done, "tag": "modeling2"},
+            "errors": failures,
+            "checks": [{"check": "ug_flow_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
+
 
 
 def _ug_features_flow(client, context):
@@ -3204,16 +3290,16 @@ UG_CASES = [
      "skip_if": _ug_no_live_nx,
      "call": lambda client, context: _ug_flow(client, [
          # 先关掉此前用例留下的测试零件：会话里堆十几个零件后，再进 CAM
-         # 会挂死（2026-11-06 实测，见 docs 第 14 节）
-         ("ug_close_test_parts", {"dry_run": False,
+         # 会挂死（2026-11-06 实测，见 docs 第 14 节）。
+         # 清理本身卡住不算失败（tolerate）：重启 kit 后继续跑。
+         ("ug_close_test_parts", {"dry_run": False, "time_limit_s": 40,
                                  "confirmation": "CLOSE_TEST_PARTS"}),
          ("ug_create_part", {"file_name": "cap_%s.prt" % uuid.uuid4().hex[:6]}),
          # 不建块：只要有一个普通零件就能读 CAM 模板表；建块在大序列里偶发
          # 45 s 超时（2026-11-06），而块建模已被 ug.flow.model 覆盖。
          ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
-         ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
          ("ug_get_cam_capabilities", {"template_type": "mill_planar"}),
-     ], "cam_caps")},
+     ], "cam_caps", tolerate=("ug_close_test_parts",))},
 
     {"id": "ug.cam.recipe", "call": _ug_cam_recipe,
      "title": "CAM 端到端配方：新零件 → 三种工序各自生成刀路（path_exists）",
