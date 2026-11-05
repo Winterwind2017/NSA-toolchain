@@ -279,6 +279,80 @@ SW_CASES = [
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_constraint_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.fea_solve", "tool": None,
+     "title": "SW 剧本四十四：FEA 真求解（10 步，约 11–15 分钟，需单独跑）",
+     "args": {}, "expect_ok": True, "timeout_s": 2400,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_fea_solve_flow(client, context)},
+
+    {"id": "sw.flow.select_refs", "tool": None,
+     "title": "SW 剧本五十二：持久引用 token 选实体（8 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_select_refs_flow(client, context)},
+    {"id": "sw.tool.vba_dump", "tool": "sw_vba_dump",
+     "title": "VBA 源码导出（用本机样本 .swp）",
+     "args": {"swp": r"D:\bililive\DeepHarness\_sw_probe\generated_test.swp"},
+     "expect_ok": True, "timeout_s": 300,
+     "requires": ["solidworks"]},
+
+    {"id": "sw.flow.sketch_text", "tool": None,
+     "title": "SW 剧本五十：草图文字（4 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 300,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sketch_text_flow(client, context)},
+    {"id": "sw.flow.close_doc", "tool": None,
+     "title": "SW 剧本五十一：关当前文档（8 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 300,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_close_doc_flow(client, context)},
+
+    {"id": "sw.flow.asm_replace", "tool": None,
+     "title": "SW 剧本四十五：装配替换组件（13 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_asm_replace_flow(client, context)},
+    {"id": "sw.flow.refs_select", "tool": None,
+     "title": "SW 剧本四十六：选实体（7 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_refs_select_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.drawing_table", "tool": None,
+     "title": "SW 剧本四十七：选视图 + 插 BOM 表（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_drawing_table_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.reducer_plan", "tool": None,
+     "title": "SW 剧本四十八：两级减速器出计划（7 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_reducer_plan_flow(client, context)},
+    {"id": "sw.flow.sim_rerun", "tool": None,
+     "title": "SW 剧本四十九：求解 → 再求解 → 读结果（12 步，需单独跑）",
+     "args": {}, "expect_ok": True, "timeout_s": 1800,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sim_rerun_flow(client, context)},
+
+    {"id": "sw.flow.body_ops", "tool": None,
+     "title": "SW 剧本四十一：多实体组合 + 包围盒 + 球体（10 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_body_ops_flow(client, context)},
+    {"id": "sw.flow.refs_params", "tool": None,
+     "title": "SW 剧本四十二：改特征参数 + 方程增删（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_refs_params_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.sheetmetal_full", "tool": None,
+     "title": "SW 剧本四十三：钣金法兰/卷边/折弯/展开信息（11 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_sheetmetal_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.feature_pattern", "tool": None,
      "title": "SW 剧本三十九：按名字选特征 + 特征阵列（12 步）",
      "args": {}, "expect_ok": True, "timeout_s": 900,
@@ -4133,6 +4207,265 @@ def _sw_drawing_notes_flow(client, context):
         ("sw_view_rotate", {"angle_deg": 15}),
     ]
     return _sw_flow_any(client, steps, "drawing_notes", work)
+
+
+def _sw_body_ops_flow(client, context):
+    """SW 剧本四十一：多实体组合 + 包围盒 + 球体（9 步）。
+
+    依赖顺序：**先造第二个实体（move_body copy，且要与第一个重叠）** → 才能
+    `combine_bodies`。实测：两个实体**不重叠**时 `InsertCombineFeature` 返回 None
+    （判据 feature_created/bodies_decreased 全 false）；重叠 20 mm 时实体 2→1、
+    体积 20000→15000。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_bodyops_")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_move_body", {"dx_mm": 20, "copy": True}),
+        ("sw_select_bodies", {"indices": [0, 1]}),
+        ("sw_combine_bodies", {"operation": "add"}),
+        ("sw_bounding_box_with_hidden", {"include_hidden": False}),
+        # 不给 save_path：带 save_path 时判据 executed/saved 会挂（保存路径那步没落地）
+        ("sw_create_sphere", {"diameter_mm": 30, "execute": True}),
+    ]
+    return _sw_flow_any(client, steps, "body_ops", work)
+
+
+def _sw_refs_params_flow(client, context):
+    """SW 剧本四十二：持久引用选实体 + 改特征参数 + 方程增删（8 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_refs_")
+    part = os.path.join(work, "rp.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_set_feature_parameter", {"feature": "凸台-拉伸1", "parameter": "D1",
+                                      "value": 12.0, "confirm": True}),
+        ("sw_add_equation", {"expression": '"W" = 40'}),
+        ("sw_delete_equation", {"index": 0}),
+    ]
+    return _sw_flow_any(client, steps, "refs_params", work)
+
+
+def _sw_sheetmetal_flow(client, context):
+    """SW 剧本四十三：钣金基体法兰 → 卷边 → 折弯 → 展开信息（7 步）。
+
+    实测的选择依赖：`base_flange` 要草图；`hem` 要**选边**（这块 80×50 板上
+    第 4 条边才成功，前几条都判 feature_added=false）；`insert_bends` 要**选面**。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_sheet_")
+    part = os.path.join(work, "sm.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 80.0, "y2": 50.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_save_document", {"path": part}),
+        ("sw_base_flange", {"thickness_mm": 2, "radius_mm": 2, "depth_mm": 30}),
+        ("sw_select_edges", {"indices": [4]}),
+        ("sw_hem", {"length_mm": 5, "radius_mm": 0.5, "hem_type": 0}),
+        ("sw_select_faces", {"indices": [0]}),
+        ("sw_insert_bends", {"radius": 5}),
+        ("sw_get_flat_pattern_info", {}),
+    ]
+    return _sw_flow_any(client, steps, "sheetmetal_full", work)
+
+
+def _sw_fea_solve_flow(client, context):
+    """SW 剧本四十四：FEA 建研究 → 划网格 → 真求解（5 步，约 11–15 分钟）。
+
+    单独跑（`--only sw.flow.fea_solve`），别混进批量：单次 `star.exe` 峰值约 15 GB。
+    判据看 `sw_sim_solve` 自己报的 `results_available`/`step_count`，不看退出码。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_fea_")
+    part = os.path.join(work, "fea.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 100.0, "y2": 50.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_assign_material_full", {"name": "AISI 304"}),
+        ("sw_sim_setup", {"open_path": part, "restraint_face": 1, "force_face": 0,
+                          "force_n": 100, "material": "AISI 304", "mesh": False}),
+        ("sw_sim_mesh", {"open_path": part, "size": 0.01, "tol": 0.001}),
+        ("sw_sim_solve", {"open_path": part, "restraint_face": 1, "force_face": 0,
+                          "force_n": 100, "material": "AISI 304"}),
+    ]
+    return _sw_flow_any(client, steps, "fea_solve", work)
+
+
+def _sw_asm_replace_flow(client, context):
+    """SW 剧本四十五：装配里替换组件（14 步）。
+
+    注意：**不要**在这条后面接 close_all / 关装配体——留着装配体会让 swkit 退出
+    时卡住（报告写不出来）；别的用例能正常收尾就是因为只留下文档不关。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_repl_")
+    part = os.path.join(work, "m.SLDPRT")
+    copy = os.path.join(work, "n.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 30.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 8}),
+        ("sw_save_document", {"path": part}),
+        ("sw_save_as_copy", {"path": copy}),
+        ("sw_create_assembly", {}),
+        ("sw_open_document", {"path": part}),
+        ("sw_insert_component", {"part": part, "x": 0, "y": 0, "z": 0}),
+        ("sw_insert_component", {"part": copy, "x": 60, "y": 0, "z": 0}),
+        ("sw_replace_component", {"name": "m-1", "new_file": copy}),
+        ("sw_get_assembly_tree", {}),
+    ]
+    return _sw_flow_any(client, steps, "asm_replace", work)
+
+
+def _sw_refs_select_flow(client, context):
+    """SW 剧本四十六：持久引用选实体 + 选实体（6 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_refs2_")
+    part = os.path.join(work, "rf.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_select_bodies", {"indices": [0]}),
+    ]
+    return _sw_flow_any(client, steps, "refs_select", work)
+
+
+def _sw_drawing_table_flow(client, context):
+    """SW 剧本四十七：选视图 + 插 BOM 表（9 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_dt_")
+    part = os.path.join(work, "dt.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_new_drawing", {"model": part, "view": "front"}),
+        ("sw_select_view", {}),
+        ("sw_add_bom_table", {"x": 0.12, "y": 0.2}),
+    ]
+    return _sw_flow_any(client, steps, "drawing_table", work)
+
+
+def _sw_reducer_plan_flow(client, context):
+    """SW 剧本四十八：两级减速器只出计划（8 步）。"""
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 60.0, "y2": 40.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_create_two_stage_reducer", {"execute": False}),
+        ("sw_close_all", {"save": True}),
+    ]
+    return _sw_flow_any(client, steps, "reducer_plan", None)
+
+
+def _sw_sim_rerun_flow(client, context):
+    """SW 剧本四十九：求解 → 再求解 → 读结果（10 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_rerun_")
+    part = os.path.join(work, "rr.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 100.0, "y2": 50.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_assign_material_full", {"name": "AISI 304"}),
+        ("sw_sim_setup", {"open_path": part, "restraint_face": 1, "force_face": 0,
+                          "force_n": 100, "material": "AISI 304", "mesh": False}),
+        ("sw_sim_mesh", {"open_path": part, "size": 0.01, "tol": 0.001}),
+        ("sw_sim_solve", {"open_path": part}),
+        ("sw_sim_run", {"open_path": part, "timeout_s": 900}),
+        ("sw_sim_read", {"open_path": part}),
+    ]
+    return _sw_flow_any(client, steps, "sim_rerun", work)
+
+
+def _sw_sketch_text_flow(client, context):
+    """SW 剧本五十：草图文字（5 步）。
+
+    上游 swkit 的 ok 是"建出对象 and（线段增加 or 文字读回）"——本机
+    `InsertSketchText` 读回恒 None、但线段 0→1，所以**必须**尊重上游 ok；
+    代理层以前要求每个 check 都为真，会把这条误判成失败（已修 swkit_adapter）。
+    """
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_sketch_text", {"text": "AB", "x": 5.0, "y": 5.0}),
+        ("sw_close_all", {"save": True}),
+    ]
+    return _sw_flow_any(client, steps, "sketch_text", None)
+
+
+def _sw_close_doc_flow(client, context):
+    """SW 剧本五十一：关当前文档（7 步）。`sw_close_document` 不给 title 就是关活动文档。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_close_")
+    part = os.path.join(work, "cd.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 30.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 6}),
+        ("sw_save_document", {"path": part}),
+        ("sw_close_document", {}),
+    ]
+    return _sw_flow_any(client, steps, "close_doc", work)
+
+
+def _sw_select_refs_flow(client, context):
+    """SW 剧本五十二：用持久引用 token 选实体（6 步）。
+
+    token 来自 `sw_feature_inspect(include_tokens=True)` 的 `reads.result.topology[]`，
+    所以必须**先 inspect 再选**，不能写死。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_selrefs_")
+    part = os.path.join(work, "sr.SLDPRT")
+    steps = []
+    for name, args in (("sw_create_part", {}),
+                       ("sw_create_sketch", {"plane": "前视基准面"}),
+                       ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+                       ("sw_exit_sketch", {}),
+                       ("sw_extrude", {"depth_mm": 10}),
+                       ("sw_save_document", {"path": part})):
+        payload = client.call(name, args)
+        steps.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": steps, "failed_at": name},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:160])],
+                    "checks": []}
+    payload = client.call("sw_feature_inspect",
+                          {"include_topology": True, "include_tokens": True, "limit": 6})
+    steps.append({"tool": "sw_feature_inspect", "ok": bool(payload.get("ok"))})
+    topo = ((payload.get("reads") or {}).get("result") or {}).get("topology") or []
+    tokens = [t["reference_token"] for t in topo if t.get("reference_token")][:2]
+    if not tokens:
+        return {"ok": False, "reads": {"steps": steps, "tokens": []},
+                "errors": ["feature_inspect 没给 token"], "checks": []}
+    payload = client.call("sw_select_references", {"tokens": tokens})
+    steps.append({"tool": "sw_select_references", "ok": bool(payload.get("ok"))})
+    return {"ok": bool(payload.get("ok")),
+            "reads": {"steps": steps, "tokens": len(tokens)},
+            "errors": [] if payload.get("ok") else str(payload.get("errors"))[:200],
+            "checks": [{"check": "tokens_selected", "got": bool(payload.get("ok")),
+                        "want": True, "ok": bool(payload.get("ok"))}]}
 
 
 def _sw_flow_any(client, steps, tag, work):

@@ -109,6 +109,36 @@ _ONFACE_SCHEMA = {
 }
 
 
+_BODIES_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "indices": {"type": "array", "items": {"type": "integer"},
+                    "description": "实体序号列表（从 0 开始）"},
+        "mark": {"type": "integer", "description": "选择标记，默认 0"},
+        "append": {"type": "boolean", "description": "是否追加，默认 False"},
+    },
+    "required": ["indices"],
+    "additionalProperties": False,
+}
+
+
+def _null_callout() -> Any:
+    """`SelectByID2` 的 Callout 参数要 **VT_DISPATCH 的 NULL**，传 None 会「类型不匹配」。"""
+    import pythoncom
+    from win32com.client import VARIANT
+    return VARIANT(pythoncom.VT_DISPATCH, None)
+
+
+_VIEW_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string",
+                 "description": "视图名（不给就选第一个子视图，即模型视图）"},
+    },
+    "additionalProperties": False,
+}
+
+
 def _attach() -> Any:
     import pythoncom
     import win32com.client
@@ -375,6 +405,139 @@ def select_tools() -> List[Any]:
             return normalize(KIT, "create_sketch_on_face", ok=False,
                              errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
 
+    def _bodies(args: Dict[str, Any]) -> Dict[str, Any]:
+        """按序号选实体。
+
+        踩过三条路：
+        * pywin32 `IBody2.Select2` → "instance can not be converted to a COM object"
+        * comtypes `IPartDoc.GetBodies2` + `body.Select2` → `KeyError: 9`（生成的
+          comtypes 模块解析不了该 dispid）
+        * `SelectByID2("", "SOLIDBODY", 包围盒中心)` → 多实体时中心可能落在另一个
+          实体里，导致两个序号选到同一个（实测 2 个实体只选中 1 个）
+
+        最终方案：还是走 pywin32 的 `SelectByID2(SOLIDBODY)`，但取点改成
+        **包围盒长边 5% 的内缩点**，躲开两个实体的重叠区。
+        """
+        indices = [int(i) for i in (args.get("indices") or [])]
+        if not indices:
+            return normalize(KIT, "select_bodies", ok=False, errors=["indices 不能为空"])
+        append = bool(args.get("append"))
+        mark = int(args.get("mark") or 0)
+        try:
+            app = _attach()
+            doc = app.ActiveDoc
+            if doc is None:
+                return normalize(KIT, "select_bodies", ok=False, errors=["没有打开的文档"])
+            bodies = doc.GetBodies2(0, True) or []
+            if not append:
+                doc.ClearSelection2(True)
+            picked = []
+            for index in indices:
+                if not (0 <= index < len(bodies)):
+                    continue
+                box = bodies[index].GetBodyBox
+                box = list(box() if callable(box) else (box or []))
+                if len(box) < 6:
+                    continue
+                # 内缩 5%（各轴），避开多实体的重叠区
+                def inset(lo: float, hi: float) -> float:
+                    span = hi - lo
+                    return lo + (span * 0.05 if span > 0 else 0.0)
+                point = (inset(box[0], box[3]), inset(box[1], box[4]),
+                         inset(box[2], box[5]))
+                if bool(doc.Extension.SelectByID2("", "SOLIDBODY", point[0], point[1],
+                                                  point[2], True, mark,
+                                                  _null_callout(), 0)):
+                    picked.append(index)
+            count = _selected_count(doc)
+            checks = [{"check": "bodies_selected", "got": len(picked),
+                       "want": len(indices), "ok": len(picked) == len(indices)},
+                      {"check": "selection_count", "got": count, "want": len(indices),
+                       "ok": count == len(indices)}]
+            ok = all(c["ok"] for c in checks)
+            return normalize(KIT, "select_bodies", ok=ok,
+                             reads={"bodies": len(bodies), "requested": indices,
+                                    "picked": picked, "selected_count": count},
+                             checks=checks,
+                             errors=[] if ok else ["选中 %d/%d 个实体"
+                                                   % (len(picked), len(indices))])
+        except Exception as exc:             # noqa: BLE001
+            return normalize(KIT, "select_bodies", ok=False,
+                             errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
+
+    def _view(args: Dict[str, Any]) -> Dict[str, Any]:
+        """选中图纸视图（孔表/剖视图/断裂视图的前置）。
+
+        pywin32 的 `doc.GetFirstView()` 在本机报「找不到成员」，所以走 comtypes
+        QI 到 `IDrawingDoc` 再枚举；`view.Name` 可能是属性也可能是方法，统一
+        `value() if callable(value) else value`。Callout 必须是 None（comtypes 下
+        传 win32com 的 VARIANT 会让第 8 个参数报 "VARIANT object has no
+        attribute QueryInterface"）。
+        """
+        try:
+            import comtypes
+            import comtypes.client as cc
+            import comtypes.gen.SldWorks as swmod
+        except Exception as exc:             # noqa: BLE001
+            return normalize(KIT, "select_view", ok=False,
+                             errors=["comtypes 不可用：%s" % exc])
+        comtypes.CoInitialize()
+        try:
+            cc.GetModule(r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb")
+        except Exception:                    # noqa: BLE001
+            pass
+
+        def deref(value: Any) -> Any:
+            return value() if callable(value) else value
+
+        try:
+            app = cc.GetActiveObject("SldWorks.Application")
+            raw = app.ActiveDoc
+            doc = raw.QueryInterface(swmod.IDrawingDoc)
+            md = raw.QueryInterface(swmod.IModelDoc2)
+            views = []
+            view = deref(doc.GetFirstView)
+            guard = 0
+            while view is not None and guard < 30:
+                guard += 1
+                views.append(view)
+                view = deref(getattr(view, "GetNextView"))
+            if not views:
+                return normalize(KIT, "select_view", ok=False, errors=["图纸里没有视图"])
+            wanted = str(args.get("name") or "").strip()
+
+            def label_of(item: Any) -> Optional[str]:
+                try:
+                    return str(deref(getattr(item, "Name")) or "")
+                except Exception:            # noqa: BLE001
+                    return None
+
+            target = None
+            if wanted:
+                for candidate in views:
+                    if label_of(candidate) == wanted:
+                        target = candidate
+                        break
+            if target is None:
+                target = views[1] if len(views) > 1 else views[0]
+            label = label_of(target) or ""
+            md.ClearSelection2(True)
+            ok = bool(md.Extension.SelectByID2(label, "DRAWINGVIEW", 0, 0, 0,
+                                               False, 0, None, 0))
+            count = int(md.SelectionManager.GetSelectedObjectCount2(-1))
+            checks = [{"check": "view_selected", "got": ok, "want": True, "ok": ok},
+                      {"check": "selection_count", "got": count, "want": 1,
+                       "ok": count == 1}]
+            good = all(c["ok"] for c in checks)
+            return normalize(KIT, "select_view", ok=good,
+                             reads={"views": len(views), "view": label,
+                                    "selected_count": count},
+                             checks=checks,
+                             errors=[] if good else ["选不中视图 %r" % (label,)])
+        except Exception as exc:             # noqa: BLE001
+            return normalize(KIT, "select_view", ok=False,
+                             errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
+
     return [
         ToolSpec("sw_select_sketch_segments",
                  "在当前编辑中的草图里按序号选线段（草图圆角/倒角/剪裁/转换实体/"
@@ -395,4 +558,11 @@ def select_tools() -> List[Any]:
                  "在实体面上开草图（swkit 的 create_sketch 只认基准面名，"
                  "面草图四件套靠它）。判据 = 选中面 + ActiveSketch 非空。",
                  _ONFACE_SCHEMA, _sketch_on_face, timeout_s=180),
+        ToolSpec("sw_select_bodies",
+                 "按序号选实体（combine/shell/scale 的前置选择）。"
+                 "判据 = 每个序号都选中 + SelectionManager 计数一致。",
+                 _BODIES_SCHEMA, _bodies, timeout_s=180),
+        ToolSpec("sw_select_view",
+                 "选中图纸视图（孔表/剖视图/断裂视图的前置）。判据 = SelectByID2 成功且计数=1。",
+                 _VIEW_SCHEMA, _view, timeout_s=180),
     ]

@@ -634,3 +634,99 @@ SW 一旦在某次调用里卡住，**sw MCP 服务进程会被那条调用永�
    `sw.flow.asm_ops`（剧本三十五）��
 3. **每个剧本单独起一次验收**（一个 `--only` 一条）比批量稳：批量跑时 SW 的
    文档/视图状态会互相污染，出图类尤其明显。
+
+## SW 剩余工具按依赖顺序啃（2026-11-05 14:10）
+
+顺序不是按名字排，是按**前置依赖**排：先能建基础件 → 再选特征/改参数 → 再钣金链
+→ 再出图 → 最后 FEA。每层都真机跑过，能通的写成剧本。
+
+### 第 1 层：基础件与实体（新通 4 个）
+
+| 工具 | 配方 / 判据 |
+|---|---|
+| `sw_bounding_box_with_hidden` | 直接读包围盒，`include_hidden` 开关；0.8 s |
+| `sw_create_sphere` | `execute=True`（**别给 `save_path`**，带路径时判据 executed/saved 会挂） |
+| `sw_combine_bodies` | **两个实体必须重叠**：`move_body(copy=True, dx=20)` → 组合 2→1、体积 20000→15000；不重叠时 `InsertCombineFeature` 返回 None |
+| `sw_select_bodies`（新工具） | pywin32 `SelectByID2("", "SOLIDBODY", 内缩 5% 的包围盒点)`；comtypes 的 `IPartDoc.GetBodies2 + body.Select2` 在本机报 `KeyError: 9`，`IBody2.Select2` 报 "instance can not be converted to a COM object" |
+
+### 第 2 层：特征选择 / 参数 / 方程（新通 2 个）
+
+* `sw_set_feature_parameter`（`凸台-拉伸1` + `D1` → 12 mm，1.4 s）
+* `sw_delete_equation`（**必须先 `add_equation`**，没有方程时它报 backend error）
+* 复用第 1 层的 `sw_select_features`（comtypes 遍历特征树）
+
+### 第 3 层：钣金链（新通 4 个，整链 42 s）
+
+严格顺序：**草图 → 基体法兰 → 选边卷边 → 选面折弯 → 展开信息**
+
+| 工具 | 关键前置 |
+|---|---|
+| `sw_base_flange(thickness, radius, depth)` | 要有草图（80×50） |
+| `sw_hem` | **必须选边**：这块板上第 4 条边才成功（前几条都判 feature_added=false） |
+| `sw_insert_bends` | **必须选面**（`sw_select_faces([0])`） |
+| `sw_get_flat_pattern_info` | 在基体法兰之后就有展开状态 |
+
+### 第 4 层：出图（新通 1 个工具 + 1 个新工具）
+
+* `sw_select_view`（新工具）：pywin32 的 `doc.GetFirstView()` 报「找不到成员」→ 改
+  **comtypes QI 到 `IDrawingDoc`** 枚举，`SelectByID2(name, "DRAWINGVIEW", …, None, 0)`
+  （comtypes 下 Callout 必须给 `None`，给 win32com 的 VARIANT 会报
+  "VARIANT object has no attribute QueryInterface"）。
+* `sw_add_bom_table` 通；`sw_create_section_view` / `sw_add_broken_view` /
+  `sw_add_hole_table` **即使选中视图仍判据不过**（kit 侧调用不落地）→ 记为 kit 缺陷。
+
+### 第 5 层：FEA（时间成本）
+
+`sw_sim_setup` + `sw_sim_mesh` 已通；`sw_sim_solve` 单次 11–15 分钟、`star.exe` 峰值约
+15 GB，单独跑（`sw.flow.fea_solve`）。`sw_sim_run` 是同一个求解器，不再单独跑一遍。
+
+### 仍然啃不动的（kit / 样本 / UI，共 12 个）
+
+| 工具 | 卡点 |
+|---|---|
+| `sw_create_section_view` / `sw_add_broken_view` / `sw_add_hole_table` | 选中视图后判据仍 false（kit 侧调用不落地） |
+| `sw_sketch_text` | 文字建了但 `text_matches` 读不回 |
+| `sw_analyze_draft` | 需要零件里**已有分型线**，kit 创建不了分型线 |
+| `sw_move_component` | 本机没有写组件位姿的 API（`CreateTransform` 返单位阵） |
+| `sw_motion_list` / `sw_motion_read` | `<unknown>.GetComponents` / 没有结果集 |
+| `sw_sim_run` | 与 `sw_sim_solve` 同一求解器，时间成本 |
+| `sw_vba_dump` | 需要一个 `.swp` 样本 |
+| `sw_get_dimension` / `sw_set_dimension` / `sw_add_gtol` / `sw_add_datum_feature` / `sw_add_weld_symbol` / `sw_add_center_mark` | 尺寸/标注是 UI 驱动（已定论） |
+
+## SW 最后一轮：代理层判据语义修正 + 收尾（2026-11-05 14:35）
+
+### 一个影响面很大的代理层 bug（已修）
+
+`swkit_adapter.make_handler` 以前把上游 `checks` 里**每一项**都当硬判据：
+```python
+checks.append({"check": key, "want": True, "ok": bool(value), ...})
+```
+于是 `sw_sketch_text` 这种「上游 `ok = object_created and (segments_increased or
+text_matches)`」的工具会被误判：本机 `InsertSketchText` 的 `GetText` 读回恒 `None`、
+但线段 0→1，上游自己判 ok=true，代理层却因为 `text_matches=false` 把 ok 翻回 false。
+
+修法（`swkit_adapter.py` 与 `proxymcp.py` 同步）：**上游给了 `ok` 就以它为准**，
+单项 `checks` 降级为说明性（`ok=True` + `got` 保留原值 + `informational=True`）；
+失败原因拼装改成看 `got is False`，所以报错里仍然能看到 `text_matches` 这类名字。
+
+### 新通的 6 个工具
+
+| 工具 | 配方 |
+|---|---|
+| `sw_sketch_text` | 代理层修好后直接过（线段 0→1） |
+| `sw_close_document` | **不给 title** 就是关活动文档（给错名字会判 `count_decreased=false`） |
+| `sw_select_references` | 先 `sw_feature_inspect(include_tokens=True)` 拿 `reads.result.topology[].reference_token`，再选 |
+| `sw_vba_dump` | 用本机样本 `D:\bililive\DeepHarness\_sw_probe\generated_test.swp`（32 KB），0.26 s |
+| `sw_create_two_stage_reducer` | `execute=False`（只出计划）|
+| `sw_sim_run` / `sw_sim_read` | 在同一个研究上再求解 + 读结果；`sim_solve` 后接 `sim_run` 都 < 35 s（100×50×10 板、10 mm 网格）|
+
+### 当前仍然啃不动的 11 个（每条都有实测依据）
+
+| 工具 | 卡点 | 结论 |
+|---|---|---|
+| `sw_add_broken_view` | `break_lines_increased=false` | kit 侧 `InsertBreak` 不落地 |
+| `sw_add_hole_table` | `table_added=false` | kit 侧 `InsertHoleTable2` 不落地 |
+| `sw_create_section_view` | backend error | kit 侧 `CreateSectionView` 不落地 |
+| `sw_add_gtol` / `sw_add_datum_feature` / `sw_add_weld_symbol` / `sw_add_center_mark` / `sw_set_dimension` | 需要"先选中尺寸/视图" | 尺寸是 UI 驱动（已定论） |
+| `sw_analyze_draft` | 需要零件里已有分型线 | SW API 无法创建分型线 |
+| `sw_move_component` | 组件位姿写不进去（`CreateTransform` 返单位阵），swkit 的"变换拷贝法"在新建装配体上会挂 | 本机无解 |

@@ -67,14 +67,27 @@ def build_kit() -> Kit:
 
             checks = [{"check": "backend_ok", "got": not is_error,
                        "want": True, "ok": not is_error}]
+            # 上游给了自己的 `ok` 时，它的 `checks` 就是**说明性**的：swkit 已经把
+            # "object_created and (segments_increased or text_matches)" 这类取舍
+            # 算进 ok 了。代理层再要求每个 check 都为真，会把 ok 翻回 false
+            # （实测 sw_sketch_text：后端 ok=true、text_matches=false、segments 0→1）。
+            backend_verdict = inner.get("ok")
+            informative = isinstance(backend_verdict, bool)
             inner_checks = inner.get("checks")
             if isinstance(inner_checks, dict):
                 for key, value in inner_checks.items():
-                    checks.append({"check": key, "want": True, "ok": bool(value),
-                                   "got": bool(value)})
+                    checks.append({"check": key, "want": True,
+                                   "ok": True if informative else bool(value),
+                                   "got": bool(value),
+                                   "informational": informative})
             elif isinstance(inner_checks, list):
                 for item in inner_checks:
                     if isinstance(item, dict):
+                        if informative:
+                            item = dict(item)
+                            item.setdefault("got", item.get("ok"))
+                            item["ok"] = True
+                            item["informational"] = True
                         checks.append(item)
 
             reads = inner.get("detail") if isinstance(inner.get("detail"), dict) else {}
@@ -89,7 +102,8 @@ def build_kit() -> Kit:
                 if not text:
                     # 后端只回 ok=false、不给原因时，用失败判据拼一条可读原因
                     bad = [c.get("check") for c in checks
-                           if isinstance(c, dict) and c.get("ok") is False]
+                           if isinstance(c, dict)
+                           and (c.get("ok") is False or c.get("got") is False)]
                     bad = [str(x) for x in bad if x]
                     if bad:
                         text = "后端判据未通过：%s" % "、".join(bad[:4])

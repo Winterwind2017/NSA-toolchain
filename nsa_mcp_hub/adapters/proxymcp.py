@@ -67,14 +67,27 @@ def build_proxy_kit(*, key: str, name: str, argv: list, cwd: str,
 
             checks = [{"check": "backend_ok", "got": not is_error,
                        "want": True, "ok": not is_error}]
+            # 上游给了自己的 `ok` 时，它的 `checks` 只是**说明性**的：上游已经把
+            # "object_created and (segments_increased or text_matches)" 这类
+            # 取舍算进 ok 了，这里再要求每个 check 都为真会把 ok 翻回 false
+            # （实测 sw_sketch_text：上游 ok=true，但 text_matches 单项 false）。
+            backend_verdict = inner.get("ok")
+            informative = isinstance(backend_verdict, bool)
             inner_checks = inner.get("checks")
             if isinstance(inner_checks, dict):
                 for ck, value in inner_checks.items():
-                    checks.append({"check": ck, "want": True, "ok": bool(value),
-                                   "got": bool(value)})
+                    checks.append({"check": ck, "want": True,
+                                   "ok": True if informative else bool(value),
+                                   "got": bool(value),
+                                   "informational": informative})
             elif isinstance(inner_checks, list):
                 for item in inner_checks:
                     if isinstance(item, dict):
+                        if informative:
+                            item = dict(item)
+                            item.setdefault("got", item.get("ok"))
+                            item["ok"] = True
+                            item["informational"] = True
                         checks.append(item)
 
             reads = inner.get("detail") if isinstance(inner.get("detail"), dict) else {}
@@ -107,7 +120,8 @@ def build_proxy_kit(*, key: str, name: str, argv: list, cwd: str,
                         text = "；".join(bits)[:360]
                     else:
                         bad = [c.get("check") for c in checks
-                               if isinstance(c, dict) and c.get("ok") is False
+                               if isinstance(c, dict)
+                               and (c.get("ok") is False or c.get("got") is False)
                                and c.get("check") != "backend_ok"]
                         text = ("后端判据未通过：%s" % "、".join(str(x) for x in bad[:4])
                                 if bad else "backend error（后端未给出原因）")
