@@ -682,6 +682,17 @@ def hole_table(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
     from ._common import iter_features
     import os as _os
     out = _result("sw_add_hole_table", "IView.InsertHoleTable3")
+
+    # 护栏：草图编辑中插孔表会把 SW 拽进"命令未结束"状态，之后整界面点不动、
+    # 连窗口都切不了（2026-11-05 在用户会话里踩过，只能关图重开）。宁可拒绝。
+    active_sketch = _val(doc_w, "GetActiveSketch")
+    if active_sketch is not None:
+        out["detail"]["error"] = "文档正在编辑草图，先退出草图再插孔表"
+        out["detail"]["active_sketch"] = _val(active_sketch, "Name")
+        out["checks"] = {"table_added": False}
+        out["ok"] = False
+        return out
+
     view = first_model_view(doc_w)
     if view is None:
         out["detail"]["error"] = "图纸里没有模型视图"
