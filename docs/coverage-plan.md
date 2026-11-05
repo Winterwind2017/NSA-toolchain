@@ -493,3 +493,28 @@ CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_comp
 * `sketch_text`（`text_matches` 判据不过）、`sketch_circular_pattern`（backend error）、第二块面草图（InsertSketch 返回 False）仍未解决；
 * `sw_close_document` 单跑能用，但在验收会话里会弹"是否保存"模态框把用例卡住 → 验收里不测；
 * FEA（`sim_solve` 15 分钟）与 Motion 仍按"时间成本"排除。
+
+## 尺寸链尝试（2026-11-05 11:07）：`AddDimension2` 在本机会卡死
+
+想让 `sw_get_dimension` / `sw_set_dimension` 有东西可读，得先造尺寸。试了
+`solidworks-agent-kit` 里没有的路径，自己在 hub 侧写：
+
+```
+选草图线段 → IModelDoc2.AddDimension2(x, y, z) → 读 IDimension.FullName / SystemValue
+```
+
+**实测 `AddDimension2` 调用 180 s 不返回**（SW 进了一个等输入的交互状态，
+工具超时后被内核判定"仍在后台运行"，后续调用全被挡住）。该工具已从
+`hubsw_select.py` 里**移除**，不发布未验证的能力。
+
+结论：尺寸对象这条链（`get_dimension`/`set_dimension`，以及依赖"选中尺寸"的
+`add_gtol`/`datum`/`weld`/`center_mark`）需要换一条非交互的做法，例如：
+* `ISketchManager` 的 `CreateDimension`？本机 swkit 没有封装，需要单独探；
+* 或者干脆用 `sw_sketch_*` 建带关系的草图后走 `doc.Parameter` 读自动生成的尺寸名；
+* 再或者从已有用户图纸里读真实尺寸名（只读，但依赖用户文件）。
+
+## `sw_scan` 的真实执行路径修正
+
+`sw_scan` 走的是 **`D:\bililive\mcp-patches\sw_adv.py`**（`sw_scripts._run_script`
+用 PATCH_DIR），不是 `swkit/_legacy/sw_adv.py`。两处都已加 `getsize` 保护；
+之前"改了但没生效"就是改错了副本。
