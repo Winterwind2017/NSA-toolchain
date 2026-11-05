@@ -1149,6 +1149,29 @@ class AutoShop:
             time.sleep(0.8)
         return not self.dialogs()
 
+    def _answer_recompile_prompt(self, timeout=6.0):
+        """回答「下载前是否需要重新编译」，默认选 否（用上次全量编译的结果）。"""
+        import time as _time
+        deadline = _time.time() + timeout
+        while _time.time() < deadline:
+            for hdlg in self.dialogs():
+                try:
+                    controls = self.dialog_controls(hdlg)
+                except Exception:                  # noqa: BLE001
+                    continue
+                texts = " ".join((c.text or "") for c in controls)
+                if "重新编译" not in texts:
+                    continue
+                by_id = {c.cid: c for c in controls if c.cid}
+                button = by_id.get(7) or by_id.get(6)     # 7=否, 6=是
+                if button is None:
+                    continue
+                w.post(button.hwnd, w.BM_CLICK, 0, 0)
+                _time.sleep(0.6)
+                return "no" if button.cid == 7 else "yes"
+            _time.sleep(0.4)
+        return None
+
     def generate_download_file(self, target_path=None, timeout=90.0):
         """PLC → 生成下载文件: write the offline ``*.updown`` artefact.
 
@@ -1182,6 +1205,11 @@ class AutoShop:
         for _attempt in range(4):
             self.wait_idle(20)
             w.post(self.frame, w.WM_COMMAND, CMD["make_download_file"])
+            # 实测：工程改过之后，"生成下载文件" 会先弹一个 AutoShop 模态框
+            # 「在下载前是否需要重新编译（如果不编译则会下载上次全部编译的文件）」
+            # 有 是(Y)/否(N) 两个按钮。这里一律选**否**——调用方若要新代码，
+            # 应该先显式跑一次编译；否则这个框会把后面等"下载选项"的逻辑拖死。
+            self._answer_recompile_prompt()
             hdlg = self.dialog("下载选项", timeout=12)
             if hdlg:
                 break
