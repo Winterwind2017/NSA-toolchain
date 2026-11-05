@@ -169,3 +169,27 @@ doc = app.OpenDoc(part_path, 1)  # 重新打开
 
 结论：自动化收尾时**别把最后一张图纸关掉**；要么先关图纸再关零件（顺序反过来），
 要么关完图纸后立刻把零件重新 OpenDoc 一次把活动文档指针立起来。
+
+
+## 四种符号 / 中心标记 / 改尺寸（2026-11-05 22:00）
+
+`sw_add_datum_feature`、`sw_add_gtol`、`sw_add_weld_symbol`、`sw_add_center_mark`
+四个工具一直是"返回 ok=False 且 errors 为空"，根因只有一个：**选边方式**。
+
+| 手段 | 结果 |
+|---|---|
+| `entity.Select2(False, mark)`（旧实现） | **静默 False**，一条都选不上 → `InsertDatumTag2()` 之类返回 None |
+| `entity.Select4(True, VARIANT(VT_DISPATCH, NULL))` | 选得上（实测选中 6 条边），后面三个 API 立刻生效 |
+
+判据也跟着改：
+
+* 基准 / 形位公差 / 焊接：`IView.GetDatumTagCount / GetGTolCount / GetWeldSymbolCount`
+  **实测是准的**，0→1，可以直接当判据。
+* 中心标记：`IView.GetCenterMarks` **建完仍返回 0**（跟孔表一个毛病），
+  所以判据换成 `IDrawingDoc.InsertCenterMark2(Style, Propagate)` 是否返回真 COM 对象
+  （实测返回 `POINTER(ICenterMark)`）。
+* 中心标记必须有**圆边**可选：孔轴线沿 Z 时，前视图看不到孔口圆，要用**上视**建图。
+
+`sw_set_dimension` 本身没 bug，缺的是"真实存在的命名尺寸"：参数化零件（feature graph）
+建出来的块自带 `D1@BlockBoss`，`doc.Parameter("D1@BlockBoss")` 可读可写（20 mm → 25 mm
+读回一致）。空零件上手画矩形没有命名尺寸，所以验收夹具用 `sw_create_parametric_part`。

@@ -101,61 +101,58 @@ def _view_entities(view: Any, limit: int = 12) -> List[Any]:
 
 
 def center_mark(doc_w: Any, x: float = 0.05) -> Dict[str, Any]:
-    """在圆边上加中心标记。判据：`GetCenterMarks` 计数增加。"""
-    out = _result("sw_add_center_mark", "IDrawingDoc.AddCenterMark")
+    """在圆边上加中心标记。判据：`InsertCenterMark2` 返回了 ICenterMark。
+
+    **两条实测事实**（2026-11-05）：
+
+    * 选边必须用 `entity.Select4(True, VARIANT(VT_DISPATCH, NULL))`；
+      `Select2(False, mark)` 在这条路径上**选不上**（静默 False），旧实现就卡在这。
+    * 建出来之后 `IView.GetCenterMarks` **仍然是 0**（跟孔表一个毛病），
+      所以判据不能看计数，要看返回值是不是真的 COM 对象（ICenterMark）。
+    """
+    out = _result("sw_add_center_mark", "IDrawingDoc.InsertCenterMark2")
     out["detail"]["doc_type"] = val(doc_w, "GetType", 0)
     view = first_model_view(doc_w)
     if view is None:
         out["detail"]["error"] = "图纸里没有模型视图"
         return out
 
-    def n_marks() -> int:
-        try:
-            marks = val(view, "GetCenterMarks") or []
-            return len(list(marks))
-        except Exception:
-            return -1
+    edges = _view_edges(view)
+    circles = _circular_edges(edges)
+    out["detail"].update({"view": val(view, "Name"), "entities": len(edges),
+                          "circles": len(circles)})
+    pool = circles or edges
+    if not pool:
+        out["detail"]["error"] = "视图里没有可选实体"
+        out["checks"] = {"center_mark_created": False}
+        return out
 
-    before = n_marks()
-    ents = _view_entities(view)
-    circles = []
-    for ee in ents:
-        try:
-            p = list(val(ee, "GetCurveParams2") or [])
-            if len(p) >= 6:
-                span = sum((p[3 + i] - p[i]) ** 2 for i in range(3)) ** 0.5
-                if span < 1e-9:
-                    circles.append(ee)
-        except Exception:
-            continue
+    _sw, drawing = _drawing_doc()
     attempts = []
-    called_ok = False
-    for ee in (circles or ents):
-        for mark in (1, 0, 2):
+    for entity in pool[:4]:
+        if not _select_entity(doc_w, entity):
+            attempts.append({"select": "failed"})
+            continue
+        for style in (1, 0, 2):
             try:
-                doc_w.ClearSelection2(True)
-                ee.Select2(False, mark)
-            except Exception:
+                result = drawing.InsertCenterMark2(style, True)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"style": style, "error": str(exc)[:70]})
                 continue
-            for name in ("AddCenterMark", "InsertCenterMark"):
-                try:
-                    if name == "AddCenterMark":
-                        res = doc_w.AddCenterMark(float(x), False)
-                    else:
-                        res = doc_w.InsertCenterMark(True, float(x), False, 0.0)
-                    called_ok = True
-                except Exception as exc:            # noqa: BLE001
-                    attempts.append({"api": name, "mark": mark, "error": str(exc)[:60]})
-                    continue
-                attempts.append({"api": name, "mark": mark, "returned": str(res)})
-        if n_marks() > before:
-            break
-    after = n_marks()
-    out["detail"].update({"view": val(view, "Name"), "entities": len(ents),
-                          "circles": len(circles), "marks_before": before,
-                          "marks_after": after, "attempts": attempts[-6:]})
-    out["checks"] = {"marks_increased": after > before}
-    out["ok"] = out["checks"]["marks_increased"]
+            created = _is_com(result)
+            attempts.append({"style": style,
+                             "returned": type(result).__name__ if result is not None else None,
+                             "created": created})
+            if created:
+                out["detail"].update({"attempts": attempts[-4:], "style": style})
+                out["checks"] = {"center_mark_created": True}
+                out["ok"] = True
+                return out
+            _select_entity(doc_w, entity)
+    doc_w.ClearSelection2(True)
+    out["detail"]["attempts"] = attempts[-6:]
+    out["checks"] = {"center_mark_created": False}
+    out["ok"] = False
     return out
 
 
@@ -209,7 +206,15 @@ def centerline(doc_w: Any) -> Dict[str, Any]:
 
 
 def symbol(doc_w: Any, kind: str = "datum") -> Dict[str, Any]:
-    """基准标记 / 形位公差 / 焊接符号（零参插入，先选实体）。"""
+    """基准标记 / 形位公差 / 焊接符号（零参插入，先选实体）。
+
+    **选边方式决定成败**（2026-11-05 实测）：必须
+    `entity.Select4(True, VARIANT(VT_DISPATCH, NULL))`；
+    旧的 `Select2(False, mark)` 选不上，于是 `InsertDatumTag2` 之类静默返回 None。
+
+    判据：`IView.GetDatumTagCount / GetGTolCount / GetWeldSymbolCount` **+1**
+    （这三个计数器实测是准的，和孔表不同）。
+    """
     api_map = {"datum": "InsertDatumTag2", "gtol": "InsertGtol",
                "weld": "InsertWeldSymbol3"}
     tool_map = {"datum": "sw_add_datum_feature", "gtol": "sw_add_gtol",
@@ -221,53 +226,111 @@ def symbol(doc_w: Any, kind: str = "datum") -> Dict[str, Any]:
         return out
     out = _result(tool_map[kind], api_map[kind])
     view = first_model_view(doc_w)
-    ents = _view_entities(view) if view is not None else []
-    # IView 有专属计数器（TLB 实测）：datum→GetDatumTagCount / gtol→GetGTolCount /
-    # weld→GetWeldSymbolCount。这才是"真的插进去了"的判据。
     counter = {"datum": "GetDatumTagCount", "gtol": "GetGTolCount",
                "weld": "GetWeldSymbolCount"}[kind]
-    before = val(view, counter, None) if view is not None else None
-    out["detail"].update({"kind": kind, "entities": len(ents),
+    before = _int_or_none(val(view, counter, None)) if view is not None else None
+    edges = _view_edges(view) if view is not None else []
+    out["detail"].update({"kind": kind, "entities": len(edges),
                           "counter": counter, "count_before": before})
-    if not ents:
+    if not edges:
         out["detail"]["error"] = "需要视图实体才能插入符号"
+        out["checks"] = {"count_increased": False}
         return out
     _sw, md = com_doc()
     attempts = []
-    for ent in ents[:3]:
-        for mark in (1, 0):
-            try:
-                doc_w.ClearSelection2(True)
-                ent.Select2(False, mark)
-            except Exception:
-                continue
-            try:
-                obj = getattr(md, api_map[kind])()
-            except Exception as exc:                # noqa: BLE001
-                attempts.append({"mark": mark, "error": str(exc)[:70]})
-                continue
-            text = _as_text(val(obj, "GetText") or val(obj, "Text"))
-            count_after = val(view, counter, None)
-            attempts.append({"mark": mark,
-                             "object": type(obj).__name__ if obj is not None else None,
-                             "text": text, "count_after": count_after})
-            if obj is not None:
-                out["detail"]["attempts"] = attempts
-                out["detail"].update({"text": text, "count_after": count_after})
-                out["checks"] = {
-                    "object_created": _is_com(obj),
-                    "count_increased": (count_after is not None
-                                        and before is not None
-                                        and count_after > before),
-                    "text_readable": isinstance(text, str) and bool(text),
-                }
-                # 判据：对象是真 COM 对象，或计数确实 +1
-                out["ok"] = (out["checks"]["object_created"]
-                             or out["checks"]["count_increased"])
-                return out
-    out["detail"]["attempts"] = attempts
-    out["checks"] = {"object_created": False, "count_increased": False}
+    for entity in edges[:4]:
+        if not _select_entity(doc_w, entity):
+            attempts.append({"select": "failed"})
+            continue
+        try:
+            obj = getattr(md, api_map[kind])()
+        except Exception as exc:                    # noqa: BLE001
+            attempts.append({"call": "error", "message": str(exc)[:70]})
+            continue
+        count_after = _int_or_none(val(view, counter, None))
+        text = _as_text(val(obj, "GetText") if obj is not None else None)
+        created = _is_com(obj)
+        increased = (count_after is not None and before is not None
+                     and count_after > before)
+        attempts.append({"returned": type(obj).__name__ if obj is not None else None,
+                         "created": created, "count_after": count_after,
+                         "text": text})
+        if created or increased:
+            doc_w.ClearSelection2(True)
+            out["detail"].update({"attempts": attempts[-3:], "count_after": count_after,
+                                  "text": text})
+            out["checks"] = {"count_increased": increased,
+                             "object_created": created}
+            out["ok"] = True
+            return out
+    doc_w.ClearSelection2(True)
+    out["detail"]["attempts"] = attempts[-5:]
+    out["checks"] = {"count_increased": False, "object_created": False}
+    out["ok"] = False
     return out
+
+
+def _int_or_none(raw: Any) -> Optional[int]:
+    """把 GetXCount 的返回值（int / array / None）统一成 int 或 None。"""
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return int(raw)
+    if isinstance(raw, int):
+        return raw
+    try:
+        return len(list(raw))
+    except TypeError:
+        return None
+
+
+def _select_entity(doc_w: Any, entity: Any) -> bool:
+    """选中一个视图实体。必须带 VT_DISPATCH NULL 的 Callout，否则静默 False。"""
+    from ..core.com import none_dispatch
+    try:
+        doc_w.ClearSelection2(True)
+    except Exception:                               # noqa: BLE001
+        pass
+    try:
+        return bool(entity.Select4(True, none_dispatch()))
+    except Exception:                               # noqa: BLE001
+        return False
+
+
+def _view_edges(view: Any) -> List[Any]:
+    """视图里的可见边（EntityType=1）。第一个参数必须是 VT_DISPATCH NULL。"""
+    from ..core.com import none_dispatch
+    if view is None:
+        return []
+    try:
+        raw = view.GetVisibleEntities2(none_dispatch(), 1)
+    except Exception:                               # noqa: BLE001
+        return []
+    try:
+        return list(raw) if raw else []
+    except TypeError:
+        return []
+
+
+def _circular_edges(edges: List[Any]) -> List[Any]:
+    """挑出起终点重合的边（=圆边）。"""
+    circles = []
+    for entity in edges:
+        try:
+            params = list(val(entity, "GetCurveParams2") or [])
+        except Exception:                           # noqa: BLE001
+            continue
+        if len(params) >= 6:
+            span = sum((params[3 + i] - params[i]) ** 2 for i in range(3)) ** 0.5
+            if span < 1e-9:
+                circles.append(entity)
+    return circles
+
+
+def _drawing_doc() -> Tuple[Any, Any]:
+    """返回 `(sw_module, IDrawingDoc)`（中心标记等 API 只在 IDrawingDoc 上）。"""
+    sw, app = com_app()
+    return sw, app.ActiveDoc.QueryInterface(sw.IDrawingDoc)
 
 
 def _is_com(obj: Any) -> bool:
