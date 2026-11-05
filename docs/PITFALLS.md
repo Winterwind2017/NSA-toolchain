@@ -126,3 +126,27 @@ subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
 12 种参数组合全部返回 `None`。剩下的唯一差异是几何：本机测试件上的孔是
 `FeatureCut4` 切出来的圆孔，而孔表通常只认 **Hole Wizard 孔**。需要拿一个真正的
 Hole Wizard 零件再验一次（`sw_hole_wizard` 在本机不可用，得手工建）。
+
+
+## 孔表终于做出来了（2026-11-05 21:40）
+
+用户帮我录了一段宏（只录"插孔表"），源码里那行就是答案：
+
+```vb
+Set myView = Part.SelectionManager.GetSelectedObjectsDrawingView(1)
+Set myHoleTable = myView.InsertHoleTable2(False, 0.10027, 0.19557, 1, "A", "D:\...\standard hole table--letters.sldholtbt")
+```
+
+四道坎，缺一条就静默返回 None：
+
+1. **参数顺序**：`InsertHoleTable2(UseAnchorPoint, X, Y, AnchorType, StartValue, Template)`
+   —— 第 5 个是起始标记 `"A"`，**第 6 个才是模板**。之前把模板放第 5、第 6 传空串。
+2. **必须先选中视图里的孔边**。`IView.GetVisibleEntities2(VARIANT(VT_DISPATCH, NULL), 1)`
+   —— 第一个参数给 `None` 会报"类型不匹配"（comtypes 直接 COMError）；
+   拿到边后要 `edge.Select4(True, VARIANT(VT_DISPATCH, NULL))`，`Select4(False, None)`
+   会**静默返回 False**，一条也选不上（这就是"选中数 0"的原因）。
+3. **模板路径必须真实存在**（空串静默失败），本机 SW 装在 D 盘。
+4. **判据不能看 `IView.GetTableAnnotationCount`**：孔表建出来它**仍然是 0**。
+   可靠判据是"返回值非空 且 `result.GetAnnotation().GetType == 14`（孔表注解）"。
+
+实测：选中 6 条边 → 返回 CDispatch → 注解类型 14 → 通过。

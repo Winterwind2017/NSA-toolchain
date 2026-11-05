@@ -664,29 +664,34 @@ def _hole_table_templates() -> list:
 
 
 def hole_table(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
-    """孔表：`IView.InsertHoleTable3(UseAnchor, X, Y, AnchorType, StartValue,
-    Template, TagOrder, TagType, ManualTags)`。
+    """孔表：`IView.InsertHoleTable2(UseAnchorPoint, X, Y, AnchorType,
+    StartValue, Template)`。
 
-    三个前提（都踩过）：
+    这个工具踩了四道坎，全部实测确认过：
 
-    1. 零件里真有孔，视图方向能看到它（前视/后视/等轴测）；
-    2. 必须先 `ActivateView`；
-    3. **Template 必须是真实的 `.sldholtbt` 路径**——传空串 SW 静默返回 None。
-
-    判据：**该视图**的 `GetTableAnnotationCount` +1。
-
-    为什么不用"特征里带 Table"：孔表是**注解**不是特征，按特征数永远 0 —— 这
-    正是旧实现把"其实建出来了"判成失败的原因（`tables_after` 恒 0）。
+    1. **参数顺序**：第 5 个是起始标记 `"A"`，**第 6 个才是模板路径**
+       （从用户录的宏里逐字读出来的：`InsertHoleTable2(False, x, y, 1, "A", tpl)`）。
+       把模板放第 5 个、第 6 个传空串 → 12 组参数全静默返回 None。
+    2. **必须先选中视图里的孔边**。`IView.GetVisibleEntities2` 的第一个参数
+       必须是 `VARIANT(VT_DISPATCH, NULL)`，用 `None` 会报"类型不匹配"；
+       拿到边之后要 `edge.Select4(True, VARIANT(VT_DISPATCH, NULL))` ——
+       `Select4(False, None)` 静默返回 False，一条都选不上。
+    3. **Template 必须是真实的 `.sldholtbt` 路径**，空串同样静默失败。
+    4. **判据不能用 `IView.GetTableAnnotationCount`**：孔表建出来它还是 0
+       （实测 `InsertHoleTable2` 已返回 CDispatch、`GetAnnotation().GetType == 14`
+       = 孔表注解，而视图表计数仍是 0）。所以判据改成"返回值非空 + 注解类型 14"。
     """
-    from ..core.com import val as _val
-    from ._common import iter_features
+    from ..core.com import none_dispatch, val as _val
     import os as _os
-    out = _result("sw_add_hole_table", "IView.InsertHoleTable3")
+    out = _result("sw_add_hole_table", "IView.InsertHoleTable2")
 
-    # 护栏：草图编辑中插孔表会把 SW 拽进"命令未结束"状态，之后整界面点不动、
-    # 连窗口都切不了（2026-11-05 在用户会话里踩过，只能关图重开）。宁可拒绝。
+    # 护栏：**零件里**草图编辑中插孔表会把 SW 拽进"命令未结束"状态，之后整个界面
+    # 点不动、窗口都切不了（2026-11-05 在用户会话里踩过）。
+    # 注意：工程图上 `GetActiveSketch` **永远非空**（它返回视图里模型的草图），
+    # 所以只在非工程图文档上拦。
     active_sketch = _val(doc_w, "GetActiveSketch")
-    if active_sketch is not None:
+    doc_type = _val(doc_w, "GetType")
+    if active_sketch is not None and doc_type != 3:
         out["detail"]["error"] = "文档正在编辑草图，先退出草图再插孔表"
         out["detail"]["active_sketch"] = _val(active_sketch, "Name")
         out["checks"] = {"table_added": False}
@@ -698,62 +703,68 @@ def hole_table(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
         out["detail"]["error"] = "图纸里没有模型视图"
         return out
 
-    def n_table_annotations() -> int:
-        try:
-            return int(_val(view, "GetTableAnnotationCount") or 0)
-        except Exception:                           # noqa: BLE001
-            return -1
-
-    def n_table_features() -> int:
-        n = 0
-        for feat in iter_features(doc_w):
-            if "Table" in (_val(feat, "GetTypeName2") or ""):
-                n += 1
-        return n
-
-    def total() -> int:
-        """注解计数优先；读不到时退回特征计数。"""
-        a = n_table_annotations()
-        return a if a >= 0 else n_table_features()
-
-    before = total()
+    view_name = _val(view, "Name")
     try:
-        doc_w.ActivateView(_val(view, "Name"))
+        doc_w.ActivateView(view_name)
         activated = True
     except Exception:                               # noqa: BLE001
         activated = False
     templates = _hole_table_templates()
-    out["detail"].update({"view": _val(view, "Name"), "activated": activated,
-                          "tables_before": before,
+    out["detail"].update({"view": view_name, "activated": activated,
                           "templates": [_os.path.basename(t) for t in templates]})
+
+    # 视图里的可见边（EntityType=1）；第一条参数必须给 VT_DISPATCH NULL
+    null_dispatch = none_dispatch()
+    edges = []
+    try:
+        raw = view.GetVisibleEntities2(null_dispatch, 1)
+        edges = list(raw) if raw else []
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["entities_error"] = "%s: %s" % (type(exc).__name__,
+                                                      str(exc)[:70])
+    out["detail"]["view_edges"] = len(edges)
+
     attempts = []
     for template in (templates or [""]):
         for anchor in (1, 0):
-            for tag_order in (0, 1):
-                for tag_type in (0, 1):
-                    doc_w.ClearSelection2(True)
-                    try:
-                        res = view.InsertHoleTable3(
-                            True, float(x), float(y), anchor, "A", template,
-                            tag_order, tag_type, None)
-                    except Exception as exc:        # noqa: BLE001
-                        attempts.append({"tpl": _os.path.basename(template)[:24],
-                                         "anchor": anchor, "order": tag_order,
-                                         "type": tag_type, "error": str(exc)[:60]})
-                        continue
-                    after = total()
-                    attempts.append({"tpl": _os.path.basename(template)[:24],
-                                     "anchor": anchor, "order": tag_order,
-                                     "type": tag_type,
-                                     "returned": type(res).__name__ if res is not None else None,
-                                     "tables_after": after})
-                    if after > before:
-                        out["detail"].update({"tables_after": after,
-                                              "attempts": attempts[-4:]})
-                        out["checks"] = {"table_added": True}
-                        out["ok"] = True
-                        return out
-    out["detail"].update({"tables_after": total(), "attempts": attempts[-10:]})
+            doc_w.ClearSelection2(True)
+            picked = 0
+            for entity in edges[:12]:
+                try:
+                    if entity.Select4(True, null_dispatch):
+                        picked += 1
+                except Exception:                   # noqa: BLE001
+                    continue
+            result = None
+            try:
+                result = view.InsertHoleTable2(
+                    False, float(x), float(y), anchor, "A", template)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"tpl": _os.path.basename(template)[:26],
+                                 "anchor": anchor, "edges_selected": picked,
+                                 "error": str(exc)[:60]})
+                continue
+            annotation = None
+            annotation_type = None
+            try:
+                annotation = _val(result, "GetAnnotation") if result is not None else None
+                annotation_type = _val(annotation, "GetType") if annotation is not None else None
+            except Exception:                       # noqa: BLE001
+                pass
+            created = result is not None and annotation_type == 14
+            attempts.append({"tpl": _os.path.basename(template)[:26],
+                             "anchor": anchor, "edges_selected": picked,
+                             "returned": type(result).__name__ if result is not None else None,
+                             "annotation_type": annotation_type,
+                             "created": created})
+            if created:
+                out["detail"].update({"attempts": attempts[-3:],
+                                      "table_template": _os.path.basename(template)})
+                out["checks"] = {"table_added": True}
+                out["ok"] = True
+                return out
+    doc_w.ClearSelection2(True)
+    out["detail"]["attempts"] = attempts[-6:]
     out["checks"] = {"table_added": False}
     out["ok"] = False
     return out
