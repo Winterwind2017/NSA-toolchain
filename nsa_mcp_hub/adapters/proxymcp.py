@@ -84,8 +84,34 @@ def build_proxy_kit(*, key: str, name: str, argv: list, cwd: str,
                 if isinstance(inner.get("result"), dict):
                     reads["result"] = inner["result"]
 
-            errors = [] if not is_error and inner.get("ok", True) else [
-                str(payload.get("text") or inner.get("error") or "backend error")[:400]]
+            if not is_error and inner.get("ok", True):
+                errors = []
+            else:
+                text = str(payload.get("text") or inner.get("error") or "").strip()
+                if not text:
+                    # 上游只回 ok=false 不给原因时，尽量把它的解释性字段抬上来
+                    bits = []
+                    for field in ("message", "reason", "failure_reason", "blocking_reason"):
+                        if inner.get(field):
+                            bits.append(str(inner[field])[:140])
+                    gen = inner.get("generation_results")
+                    if isinstance(gen, list):
+                        for item in gen[:3]:
+                            if isinstance(item, dict) and item.get("result") != "success":
+                                bits.append("%s: %s %s" % (
+                                    item.get("operation_name") or "?",
+                                    item.get("result"),
+                                    str(item.get("error") or item.get("result_value")
+                                        or "")[:90]))
+                    if bits:
+                        text = "；".join(bits)[:360]
+                    else:
+                        bad = [c.get("check") for c in checks
+                               if isinstance(c, dict) and c.get("ok") is False
+                               and c.get("check") != "backend_ok"]
+                        text = ("后端判据未通过：%s" % "、".join(str(x) for x in bad[:4])
+                                if bad else "backend error（后端未给出原因）")
+                errors = [text[:400]]
 
             return apply_checks(
                 normalize(key, remote_name,

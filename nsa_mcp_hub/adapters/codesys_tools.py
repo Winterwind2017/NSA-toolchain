@@ -172,8 +172,14 @@ def _numeric(value: Any) -> Optional[float]:
     if isinstance(value, (int, float)):
         return float(value)
     if isinstance(value, str):
+        text = value.strip()
+        if "#" in text:                      # INT#9 / DINT#1007 / REAL#1.5 / BOOL#TRUE
+            text = text.split("#", 1)[1].strip()
+        upper = text.upper()
+        if upper in ("TRUE", "FALSE"):
+            return 1.0 if upper == "TRUE" else 0.0
         try:
-            return float(value.replace("INT#", "").replace("REAL#", "").strip())
+            return float(text)
         except ValueError:
             return None
     return None
@@ -252,14 +258,21 @@ def judges_for(cmd: str, args: Dict[str, Any], result: Any,
                     v = result[key]
                     if isinstance(v, list):
                         values.extend(_numeric(x) for x in v)
+                    elif isinstance(v, dict):
+                        # online.read 的真实形状：{"values": {"PLC_PRG.nCounter": "INT#9"}}
+                        # —— 以前这里把 dict 整体丢给 _numeric，解析成 None，
+                        # 于是 checks 为空、ok 恒 False（"读到了但判据失败"）。
+                        values.extend(_numeric(x) for x in v.values())
                     else:
                         values.append(_numeric(v))
         values = [v for v in values if v is not None]
         if values:
             add("sample_count", len(values), ">=1", ok=len(values) >= 1)
-            add("first_value", values[0])
+            # 读数本身是**信息**，不是判据：以前默认 want=True，于是任何数值
+            # 都被判成 "!= True" 失败（读到了却 ok=False）。
+            add("first_value", values[0], "参考读数", ok=True)
             if len(values) > 1:
-                add("value_span", max(values) - min(values))
+                add("value_span", max(values) - min(values), "参考读数", ok=True)
 
     # 跨命令验证
     if follow:
