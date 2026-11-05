@@ -107,6 +107,15 @@ def build_proxy_kit(*, key: str, name: str, argv: list, cwd: str,
                     for field in ("message", "reason", "failure_reason", "blocking_reason"):
                         if inner.get(field):
                             bits.append(str(inner[field])[:140])
+                    # 结构化阻塞项：ug/机床校验这类工具只回 ok=false + blockers，
+                    # 不抬上来调用方只会看到"后端未给出原因"（实测就是这个坑）。
+                    for field in ("blockers", "remaining_blockers",
+                                  "missing_channel_axis_assignments",
+                                  "missing_expected_axes", "missing_components"):
+                        value = inner.get(field)
+                        if isinstance(value, list) and value:
+                            bits.append("%s=%s" % (field, ",".join(
+                                str(item) for item in value[:6])))
                     gen = inner.get("generation_results")
                     if isinstance(gen, list):
                         for item in gen[:3]:

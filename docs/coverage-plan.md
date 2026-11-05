@@ -937,3 +937,37 @@ sw 95.8% → **98.4%**（未覆盖 8 → 3：analyze_draft / move_component / ki
 → 生成下载文件（10.9 s，产出 `flowproj.updown`）→ 关闭。
 
 autoshop 90.5% → **100%**；全库 **98.2%**。
+
+## ug 归零（2026-11-05 22:15）
+
+五个"机床校验/仿真"工具之前一条用例都没有，现在一条剧本全盖住 ——
+但断言的是「**每条拒绝都带确定原因**」，不是「校验通过」。
+
+| 工具 | 本机实测结论 |
+|---|---|
+| `ug_validate_machine_kinematics` | 组件/轴/几何/接合/系统类/链条**全过**，唯一阻塞 `channel_axis_assignments_missing` |
+| `ug_validate_machine_static_collisions` | 同上 + `collision_pairs_missing`（`.mch` 没碰撞对） |
+| `ug_inspect_machine_simulation_readiness` | 建了 CAM setup 但没工序 → `contains no operations` |
+| `ug_start_machine_simulation_with_collision_stop` | 同上 |
+| `ug_import_machine_kit_readback` | 用不存在的 `.mtk` → `machine kit does not exist`（证明它不假成功） |
+
+**许可证定论**：`KinematicChannelBuilder.SetAssignedAxes` 的 API 文档要求
+`ug_isv_full` 或 `nx_isv_mtb`；本机没有，所以 `IsAxisAssignedToChannel` 恒 False，
+而 `KinematicChannelConfigurationBuilder.Commit()` 还会把通道清空。
+
+顺手两个上游修复：
+
+1. `nx_remote_ops`：`DefineKinematicChains().Commit()` 会冲掉之前注册的通道，
+   改成**链提交之后再补注册**（`register_machine_channel_after_chains`），
+   阻塞项从「连通道都没了」收敛成一条准确原因，并回传 `channel_reregistered_after_chains`。
+2. `proxymcp`（hub 侧代理层）：上游只回 `ok=false` + `blockers` 时，原来统一报
+   「backend error（后端未给出原因）」；现在把 `blockers / remaining_blockers /
+   missing_*` 抬进 errors，调用方看到的是
+   `blockers=channel_axis_assignments_missing；missing_channel_axis_assignments=X,Y,Z,B,C,S`。
+
+另外 harness 侧一条坑：剧本步骤要带 `"ok"` 字段才计入覆盖（`reads.steps[].ok`），
+只写 `actual_ok` 的话用例 PASS 但覆盖率原地不动（我因此白跑一次）。
+
+新剧本 `ug.flow.machine_validate`（12 步，4.8 s）。
+ug 94.0% → **100%**；全库 **99.0%**（614/620）。
+剩 6：`kit_runtime` ×4（合成项）+ sw `analyze_draft` / `move_component`。
