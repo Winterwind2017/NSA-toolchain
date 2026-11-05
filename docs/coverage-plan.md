@@ -494,6 +494,30 @@ CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_comp
 * `sw_close_document` 单跑能用，但在验收会话里会弹"是否保存"模态框把用例卡住 → 验收里不测；
 * FEA（`sim_solve` 15 分钟）与 Motion 仍按"时间成本"排除。
 
+## 尺寸链：两条 API 都不可用，**这条线放弃自动化**（2026-11-05 11:12，以崩一次 SW 为代价）
+
+从 typelib（`D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb`）里查到三个
+"看着非交互"的建尺寸入口，逐个实测：
+
+| API | 签名 | 实测结果 |
+|---|---|---|
+| `ISketchManager.AddAlongXDimension` | (x, y, z) → IDisplayDimension | **把 SolidWorks 弄崩了**。日志 `<ED>uiDVEMultiDimPropPageValue_c "尺寸"` → `<EXCEPTION> Access Violation at 0x2ac0, attempt to write to memory` → `<EOSL>0` 异常退出，COM 只回"远程过程调用失败" |
+| `IModelDoc2.AddDimension2` | (x, y, z) → IDimension | 不崩但 **180 s 不返回**，SW 停在等输入的交互态，后续工具调用全被"上一次调用还在后台"挡住 |
+| `ISketchManager.AddAlongYDimension` | 同上 | 崩溃后已无法解析（进程没了） |
+
+**结论**：SW 的尺寸创建是**UI 驱动**的（内部要开属性页/等用户点位置），没有可用的
+无交互路径。所以这一批统一记为"**需要交互界面，不纳入自动化**"：
+
+`sw_get_dimension` / `sw_set_dimension` / `sw_add_gtol` / `sw_add_datum_feature` /
+`sw_add_weld_symbol` / `sw_add_center_mark`
+
+崩后恢复：`Start-Process "D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\SLDWORKS.exe"`，
+等 60–90 s，`sw_get_status` 能连上即恢复（本次重启后 `document_count: 0`，
+欢迎面板**没有"文档恢复"**，说明没丢用户文档；最近文档里的"未找到文件"是我们
+删掉的临时测试件）。
+
+## 旧的尺寸链尝试（AddDimension2 卡死）—— 已被上面的结论取代
+
 ## 尺寸链尝试（2026-11-05 11:07）：`AddDimension2` 在本机会卡死
 
 想让 `sw_get_dimension` / `sw_set_dimension` 有东西可读，得先造尺寸。试了
