@@ -422,3 +422,30 @@ PASS gx.batch.offline   170 s
   RunAnalysis 返回 19），但在验收会话里 900 s 超时 —— 用例删掉、函数保留；
 * `sw_select_features` 对中文特征名**仍然选不中**（`SelectByID2` 与特征树遍历两种都试过），
   但 `suppress_feature` / `delete_feature` 不需要选中就能用，所以这批不影响覆盖。
+
+## NX（ug）桥起来了：UGII_USER_DIR 指到 nx_user 就会自动加载 DLL（2026-11-05 09:55）
+
+之前把 ug 记成"环境阻塞、要人手 Ctrl+U"，**这是错的**：
+
+```
+$env:UGII_USER_DIR = 'D:\bililive\CAD-Agent-Hub\MCP\UG\nx_user'
+Start-Process 'D:\Program Files\Siemens\DesigncenterNX2512\NXBIN\ugraf.exe'
+→ 45 秒后 127.0.0.1:48161 就在听，ug_ping ok
+```
+
+`nx_user\startup\NXMcPRemotingServer.dll` 是 NX 启动时自动加载的（NX 的 standard
+startup 机制），**根本不需要 Ctrl+U**。起来之后 ug 工具都在 0.4–15 s。
+
+新增 4 条剧本（全部 PASS，合计 30.7 s）：
+
+| 用例 | 覆盖 |
+|---|---|
+| `ug.flow.model` | create_part / create_block / inspect_body_topology / get_part_summary / inspect_work_part_geometry / rebuild_work_part / run_python / save_work_part / export_exchange / import_exchange |
+| `ug.flow.cam` | initialize_cam_setup / get_cam_capabilities / create_cam_milling_context / define_cam_mcs / define_cam_workpiece / create_cam_mill_tool / create_cam_operation / set_cam_operation_geometry / inspect_cam_operations / inspect_cam_setup |
+| `ug.flow.drawing` | create_drawing_sheet / create_projected_view / create_drafting_note / inspect_drawing_annotations |
+| `ug.flow.sheetmetal` | create_parametric_sketch / inspect_sketch / create_sheet_metal_tab / inspect_work_part_geometry |
+
+**踩到的参数坑**：`create_part` 的文件名重名会报"文件已存在"（每次用 uuid 后缀）；
+`view_position`/`note.position` 要**三个**坐标、`rectangle.origin` 要**两个**；
+`create_cam_operation` 的 `tool_name` 必须等于已建的刀具名（默认 `T01_END_MILL`）；
+`generate_cam_toolpath` 目前 backend error（几何没选对，CLSF 导出因此也不可用）。

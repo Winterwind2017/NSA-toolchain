@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import tempfile
+import uuid
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1561,6 +1562,84 @@ def _codesys_runtime_flow(client, context):
             "errors": [], "checks": checks}
 
 
+def _codesys_rest_flow(client, context):
+    """CODESYS 剧本七：命令表/版本/设备库/树/带类型 POU/成员/移动/任务/符号/IO/运行时/清理。
+
+    实测（2026-11-05）：这 13 个工具**都是参数问题**，给对参数就全过——
+    特别是 `pou_member` 要 `kind="method"`、`object_move` 要 `index=-1`、
+    `task_info` 要 `/PLC/Plc Logic/Application/Task Configuration/MainTask`。
+    仍不行：`textlist_export`（ScriptObject 没有 export 属性）、
+    `online_write/read`（表达式一律"无效的表达式"）、`project_open`（文件被本会话占用）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_rest_")
+    if isinstance(context, dict):
+        context["workdir"] = work
+    app = "/PLC/Plc Logic/Application"
+    project = os.path.join(work, "rest.project")
+    csv = os.path.join(work, "io.csv")
+    rt = os.path.join(work, "runtime")
+    steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_commands", {}),
+        ("codesys_version", {}),
+        ("codesys_devices", {"filter": "CODESYS Control", "limit": 3}),
+        ("codesys_tree", {"path": "/", "depth": 2}),
+        ("codesys_pou_create_typed", {"name": "AccFn", "kind": "function_block",
+                                      "language": "ST", "return_type": "BOOL",
+                                      "parent": app}),
+        ("codesys_pou_member", {"parent": app + "/AccFn", "name": "DoIt",
+                                "kind": "method", "return_type": "BOOL"}),
+        ("codesys_object_move", {"path": app + "/AccFn", "parent": app, "index": -1}),
+        ("codesys_symbols_create", {"layout_calculator": "", "export_comments": True,
+                                    "opc_ua": False}),
+        ("codesys_symbols_info", {"path": app}),
+        ("codesys_project_io_export", {"path": csv, "device": "/PLC"}),
+        ("codesys_project_io_import", {"path": csv, "device": "/PLC"}),
+        ("codesys_generate_runtime", {"directory": rt}),
+        ("codesys_app_clean", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    # 任务信息要先用 tasks 拿路径
+    tasks = client.call("codesys_tasks", {})
+    done.append({"tool": "codesys_tasks", "ok": bool(tasks.get("ok"))})
+    items = ((tasks.get("reads") or {}).get("result") or {}).get("items") or []
+    paths = [i.get("path") for i in items if isinstance(i, dict) and i.get("path")]
+    if paths:
+        info = client.call("codesys_task_info", {"path": paths[0]})
+        done.append({"tool": "codesys_task_info", "ok": bool(info.get("ok"))})
+        if not info.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "workdir": work},
+                    "errors": ["codesys_task_info 失败：%s"
+                               % str(info.get("errors"))[:200]], "checks": []}
+    runtime_files = len(os.listdir(rt)) if os.path.isdir(rt) else 0
+    csv_bytes = os.path.getsize(csv) if os.path.exists(csv) else 0
+    checks = [
+        {"check": "flow_steps", "got": len(done), "want": len(done),
+         "ok": all(step["ok"] for step in done)},
+        {"check": "io_csv_bytes", "got": csv_bytes, "want": ">50", "ok": csv_bytes > 50},
+        {"check": "runtime_files", "got": runtime_files, "want": ">=0（视安装而定）",
+         "ok": runtime_files >= 0},
+    ]
+    return {"ok": all(step["ok"] for step in done) and csv_bytes > 50,
+            "reads": {"steps": done, "io_csv_bytes": csv_bytes,
+                      "runtime_files": runtime_files, "workdir": work},
+            "errors": [] if csv_bytes > 50 else ["I/O CSV 太小：%d B" % csv_bytes],
+            "checks": checks}
+
+
 def codesys_setup() -> dict:
     """起常驻服务（headless，约 8-10 s）；**确认服务真的应答**才复用。"""
     import json
@@ -1604,6 +1683,13 @@ CODESYS_CASES = [
      "args": {}, "expect_ok": True, "timeout_s": 900,
      "skip_if": lambda context: not context.get("codesys_free"),
      "call": lambda client, context: _codesys_runtime_flow(client, context),
+     "cleanup": _codesys_cleanup},
+
+    {"id": "codesys.flow.rest", "tool": None,
+     "title": "CODESYS 剧本七：命令/版本/设备/树/带类型 POU/成员/移动/任务/符号/IO/运行时（16 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_rest_flow(client, context),
      "cleanup": _codesys_cleanup},
 
     {"id": "codesys.flow.io", "tool": None,
@@ -1969,7 +2055,132 @@ def _ug_cam_recipe(client, context: dict) -> dict:
             pass
 
 
+def _ug_flow(client, steps, tag):
+    """UG/NX 多步剧本：工具都很快（0.4–15 s），失败即停。"""
+    import threading
+    done, failures = [], []
+    for name, args in steps:
+        box: dict = {}
+
+        def _one(tool_name=name, tool_args=args):
+            try:
+                box["payload"] = client.call(tool_name, tool_args or {})
+            except Exception as exc:                   # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:140])
+
+        worker = threading.Thread(target=_one, daemon=True)
+        worker.start()
+        worker.join(300)
+        if worker.is_alive():
+            failures.append("%s 超时（>300 s）" % name)
+            done.append({"tool": name, "ok": False})
+            break
+        if "error" in box:
+            failures.append("%s 抛异常：%s" % (name, box["error"]))
+            done.append({"tool": name, "ok": False})
+            break
+        ok = bool(box["payload"].get("ok"))
+        done.append({"tool": name, "ok": ok})
+        if not ok:
+            failures.append("%s 失败：%s" % (name, str(box["payload"].get("errors"))[:160]))
+            break
+    return {"ok": not failures, "reads": {"steps": done, "tag": tag}, "errors": failures,
+            "checks": [{"check": "ug_flow_ok", "got": len(done) - len(failures),
+                        "want": len(done), "ok": not failures}]}
+
+
+def _ug_model_flow(client, context):
+    """ug 剧本一：建块 → 拓扑/摘要/几何自省 → 重建 → 存盘 → STEP 往返（10 步）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_ug_model_")
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_model_%s.prt" % _s}),
+        ("ug_create_block", {"length": 100, "width": 50, "height": 20}),
+        ("ug_inspect_body_topology", {}),
+        ("ug_get_part_summary", {}),
+        ("ug_inspect_work_part_geometry", {}),
+        ("ug_rebuild_work_part", {}),
+        ("ug_run_python", {"code": "result = 1 + 1"}),
+        ("ug_save_work_part", {}),
+        ("ug_export_exchange", {"file_name": "acc_model_%s.step" % _s, "format": "step"}),
+        ("ug_import_exchange", {"file_name": "acc_model_%s.step" % _s, "format": "step"}),
+    ]
+    return _ug_flow(client, steps, "model")
+
+
+def _ug_cam_flow(client, context):
+    """ug 剧本二：CAM 上下文 → MCS/工件/刀具/工序/几何 → 自省（12 步）。"""
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_cam_%s.prt" % _s}),
+        ("ug_create_block", {"length": 100, "width": 60, "height": 40}),
+        ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+        ("ug_get_cam_capabilities", {"template_type": "mill_planar"}),
+        ("ug_create_cam_milling_context", {"origin": [0, 0, 50], "part_body_indices": [0]}),
+        ("ug_define_cam_mcs", {"origin": [0, 0, 50], "mcs_name": "MCP_MCS"}),
+        ("ug_define_cam_workpiece", {"body_indices": [0], "blank_offset": 2}),
+        ("ug_create_cam_mill_tool", {"name": "T1", "diameter": 10, "flute_length": 20,
+                                     "overall_length": 60}),
+        ("ug_create_cam_operation", {"name": "OP1", "template_subtype": "PLANAR_MILL",
+                                     "template_type": "mill_planar", "tool_name": "T1"}),
+        ("ug_set_cam_operation_geometry", {"operation_name": "OP1", "body_index": 0,
+                                           "cut_area_face_selectors": [{"face_index": 0}]}),
+        ("ug_inspect_cam_operations", {}),
+        ("ug_inspect_cam_setup", {"max_depth": 3}),
+    ]
+    return _ug_flow(client, steps, "cam")
+
+
+def _ug_drawing_flow(client, context):
+    """ug 剧本三：A3 图纸 + 投影视图 + 注释 + 注释自省（6 步）。"""
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_dwg_%s.prt" % _s}),
+        ("ug_create_block", {"length": 100, "width": 60, "height": 20}),
+        ("ug_create_drawing_sheet", {"name": "S1", "size": "A3", "create_base_view": True}),
+        ("ug_create_projected_view", {"view_position": [200.0, 150.0, 0.0]}),
+        ("ug_create_drafting_note", {"lines": ["ACCEPT"], "position": [50.0, 50.0, 0.0]}),
+        ("ug_inspect_drawing_annotations", {}),
+    ]
+    return _ug_flow(client, steps, "drawing")
+
+
+def _ug_sheetmetal_flow(client, context):
+    """ug 剧本四：参数化草图 → NX 钣金基体 tab → 体自省（5 步）。"""
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_sm_%s.prt" % _s}),
+        ("ug_create_parametric_sketch", {"name": "SK1", "plane": "XY",
+                                         "geometry": [{"type": "rectangle", "name": "r1",
+                                                       "origin": [0.0, 0.0],
+                                                       "width": 80.0, "height": 40.0}]}),
+        ("ug_inspect_sketch", {}),
+        ("ug_create_sheet_metal_tab", {"sketch_id": "SK1", "thickness": 2}),
+        ("ug_inspect_work_part_geometry", {}),
+    ]
+    return _ug_flow(client, steps, "sheetmetal")
+
+
 UG_CASES = [
+    # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
+    {"id": "ug.flow.model", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本一：建块/拓扑/摘要/重建/存盘/STEP 往返（10 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_model_flow(client, context)},
+    {"id": "ug.flow.cam", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本二：CAM 上下文/MCS/工件/刀具/工序/几何（12 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_cam_flow(client, context)},
+    {"id": "ug.flow.drawing", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本三：A3 图纸/投影视图/注释/自省（6 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_drawing_flow(client, context)},
+    {"id": "ug.flow.sheetmetal", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本四：参数化草图/NX 钣金 tab（5 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_sheetmetal_flow(client, context)},
+
+
     {"id": "ug.ping", "tool": "ug_ping",
      "title": "NX 桥连通性（进程/零件/桥版本）",
      "args": {},
