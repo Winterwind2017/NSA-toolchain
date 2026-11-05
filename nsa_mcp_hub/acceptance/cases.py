@@ -318,8 +318,13 @@ SW_CASES = [
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_refs_select_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.param_dimension", "tool": None,
+     "title": "SW 剧本五十四：参数化零件改尺寸（4 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_param_dimension_flow(client, context)},
     {"id": "sw.flow.drawing_extra", "tool": None,
-     "title": "SW 剧本五十三：3D 剖视 + 孔表 + 断裂视图（14 步）",
+     "title": "SW 剧本五十三：3D 剖视 + 孔表 + 断裂视图 + 四种符号（18 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_drawing_extra_flow(client, context)},
@@ -4665,11 +4670,37 @@ def _sw_drawing_extra_flow(client, context):
         ("sw_exit_sketch", {}),
         ("sw_cut_extrude", {"through_all": True}),
         ("sw_create_section_view", {"plane": "前视基准面", "offset": 0.0}),
-        ("sw_new_drawing", {"model": part, "view": "front"}),
+        # 用**上视**建图：孔轴线沿 Z，上视才看得见孔口圆边——中心标记必须有圆边
+        ("sw_new_drawing", {"model": part, "view": "top"}),
         ("sw_add_hole_table", {"x": 0.12, "y": 0.18}),
         ("sw_add_broken_view", {"orientation": 0, "position": 0.049, "size": 0.01}),
+        ("sw_add_center_mark", {"x": 0.05}),
+        ("sw_add_datum_feature", {}),
+        ("sw_add_gtol", {}),
+        ("sw_add_weld_symbol", {}),
     ]
     return _sw_flow_any(client, steps, "drawing_extra", work)
+
+
+def _sw_param_dimension_flow(client, context):
+    """SW 剧本五十四：参数化零件改尺寸（4 步）。
+
+    `sw_set_dimension` 要的是一个**真实存在的命名尺寸**；参数化零件（feature graph）
+    建出来的块自带 `D1@BlockBoss`，实测 `doc.Parameter("D1@BlockBoss")` 可读可写，
+    20 mm → 25 mm 读回一致。空零件上现画的矩形**没有命名尺寸**，所以必须用
+    参数化零件当夹具。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_dim_")
+    steps = [
+        ("sw_create_parametric_part", {"part_type": "block",
+                                       "parameters": {"length": 60, "width": 40,
+                                                      "height": 20},
+                                       "execute": True}),
+        ("sw_get_dimension", {"name": "D1@BlockBoss"}),
+        ("sw_set_dimension", {"name": "D1@BlockBoss", "value_mm": 25.0}),
+        ("sw_get_dimension", {"name": "D1@BlockBoss"}),
+    ]
+    return _sw_flow_any(client, steps, "param_dimension", work)
 
 
 def _sw_flow_any(client, steps, tag, work):

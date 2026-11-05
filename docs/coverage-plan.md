@@ -879,3 +879,31 @@ Set myHoleTable = myView.InsertHoleTable2(False, 0.10027, 0.19557, 1, "A", "D:\.
 
 覆盖：620 工具 ｜ 验收 472 ｜ 合并 599 = **96.6%** ｜ 快乐路径 444
 sw 95.3% → **95.8%**（未覆盖 9 → 8）
+
+## 注释/标注类一次打通（2026-11-05 22:00，swkit 233b9f0）
+
+`sw_add_datum_feature` / `sw_add_gtol` / `sw_add_weld_symbol` / `sw_add_center_mark`
+一直是"ok=False 且 errors 为空"，根因只有一条：**选边方式**。
+
+| 手段 | 结果 |
+|---|---|
+| `entity.Select2(False, mark)`（旧） | 静默 False，一条选不上 → `InsertDatumTag2()` 返回 None |
+| `entity.Select4(True, VARIANT(VT_DISPATCH,NULL))` | 选得上（6 条边）→ 三个 API 立刻生效 |
+
+判据也改对了：
+
+* datum / gtol / weld：`IView.GetDatumTagCount / GetGTolCount / GetWeldSymbolCount`
+  **实测准**（0→1）；
+* center_mark：`IView.GetCenterMarks` 建完仍 0（同孔表），改判
+  `IDrawingDoc.InsertCenterMark2(Style, Propagate)` 是否返回 ICenterMark；
+* 中心标记需要圆边——孔轴沿 Z 时前视图看不到孔口圆，验收改用**上视**建图。
+
+`sw_set_dimension` 本身没 bug，缺"真实命名尺寸"：参数化零件自带 `D1@BlockBoss`，
+20 mm → 25 mm 读回一致（体积不变说明它不是拉伸深度，但读写链路是对的）。
+
+新剧本：`sw.flow.param_dimension`（3.6 s，4 步）。
+`sw.flow.drawing_extra` 扩成 18 步：3D 剖视 → 上视建图 → 孔表 → 断裂视图 → 中心标记
+→ 基准 → 形位公差 → 焊接符号，11.2 s 通过。
+
+覆盖：620 工具 ｜ 验收 478 ｜ 合并 604 = **97.4%** ｜ 快乐路径 450
+sw 95.8% → **98.4%**（未覆盖 8 → 3：analyze_draft / move_component / kit_runtime）
