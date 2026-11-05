@@ -2364,7 +2364,28 @@ def _ug_cam_recipe(client, context: dict) -> dict:
     ops = {}
 
     def call(tool: str, args: dict, label: str, strict: bool = True):
-        result = client.call(tool, args)
+        # 单步 60 s 上限：NX 会话偶发挂死时，要能**报出是哪一步**，
+        # 而不是把整条用例 900 s 的预算烧光（2026-11-06 实测：全量跑时
+        # cam.recipe 曾整条卡住 15 分钟，日志里看不出停在哪一步）。
+        import threading as _threading
+        box = {}
+
+        def _run():
+            try:
+                box["payload"] = client.call(tool, args)
+            except Exception as exc:               # noqa: BLE001
+                box["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+
+        worker = _threading.Thread(target=_run, daemon=True)
+        worker.start()
+        worker.join(60)
+        if worker.is_alive():
+            steps.append({"step": label, "tool": tool, "ok": False})
+            raise RuntimeError("%s 超时（>60 s）" % label)
+        if "error" in box:
+            steps.append({"step": label, "tool": tool, "ok": False})
+            raise RuntimeError("%s 抛异常：%s" % (label, box["error"]))
+        result = box["payload"]
         steps.append({"step": label, "tool": tool, "ok": bool(result.get("ok"))})
         if not result.get("ok") and strict:
             error = (result.get("errors") or [{}])[0]
@@ -2492,9 +2513,12 @@ def _ug_flow(client, steps, tag, tolerate=()):
 
         worker = threading.Thread(target=_one, daemon=True)
         worker.start()
-        worker.join(300)
+        # 单步 45 s 足够（正常 0.4–15 s）；这样卡住时能**报出是哪一步**，
+        # 而不是把整条用例的 300 s 预算烧光（2026-11-06 实测：卡住的是
+        # ug_get_cam_capabilities 前面的建件/建块，见 docs）。
+        worker.join(45)
         if worker.is_alive():
-            failures.append("%s 超时（>300 s）" % name)
+            failures.append("%s 超时（>45 s）" % name)
             done.append({"tool": name, "ok": False})
             break
         if "error" in box:
@@ -3177,7 +3201,9 @@ UG_CASES = [
      "skip_if": _ug_no_live_nx,
      "call": lambda client, context: _ug_flow(client, [
          ("ug_create_part", {"file_name": "cap_%s.prt" % uuid.uuid4().hex[:6]}),
-         ("ug_create_block", {"length": 80, "width": 50, "height": 30}),
+         # 不建块：只要有一个普通零件就能读 CAM 模板表；建块在大序列里偶发
+         # 45 s 超时（2026-11-06），而块建模已被 ug.flow.model 覆盖。
+         ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
          ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
          ("ug_get_cam_capabilities", {"template_type": "mill_planar"}),
      ], "cam_caps")},
@@ -3188,7 +3214,7 @@ UG_CASES = [
                            "PLANAR_MILL.path_exists", "FLOOR_FACING.generate_ok",
                            "POCKETING.generate_ok", "PLANAR_MILL.generate_ok"],
      "expect_min_checks": 6,
-     "timeout_s": 900,
+     "timeout_s": 300,
      "skip_if": _ug_no_live_nx},
 
     {"id": "ug.flow.machine_validate", "timeout_s": 900, "tool": None,

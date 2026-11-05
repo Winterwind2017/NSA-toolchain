@@ -1097,3 +1097,15 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 顺带修 `nsa_probe_5ax` profile：`expected_axes` 改 B/C、`geometry_root` 指向我们放 STL 的目录
 （原来指向 NX sim05 图形目录，导致 `ug.flow.machine_inspect` 报
 `component_geometry_missing` + `expected_axes_missing`）。
+
+## ug 全量 300 s 超时：定位到 `initialize_cam_setup`（2026-11-06 02:20）
+
+* 加了单步超时后拿到真凶：前 13 条用例之后，**再进 CAM（`initialize_cam_setup`）挂死**
+  （`ug.cam.capabilities` 45 s 超时点名该步骤）；同一位置也会在 `create_block` 出现，
+  说明是会话级状态退化，不是单个工具。
+* 已改：`_ug_flow` 单步 45 s、`_ug_cam_recipe` 单步 60 s + 用例超时 900→300 s，
+  失败时**报出步骤名**；`_ensure_design_application()` 前置到 `create_part`/`create_block`/
+  `cam_capabilities`（机床构建器应用粘性会毒化后续建模与 CAM）。
+* `ug.cam.capabilities` 去掉"建块"步骤（块建模已被 `ug.flow.model` 覆盖，且它在大序列里
+  偶发 45 s 超时）。
+* 待办：加 `ug_close_test_parts`（只关 `acc_*`/`cap_*`/`nsa_accept_*`），在 CAM 用例开头清理会话。
