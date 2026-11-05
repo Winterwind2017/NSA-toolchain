@@ -1052,3 +1052,16 @@ blockers = ['channel_axis_assignments_missing']   ← 只剩许可证那条
 最终 ug 五件套：kinematics / static collisions **正通过**，readiness / start 断言
 CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 覆盖维持 **620/620 = 100%**。
+
+## `.mtk` 导出 + CAM 就绪度：两条都收掉（2026-11-06 00:00）
+
+| 项 | 结论 |
+|---|---|
+| `.mtk` 导出 | 不给参考包 → NX 的 `ExportMachineKitBuilder` 内部 TCL 恒定 abort（`MOM_TCL：用户选择了中止`，**没有任何对话框**，窗口监视器 0 命中）；**给 `reference_container_file_name=nsa_reference_kit.mtk`** 就跳过 builder、直接 repackage → `ok=True`、1,527,734 B、回读 `isolated_import=True`、全局机床库未变 |
+| readiness | 建一个空工序（先 `create_cam_mill_tool`，再 `create_cam_operation` 用 `geometry_name=MCS_MAIN`）后 **ok=True**；但它只是报告（`machine_simulation_ready=False` + blockers） |
+| start | 仍是真闸门，拒绝并点名 `no_machine_library_binding / toolpaths_missing / part_geometry_missing / blank_geometry_missing` |
+
+剧本 `ug.flow.machine_validate`（14 步，9.7 s PASS）现在覆盖：
+运动学通过、静态碰撞通过、导出+回读通过、readiness 报告通过、start 的有序拒绝。
+
+覆盖：**620/620 = 100%**（验收 496 ｜ 契约 245 ｜ 快乐路径 469 ｜ 未覆盖 0）。

@@ -2793,6 +2793,7 @@ def _ug_machine_validate_flow(client, context):
     """
     _s = uuid.uuid4().hex[:6]
     workspace = "acc_kit_%s.prt" % _s
+    kit_name = "nsa_acc_%s.mtk" % _s
     profile = "nsa_simple"
     created = client.call("ug_create_smart_machine_kit_workspace", {
         "source_profile": profile, "workspace_file_name": workspace,
@@ -2824,25 +2825,44 @@ def _ug_machine_validate_flow(client, context):
             "source_profile": profile, "workspace_file_name": workspace,
             "evaluate_geometry": True,
             "confirmation": "EVALUATE_STATIC_MACHINE_COLLISIONS"}, True, None),
-        # 注意：`.mtk` 导出（`ug_export_machine_kit_from_reference`）在本机**不可稳定自动化** ——
-        # 它内部走 MOM_TCL 打包，实测在自动化调用里恒定报
-        # `NXOpen.NXException: MOM_TCL：用户选择了中止。`
-        # （手工/单独一次调用曾经成功过一次，产出 1.5 MB 的 .mtk，回读也 OK，
-        #  见 docs 里的配方；但它不进剧本，避免偶发红。）
-        # 这里用不存在的 kit 名验证 readback **报错而不是假成功**。
+        # 导出 `.mtk`：**必须给 reference_container_file_name**。
+        # 不给时会走 NX 的 `ExportMachineKitBuilder`，那条内部是 MOM_TCL 打包，
+        # 自动化调用恒定报 `MOM_TCL：用户选择了中止`；给了已验证的参考包之后
+        # 直接走 repackage（不再触发 TCL），实测稳定 ok+可回读。
+        ("ug_save_work_part", {}, True, None),
+        ("ug_export_machine_kit_from_reference", {
+            "source_profile": profile, "workspace_file_name": workspace,
+            "output_file_name": kit_name,
+            "reference_container_file_name": "nsa_reference_kit.mtk",
+            "dry_run": False, "overwrite": True,
+            "confirmation": "EXPORT_MACHINE_KIT"}, True, None),
         ("ug_import_machine_kit_readback", {
-            "machine_kit_file_name": "no_such_kit.mtk", "source_profile": profile,
-            "dry_run": True, "confirmation": "IMPORT_MACHINE_KIT_READBACK"},
-         False, "does not exist"),
+            "machine_kit_file_name": kit_name, "source_profile": profile,
+            "dry_run": False, "keep_imported": False,
+            "confirmation": "IMPORT_MACHINE_KIT_ISOLATED"}, True, None),
         ("ug_initialize_cam_setup", {"template_name": "mill_planar",
                                      "switch_to_manufacturing": False}, True, None),
+        # 建工序前必须先把刀具建出来（工序要挂 tool parent）
+        ("ug_create_cam_mill_tool", {
+            "name": "T01_END_MILL", "diameter": 10.0, "flute_length": 20.0,
+            "overall_length": 60.0, "flute_count": 4, "tool_number": 1}, True, None),
+        # readiness 的硬前置是"程序组里至少一个工序"；建一个空工序（无几何）即可让它出**报告**
+        ("ug_create_cam_operation", {
+            "name": "MCP_FACE_1", "template_type": "mill_planar",
+            "template_subtype": "PLANAR_MILL", "program_name": "NC_PROGRAM",
+            "method_name": "MILL_FINISH", "geometry_name": "MCS_MAIN",
+            "tool_name": "T01_END_MILL"},
+         True, None),
+        # readiness 返回的是"报告"（ok=True 但 ready=False + blockers），这里断言 ok=True，
+        # 并且 blocker 里必须点到"没绑机床库/没刀路"——这些正是 start 会拒绝的原因。
         ("ug_inspect_machine_simulation_readiness", {
             "program_name": "NC_PROGRAM",
-            "required_axes": ["X", "Y", "Z", "B", "C"]}, False, "no operations"),
+            "required_axes": ["X", "Y", "Z", "B", "C"]}, True, None),
+        # start 是真闸门：没绑机床库/没刀路时拒绝，且必须报出 blockers
         ("ug_start_machine_simulation_with_collision_stop", {
             "program_name": "NC_PROGRAM",
             "required_axes": ["X", "Y", "Z", "B", "C"],
-            "play_immediately": False}, False, "no operations"),
+            "play_immediately": False}, False, "not ready"),
     ]
     records = []
     checks = []
@@ -2901,6 +2921,39 @@ def _ug_machine_validate_flow(client, context):
     checks.append({"check": "static_collision_no_blockers",
                    "got": static_reads.get("blockers"), "want": [],
                    "ok": static_reads.get("blockers") == []})
+
+    # 仿真就绪度：ok=True 只是一份报告，必须真的列出阻塞项
+    readiness_reads = step_reads.get("ug_inspect_machine_simulation_readiness") or {}
+    ready_blockers = readiness_reads.get("blockers") or []
+    checks.append({"check": "readiness_reports_blockers",
+                   "got": ready_blockers, "want": "non-empty",
+                   "ok": bool(ready_blockers)})
+    checks.append({"check": "readiness_not_ready_is_reported",
+                   "got": readiness_reads.get("machine_simulation_ready"),
+                   "want": False,
+                   "ok": readiness_reads.get("machine_simulation_ready") is False})
+    checks.append({"check": "readiness_mentions_machine_binding",
+                   "got": "no_machine_library_binding" in ready_blockers,
+                   "want": True,
+                   "ok": "no_machine_library_binding" in ready_blockers})
+
+    # 导出/回读（repackage 路线，稳定）
+    export_reads = step_reads.get("ug_export_machine_kit_from_reference") or {}
+    readback_reads = step_reads.get("ug_import_machine_kit_readback") or {}
+    checks.append({"check": "machine_kit_export_structural_passed",
+                   "got": export_reads.get("structural_validation_passed"), "want": True,
+                   "ok": bool(export_reads.get("structural_validation_passed"))})
+    checks.append({"check": "machine_kit_export_route_repackage",
+                   "got": export_reads.get("packaging_route"),
+                   "want": "nx_reference_kit_repackage",
+                   "ok": export_reads.get("packaging_route") == "nx_reference_kit_repackage"})
+    checks.append({"check": "machine_kit_readback_isolated",
+                   "got": readback_reads.get("isolated_import"), "want": True,
+                   "ok": bool(readback_reads.get("isolated_import"))})
+    checks.append({"check": "machine_kit_readback_global_db_unchanged",
+                   "got": readback_reads.get("global_machine_database_unchanged"),
+                   "want": True,
+                   "ok": bool(readback_reads.get("global_machine_database_unchanged"))})
 
     return {"ok": all(c["ok"] for c in checks),
             "reads": {"workspace": workspace, "steps": records,
