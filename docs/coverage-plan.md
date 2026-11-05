@@ -730,3 +730,55 @@ text_matches)`」的工具会被误判：本机 `InsertSketchText` 的 `GetText`
 | `sw_add_gtol` / `sw_add_datum_feature` / `sw_add_weld_symbol` / `sw_add_center_mark` / `sw_set_dimension` | 需要"先选中尺寸/视图" | 尺寸是 UI 驱动（已定论） |
 | `sw_analyze_draft` | 需要零件里已有分型线 | SW API 无法创建分型线 |
 | `sw_move_component` | 组件位姿写不进去（`CreateTransform` 返单位阵），swkit 的"变换拷贝法"在新建装配体上会挂 | 本机无解 |
+
+## UG 剩余 13 个按依赖顺序啃（2026-11-05 18:10）
+
+### 第 1 层：拓扑解析（新通 1 个）
+
+`ug_resolve_topology`：`selector={"kind":"planar","normal":[0,0,1]}` 对平面唯一命中；
+匹配多条时**必须** `unique=False`，否则报 `matched N edges; add sort_by or occurrence`。
+
+### 第 2 层：钣金折弯（新通 1 个）
+
+严格依赖：**草图（`journal_id` 就是名字）→ `create_sheet_metal_tab` → 另画一张
+"折弯线"草图 → `create_sheet_metal_bend`**。
+两个坑：① 草图 `geometry` 的字段是 **`type`**（不是 `kind`），写成 `kind` 会报
+`unsupported sketch geometry type:`（空名字）；② `sketch_id` 传的是 `journal_id`
+（= 草图名），不是返回里的 `tag`。
+
+### 第 3 层：机器套件（只读 3 个通，其余卡在"激活"）
+
+机器族要先有 profile：默认读 `MCP/UG/config/machine_sources.local`（只有
+`.example.json`，本机原本没有这个文件）。这次按 `sim05_mill_5ax` 的真实机型图
+新建了 profile `nsa_probe_5ax`：
+
+| 字段 | 值 |
+|---|---|
+| `source_part` | `…\installed_machines\sim05_mill_5ax\graphics\sim05_mill_5ax.prt`（177 KB，真实机型） |
+| `kinematic_definition` | `config\nsa_probe_machine.mch`（**合成**的 `<VcMachine>` XML：BASE/Y/X/Z/A/C/SPINDLE/TOOL 八段） |
+| `geometry_root` | `…\sim05_mill_5ax\graphics` |
+| `expected_axes` | `["X","Y","Z","A","C"]` |
+
+通了：
+
+* `ug_inspect_machine_source_profile`（读 profile + 源件指纹）
+* `ug_inspect_machine_kinematic_plan`（解析 VcMachine → 组件树 + 轴限位 + 缺几何清单）
+* `ug_create_machine_build_workspace` **dry_run**（返回"要不要切换活动部件"的计划）
+* `ug_inspect_active_machine_simulation` / `ug_stop_active_machine_simulation`
+  （没有活动仿真时也正常返回，stop 是幂等 release）
+
+**卡点（关键发现）**：`ug_activate_machine_build_workspace` 用
+`dry_run=False` 真切换活动部件时，会**把 NX remoting 线程挂死**（>420 s 不返回，
+之后所有工具都报 `timed out waiting for NX remoting`，必须重启 ugraf 才能恢复）。
+已经排除两个诱因：先 `ug_save_work_part` 保存、以及 `preserve_current=False`
+（后者会立刻给出明确拒绝 `Save or discard current NX part changes`，说明它要的
+是"零脏改"，但满足后仍然挂）。所以下游 7 个全部卡在这一步：
+
+| 工具 | 卡点 |
+|---|---|
+| `validate_machine_kinematics` / `retarget_machine_junctions_from_profile` / `import_machine_component_geometry` / `validate_machine_static_collisions` | 都要求"工作区部件是活动部件" |
+| `inspect_machine_simulation_readiness` | 要先有 CAM setup，再有绑定的机床 |
+| `start_machine_simulation_with_collision_stop` | 同上 |
+| `import_machine_kit_readback` | 需要一个 `.mtk` 文件（本机磁盘上没有） |
+
+NX 恢复办法：`Stop-Process -Name ugraf` → 设 `UGII_USER_DIR` 重开 → 约 5–45 s 桥回来。

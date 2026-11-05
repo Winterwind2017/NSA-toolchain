@@ -2454,8 +2454,106 @@ def _ug_sheetmetal_flow(client, context):
     return _ug_flow(client, steps, "sheetmetal")
 
 
+def _ug_sheetmetal_bend_flow(client, context):
+    """ug 剧本八：钣金 tab → 折弯 → 体自省（7 步）。
+
+    折弯的前置：① 先有钣金基体（`create_sheet_metal_tab`）；
+    ② 折弯线必须是**另一张草图**里的直线，用草图 `journal_id`（= name）传进去。
+    """
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_smb_%s.prt" % _s}),
+        ("ug_create_parametric_sketch", {"name": "PLATE", "plane": "XY",
+                                         "geometry": [{"type": "rectangle", "name": "R",
+                                                       "origin": [0.0, 0.0],
+                                                       "width": 80.0, "height": 50.0}]}),
+        ("ug_create_sheet_metal_tab", {"sketch_id": "PLATE", "thickness": 2.0}),
+        ("ug_create_parametric_sketch", {"name": "BENDLINE", "plane": "XY",
+                                         "geometry": [{"type": "line", "name": "BL",
+                                                       "start": [0.0, 25.0],
+                                                       "end": [80.0, 25.0]}]}),
+        ("ug_create_sheet_metal_bend", {"bend_line_sketch_id": "BENDLINE",
+                                        "target_face_selector": {"kind": "planar",
+                                                                 "normal": [0, 0, 1]},
+                                        "angle_deg": 90, "bend_radius": 2.0}),
+        ("ug_inspect_work_part_geometry", {}),
+    ]
+    return _ug_flow(client, steps, "sheetmetal_bend")
+
+
+def _ug_topology_flow(client, context):
+    """ug 剧本九：按几何条件解析拓扑（5 步）。
+
+    `ug_resolve_topology` 的 selector 支持 `{"kind": "planar", "normal": [...]}`；
+    匹配多条时必须显式 `unique=False`，否则报 "matched N edges; add sort_by or
+    occurrence"。
+    """
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_topo_%s.prt" % _s}),
+        ("ug_create_block", {"length": 100, "width": 60, "height": 40}),
+        ("ug_resolve_topology", {"kind": "face",
+                                 "selector": {"kind": "planar", "normal": [0, 0, 1]}}),
+        ("ug_resolve_topology", {"kind": "edge",
+                                 "selector": {"kind": "all"}, "unique": False}),
+    ]
+    return _ug_flow(client, steps, "topology")
+
+
+def _ug_machine_readonly_flow(client, context):
+    """ug 剧本十：机器仿真只读两件套（5 步）。
+
+    `inspect_active_machine_simulation` / `stop_active_machine_simulation` 在没有
+    活动仿真时也应正常返回（stop 是幂等的 release）。
+    """
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "acc_mach_%s.prt" % _s}),
+        ("ug_create_block", {"length": 80, "width": 50, "height": 30}),
+        ("ug_inspect_active_machine_simulation", {}),
+        ("ug_stop_active_machine_simulation", {"release": True}),
+    ]
+    return _ug_flow(client, steps, "machine_readonly")
+
+
+def _ug_machine_inspect_flow(client, context):
+    """ug 剧本十一：机器源配置只读三件套（4 步）。
+
+    依赖 `MCP/UG/config/machine_sources.local` 里配好的 profile（本机用
+    `sim05_mill_5ax` 的真实机型图 + 合成 `nsa_probe_machine.mch`）。
+    `create_machine_build_workspace` 只跑 **dry_run**：真建会切换活动部件，
+    而真激活在本机会把 NX remoting 线程挂住（见 docs）。
+    """
+    profile = "nsa_probe_5ax"
+    steps = [
+        ("ug_inspect_machine_source_profile", {"source_profile": profile}),
+        ("ug_inspect_machine_kinematic_plan", {"source_profile": profile}),
+        ("ug_create_machine_build_workspace", {"source_profile": profile,
+                                               "workspace_file_name": "nsa_probe_machine.prt",
+                                               "dry_run": True}),
+    ]
+    return _ug_flow(client, steps, "machine_inspect")
+
+
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
+    {"id": "ug.flow.machine_inspect", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本十一：机器源配置只读三件套（3 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_machine_inspect_flow(client, context)},
+    {"id": "ug.flow.sheetmetal_bend", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本八：钣金 tab → 折弯 → 体自省（6 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_sheetmetal_bend_flow(client, context)},
+    {"id": "ug.flow.topology", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本九：按几何条件解析拓扑（4 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_topology_flow(client, context)},
+    {"id": "ug.flow.machine_readonly", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本十：机器仿真只读两件套（4 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_machine_readonly_flow(client, context)},
+
     {"id": "ug.flow.model", "timeout_s": 900, "tool": None,
      "title": "ug 剧本一：建块/拓扑/摘要/重建/存盘/STEP 往返（10 步）",
      "args": {}, "expect_ok": True,
