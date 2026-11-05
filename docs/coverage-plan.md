@@ -1065,3 +1065,17 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 运动学通过、静态碰撞通过、导出+回读通过、readiness 报告通过、start 的有序拒绝。
 
 覆盖：**620/620 = 100%**（验收 496 ｜ 契约 245 ｜ 快乐路径 469 ｜ 未覆盖 0）。
+
+## `start_machine_simulation` 转正尝试：两条绑定路线都撞 NX API（2026-11-06 00:05）
+
+| 路线 | 结果 |
+|---|---|
+| `bind_isolated_machine_kit_to_cam`（我们的 kit，shadow 库） | dry_run ok（libref=nsa_reference_kit、全局库未改）；真跑失败：先 `isolated_import_readback` / NXException **3975001**，NX 重启后变 "failed NX import/readback validation" |
+| `bind_machine_tool_from_library(machine_libref=sim05_mill_5ax)` | `machine_library_entry_lookup` 失败（libref 不在库索引） |
+| 同上 `sim06_mill_5ax_tnc` | 过 lookup，失败在 `current_machine_binding_readback` / NXException **1345004**（dry_run 与 real 都失败） |
+
+`start` 的前提是 CAM 程序组绑了机床，所以这两条不通它就一直是有序拒绝。
+剧本里继续断言"拒绝 + 点名 blockers"，不假装通过。
+
+下一步建议（按性价比）：UI 里手工绑一次 → 用 `run_python` 读出绑定后的 CAM 字段照着复刻；
+或者拆 NX 自带机床定义对齐 `kit_information.xml`。
