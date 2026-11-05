@@ -806,3 +806,45 @@ NX 恢复办法：`Stop-Process -Name ugraf` → 设 `UGII_USER_DIR` 重开 → 
 
 `nx` 与 `acad` 现在各剩 1 个"未覆盖"，那个工具叫 **`kit_runtime`** ——
 它是内核给每个 kit 自动挂的合成工具（不是真能力），所以两个 kit 实质都是 **100%**。
+
+## 改上游：swkit 出图三件套 + NX 机器激活（2026-11-05 20:05）
+
+### swkit（提交 ed1b50a）
+
+| 工具 | 结论 |
+|---|---|
+| `sw_add_broken_view` | **真修好了**。`IView.InsertBreak2` 参数名从类型库读出是 `(Orientation, Position1, Position2, Style, ShapeIntensity)`；旧实现只给一个 position、把 size 当 Position2 → SW 静默不建。改成两条断裂线位置 + 枚举扫描，`GetBreakLines` -1→1，style=2 成功 |
+| `sw_create_section_view` | **不是 bug，是时序**。它走 `IModelViewManager.CreateSectionView` = 模型 3D 剖视，必须在**零件**上、建图之前调；之前全在工程图上调，必挂 |
+| `sw_add_hole_table` | **半通**。① 模板传空串 → SW 静默 None，现在自动搜 `.sldholtbt`（本机 SW 在 D 盘，只扫 C 盘会空）；② 判据从"特征名含 Table"改成 `IView.GetTableAnnotationCount`（孔表是注解不是特征，旧判据永远 0）。但 12 种参数组合仍全 None —— 唯一没排除的是几何：测试件是 `FeatureCut4` 圆孔，孔表通常只认 **Hole Wizard 孔** |
+
+### nx_remote_ops（磁盘改动，非 git 仓库）
+
+1. **激活挂死的根因**：`activate_machine_build_workspace` 用**装配体**当源件时，
+   组件解析不到 → NX 弹缺件确认 → remoting 线程挂死（>420 s，之后所有工具
+   `timed out waiting for NX remoting`，只能重启 ugraf）。换成**单零件**源件后
+   0.8 s 成功。
+2. **`<VcMachine>` 组件名是写死的**：low-level 建链里直接取
+   `component_objects["Tool"] / ["Attach"]`、`by_name["Tool"]`，链里固定要
+   X/Y/Z/B/C + S。所以组件必须叫 **Base/Y/X/Z/B/C/Spindle/Tool/Attach**。
+3. **旋转轴的 `Axis` 只能是 X/Y/Z**（方向），寄存器名才是 B/C；给 `Axis="A"`
+   会以 `KeyError` 形式炸在 `create_axis_A`（报错不友好，已记录）。
+4. **主轴组件要有 `<Link Register="S">`**，否则 `create_axis_S` KeyError。
+5. 每个组件要有 `<STL><File>xxx.stl</File></STL>` 且文件真在 `geometry_root`，
+   否则 build 报 `component_geometry_not_imported`。
+6. **通道-轴绑定仍没打通**：`AddChannelName` 只挂组件，`IsAxisAssignedToChannel`
+   全 False。正确入口是 `KinematicChannelBuilder.SetAssignedAxes` + `MainSpindle`，
+   但用 `KinematicChannelConfigurationBuilder.Commit()` 提交后通道会从
+   `GetChannels()` 消失（validate 立刻变 `kinematic_channel_missing`），所以现在
+   **只尝试不提交**，把缺口如实报成 `channel_axis_assignments_missing`。
+
+### 新剧本
+
+`ug.flow.machine_build`（3.8 s，建工作区→激活→导入几何→真建运动学→轴探测→junction 重定向）
+`sw.flow.drawing_extra`（87.5 s，带孔零件→3D 剖视→建图→断裂视图）
+
+### 覆盖
+
+620 工具：验收 471 ｜ 契约 245 ｜ 合并 598 = **96.5%** ｜ 快乐路径 443
+ug 91.7% → **94.0%**（未覆盖 7 → 5）｜ sw 94.3% → **95.3%**（未覆盖 11 → 8）
+剩 22：sw 8 ｜ ug 5 ｜ autoshop 4 ｜ codesys 2 ｜ nx 1 ｜ acad 1（后两个是合成
+`kit_runtime`）

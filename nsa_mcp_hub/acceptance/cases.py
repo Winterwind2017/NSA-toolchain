@@ -318,6 +318,11 @@ SW_CASES = [
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_refs_select_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.drawing_extra", "tool": None,
+     "title": "SW 剧本五十三：3D 剖视 + 断裂视图（13 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_drawing_extra_flow(client, context)},
     {"id": "sw.flow.drawing_table", "tool": None,
      "title": "SW 剧本四十七：选视图 + 插 BOM 表（9 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
@@ -2553,8 +2558,61 @@ def _ug_machine_inspect_flow(client, context):
     return _ug_flow(client, steps, "machine_inspect")
 
 
+def _ug_machine_build_flow(client, context):
+    """ug 剧本十二：机器工作区 → 激活 → 导入几何 → 真建运动学（6 步）。
+
+    关键配方（2026-11-05 实测打通）：
+    * profile 的 `<VcMachine>` 组件名**必须**是 Base/X/Y/Z/B/C/Spindle/Tool/Attach
+      （上游 low-level 建链里写死了这些键）；
+    * 旋转轴的 `Axis` 只能是 X/Y/Z（方向），寄存器名才是 B/C；
+    * 每个组件要有 `<STL><File>xxx.stl</File></STL>` 且文件真在 geometry_root 里；
+    * 源件必须是**单零件**：拿装配体当源件、组件解析不到时，
+      `activate_machine_build_workspace` 会把 NX remoting 线程挂死。
+
+    建工作区只能做一次（同名会报 already exists），所以先单独建、拿 recovery_token，
+    再交给通用流程跑后续步骤。
+    """
+    _s = uuid.uuid4().hex[:6]
+    workspace = "acc_machine_%s.prt" % _s
+    profile = "nsa_simple"
+    created = client.call("ug_create_machine_build_workspace", {
+        "source_profile": profile, "workspace_file_name": workspace,
+        "dry_run": False, "confirmation": "CREATE_MACHINE_BUILD_WORKSPACE"})
+    token = ((created.get("reads") or {}).get("recovery_token") or "")
+    steps = [
+        # 激活要求"当前部件没有未保存修改"，所以先存一下（没有部件时这条允许失败）
+        ("ug_save_work_part", {}),
+        ("ug_activate_machine_build_workspace", {
+            "workspace_file_name": workspace, "recovery_token": token,
+            "dry_run": False, "preserve_current": False,
+            "confirmation": "ACTIVATE_MACHINE_BUILD_WORKSPACE"}),
+        ("ug_import_machine_component_geometry", {
+            "source_profile": profile, "workspace_file_name": workspace,
+            "dry_run": False, "confirmation": "IMPORT_MACHINE_COMPONENT_GEOMETRY"}),
+        ("ug_build_machine_kinematics_from_profile", {
+            "source_profile": profile, "workspace_file_name": workspace,
+            "dry_run": False, "confirmation": "BUILD_MACHINE_KINEMATICS"}),
+        ("ug_probe_machine_axis_motion", {
+            "source_profile": profile, "workspace_file_name": workspace,
+            "axis_name": "X", "delta": 0.01, "dry_run": True}),
+        ("ug_retarget_machine_junctions_from_profile", {
+            "source_profile": profile, "workspace_file_name": workspace,
+            "dry_run": True}),
+    ]
+    result = _ug_flow(client, steps, "machine_build",
+                      tolerate=("ug_save_work_part",))
+    if isinstance(result.get("reads"), dict):
+        result["reads"].setdefault("workspace", workspace)
+        result["reads"].setdefault("token_present", bool(token))
+    return result
+
+
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
+    {"id": "ug.flow.machine_build", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十二：工作区/激活/导入几何/真建运动学（6 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_machine_build_flow(client, context)},
     {"id": "ug.flow.machine_inspect", "timeout_s": 600, "tool": None,
      "title": "ug 剧本十一：机器源配置只读三件套（3 步）",
      "args": {}, "expect_ok": True,
@@ -4582,6 +4640,35 @@ def _sw_select_refs_flow(client, context):
             "errors": [] if payload.get("ok") else str(payload.get("errors"))[:200],
             "checks": [{"check": "tokens_selected", "got": bool(payload.get("ok")),
                         "want": True, "ok": bool(payload.get("ok"))}]}
+
+
+def _sw_drawing_extra_flow(client, context):
+    """SW 剧本五十三：3D 剖视（零件上）+ 断裂视图（9 步）。
+
+    两条实测结论：
+    * `sw_create_section_view` 是**模型 3D 剖视**，必须在**零件**上、建图之前调；
+      图纸激活时调它必失败（旧实现就是在这里被判死的）。
+    * 断裂视图的 `InsertBreak2` 真参数是 (Orientation, Position1, Position2,
+      Style, ShapeIntensity)，旧实现只给了一个 position，SW 静默不建。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_dwgex_")
+    part = os.path.join(work, "box_hole.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 80.0, "y2": 50.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 20}),
+        ("sw_save_document", {"path": part}),
+        ("sw_create_sketch_on_face", {"face_index": 1}),
+        ("sw_sketch_circle", {"cx": 40.0, "cy": 25.0, "radius": 8.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_cut_extrude", {"through_all": True}),
+        ("sw_create_section_view", {"plane": "前视基准面", "offset": 0.0}),
+        ("sw_new_drawing", {"model": part, "view": "front"}),
+        ("sw_add_broken_view", {"orientation": 0, "position": 0.049, "size": 0.01}),
+    ]
+    return _sw_flow_any(client, steps, "drawing_extra", work)
 
 
 def _sw_flow_any(client, steps, tag, work):
