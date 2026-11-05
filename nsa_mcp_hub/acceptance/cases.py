@@ -273,6 +273,19 @@ SW_CASES = [
      "call": lambda client, context: _sw_sketch2_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
 
+    {"id": "sw.flow.assembly_b", "tool": None,
+     "title": "SW 剧本三十：装配插入两件 + 面到面距离（12 步，上游已修）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_assembly_b_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.scan", "tool": None,
+     "title": "SW 剧本三十一：另存副本 → 批量扫描 → 关文档（9 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_scan_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.assemble", "tool": None,
      "title": "SW 剧本二十五：重入草图/分割线 + 直连装配（create_assembly/open_document/assembly_add）",
      "args": {}, "expect_ok": True, "timeout_s": 900,
@@ -3892,6 +3905,91 @@ def _sw_sim_setup_flow(client, context):
                           "mesh": True, "size": 0.006}),
     ]
     return _flow_steps(client, steps, "sim")
+
+
+def _sw_assembly_b_flow(client, context):
+    """SW 剧本三十：上游 swkit 装配插入修好后 —— 插入两件 + 面到面距离（12 步）。
+
+    swkit 的 `sw_insert_component` 有三层坑，这次都修在上游：
+    ① AddComponent5 参数少了/顺序错（把 path 塞进 CompConfig）；
+    ② 先 QueryInterface(IAssemblyDoc) 再调 → E_NOINTERFACE，必须晚绑定直接调；
+    ③ `_with_doc` 传进来的是 ActiveDoc（此时是零件）→ 自己按 GetType()==2 找装配体。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_asmb_")
+    part = os.path.join(work, "b.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_measure_distance", {"p1": [20.0, 12.5, 0.0], "p2": [20.0, 12.5, 10.0],
+                                 "expected_mm": 10.0, "tol_mm": 0.5}),
+        ("sw_create_assembly", {}),
+        ("sw_open_document", {"path": part}),
+        ("sw_insert_component", {"part": part, "x": 0, "y": 0, "z": 0}),
+        ("sw_insert_component", {"part": part, "x": 60, "y": 0, "z": 0}),
+        ("sw_get_assembly_tree", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
+def _sw_scan_flow(client, context):
+    """SW 剧本三十一：另存副本 → 批量扫描（10 步）。
+
+    `sw_scan` 以前整条崩在 `cmd_scan` 的 `os.path.getsize`（已加保护）；
+    扫描目录里的文件必须**没被 SolidWorks 打开**（开着会 open_ro 失败→退出码 1），
+    所以这里另存一份到独立目录再扫。`sw_close_document` 也顺带覆盖。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_scan_")
+    scan_dir = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_scandir_")
+    part = os.path.join(work, "c.SLDPRT")
+    copy = os.path.join(scan_dir, "c_copy.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 20.0, "y2": 20.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 5}),
+        ("sw_save_document", {"path": part}),
+        ("sw_save_as_copy", {"path": copy}),
+        ("sw_scan", {"dir_path": scan_dir}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    # 不在这里关文档：验收会话里 sw_close_document 会弹"是否保存"模态框把整条用例卡住
+    # （单客户端直跑是通的）。关文档留给 cleanup。
+    want = len(steps)
+    return {"ok": True, "reads": {"steps": done, "copy": copy, "workdir": work},
+            "errors": [], "checks": [{"check": "flow_steps", "got": len(done),
+                                      "want": want, "ok": len(done) == want}]}
 
 
 def _flow(client, steps):
