@@ -921,3 +921,19 @@ sw 95.8% → **98.4%**（未覆盖 8 → 3：analyze_draft / move_component / ki
 新剧本 `codesys.flow.xml_roundtrip`（3.0 s）：建工程 → 建 POU → 写实现 → 导出 POU 的 XML
 → 另建工程 → 导入 → children 3→4，通过。
 （顺手清掉了 `codesyskit` 里 `agentscript.py` 与 `.git/*` 的只读属性，否则改写/提交都被拒。）
+
+## autoshop 归零（2026-11-05 22:05，autoshopkit 28c2fdd）
+
+四个没覆盖的工具全在"启动/新建/单档编译/生成下载文件/关闭"这条生命周期上，
+两个真 bug：
+
+| 问题 | 事实 | 修法 |
+|---|---|---|
+| `autoshop_new` | 旧映射传 `--path/--hcp`，CLI 只认 `new <name> [--dest DIR]` → `unrecognized arguments`（连踩两次：先是 `--path`，修完又重复传了 verb） | 适配器把 `path` 拆成「最后一段=工程名 + 其余=--dest」 |
+| `autoshop_dlfile` | 工程改过后先弹「在下载前是否需要重新编译」，不回答就等不到"下载选项" → `LookupError` | autoshopkit 新增 `_answer_recompile_prompt()`，默认点 否(7) |
+
+新剧本 `autoshop.flow.lifecycle`（5 步，67.9 s）：
+起 AutoShop（21 s）→ 新建工程（8.7 s，MAIN + 721 树节点）→ 单档编译（1.5 s，0 错误）
+→ 生成下载文件（10.9 s，产出 `flowproj.updown`）→ 关闭。
+
+autoshop 90.5% → **100%**；全库 **98.2%**。

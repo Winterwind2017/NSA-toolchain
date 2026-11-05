@@ -2212,6 +2212,72 @@ def _apply_fixture() -> str:
     return path
 
 
+def _autoshop_lifecycle_flow(client, context):
+    """AutoShop 生命周期剧本：启动 → 新建工程 → 单文档编译 → 生成下载文件 → 关闭（5 步）。
+
+    踩过的坑（都修了）：
+
+    * `autoshop_new` 旧映射传 `--path/--hcp`，CLI 只认 `new <name> [--dest DIR]`
+      （`unrecognized arguments`）；
+    * `autoshop_dlfile` 在工程改过之后会先弹
+      「在下载前是否需要重新编译（如果不编译则会下载上次全部编译的文件）」，
+      不回答就等不到"下载选项"对话框（`下载选项 dialog did not appear`）。
+      现在默认选 **否**（调用方要先自己编译）。
+    """
+    import glob
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_autoshop_")
+    proj_dir = os.path.join(work, "flowproj")
+    steps = [
+        ("autoshop_start", {}),
+        ("autoshop_new", {"path": proj_dir}),
+        ("autoshop_compile_one", {"timeout_s": 300}),
+        ("autoshop_dlfile", {}),
+        ("autoshop_stop", {}),
+    ]
+    done = []
+    compile_lines = []
+    down_path = ""
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False,
+                    "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])],
+                    "checks": []}
+        inner = payload.get("reads") or {}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if name == "autoshop_compile_one":
+            try:
+                parsed = json.loads(inner.get("stdout") or "{}")
+            except Exception:                          # noqa: BLE001
+                parsed = {}
+            compile_lines = parsed.get("lines") or []
+        if name == "autoshop_dlfile":
+            try:
+                parsed = json.loads(inner.get("stdout") or "{}")
+            except Exception:                          # noqa: BLE001
+                parsed = {}
+            down_path = parsed.get("path") or ""
+    zero_errors = any("(0)错误" in str(line) for line in compile_lines)
+    file_ok = bool(down_path) and os.path.isfile(down_path) and os.path.getsize(down_path) > 0
+    running = bool(glob.glob(os.path.join(work, "**", "*.hcp"), recursive=True))
+    checks = [
+        {"check": "steps_completed", "got": len(done), "want": len(steps),
+         "ok": len(done) == len(steps)},
+        {"check": "compile_zero_errors", "got": compile_lines[-1:] or [],
+         "want": "(0)错误", "ok": zero_errors},
+        {"check": "download_file_written", "got": down_path, "want": ">0 字节",
+         "ok": file_ok},
+        {"check": "project_created", "got": running, "want": True, "ok": running},
+    ]
+    return {"ok": all(c["ok"] for c in checks),
+            "reads": {"steps": done, "workdir": work, "download_path": down_path,
+                      "compile_lines": compile_lines[-4:]},
+            "errors": [], "checks": checks}
+
+
 AUTOSHOP_CASES = [
     {"id": "autoshop.doctor", "tool": "autoshop_doctor",
      "title": "环境自检：工程 / UIA / frida / 编辑器",
@@ -2244,6 +2310,11 @@ AUTOSHOP_CASES = [
      "expect_check_true": ["bytes_written"],
      "timeout_s": 420,
      "skip_if": _autoshop_no_project},
+
+    {"id": "autoshop.flow.lifecycle", "tool": None, "timeout_s": 1200,
+     "title": "启动 → 新建工程 → 单文档编译 → 生成下载文件 → 关闭（5 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _autoshop_lifecycle_flow(client, context)},
 ]
 
 

@@ -349,13 +349,30 @@ def build_kit() -> Kit:
                      _simple("open", lambda a: ["--project", a["project"]], 300),
                      timeout_s=360, must_have_checks=True))
 
+    def _new_argv(a):
+        """`autoshopkit new` 的真参数是 `new <name> [--dest DIR]`。
+
+        旧映射传的是 `--path/--hcp`，CLI 直接 `unrecognized arguments`（实测）。
+        这里把 `path` 拆成「目录 + 工程名」：`path` 的最后一段做 name，
+        其余做 `--dest`；都没给就用 `NewProject` + 当前目录。
+        """
+        import os as _os
+        raw = str(a.get("path") or "").strip().rstrip("\\/")
+        if raw:
+            name = _os.path.basename(raw) or "NewProject"
+            dest = _os.path.dirname(raw)
+            argv = [name]
+            if dest:
+                argv += ["--dest", dest]
+            return argv
+        return ["NewProject"]
+
     kit.add(ToolSpec("autoshop_new",
-                     "新建工程。",
+                     "新建工程（`new <name> --dest <dir>`；path 的最后一段作工程名）。",
                      {"type": "object", "properties": {"path": {"type": "string"},
                                                        "hcp": {"type": "string"}},
                       "additionalProperties": False},
-                     _simple("new", lambda a: (["--path", a["path"]] if a.get("path") else [])
-                             + (["--hcp", a["hcp"]] if a.get("hcp") else []), 300),
+                     _simple("new", _new_argv, 300),
                      timeout_s=360, must_have_checks=True))
 
     kit.add(ToolSpec("autoshop_monitor",
