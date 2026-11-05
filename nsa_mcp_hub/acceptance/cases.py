@@ -2844,12 +2844,15 @@ def _ug_machine_validate_flow(client, context):
     ]
     records = []
     checks = []
+    static_reads = {}
     for name, args, expect_ok, needle in setup_steps:
         payload = client.call(name, args)
         actual_ok = bool(payload.get("ok"))
         errors = " ".join(str(x) for x in (payload.get("errors") or []))
         matched = needle is None or needle.lower() in errors.lower()
         ok = (actual_ok == expect_ok) and matched
+        if name == "ug_validate_machine_static_collisions":
+            static_reads = payload.get("reads") or {}
         # "ok" 字段给 harness 用：只有 ok=True 的步骤才计入覆盖（拒绝路径也算覆盖，
         # 前提是本剧本**断言过**这条拒绝）
         records.append({"tool": name, "ok": ok, "expect_ok": expect_ok,
@@ -2857,8 +2860,36 @@ def _ug_machine_validate_flow(client, context):
                         "errors": errors[:160]})
         checks.append({"check": "%s %s" % (name, "ok" if expect_ok else "refusal"),
                        "got": actual_ok, "want": expect_ok, "ok": ok})
+
+    # 静态碰撞现在**真的跑完了**：`.mch` 里 4 个碰撞对全部评估，初始位置 0 干涉。
+    # 唯一剩余阻塞是轴-通道绑定（受 ug_isv_full / nx_isv_mtb 许可证限制）。
+    evaluation = static_reads.get("static_collision_evaluation") or {}
+    configuration = static_reads.get("collision_configuration") or {}
+    # 注意：`collision_configuration.pair_count` 是**NX 里持久化的**碰撞集（我们没写进去，
+    # 还是 0）；真正用的是 `.mch` 里的 OEM 配置，所以以 pair_results 为准。
+    pair_results = evaluation.get("pair_results") or []
+    checks.append({"check": "static_collision_pairs_configured",
+                   "got": len(pair_results),
+                   "want": ">=1", "ok": len(pair_results) >= 1})
+    checks.append({"check": "static_collision_pairs_evaluated",
+                   "got": evaluation.get("evaluated_pair_count"),
+                   "want": len(pair_results),
+                   "ok": (len(pair_results) >= 1
+                          and evaluation.get("evaluated_pair_count") == len(pair_results))})
+    checks.append({"check": "static_collision_no_initial_interference",
+                   "got": evaluation.get("interfering_pair_count"),
+                   "want": 0, "ok": evaluation.get("interfering_pair_count") == 0})
     return {"ok": all(c["ok"] for c in checks),
-            "reads": {"workspace": workspace, "steps": records},
+            "reads": {"workspace": workspace, "steps": records,
+                      "static_collision": {
+                          "pair_count": len(pair_results),
+                          "evaluated": evaluation.get("evaluated_pair_count"),
+                          "interfering": evaluation.get("interfering_pair_count"),
+                          "pairs": [{"first": item.get("first"),
+                                     "second": item.get("second"),
+                                     "hard": item.get("hard"),
+                                     "clearance": item.get("configured_clearance")}
+                                    for item in (evaluation.get("pair_results") or [])]}},
             "errors": [], "checks": checks}
 
 

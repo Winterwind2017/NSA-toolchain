@@ -993,3 +993,28 @@ ug 94.0% → **100%**；全库 **99.0%**（614/620）。
 
 最终：**620 工具 ｜ 验收 495 ｜ 契约 245 ｜ 合并 620 = 100.0% ｜ 快乐路径 468 ｜ 未覆盖 0**
 九个 kit 全部 100%。
+
+## ug 静态碰撞：从"拒绝"变"真值"（2026-11-05 23:15）
+
+`.mch` 补了 `<Collision>` 段（4 对：Tool↔Attach、Spindle↔Attach、Base↔Spindle、C↔Base，
+间隙区 1mm），`ug_validate_machine_static_collisions` 现在**真的跑完评估**：
+
+```
+evaluated_pair_count = 4 / 4
+interfering_pair_count = 0  (hard=0 soft=0 touching=0)
+blockers = ['channel_axis_assignments_missing']   ← 只剩许可证那条
+```
+
+为了让这条通，修了三处：
+
+| 坑 | 事实 | 修法 |
+|---|---|---|
+| 9 个 STL 都是"原点 20mm 立方体" | 实体全重叠 → 任何碰撞对都干涉 | 每个零件平移到不同位置（BASE 0 / Y 20 / … / TOOL 140，SETUP 放侧面 x=100），`*.stl.bak` 有备份 |
+| 组件名被换成模板别名 | `Base→MACHINE_BASE、Tool→POCKET_01、Attach→SETUP、C→C_SLIDE` 是 smart-kit 模板命名，`source_part_copy` 建出来的就叫 `Base/Tool/...` → 全查不到 | `_machine_oem_collision_configuration()` 改成**按实际组件名精确匹配（含大小写）**，匹配不上再退别名 |
+| `ComponentCollection` 是 `ObjectList` | `list(...)` 在部分状态下迭代出空集（不报错）→ 每个组件都判成"没几何" | `_machine_component_geometry()` 优先 `ToArray()` |
+
+剧本 `ug.flow.machine_validate` 的静态碰撞断言从"拒绝原因"升级成
+「4 对全部配置 + 全部评估 + 0 干涉」，5.0 s 通过；`ug.flow.machine_build`、
+`ug.cam.recipe` 复跑仍 PASS。
+
+覆盖维持 **620/620 = 100%**（验收 495 ｜ 契约 245 ｜ 快乐路径 468）。
