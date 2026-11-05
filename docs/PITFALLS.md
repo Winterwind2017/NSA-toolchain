@@ -113,3 +113,16 @@ subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
 它的参数只有 `--prop`（`名` 或 `名=值`）、`--dir`、`--ext`。
 上游 `sw_extra_mcp.swdm_query(text)` 传 `--text` —— **该参数不存在，带 text 必失败**。
 要"按内容找文件"只能先 `sync` 建索引，再用属性过滤；或者自己读 `files.props` 做 LIKE。
+
+## 出图三件套（2026-11-05 修）
+
+| 工具 | 根因 | 修法 |
+|---|---|---|
+| `sw_add_broken_view` | `IView.InsertBreak2` 的真参数是 **(Orientation, Position1, Position2, Style, ShapeIntensity)**（类型库 param names），旧实现只给一个 position、把 size 塞进 Position2，SW 静默不建 | 传两条断裂线位置 + 枚举扫描（style 2/1/0/3/4 × intensity 0/1/2），判据仍是 `GetBreakLines` +1 |
+| `sw_create_section_view` | 它是**模型 3D 剖视**（`IModelViewManager.CreateSectionView`），必须在**零件**文档上、建图之前调；在工程图上调必失败 | 不改实现，改调用时序（验收剧本先在零件上剖，再 new_drawing） |
+| `sw_add_hole_table` | ① Template 传空串时 SW 静默返回 None（不是"用默认模板"）；② 判据用"特征名含 Table"是错的——孔表是**注解**不是特征，永远 0 | ① 自动找本机 `.sldholtbt`（ProgramData 模板目录 + `X:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\lang\*`，因为 SW 可能装在 D:）；② 判据改 `IView.GetTableAnnotationCount` +1 |
+
+**孔表仍然建不出来**：模板给对了、视图激活了、注解计数判据也换对了，`InsertHoleTable2/3`
+12 种参数组合全部返回 `None`。剩下的唯一差异是几何：本机测试件上的孔是
+`FeatureCut4` 切出来的圆孔，而孔表通常只认 **Hole Wizard 孔**。需要拿一个真正的
+Hole Wizard 零件再验一次（`sw_hole_wizard` 在本机不可用，得手工建）。

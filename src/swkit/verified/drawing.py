@@ -537,28 +537,50 @@ def section_view(doc_w: Any, plane_name: str = "前视基准面",
 
 def broken_view(view: Any, orientation: int = 0, position: float = 0.05,
                 size: float = 0.01) -> Dict[str, Any]:
-    """断裂视图：`IView.InsertBreak2(5 参)`。
+    """断裂视图：`IView.InsertBreak2(Orientation, Position1, Position2, Style, ShapeIntensity)`。
 
-    **关键判据**：断裂视图**不新增视图**——必须看 `GetBreakLines` 数量（原审计看视图数，
-    所以永远判失败）。
+    **参数名取自类型库**（不是猜的）：Position1/Position2 是两条断裂线的位置（米），
+    Style/ShapeIntensity 是枚举。旧实现只传一个 position、把 size 当 Position2，
+    SW 就静默不建（断线计数永远 0）。
+
+    判据：`GetBreakLines` 计数 +1（断裂视图**不新增视图**）。
     """
     out = _result("sw_add_broken_view", "IView.InsertBreak2")
     if view is None:
         out["detail"]["error"] = "没有模型视图"
         return out
     before = _count(view, "GetBreakLines")
-    try:
-        res = view.InsertBreak2(int(orientation), float(position), float(size), 0, 0)
-    except Exception as exc:                        # noqa: BLE001
-        out["detail"]["error"] = "InsertBreak2: %s" % str(exc)[:100]
-        return out
-    after = _count(view, "GetBreakLines")
+    half = max(float(size), 0.002) / 2.0
+    center = float(position)
+    attempts = []
+    for style in (2, 1, 0, 3, 4):
+        for intensity in (0, 1, 2):
+            p1, p2 = center - half, center + half
+            try:
+                res = view.InsertBreak2(int(orientation), p1, p2, style, intensity)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"style": style, "intensity": intensity,
+                                 "error": str(exc)[:70]})
+                continue
+            after = _count(view, "GetBreakLines")
+            attempts.append({"style": style, "intensity": intensity,
+                             "returned": type(res).__name__ if res is not None else None,
+                             "lines_after": after})
+            if after > before:
+                out["detail"].update({"view": val(view, "Name"),
+                                      "break_lines_before": before,
+                                      "break_lines_after": after,
+                                      "style": style, "shape_intensity": intensity,
+                                      "attempts": attempts[-4:]})
+                out["checks"] = {"break_lines_increased": True}
+                out["ok"] = True
+                return out
     out["detail"].update({"view": val(view, "Name"), "break_lines_before": before,
-                          "break_lines_after": after, "returned": str(res)})
-    out["checks"] = {"break_lines_increased": after > before}
-    out["ok"] = out["checks"]["break_lines_increased"]
+                          "break_lines_after": _count(view, "GetBreakLines"),
+                          "attempts": attempts[-10:]})
+    out["checks"] = {"break_lines_increased": False}
+    out["ok"] = False
     return out
-
 
 def drawing_dimension(doc_w: Any, x: float = 0.12, y: float = 0.12) -> Dict[str, Any]:
     """图纸尺寸：选视图里两条边（mark=1）→ `AddDimension2(x,y,0)`。
@@ -610,76 +632,119 @@ def drawing_dimension(doc_w: Any, x: float = 0.12, y: float = 0.12) -> Dict[str,
     return out
 
 
+def _hole_table_templates() -> list:
+    """找本机可用的孔表模板（`.sldholtbt`）。
+
+    为什么必须给模板：`InsertHoleTable2/3` 的 Template 传空串时 SW 静默返回 None
+    （不是"用默认模板"）。先找用户模板目录，再找安装目录语言包。
+    """
+    import glob
+    import os
+    program_data = os.environ.get("PROGRAMDATA") or ""
+    # SolidWorks 可能装在 D:\Program Files 而不是 %PROGRAMFILES%（本机就是 D:），
+    # 只扫 C: 会得到空列表，所以三个盘的 Program Files 都扫一遍。
+    roots = [os.path.join(drive + os.sep, "Program Files") for drive in ("C:", "D:", "E:")]
+    program_files = os.environ.get("PROGRAMFILES") or ""
+    if program_files:
+        roots.append(program_files)
+    patterns = [
+        os.path.join(program_data, "SolidWorks", "SOLIDWORKS *", "templates", "*.sldholtbt"),
+        os.path.join(program_data, "SolidWorks", "templates", "*.sldholtbt"),
+    ]
+    for root in roots:
+        patterns.append(os.path.join(root, "SOLIDWORKS Corp", "SOLIDWORKS", "lang", "*",
+                                     "*hole table*.sldholtbt"))
+    found = []
+    for pattern in patterns:
+        for path in glob.glob(pattern):
+            if os.path.isfile(path):
+                found.append(path)
+    preferred = [p for p in found if "standard" in os.path.basename(p).lower()]
+    return (preferred + found)[:6]
+
+
 def hole_table(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
-    """孔表：`IView.InsertHoleTable2(UseAnchor, X, Y, AnchorType, Template, OriginMarker)`。
+    """孔表：`IView.InsertHoleTable3(UseAnchor, X, Y, AnchorType, StartValue,
+    Template, TagOrder, TagType, ManualTags)`。
 
-    两个前提（都踩过）：
+    三个前提（都踩过）：
 
-    1. 必须先 `ActivateView`，否则 `InsertHoleTable2` 返回 None；
-    2. 视图方向要能看到孔（前视/后视/等轴测；上视不行）。
+    1. 零件里真有孔，视图方向能看到它（前视/后视/等轴测）；
+    2. 必须先 `ActivateView`；
+    3. **Template 必须是真实的 `.sldholtbt` 路径**——传空串 SW 静默返回 None。
 
-    判据：图纸上 `*Table*` 类特征数 +1。
+    判据：**该视图**的 `GetTableAnnotationCount` +1。
+
+    为什么不用"特征里带 Table"：孔表是**注解**不是特征，按特征数永远 0 —— 这
+    正是旧实现把"其实建出来了"判成失败的原因（`tables_after` 恒 0）。
     """
     from ..core.com import val as _val
     from ._common import iter_features
-    out = _result("sw_add_hole_table", "IView.InsertHoleTable2")
+    import os as _os
+    out = _result("sw_add_hole_table", "IView.InsertHoleTable3")
     view = first_model_view(doc_w)
     if view is None:
         out["detail"]["error"] = "图纸里没有模型视图"
         return out
 
-    def n_tables() -> int:
+    def n_table_annotations() -> int:
+        try:
+            return int(_val(view, "GetTableAnnotationCount") or 0)
+        except Exception:                           # noqa: BLE001
+            return -1
+
+    def n_table_features() -> int:
         n = 0
         for feat in iter_features(doc_w):
             if "Table" in (_val(feat, "GetTypeName2") or ""):
                 n += 1
         return n
 
-    before = n_tables()
+    def total() -> int:
+        """注解计数优先；读不到时退回特征计数。"""
+        a = n_table_annotations()
+        return a if a >= 0 else n_table_features()
+
+    before = total()
     try:
         doc_w.ActivateView(_val(view, "Name"))
         activated = True
-    except Exception:
+    except Exception:                               # noqa: BLE001
         activated = False
-    ents = _view_entities(view)
-    circles = []
-    for ee in ents:
-        try:
-            p = [float(v) for v in list(_val(ee, "GetCurveParams2") or [])]
-            if len(p) >= 6 and sum((p[3 + i] - p[i]) ** 2 for i in range(3)) ** 0.5 < 1e-9:
-                circles.append(ee)
-        except Exception:
-            continue
+    templates = _hole_table_templates()
     out["detail"].update({"view": _val(view, "Name"), "activated": activated,
-                          "entities": len(ents), "circles": len(circles),
-                          "tables_before": before})
+                          "tables_before": before,
+                          "templates": [_os.path.basename(t) for t in templates]})
     attempts = []
-    picks = ([circles[0]] if circles else []) + [None]
-    for pick in picks:
+    for template in (templates or [""]):
         for anchor in (1, 0):
-            doc_w.ClearSelection2(True)
-            if pick is not None:
-                try:
-                    pick.Select2(False, 1)
-                except Exception:
-                    pass
-            try:
-                res = view.InsertHoleTable2(True, float(x), float(y), anchor, "", "")
-            except Exception as exc:                # noqa: BLE001
-                attempts.append({"pick": pick is not None, "anchor": anchor,
-                                 "error": str(exc)[:70]})
-                continue
-            after = n_tables()
-            attempts.append({"pick": pick is not None, "anchor": anchor,
-                             "returned": type(res).__name__ if res is not None else None,
-                             "tables_after": after})
-            if after > before:
-                out["detail"].update({"tables_after": after, "attempts": attempts[-6:]})
-                out["checks"] = {"table_added": True}
-                out["ok"] = True
-                return out
-    out["detail"].update({"tables_after": n_tables(), "attempts": attempts[-8:]})
+            for tag_order in (0, 1):
+                for tag_type in (0, 1):
+                    doc_w.ClearSelection2(True)
+                    try:
+                        res = view.InsertHoleTable3(
+                            True, float(x), float(y), anchor, "A", template,
+                            tag_order, tag_type, None)
+                    except Exception as exc:        # noqa: BLE001
+                        attempts.append({"tpl": _os.path.basename(template)[:24],
+                                         "anchor": anchor, "order": tag_order,
+                                         "type": tag_type, "error": str(exc)[:60]})
+                        continue
+                    after = total()
+                    attempts.append({"tpl": _os.path.basename(template)[:24],
+                                     "anchor": anchor, "order": tag_order,
+                                     "type": tag_type,
+                                     "returned": type(res).__name__ if res is not None else None,
+                                     "tables_after": after})
+                    if after > before:
+                        out["detail"].update({"tables_after": after,
+                                              "attempts": attempts[-4:]})
+                        out["checks"] = {"table_added": True}
+                        out["ok"] = True
+                        return out
+    out["detail"].update({"tables_after": total(), "attempts": attempts[-10:]})
     out["checks"] = {"table_added": False}
+    out["ok"] = False
     return out
 
 def balloon(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
