@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-05 00:40 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-05 10:05 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 617 ｜ 验收 360 ｜ 契约 245 ｜ 合并 528 = 85.6% ｜ 快乐路径 323
-未覆盖 89：sw 39 ｜ ug 32 ｜ codesys 10 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ acad 96.4% ｜
-        autoshop 90.5% ｜ codesys 83.3% ｜ sw 79.4% ｜ ug 61.9%
+工具 617 ｜ 验收 414 ｜ 契约 245 ｜ 合并 551 = 89.3% ｜ 快乐路径 378
+未覆盖 66：sw 39 ｜ ug 15 ｜ codesys 4 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ codesys 93.3% ｜
+        acad 96.4% ｜ autoshop 90.5% ｜ ug 82.1% ｜ sw 79.4%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -449,3 +449,16 @@ startup 机制），**根本不需要 Ctrl+U**。起来之后 ug 工具都在 0.
 `view_position`/`note.position` 要**三个**坐标、`rectangle.origin` 要**两个**；
 `create_cam_operation` 的 `tool_name` 必须等于已建的刀具名（默认 `T01_END_MILL`）；
 `generate_cam_toolpath` 目前 backend error（几何没选对，CLSF 导出因此也不可用）。
+
+### ug 再来两条（2026-11-05 10:00）
+
+| 用例 | 真机 | 新覆盖 |
+|---|---|---|
+| `ug.flow.modeling2` | 4.8 s | `extrude_sketch` / `create_cylindrical_hole` / `fillet_edges` / `chamfer_edges` / `extract_face_surface` / `offset_surface` / `create_involute_gear` / `inspect_feature` / `proxy_tools` |
+| `ug.flow.features` | 2.8 s | `linear_pattern_feature` / `mirror_feature` / `inspect_assembly` / `inspect_assembly_constraints` |
+
+**ug 剩下的 15 个是"有前置条件的模块"**：机床/运动学（要 machine profile 文件）、
+CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_component` 要真正的
+装配上下文）、钣金弯边/展开（几何相关：`边必须切向连续`、`该面不是有效的钣金面`）、
+`revolve_sketch`（矩形+轴线不是有效回转剖面）、`shell_body`/`boolean_bodies`（要多实体）、
+`set_feature_expression`（要已命名的表达式）。

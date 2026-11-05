@@ -2089,6 +2089,51 @@ def _ug_flow(client, steps, tag):
                         "want": len(done), "ok": not failures}]}
 
 
+def _ug_modeling2_flow(client, context):
+    """ug 剧本五：草图拉伸→孔→圆角→倒角→抽面→偏置面→齿轮→特征自省（12 步）。"""
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "m2_%s.prt" % _s}),
+        ("ug_create_parametric_sketch", {"name": "SK2", "plane": "XY",
+                                         "geometry": [{"type": "rectangle", "name": "r1",
+                                                       "origin": [0.0, 0.0],
+                                                       "width": 60.0, "height": 40.0}]}),
+        ("ug_extrude_sketch", {"sketch_id": "SK2", "distance": 20}),
+        ("ug_create_cylindrical_hole", {"origin": [30.0, 20.0, 20.0], "diameter": 10,
+                                        "depth": 20, "target_body_index": 0}),
+        ("ug_fillet_edges", {"edge_indices": [0], "radius": 2}),
+        ("ug_chamfer_edges", {"edge_indices": [1], "distance": 1.5}),
+        ("ug_extract_face_surface", {"face_indices": [0]}),
+        ("ug_offset_surface", {"face_indices": [0], "distance": 2}),
+        ("ug_create_involute_gear", {"module": 2, "teeth": 20, "face_width": 10}),
+        ("ug_inspect_feature", {"feature_id": "0"}),
+        ("ug_inspect_body_topology", {}),
+        ("ug_proxy_tools", {}),
+    ]
+    return _ug_flow(client, steps, "modeling2")
+
+
+def _ug_features_flow(client, context):
+    """ug 剧本七：特征阵列/镜像 + 装配自省（6 步）。
+
+    实测：`linear_pattern_feature` / `mirror_feature` 只要给出 `feature_id`（这里用
+    特征序号 "0"）就能建；`inspect_assembly` / `inspect_assembly_constraints` 在普通
+    零件上返回空结构也算过。`revolve_sketch` 对"矩形+轴线"草图报 create_revolution
+    Null（需要真回转剖面），`shell_body`/`boolean_bodies` 要多实体，都不纳入。
+    """
+    _s = uuid.uuid4().hex[:6]
+    steps = [
+        ("ug_create_part", {"file_name": "f7_%s.prt" % _s}),
+        ("ug_create_block", {"length": 50, "width": 30, "height": 10}),
+        ("ug_linear_pattern_feature", {"feature_id": "0", "count": 2, "spacing": 60}),
+        ("ug_mirror_feature", {"feature_id": "0", "plane_origin": [0, 0, 0],
+                               "plane_normal": [1, 0, 0]}),
+        ("ug_inspect_assembly", {}),
+        ("ug_inspect_assembly_constraints", {}),
+    ]
+    return _ug_flow(client, steps, "features")
+
+
 def _ug_model_flow(client, context):
     """ug 剧本一：建块 → 拓扑/摘要/几何自省 → 重建 → 存盘 → STEP 往返（10 步）。"""
     work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_ug_model_")
@@ -2175,6 +2220,14 @@ UG_CASES = [
      "title": "ug 剧本三：A3 图纸/投影视图/注释/自省（6 步）",
      "args": {}, "expect_ok": True,
      "call": lambda client, context: _ug_drawing_flow(client, context)},
+    {"id": "ug.flow.modeling2", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本五：拉伸/孔/圆角/倒角/抽面/偏置面/齿轮/特征自省（12 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_modeling2_flow(client, context)},
+    {"id": "ug.flow.features", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本七：特征阵列/镜像 + 装配自省（6 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_features_flow(client, context)},
     {"id": "ug.flow.sheetmetal", "timeout_s": 600, "tool": None,
      "title": "ug 剧本四：参数化草图/NX 钣金 tab（5 步）",
      "args": {}, "expect_ok": True,
@@ -2188,12 +2241,18 @@ UG_CASES = [
      "timeout_s": 120,
      "skip_if": _ug_no_live_nx},
 
-    {"id": "ug.cam.capabilities", "tool": "ug_get_cam_capabilities",
-     "title": "CAM 能力自报（模块/许可/可用操作）",
+    {"id": "ug.cam.capabilities", "tool": None,
+     "title": "CAM 能力自报（先建件+进 CAM，再读模板/刀具/后处理）",
      "args": {},
      "expect_ok": True,
-     "timeout_s": 180,
-     "skip_if": _ug_no_live_nx},
+     "timeout_s": 300,
+     "skip_if": _ug_no_live_nx,
+     "call": lambda client, context: _ug_flow(client, [
+         ("ug_create_part", {"file_name": "cap_%s.prt" % uuid.uuid4().hex[:6]}),
+         ("ug_create_block", {"length": 80, "width": 50, "height": 30}),
+         ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+         ("ug_get_cam_capabilities", {"template_type": "mill_planar"}),
+     ], "cam_caps")},
 
     {"id": "ug.cam.recipe", "call": _ug_cam_recipe,
      "title": "CAM 端到端配方：新零件 → 三种工序各自生成刀路（path_exists）",
