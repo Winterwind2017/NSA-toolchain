@@ -1346,6 +1346,70 @@ def _codesys_service_alive(state: str) -> bool:
         return False
 
 
+def _codesys_xml_roundtrip_flow(client, context):
+    """CODESYS 剧本二：POU 导出 XML → 新工程导入（7 步）。
+
+    两条实测：
+
+    * `export.xml` 的 `target` 要给**可导入的对象**（POU/文件夹），
+      导 Application 会得到一棵"导入时找不到可导入对象"的树；
+    * `import.xml` 的第二个参数不是可选的：给 None 会抛
+      `E_SCRIPT: 未找到可导入的对象`，必须显式给目标对象（默认 Application）。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_xml_")
+    proj_a = os.path.join(work, "a.project")
+    proj_b = os.path.join(work, "b.project")
+    xml = os.path.join(work, "pou.xml")
+    app = "/PLC/Plc Logic/Application"
+    pou = app + "/AccPou"
+    steps = [
+        ("codesys_project_create", {"path": proj_a,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccPou", "kind": "program",
+                                "language": "ST", "parent": app}),
+        ("codesys_pou_write", {"path": pou, "part": "implementation",
+                               "text": "y := y + 3;\n"}),
+        ("codesys_export_xml", {"path": xml, "target": pou}),
+        ("codesys_project_create", {"path": proj_b,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_import_xml", {"path": xml}),
+        ("codesys_tree", {"depth": 3}),
+    ]
+    done = []
+    imported = None
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False,
+                    "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])],
+                    "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False,
+                    "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+        if name == "codesys_import_xml":
+            imported = (payload.get("reads") or {}).get("result") or {}
+    xml_size = os.path.getsize(xml) if os.path.exists(xml) else 0
+    before = (imported or {}).get("children_before")
+    after = (imported or {}).get("children_after")
+    checks = [
+        {"check": "xml_written", "got": xml_size, "want": ">200",
+         "ok": xml_size > 200},
+        {"check": "import_children_increased", "got": [before, after],
+         "want": "after > before",
+         "ok": isinstance(before, int) and isinstance(after, int) and after > before},
+    ]
+    return {"ok": all(c["ok"] for c in checks),
+            "reads": {"steps": done, "workdir": work, "xml_bytes": xml_size,
+                      "children_before": before, "children_after": after},
+            "errors": [], "checks": checks}
+
+
 def _codesys_flow(client, context):
     """CODESYS 剧本：project.create（带 device）→ POU 写入/读回 → 编译 → 导出 XML。
 
@@ -1936,6 +2000,14 @@ CODESYS_CASES = [
      "call": lambda client, context: _codesys_open_flow(client, context),
      "cleanup": _codesys_cleanup},
 
+    {"id": "codesys.tool.call", "tool": "codesys_call", "timeout_s": 180,
+     "title": "codesys_call 透传 ping，拿到 banner 与 pid",
+     "args": {"cmd": "ping"}, "expect_ok": True,
+     "call": lambda client, context: client.call("codesys_call", {"cmd": "ping"})},
+    {"id": "codesys.flow.xml_roundtrip", "tool": None, "timeout_s": 900,
+     "title": "CODESYS 剧本二：POU 导出 XML → 新工程导入（7 步）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _codesys_xml_roundtrip_flow(client, context)},
     {"id": "codesys.flow.online", "tool": None,
      "title": "CODESYS 剧本九：仿真在线读/写/采样（13 步，PLC_PRG 里的变量）",
      "args": {}, "expect_ok": True, "timeout_s": 900,

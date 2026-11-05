@@ -907,3 +907,17 @@ sw 95.3% → **95.8%**（未覆盖 9 → 8）
 
 覆盖：620 工具 ｜ 验收 478 ｜ 合并 604 = **97.4%** ｜ 快乐路径 450
 sw 95.8% → **98.4%**（未覆盖 8 → 3：analyze_draft / move_component / kit_runtime）
+
+## codesys 两个缺口补齐（2026-11-05 21:50，codesyskit 44083b3）
+
+| 工具 | 之前 | 修法 |
+|---|---|---|
+| `codesys_call` | 没有用例 | 加 `codesys.tool.call`：透传 `ping`，读回 banner/pid（52 ms） |
+| `codesys_import_xml` | `E_SCRIPT: 未找到可导入的对象` | `cmd_import_xml` 的第二个参数不是"可选父对象"，而是**导入目标对象**；给 `None` 必失败。改成支持 `target`、默认当前 Application，并保留 one-arg 兜底 |
+
+配套事实：`export.xml` 的 `target` 要给**可导入对象**（POU / 文件夹）。
+导 `Application` 出来的 XML 在新工程里导入照样报同一个错。
+
+新剧本 `codesys.flow.xml_roundtrip`（3.0 s）：建工程 → 建 POU → 写实现 → 导出 POU 的 XML
+→ 另建工程 → 导入 → children 3→4，通过。
+（顺手清掉了 `codesyskit` 里 `agentscript.py` 与 `.git/*` 的只读属性，否则改写/提交都被拒。）
