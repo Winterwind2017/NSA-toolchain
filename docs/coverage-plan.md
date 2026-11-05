@@ -3,10 +3,10 @@
 现状（2026-11-05 10:05 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 617 ｜ 验收 414 ｜ 契约 245 ｜ 合并 551 = 89.3% ｜ 快乐路径 378
-未覆盖 66：sw 39 ｜ ug 15 ｜ codesys 4 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ codesys 93.3% ｜
-        acad 96.4% ｜ autoshop 90.5% ｜ ug 82.1% ｜ sw 79.4%
+工具 617 ｜ 验收 415 ｜ 契约 245 ｜ 合并 552 = 89.5% ｜ 快乐路径 379
+未覆盖 65：sw 39 ｜ ug 15 ｜ codesys 3 ｜ autoshop 4 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ acad 96.4% ｜
+        codesys 95.0% ｜ autoshop 90.5% ｜ ug 82.1% ｜ sw 79.4%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -462,3 +462,19 @@ CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_comp
 装配上下文）、钣金弯边/展开（几何相关：`边必须切向连续`、`该面不是有效的钣金面`）、
 `revolve_sketch`（矩形+轴线不是有效回转剖面）、`shell_body`/`boolean_bodies`（要多实体）、
 `set_feature_expression`（要已命名的表达式）。
+
+### CODESYS 的三个残留（全是 kit 自身缺陷，不是没测）
+
+* `online_write` —— 任何表达式都回"无效的表达式"（`AccW.x` / `Application.AccW.x` /
+  `PLC_PRG.x` 全试过）；顺带发现 `online_read` 会把 `"error: 无效的表达式"`
+  **当成功返回**（判据只看 ok，不看 value）——这是个静默失败，值得改 kit。
+* `textlist_export` —— `ScriptObject` 没有 `export` 属性（脚本 API 用错）。
+* `symbols_create` 在部分工程类型上"父对象不接受符号配置对象"。
+
+### ug 剩 15 个：都要前置模块或专门几何
+
+机床/运动学（要 machine profile 文件）、`generate_cam_toolpath`（backend error，
+连带 CLSF 导出不可用）、`add_component`（要真装配上下文）、钣金弯边/展开
+（`边必须切向连续` / `该面不是有效的钣金面`，几何相关）、`revolve_sketch`
+（矩形+轴线不是有效回转剖面）、`shell_body`/`boolean_bodies`（要多实体）、
+`set_feature_expression`（要已命名表达式）。

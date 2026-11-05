@@ -1562,6 +1562,37 @@ def _codesys_runtime_flow(client, context):
             "errors": [], "checks": checks}
 
 
+def _codesys_open_flow(client, context):
+    """CODESYS 剧本八：另存为 → 关闭 → 重开（`project_open` 只在工程没被占用时可用）。"""
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_codesys_open_")
+    a = os.path.join(work, "open_a.project")
+    b = os.path.join(work, "open_b.project")
+    steps = [
+        ("codesys_project_create", {"path": a, "device": "CODESYS Control Win V3"}),
+        ("codesys_project_save_as", {"path": b}),
+        ("codesys_project_close", {}),
+        ("codesys_project_open", {"path": b}),
+        ("codesys_tree", {"path": "/", "depth": 1}),
+        ("codesys_project_close", {}),
+    ]
+    done = []
+    for name, args in steps:
+        try:
+            payload = client.call(name, args)
+        except Exception as exc:                       # noqa: BLE001
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 抛异常：%s: %s" % (name, type(exc).__name__,
+                                                     str(exc)[:160])], "checks": []}
+        done.append({"tool": name, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": done, "failed_at": name, "workdir": work},
+                    "errors": ["%s 失败：%s" % (name, str(payload.get("errors"))[:200])],
+                    "checks": payload.get("checks") or []}
+    return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
+            "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
+                        "ok": len(done) == len(steps)}]}
+
+
 def _codesys_rest_flow(client, context):
     """CODESYS 剧本七：命令表/版本/设备库/树/带类型 POU/成员/移动/任务/符号/IO/运行时/清理。
 
@@ -1683,6 +1714,13 @@ CODESYS_CASES = [
      "args": {}, "expect_ok": True, "timeout_s": 900,
      "skip_if": lambda context: not context.get("codesys_free"),
      "call": lambda client, context: _codesys_runtime_flow(client, context),
+     "cleanup": _codesys_cleanup},
+
+    {"id": "codesys.flow.open", "tool": None,
+     "title": "CODESYS 剧本八：另存为 → 关闭 → 重开 → 读树（6 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 600,
+     "skip_if": lambda context: not context.get("codesys_free"),
+     "call": lambda client, context: _codesys_open_flow(client, context),
      "cleanup": _codesys_cleanup},
 
     {"id": "codesys.flow.rest", "tool": None,
