@@ -848,3 +848,34 @@ NX 恢复办法：`Stop-Process -Name ugraf` → 设 `UGII_USER_DIR` 重开 → 
 ug 91.7% → **94.0%**（未覆盖 7 → 5）｜ sw 94.3% → **95.3%**（未覆盖 11 → 8）
 剩 22：sw 8 ｜ ug 5 ｜ autoshop 4 ｜ codesys 2 ｜ nx 1 ｜ acad 1（后两个是合成
 `kit_runtime`）
+
+## 孔表打通（2026-11-05 21:40，swkit 2db1a33）
+
+用户按我的请求录了一段"只录插孔表"的宏，源码里那行就是全部答案：
+
+```vb
+Set myView = Part.SelectionManager.GetSelectedObjectsDrawingView(1)
+Set myHoleTable = myView.InsertHoleTable2(False, 0.10027, 0.19557, 1, "A", "D:\...\standard hole table--letters.sldholtbt")
+```
+
+四道坎，缺一条就静默返回 None：
+
+| 坎 | 事实 |
+|---|---|
+| 参数顺序 | `(UseAnchorPoint, X, Y, AnchorType, **StartValue**, **Template**)` —— 第 5 个是 `"A"`，第 6 个才是模板。之前模板放第 5、第 6 传空串 |
+| 选孔边 | `IView.GetVisibleEntities2(VARIANT(VT_DISPATCH,NULL), 1)` 才拿得到边（给 `None` 报"类型不匹配"）；`edge.Select4(True, VAR(VT_DISPATCH,NULL))` 才选得上（`Select4(False, None)` 静默 False） |
+| 模板 | 必须是真实 `.sldholtbt` 路径（本机在 D 盘） |
+| 判据 | **不能**用 `IView.GetTableAnnotationCount`（建出来仍是 0）；用"返回值非空 且 `GetAnnotation().GetType == 14`" |
+
+实测：选中 6 条边 → 返回 CDispatch → 注解类型 14 → PASS。
+`sw.flow.drawing_extra` 现在是「3D 剖视 → 建图 → 孔表 → 断裂视图」14 步，11.2 s 通过。
+
+顺带记两条血的教训（同一晚踩的）：
+* 在用户真实会话里跑 48 组参数矩阵，把 SW 拽进"命令未结束"状态，界面整个点不动、
+  连文档都切不了，还弹出「无法中断当前操作」模态框；恢复办法是关掉那张测试图再重开零件。
+  → `sw_add_hole_table` 已加护栏：零件在草图编辑态直接拒绝执行。
+* 工程图上 `GetActiveSketch` **永远非空**（返回视图里模型的草图），所以护栏只能拦
+  非工程图文档，否则会误判。
+
+覆盖：620 工具 ｜ 验收 472 ｜ 合并 599 = **96.6%** ｜ 快乐路径 444
+sw 95.3% → **95.8%**（未覆盖 9 → 8）

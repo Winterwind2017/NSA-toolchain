@@ -319,7 +319,7 @@ SW_CASES = [
      "call": lambda client, context: _sw_refs_select_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
     {"id": "sw.flow.drawing_extra", "tool": None,
-     "title": "SW 剧本五十三：3D 剖视 + 断裂视图（13 步）",
+     "title": "SW 剧本五十三：3D 剖视 + 孔表 + 断裂视图（14 步）",
      "args": {}, "expect_ok": True, "timeout_s": 600,
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_drawing_extra_flow(client, context)},
@@ -4666,6 +4666,7 @@ def _sw_drawing_extra_flow(client, context):
         ("sw_cut_extrude", {"through_all": True}),
         ("sw_create_section_view", {"plane": "前视基准面", "offset": 0.0}),
         ("sw_new_drawing", {"model": part, "view": "front"}),
+        ("sw_add_hole_table", {"x": 0.12, "y": 0.18}),
         ("sw_add_broken_view", {"orientation": 0, "position": 0.049, "size": 0.01}),
     ]
     return _sw_flow_any(client, steps, "drawing_extra", work)
