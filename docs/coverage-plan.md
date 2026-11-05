@@ -1079,3 +1079,21 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 
 下一步建议（按性价比）：UI 里手工绑一次 → 用 `run_python` 读出绑定后的 CAM 字段照着复刻；
 或者拆 NX 自带机床定义对齐 `kit_information.xml`。
+
+## 机床仿真真跑通（2026-11-06 01:20）
+
+用户手工绑机床（`sim05_mill_5ax_fanuc`）后，整条链打通：
+
+| 步骤 | 结果 |
+|---|---|
+| `create_cam_milling_context` + `create_cam_operation(FLOOR_FACING)` | ok |
+| `configure_cam_milling_operation`（cut_area 面 + floor_z + 进给） | ok |
+| `generate_cam_toolpath` | **ok**（`PLANAR_MILL`/`FACE_MILL_ZIGZAG`/`FACE_MILL_MIDPASS` 恒失败，别用） |
+| readiness | **blockers=[]、ready=true** |
+| `start_machine_simulation_with_collision_stop(play_immediately=False)` | **ok**（prepared、碰撞开关全开） |
+| `stop_active_machine_simulation` | ok（stopped/released） |
+
+新用例 `ug.flow.machine_simulate`（fixture 已绑机床，SKIP 守卫）**PASS 7.7 s**。
+顺带修 `nsa_probe_5ax` profile：`expected_axes` 改 B/C、`geometry_root` 指向我们放 STL 的目录
+（原来指向 NX sim05 图形目录，导致 `ug.flow.machine_inspect` 报
+`component_geometry_missing` + `expected_axes_missing`）。

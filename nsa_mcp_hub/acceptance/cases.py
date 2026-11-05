@@ -2974,6 +2974,145 @@ def _ug_machine_validate_flow(client, context):
 
 
 
+
+from pathlib import Path as _PathForMachineBuilds
+
+_MACHINE_BUILD_DIR = _PathForMachineBuilds(
+    r"D:\bililive\CAD-Agent-Hub\MCP\UG\workspace\machine_builds"
+)
+_BOUND_MACHINE_FIXTURE = "acc_kit_61ab27.prt"
+
+
+def _ug_bound_machine_fixture():
+    """手工绑过机床的那个工作区（CAMSetup.GetMachineLibref() 非空）。
+
+    绑定这一步目前只能人工在 NX 里做（见 MACHINE_KINEMATICS.md 第 8 节：
+    `CreateMachineGroupBuilder(None)` 空指针、`CreateNcmptPartMountingBuilder`
+    单独 Commit 不产生机床组），所以整条仿真链用一个固定 fixture 来验收。
+    """
+    part = _MACHINE_BUILD_DIR / _BOUND_MACHINE_FIXTURE
+    return part if part.is_file() else None
+
+
+def _ug_no_bound_machine_fixture(context=None) -> bool:
+    return _ug_bound_machine_fixture() is None
+
+
+def _ug_machine_simulate_flow(client, context):
+    """ug 剧本十四：真跑机床仿真（绑定 → 刀路 → readiness → start → stop）。
+
+    前置：fixture 工作区已经**人工绑过机床**（`libref=sim05_mill_5ax_fanuc`）。
+    本条剧本证明的是"绑定之后整条链能跑"，并把它固定成可回归的证据：
+
+    * `create_cam_milling_context` 建**新**程序组（老的工序没有刀路，会拖累 readiness）
+    * `create_cam_operation(FLOOR_FACING)` + `configure_cam_milling_operation`
+      （切削面 selectors + floor_z + 进给）→ `generate_cam_toolpath` 真的出刀路
+      （`PLANAR_MILL` / `FACE_MILL_ZIGZAG` / `FACE_MILL_MIDPASS` 这几个模板
+      `generate` 恒失败、且不暴露 DepthPerCut，别用）
+    * `inspect_machine_simulation_readiness` → `blockers=[]`、`ready=true`
+    * `start_machine_simulation_with_collision_stop(play_immediately=False)`
+      → `simulation_prepared=true`、`status=prepared`（不自动播放，避免真动机床）
+    * `stop_active_machine_simulation` → `stopped=true`、`released=true`
+    """
+    import json as _json
+    import time as _time
+
+    fixture = _ug_bound_machine_fixture()
+    if fixture is None:
+        return {"ok": False, "reads": {"failed_at": "fixture_missing"},
+                "errors": ["没有绑过机床的 fixture 工作区"], "checks": []}
+    tag = int(_time.time() % 100000)
+    program = "MCP_SIMC_%d" % tag
+    operation = "MCP_GENC_%d" % tag
+    checks = []
+    reads = {}
+
+    def record(name, payload, expect_ok=True, needle=None):
+        actual = bool(payload.get("ok"))
+        errors = " ".join(str(x) for x in (payload.get("errors") or []))
+        matched = needle is None or needle.lower() in errors.lower()
+        ok = (actual == expect_ok) and matched
+        checks.append({"check": name, "got": actual, "want": expect_ok, "ok": ok})
+        reads.setdefault("steps", []).append(
+            {"tool": name, "ok": ok, "errors": errors[:200]})
+        return payload.get("reads") or {}
+
+    record("ug_save_work_part", client.call("ug_save_work_part", {}))
+    record("ug_activate_machine_build_workspace", client.call(
+        "ug_activate_machine_build_workspace", {
+            "workspace_file_name": _BOUND_MACHINE_FIXTURE,
+            "recovery_token": ((_json.loads(
+                (_MACHINE_BUILD_DIR / (_BOUND_MACHINE_FIXTURE + ".nxmcp.json"))
+                .read_text(encoding="utf-8"))) or {}).get("recovery_token") or "",
+            "dry_run": False, "preserve_current": False,
+            "confirmation": "ACTIVATE_MACHINE_BUILD_WORKSPACE"}))
+    ctx = record("ug_create_cam_milling_context", client.call(
+        "ug_create_cam_milling_context", {
+            "origin": [0.0, 0.0, 0.0], "part_body_indices": [0],
+            "program_name": program, "method_name": "MCP_METHOD",
+            "mcs_name": "MCP_MCS", "workpiece_name": "MCP_WPC_%d" % tag,
+            "blank_offset": 2.0}))
+    program_name = ctx.get("program_name") or program
+    method_name = ctx.get("method_name") or "MCP_METHOD"
+    geometry_name = ctx.get("workpiece_name") or ("MCP_WPC_%d" % tag)
+    record("ug_create_cam_operation", client.call("ug_create_cam_operation", {
+        "name": operation, "template_type": "mill_planar",
+        "template_subtype": "FLOOR_FACING", "program_name": program_name,
+        "method_name": method_name, "geometry_name": geometry_name,
+        "tool_name": "MCP_T01"}))
+    record("ug_configure_cam_milling_operation", client.call(
+        "ug_configure_cam_milling_operation", {
+            "operation_name": operation, "body_index": 0, "part_body_indices": [0],
+            "cut_area_face_selectors": [{"sort_by": "largest"}],
+            "depth_per_cut": 5.0, "floor_z": 0.0, "top_offset": 0.0,
+            "spindle_rpm": 2000.0, "cut_feed": 300.0,
+            "approach_feed": 100.0, "retract_feed": 500.0}))
+    toolpath = record("ug_generate_cam_toolpath", client.call(
+        "ug_generate_cam_toolpath", {"operation_names": [operation]}))
+    checks.append({"check": "toolpath_generated", "got": toolpath.get("generated_count"),
+                   "want": 1, "ok": toolpath.get("generated_count") == 1})
+    readiness = record("ug_inspect_machine_simulation_readiness", client.call(
+        "ug_inspect_machine_simulation_readiness", {
+            "program_name": program_name,
+            "required_axes": ["X", "Y", "Z"], "require_axis_limits": False,
+            "require_tool_geometry": True, "require_workpiece_geometry": True,
+            "require_holder_geometry": False, "require_fixture_geometry": False}))
+    checks.append({"check": "readiness_blockers_empty",
+                   "got": readiness.get("blockers"), "want": [],
+                   "ok": readiness.get("blockers") == []})
+    checks.append({"check": "machine_simulation_ready",
+                   "got": readiness.get("machine_simulation_ready"), "want": True,
+                   "ok": readiness.get("machine_simulation_ready") is True})
+    started = record("ug_start_machine_simulation_with_collision_stop", client.call(
+        "ug_start_machine_simulation_with_collision_stop", {
+            "program_name": program_name, "operation_names": [operation],
+            "required_axes": ["X", "Y", "Z"], "play_immediately": False,
+            "require_axis_limits": False, "require_tool_geometry": True,
+            "require_workpiece_geometry": True, "require_holder_geometry": False,
+            "require_fixture_geometry": False}))
+    checks.append({"check": "simulation_prepared",
+                   "got": started.get("simulation_prepared"), "want": True,
+                   "ok": started.get("simulation_prepared") is True})
+    checks.append({"check": "simulation_status_prepared",
+                   "got": started.get("status"), "want": "prepared",
+                   "ok": started.get("status") == "prepared"})
+    checks.append({"check": "collision_stop_armed",
+                   "got": (started.get("options") or {}).get("stop_on_collision"),
+                   "want": True,
+                   "ok": (started.get("options") or {}).get("stop_on_collision") is True})
+    stopped = record("ug_stop_active_machine_simulation", client.call(
+        "ug_stop_active_machine_simulation", {"release": True}))
+    checks.append({"check": "simulation_stopped", "got": stopped.get("stopped"),
+                   "want": True, "ok": stopped.get("stopped") is True})
+    record("ug_save_work_part", client.call("ug_save_work_part", {}))
+    reads.update({"program": program_name, "operation": operation,
+                  "readiness": {"blockers": readiness.get("blockers"),
+                                "ready": readiness.get("machine_simulation_ready")},
+                  "start": {"prepared": started.get("simulation_prepared"),
+                            "status": started.get("status")}})
+    return {"ok": all(c["ok"] for c in checks), "reads": reads,
+            "errors": [], "checks": checks}
+
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
     {"id": "ug.flow.machine_build", "timeout_s": 900, "tool": None,
@@ -3056,6 +3195,12 @@ UG_CASES = [
      "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
      "args": {}, "expect_ok": True,
      "call": lambda client, context: _ug_machine_validate_flow(client, context)},
+    {"id": "ug.flow.machine_simulate", "timeout_s": 1200, "tool": None,
+     "title": "ug 剧本十四：真跑机床仿真（绑定→刀路→readiness→start→stop）",
+     "args": {}, "expect_ok": True,
+     "skip_if": _ug_no_bound_machine_fixture,
+     "call": lambda client, context: _ug_machine_simulate_flow(client, context)},
+
 ]
 
 # ── eplan（CAD-Agent-Hub 的 EPLAN 2.9 MCP：电气设计 / 审图）──────────────

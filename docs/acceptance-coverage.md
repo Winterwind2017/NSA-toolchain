@@ -23,7 +23,7 @@
 数据来源：
 
 - 契约扫描：`_runs/contract-sweep-*.json` 共 8 份（并集）
-- 验收报告：`_runs/acceptance-*.json` 共 273 份（并集）
+- 验收报告：`_runs/acceptance-*.json` 共 280 份（并集）
 
 ## gated 是什么
 
