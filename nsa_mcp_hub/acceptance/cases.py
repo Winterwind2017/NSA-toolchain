@@ -279,6 +279,19 @@ SW_CASES = [
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_constraint_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.feature_pattern", "tool": None,
+     "title": "SW 剧本三十九：按名字选特征 + 特征阵列（12 步）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_feature_pattern_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+    {"id": "sw.flow.drawing_notes", "tool": None,
+     "title": "SW 剧本四十：自动气泡 + 旋转视图（9 步，需单独跑）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_drawing_notes_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
     {"id": "sw.flow.part_ops", "tool": None,
      "title": "SW 剧本三十三：切除/移动/缩放/镜像/材料/关系/DimXpert/Flow（18 步）",
      "args": {}, "expect_ok": True, "timeout_s": 1200,
@@ -290,12 +303,6 @@ SW_CASES = [
      "args": {}, "expect_ok": True, "timeout_s": 900,
      "requires": ["solidworks"],
      "call": lambda client, context: _sw_sim_flow(client, context),
-     "cleanup": lambda client, context: _close_unsaved_docs(client)},
-    {"id": "sw.flow.asm_ops", "tool": None,
-     "title": "SW 剧本三十五：装配插入两件 + 隐藏/替换（15 步）",
-     "args": {}, "expect_ok": True, "timeout_s": 900,
-     "requires": ["solidworks"],
-     "call": lambda client, context: _sw_asm_ops_flow(client, context),
      "cleanup": lambda client, context: _close_unsaved_docs(client)},
     {"id": "sw.flow.sketch_extras", "tool": None,
      "title": "SW 剧本三十六：草图约束/倒角/圆周阵列（10 步）",
@@ -3975,6 +3982,8 @@ def _sw_assembly_b_flow(client, context):
         ("sw_insert_component", {"part": part, "x": 0, "y": 0, "z": 0}),
         ("sw_insert_component", {"part": part, "x": 60, "y": 0, "z": 0}),
         ("sw_get_assembly_tree", {}),
+        ("sw_hide_component", {"name": "b-1", "hide": True}),
+        ("sw_hide_component", {"name": "b-1", "hide": False}),
     ]
     done = []
     for name, args in steps:
@@ -4072,6 +4081,58 @@ def _sw_face_sketch_flow(client, context):
     return {"ok": True, "reads": {"steps": done, "workdir": work}, "errors": [],
             "checks": [{"check": "flow_steps", "got": len(done), "want": len(steps),
                         "ok": len(done) == len(steps)}]}
+
+
+def _sw_feature_pattern_flow(client, context):
+    """SW 剧本三十九：按名字选特征 + 特征阵列（12 步）。
+
+    `sw_select_features` 以前恒 0 个：SelectByID2 对中文特征名无效，pywin32 的
+    `doc.FirstFeature()` 在本机报「找不到成员」。改成 comtypes QI 到 IModelDoc2
+    遍历特征树 + `IFeature::Select2` 后，「凸台-拉伸1」「切除-拉伸1」都能选中。
+
+    `sw_pattern_feature` 的前置是**零件里必须有切除类特征**（内部按 ICE/Cut 找目标）
+    + 一条直边当方向；只有拉伸体时会报 backend error。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_pattern_")
+    part = os.path.join(work, "pat.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_create_sketch_on_face", {"face_index": 1}),
+        ("sw_sketch_circle", {"cx": 20.0, "cy": 12.5, "radius": 6.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_cut_extrude", {"through_all": True}),
+        ("sw_select_features", {"names": ["切除-拉伸1"]}),
+        ("sw_pattern_feature", {"kind": "linear", "count": 2, "spacing": 0.03}),
+    ]
+    return _sw_flow_any(client, steps, "feature_pattern", work)
+
+
+def _sw_drawing_notes_flow(client, context):
+    """SW 剧本四十：自动气泡 + 旋转视图（9 步）。
+
+    两条都要求**图纸里已经有视图**（`sw_new_drawing` 会建主视图）且是**干净的
+    新图纸**；`sw_add_balloon` 内部自己插 BOM，前面再插一张 BOM 表会把 SW 卡死。
+    这个剧本**必须单独跑**：跟别的出图用例同批时容易卡在 900 s 超时。
+    """
+    work = tempfile.mkdtemp(prefix="nsa_mcp_hub_accept_sw_drw_")
+    part = os.path.join(work, "drw.SLDPRT")
+    steps = [
+        ("sw_create_part", {}),
+        ("sw_create_sketch", {"plane": "前视基准面"}),
+        ("sw_sketch_rectangle", {"x1": 0.0, "y1": 0.0, "x2": 40.0, "y2": 25.0}),
+        ("sw_exit_sketch", {}),
+        ("sw_extrude", {"depth_mm": 10}),
+        ("sw_save_document", {"path": part}),
+        ("sw_new_drawing", {"model": part, "view": "front"}),
+        ("sw_add_balloon", {"x": 0.1, "y": 0.2}),
+        ("sw_view_rotate", {"angle_deg": 15}),
+    ]
+    return _sw_flow_any(client, steps, "drawing_notes", work)
 
 
 def _sw_flow_any(client, steps, tag, work):

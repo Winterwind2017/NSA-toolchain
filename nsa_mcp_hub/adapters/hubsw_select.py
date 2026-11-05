@@ -173,57 +173,70 @@ def select_tools() -> List[Any]:
                              errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
 
     def _features(args: Dict[str, Any]) -> Dict[str, Any]:
+        """按名字选中特征（支持中文特征名，如「凸台-拉伸1」）。
+
+        踩过的坑：① `SelectByID2(name, "BODYFEATURE")` 对中文特征名恒 False；
+        ② pywin32 的 `doc.FirstFeature()` 在本机报「找不到成员」；
+        ③ comtypes 里 `FirstFeature`/`GetNextFeature` 返回的是 **dynamic
+        _Dispatch**，且可能被包成 callable —— 必须 `value() if callable(value)
+        else value` 解引用，否则 `GetNextFeature()` 抛 TypeError。
+        走得通的路：comtypes QI 到 IModelDoc2 → 遍历整棵特征树 → `IFeature::Select2`。
+        """
         append = bool(args.get("append"))
         names = [str(n) for n in (args.get("names") or []) if str(n).strip()]
         if not names:
             return normalize(KIT, "select_features", ok=False,
                              errors=["names 不能为空"])
         try:
-            app = _attach()
-            doc = app.ActiveDoc
-            if doc is None:
-                return normalize(KIT, "select_features", ok=False,
-                                 errors=["没有打开的文档"])
+            import comtypes
+            import comtypes.client as cc
+            import comtypes.gen.SldWorks as swmod
+        except Exception as exc:            # noqa: BLE001
+            return normalize(KIT, "select_features", ok=False,
+                             errors=["comtypes 不可用：%s" % exc])
+        comtypes.CoInitialize()
+        try:
+            cc.GetModule(r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb")
+        except Exception:                   # noqa: BLE001
+            pass
+        try:
+            app = cc.GetActiveObject("SldWorks.Application")
+            md = app.ActiveDoc.QueryInterface(swmod.IModelDoc2)
             if not append:
-                doc.ClearSelection2(True)
+                md.ClearSelection2(True)
+
+            def deref(value):
+                return value() if callable(value) else value
+
+            wanted = set(names)
             hits = []
-            for name in names:
-                picked = False
-                for kind in ("BODYFEATURE", "SKETCH"):
+            feat = deref(md.FirstFeature)
+            guard = 0
+            while feat is not None and guard < 500:
+                guard += 1
+                label = str(getattr(feat, "Name", "") or "")
+                if label in wanted:
                     try:
-                        if doc.Extension.SelectByID2(name, kind, 0, 0, 0,
-                                                     True, 0, None, 0):
-                            hits.append(name)
-                            picked = True
-                            break
-                    except Exception:    # noqa: BLE001
-                        continue
-                if picked:
-                    continue
-                # SelectByID2 对"凸台-拉伸1"这类中文特征名不生效，改为遍历特征树
-                # 直接 IFeature::Select2（实测这条最稳）。
+                        if bool(feat.Select2(True, 0)):
+                            hits.append(label)
+                    except Exception:       # noqa: BLE001
+                        pass
                 try:
-                    feat = doc.FirstFeature()
-                    while feat is not None:
-                        if str(getattr(feat, "Name", "")) == name:
-                            if feat.Select2(True, 0):
-                                hits.append(name)
-                            break
-                        feat = feat.GetNextFeature()
-                except Exception:        # noqa: BLE001
-                    pass
-            count = _selected_count(doc)
-            checks = [
-                {"check": "selected", "got": count, "want": len(names),
-                 "ok": count == len(names)},
-            ]
+                    feat = deref(getattr(feat, "GetNextFeature"))
+                except Exception:           # noqa: BLE001
+                    break
+            count = int(md.SelectionManager.GetSelectedObjectCount2(-1))
+            checks = [{"check": "selected", "got": count, "want": len(names),
+                       "ok": count == len(names)}]
             return normalize(KIT, "select_features", ok=count == len(names),
                              reads={"requested": names, "hits": hits,
+                                    "features_scanned": guard,
                                     "selected_count": count},
                              checks=checks,
                              errors=[] if count == len(names)
-                             else ["选中 %d 个（期望 %d）" % (count, len(names))])
-        except Exception as exc:         # noqa: BLE001
+                             else ["选中 %d 个（期望 %d）；hits=%s"
+                                   % (count, len(names), hits)])
+        except Exception as exc:            # noqa: BLE001
             return normalize(KIT, "select_features", ok=False,
                              errors=["%s: %s" % (type(exc).__name__, str(exc)[:200])])
 

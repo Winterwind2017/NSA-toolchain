@@ -1,12 +1,12 @@
 # 覆盖率路线图：从 28% 到 100% 的调用覆盖 / 89% 的快乐路径
 
-现状（2026-11-05 11:00 实测，`docs/acceptance-coverage.md`）：
+现状（2026-11-05 13:45 实测，`docs/acceptance-coverage.md`）：
 
 ```
-工具 618 ｜ 验收 422 ｜ 契约 245 ｜ 合并 558 = 90.3% ｜ 快乐路径 386
-未覆盖 60：sw 37 ｜ ug 13 ｜ autoshop 4 ｜ codesys 2 ｜ nx 2 ｜ acad 2
-逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ codesys 96.7% ｜ nx 97.0% ｜
-        acad 96.4% ｜ autoshop 90.5% ｜ ug 84.5% ｜ sw 80.5%
+工具 618 ｜ 验收 443 ｜ 契约 245 ｜ 合并 575 = 93.0% ｜ 快乐路径 407
+未覆盖 43：sw 20 ｜ ug 13 ｜ autoshop 4 ｜ codesys 2 ｜ nx 2 ｜ acad 2
+逐 kit：catia 100% ｜ eplan 100% ｜ gx 100% ｜ nx 97.0% ｜ codesys 96.7% ｜
+        acad 96.4% ｜ autoshop 90.5% ｜ sw 89.5% ｜ ug 84.5%
 ```
 
 三列分开算，**不混报**——这是这份文档的前提。
@@ -596,3 +596,41 @@ SW 一旦在某次调用里卡住，**sw MCP 服务进程会被那条调用永�
 "上一次调用还在后台"。正确处置：`Stop-Process` 掉
 `CommandLine -match 'swkit|nsa_mcp_hub.servers.sw'` 的 python 进程，**不要杀 SLDWORKS**；
 新会话立刻可用（本轮做了 4 次，SW 一直活着）。
+
+## SW 选特征 / 出图两条线打通（2026-11-05 13:45）
+
+### `sw_select_features`：换掉两条走不通的路
+
+| 试过的路 | 结果 |
+|---|---|
+| `SelectByID2("凸台-拉伸1", "BODYFEATURE")` | 恒 False（中文特征名不生效） |
+| pywin32 `doc.FirstFeature()` | **报「找不到成员」**（`com_error -2147352573`） |
+| comtypes `QIModelDoc2.FirstFeature()` + `IFeature::Select2` | ✅ 通 |
+
+细节：comtypes 里 `FirstFeature` / `GetNextFeature` 返回的是 **dynamic `_Dispatch`**，
+且可能被包成 callable —— 必须 `value() if callable(value) else value` 解引用，
+否则 `GetNextFeature()` 直接 TypeError。遍历 20 个特征用 0.2 s，中文名照样选中。
+
+### `sw_pattern_feature`：前置是"零件里得有切除类特征"
+
+它内部按 ICE/Cut 找目标特征（`_find_target_feature`）+ 找一条直边当方向。
+只有拉伸体时 → `backend error`；先切个孔（`cut_extrude`）再阵列 → 通过
+（实测 target=`切除-拉伸1`、features 22→23）。
+
+### 出图：`sw_add_balloon` / `sw_view_rotate` 也通了
+
+- 必须**新建一张干净图纸**（`sw_new_drawing` 会带主视图）；
+- `add_balloon` **自己会插 BOM**，前面再插一张 BOM 表 → SW 卡死；
+- 这两条**只能单独跑**：跟别的出图用例同批时容易撞 900 s 超时。
+
+## 两条验收基础设施的坑（这轮踩到的，已写进流程）
+
+1. **`--report` 必须带路径**：`python -m nsa_mcp_hub.acceptance --kit sw --only X --report`
+   会报 `expected one argument`；正确写法 `--report _runs/acceptance-<stamp>.json`。
+   不带 `--report` 时**什么报告都不写**，覆盖度就原地不动（这轮白跑了两批才发现）。
+2. **装配类剧本收尾会卡住**：留着一个装配体，swkit 子进程退出时会挂，
+   报告写不出来。处置：`sw_close_all(save=True)` 收尾，或干脆不把这类用例放进批量跑
+   —— 本轮把 `hide_component` 并进 `sw.flow.assembly_b`，并删掉重名的
+   `sw.flow.asm_ops`（剧本三十五）��
+3. **每个剧本单独起一次验收**（一个 `--only` 一条）比批量稳：批量跑时 SW 的
+   文档/视图状态会互相污染，出图类尤其明显。
