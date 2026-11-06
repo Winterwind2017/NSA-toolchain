@@ -55,6 +55,45 @@ def span_normal_step(module_mm: float, pressure_angle_deg: float) -> float:
     return math.pi * module_mm * math.cos(math.radians(pressure_angle_deg))
 
 
+
+def _auto_pin_from_mid_radius(base_radius: float, root_radius: float, outer_radius: float,
+                              pitch_radius: float, tooth_count: int,
+                              pressure_angle_deg: float, shift: float,
+                              *, internal: bool) -> tuple[float, float]:
+    """按"接触点落在齿高中部"反算量柱直径，返回 (d_p, 接触半径)。"""
+    mid = 0.5 * (root_radius + outer_radius)
+    cos_alpha_m = base_radius / mid
+    if not 0.0 < cos_alpha_m < 1.0:
+        raise ContractError("齿高中部落在基圆以内，无法按此规则反算量柱")
+    alpha_m = math.acos(cos_alpha_m)
+    inv_alpha_m = math.tan(alpha_m) - alpha_m
+    inv_alpha_p = involute_angle(pitch_radius, base_radius)
+    shift_term = 2.0 * shift * math.tan(math.radians(pressure_angle_deg)) / tooth_count
+    half_space = math.pi / (2.0 * tooth_count)
+    if internal:
+        diameter = 2.0 * base_radius * (inv_alpha_p - inv_alpha_m + half_space - shift_term)
+    else:
+        diameter = 2.0 * base_radius * (inv_alpha_m - inv_alpha_p + half_space - shift_term)
+    if diameter <= 0.0:
+        raise ContractError("反算出的量柱直径非正：请显式给量柱/量球直径")
+    return diameter, mid
+
+
+def auto_pin_diameter_external(spec: InvoluteGearSpec) -> tuple[float, float]:
+    """外齿轮：反算量柱直径与接触半径。"""
+    return _auto_pin_from_mid_radius(
+        spec.base_radius_mm, spec.root_radius_mm, spec.outer_radius_mm,
+        spec.pitch_radius_mm, spec.tooth_count, spec.pressure_angle_deg,
+        getattr(spec, "profile_shift_x", 0.0), internal=False)
+
+
+def auto_pin_diameter_internal(spec: InternalGearSpec) -> tuple[float, float]:
+    """内齿圈：反算量柱直径与接触半径。"""
+    return _auto_pin_from_mid_radius(
+        spec.base_radius_mm, spec.root_radius_mm, spec.tip_radius_mm,
+        spec.pitch_radius_mm, spec.tooth_count, spec.pressure_angle_deg,
+        spec.profile_shift_x, internal=True)
+
 def tooth_thickness_at_pitch(spec: InvoluteGearSpec) -> float:
     """分度圆齿厚 s = m(π/2 + 2x·tanα)。"""
     shift = getattr(spec, "profile_shift_x", 0.0)
@@ -86,11 +125,14 @@ def span_measurement(spec: InvoluteGearSpec, k: int | None = None) -> dict[str, 
 
 
 def span_over_pins(spec: InvoluteGearSpec, pin_diameter_mm: float | None = None) -> dict[str, Any]:
-    """外齿跨棒距 M（偶数齿 +d_p，奇数齿按 cos(π/2z) 修正）。"""
+    """外齿跨棒距 M（偶数齿 +d_p，奇数齿按 cos(π/2z) 修正）。
+
+    量柱直径默认按**接触点落在齿高中部**反算；给 ``pin_diameter_mm`` 时用指定值。
+    """
     alpha = math.radians(spec.pressure_angle_deg)
     shift = getattr(spec, "profile_shift_x", 0.0)
-    pin = float(pin_diameter_mm) if pin_diameter_mm else \
-        require_positive(PIN_DIAMETER_FACTOR * spec.module_mm, "pin_diameter_mm")
+    auto_pin, auto_mid = auto_pin_diameter_external(spec)
+    pin = float(pin_diameter_mm) if pin_diameter_mm else auto_pin
     if pin <= 0.0:
         raise ContractError("pin_diameter_mm must be positive")
 
@@ -108,6 +150,8 @@ def span_over_pins(spec: InvoluteGearSpec, pin_diameter_mm: float | None = None)
         distance = 2.0 * base * math.cos(math.pi / (2.0 * spec.tooth_count)) / cos_m + pin
     return {
         "pin_diameter_mm": round(pin, 4),
+        "pin_diameter_rule": "contact at mid tooth height" if not pin_diameter_mm else "caller-specified",
+        "contact_radius_mm": round(auto_mid if not pin_diameter_mm else base / math.cos(alpha_m), 4),
         "alpha_M_deg": round(math.degrees(alpha_m), 4),
         "span_mm": round(distance, 4),
         "even_teeth": spec.tooth_count % 2 == 0,
@@ -119,8 +163,8 @@ def span_over_pins_internal(spec: InternalGearSpec,
     """内齿跨棒距：M = d_b/cos α_M − d_p（偶数齿）。"""
     alpha = math.radians(spec.pressure_angle_deg)
     shift = spec.profile_shift_x
-    pin = float(pin_diameter_mm) if pin_diameter_mm else \
-        require_positive(PIN_DIAMETER_FACTOR * spec.module_mm, "pin_diameter_mm")
+    auto_pin, auto_mid = auto_pin_diameter_internal(spec)
+    pin = float(pin_diameter_mm) if pin_diameter_mm else auto_pin
 
     base = spec.base_radius_mm
     target = (involute_angle(spec.pitch_radius_mm, base) - pin / (2.0 * base)
@@ -140,6 +184,8 @@ def span_over_pins_internal(spec: InternalGearSpec,
         raise ContractError("内齿跨棒距为负：量柱选得过大")
     return {
         "pin_diameter_mm": round(pin, 4),
+        "pin_diameter_rule": "contact at mid tooth height" if not pin_diameter_mm else "caller-specified",
+        "contact_radius_mm": round(auto_mid if not pin_diameter_mm else base / math.cos(alpha_m), 4),
         "alpha_M_deg": round(math.degrees(alpha_m), 4),
         "span_mm": round(distance, 4),
         "even_teeth": spec.tooth_count % 2 == 0,
@@ -185,8 +231,12 @@ def helical_gear_inspection(spec: "HelicalGearSpec",
     span_length = (module_n * math.cos(alpha_n)
                    * (math.pi * (k - 0.5) + virtual_teeth * inv_alpha_n))
 
-    ball = float(ball_diameter_mm) if ball_diameter_mm else \
-        require_positive(PIN_DIAMETER_FACTOR * module_n, "ball_diameter_mm")
+    root_v = (virtual_teeth / 2.0 - 1.25) * module_n
+    outer_v = (virtual_teeth / 2.0 + 1.0) * module_n
+    auto_ball, auto_mid = _auto_pin_from_mid_radius(
+        base_v, root_v, outer_v, pitch_v, max(8, int(round(virtual_teeth))),
+        spec.pressure_angle_normal_deg, 0.0, internal=False)
+    ball = float(ball_diameter_mm) if ball_diameter_mm else auto_ball
     target = inv_alpha_n + ball / (2.0 * base_v) - math.pi / (2.0 * virtual_teeth)
     if target <= 0.0:
         raise ContractError("量球相对当量基圆太大：跨棒距无解")
@@ -207,6 +257,8 @@ def helical_gear_inspection(spec: "HelicalGearSpec",
         "helix_angle_deg": spec.helix_angle_deg,
         "pressure_angle_normal_deg": spec.pressure_angle_normal_deg,
         "virtual_tooth_count": round(virtual_teeth, 4),
+        "virtual_tip_radius_mm": round((virtual_teeth / 2.0 + 1.0) * module_n, 4),
+        "virtual_root_radius_mm": round((virtual_teeth / 2.0 - 1.25) * module_n, 4),
         "pitch_diameter_mm": round(2.0 * spec.pitch_radius_mm, 4),
         "base_diameter_mm": round(2.0 * spec.base_radius_mm, 4),
         "tip_diameter_mm": round(2.0 * spec.outer_radius_mm, 4),
@@ -218,6 +270,10 @@ def helical_gear_inspection(spec: "HelicalGearSpec",
         },
         "span_over_balls": {
             "ball_diameter_mm": round(ball, 4),
+            "ball_diameter_rule": ("contact at mid tooth height"
+                                   if not ball_diameter_mm else "caller-specified"),
+            "contact_radius_mm": round(auto_mid if not ball_diameter_mm
+                                       else base_v / math.cos(alpha_m), 4),
             "alpha_M_deg": round(math.degrees(alpha_m), 4),
             "span_mm": round(span, 4),
             "even_teeth": spec.tooth_count % 2 == 0,
