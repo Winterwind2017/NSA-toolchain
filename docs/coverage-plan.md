@@ -1163,3 +1163,16 @@ ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 
   已排除 tcl/def 缺失、post 段改成 NX 自带 fanuc post 仍报同样错。
 * 下一步候选：① 用 sim0x 机床做模板替换 graphics prt；② 给 kit 补齐 Bin/Controller/Libraries；③ 只用库机床。
 * 副作用已记录：设了阴影库 env 后标准库不可见，测完必须清变量重启（已实测恢复 2/2 PASS）。
+
+## ✅ 自家 .mtk 机床绑定打通（2026-11-06 10:56）
+
+根因：阴影库 `machine_data/` 缺 **DBC 处理脚本** `dbc_machine_ascii.tcl/.def` → NX 查机床时
+`MOM_TCL：无法打开 TCL 脚本文件`（syslog 指向 `Mom_TclAdapter.cxx` + 那个 tcl）。
+补上后 `ug_bind_machine_from_library("nsa_template_probe")` 直接成功（SPINDLE + 19 POCKET）。
+
+* 新脚本 `MCP/UG/scripts/nx_machine_shadow.py`：生成"混合机床库"（NX 全部机床 junction + 我们 kit + 带 dbc 的 machine_data + 从 sim06 借 cam_setup/cse 缺件），`--verify` 可体检。
+* 新脚本 `MCP/UG/scripts/start-nx-shadow.ps1`：设四个 `UGII_CAM_LIBRARY_*` → 起 NX → 等 48161 → 写 `machine_shadow/active.json`。
+* 新用例 `ug.flow.machine_kit_bind`（阴影库会话 PASS 4.5 s；标准库会话 SKIP）。
+* 坑：① 导入 MTK 前必须先有运动学（先绑一台库机床）；② **换库必须换会话**，否则报
+  `MOM_TCL：用户选择了中止`（本次踩到，浪费一次全量）。
+* 全量：标准库 18/19 + 1 skip / 145.1 s；阴影库 19/19 / 149.0 s；覆盖 623/623 = 100%。

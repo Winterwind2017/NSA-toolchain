@@ -3508,6 +3508,131 @@ def _ug_machine_swap_flow(client, context):
             "checks": checks}
 
 
+
+_SHADOW_ACTIVE_JSON = _PathForMachineBuilds(
+    r"D:\bililive\CAD-Agent-Hub\MCP\UG\machine_shadow\active.json")
+
+
+def _ug_no_shadow_library(context=None):
+    """当前 NX 是不是用「混合机床库」（scripts/start-nx-shadow.ps1）起的。
+
+    只有那种 NX 才能绑自家 `.mtk` 机床（libref 形如 `nsa_template_probe`）。
+    普通启动时这台机床在库索引里根本不存在，所以整条用例跳过而不是判失败。
+    """
+    try:
+        import json as _json
+        import os as _os
+
+        data = _json.loads(_SHADOW_ACTIVE_JSON.read_text(encoding="utf-8-sig"))  # PS 5.1 写的 json 带 BOM
+    except Exception:
+        return True
+    pid = data.get("pid")
+    if not isinstance(pid, int):
+        return True
+    # Windows 上 os.kill(pid, 0) 会抛 WinError 87（不是空检查），必须用 tasklist
+    try:
+        import subprocess as _subprocess
+
+        result = _subprocess.run(
+            ["tasklist", "/FI", "PID eq %d" % pid],
+            capture_output=True, text=True)
+        if str(pid) not in (result.stdout or ""):
+            return True      # 记录里的 NX 已经没了
+    except Exception:
+        return True
+    root = str(data.get("shadowRoot") or "")
+    return "machine_shadow" not in root
+
+
+
+def _ug_machine_kit_bind_flow(client, context):
+    """ug 剧本十七：**绑自家 .mtk 机床**（阴影机床库路线）。
+
+    这条能通，靠的是两件 2026-11-06 查出来的事：
+
+    1. 阴影库必须带 NX 的 DBC 处理脚本 `machine_data/dbc_machine_ascii.tcl|.def`，
+       否则一查机床就 `MOM_TCL：无法打开 TCL 脚本文件`（syslog 里能看到
+       `Mom_TclAdapter.cxx` + 那个 tcl 路径）；
+    2. 阴影库要同时把 NX 全部标准机床 junction 进来，标准库和自家 kit 才能共存。
+
+    建库/起 NX：`scripts/nx_machine_shadow.py --build` + `scripts/start-nx-shadow.ps1`。
+    """
+    import json as _json
+    import uuid as _uuid
+
+    libref = "nsa_template_probe"
+    part = "kitb_%s.prt" % _uuid.uuid4().hex[:6]
+    checks, reads, steps = [], {}, []
+
+    def record(name, payload, want_ok=True):
+        ok = bool(payload.get("ok")) is want_ok
+        steps.append({"tool": name, "ok": bool(payload.get("ok"))})
+        checks.append({"check": name, "got": bool(payload.get("ok")), "want": want_ok,
+                       "ok": ok})
+        if not ok:
+            reads.setdefault("errors", []).append(
+                "%s: %s" % (name, str(payload.get("errors"))[:200]))
+        return payload.get("reads") or {}
+
+    for tool, args in (
+        ("ug_create_part", {"file_name": part}),
+        ("ug_run_python", {"code": (
+            "import NXOpen\ns = NXOpen.Session.GetSession()\n"
+            "s.ApplicationSwitchImmediate('UG_APP_MANUFACTURING')\n"
+            "result = {'app': str(s.ApplicationName)}")}),
+        ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+        ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+    ):
+        payload = client.call(tool, args)
+        steps.append({"tool": tool, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": reads,
+                    "errors": ["%s 失败：%s" % (tool, str(payload.get("errors"))[:180])],
+                    "checks": checks}
+
+    bound = record("ug_bind_machine_from_library", client.call(
+        "ug_bind_machine_from_library", {"libref": libref}))
+    checks.append({"check": "kit_machine_bound", "got": bound.get("libref_after"),
+                   "want": libref, "ok": bound.get("libref_after") == libref})
+    groups = [str(g).upper() for g in (bound.get("machine_groups") or [])]
+    checks.append({"check": "kit_spindle",
+                   "got": any(g.startswith("SPINDLE") for g in groups), "want": True,
+                   "ok": any(g.startswith("SPINDLE") for g in groups)})
+    pockets = sum(1 for g in groups if g.startswith("POCKET"))
+    checks.append({"check": "kit_pockets", "got": pockets, "want": ">=4",
+                   "ok": pockets >= 4})
+
+    record("ug_save_work_part", client.call("ug_save_work_part", {}))
+    PY_REOPEN = (
+        "import NXOpen\n"
+        "s = NXOpen.Session.GetSession()\n"
+        "work = s.Parts.Work\n"
+        "before = str(work.CAMSetup.GetMachineLibref() or '')\n"
+        "path = str(work.FullPath)\n"
+        "work.Close(NXOpen.BasePartCloseWholeTree.TrueValue,\n"
+        "           NXOpen.BasePartCloseModified.CloseModified, None)\n"
+        "part, status = s.Parts.OpenActiveDisplay(path, NXOpen.DisplayPartOption.AllowAdditional)\n"
+        "s.Parts.SetDisplay(part, True, True)\n"
+        "s.Parts.SetWork(part)\n"
+        "result = {'before': before, 'after': str(part.CAMSetup.GetMachineLibref() or ''),\n"
+        "          'leaf': str(getattr(part, 'Leaf', '') or '')}\n"
+    )
+    payload = client.call("ug_run_python", {"code": PY_REOPEN})
+    record("ug_run_python", payload)
+    reopened = (payload.get("reads") or {}).get("return_value") or {}
+    checks.append({"check": "kit_binding_persisted", "got": reopened.get("after"),
+                   "want": libref, "ok": reopened.get("after") == libref})
+
+    reads["steps"] = steps
+    reads["reopen"] = reopened
+    reads["machine_groups"] = bound.get("machine_groups")
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["自家机床绑定未通过：%s" % (_json.dumps(
+                [c for c in checks if not c["ok"]], ensure_ascii=False)[:400])],
+            "checks": checks}
+
+
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
     {"id": "ug.flow.machine_build", "timeout_s": 900, "tool": None,
@@ -3613,6 +3738,12 @@ UG_CASES = [
      "args": {}, "expect_ok": True,
      "skip_if": _ug_no_live_nx,
      "call": lambda client, context: _ug_machine_swap_flow(client, context)},
+
+    {"id": "ug.flow.machine_kit_bind", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十七：绑自家 .mtk 机床（阴影机床库路线）",
+     "args": {}, "expect_ok": True,
+     "skip_if": lambda context: _ug_no_shadow_library(context) or _ug_no_live_nx(context),
+     "call": lambda client, context: _ug_machine_kit_bind_flow(client, context)},
 
 ]
 
