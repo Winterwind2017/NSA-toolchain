@@ -2,7 +2,7 @@
   "skill": "ww-gxworks-automation",
   "kernel": "gxkit",
   "kernel_version": "0.16.0",
-  "kernel_commit": "5121ca7",
+  "kernel_commit": "0a03946",
   "engine": "GX Works3 1.117.0.1",
   "cpu": "FX5U",
   "lang": "ST",

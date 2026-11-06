@@ -1,6 +1,6 @@
 # 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
 
-共 **42** 条已验证能力（内核 `gxkit 0.16.0`，commit `5121ca7`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+共 **42** 条已验证能力（内核 `gxkit 0.16.0`，commit `0a03946`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
 
 | id | family | level | 说明 |
 |---|---|---|---|
