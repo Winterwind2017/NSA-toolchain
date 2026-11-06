@@ -1,9 +1,9 @@
 """两级平行轴圆柱齿轮减速器（结构示意级）的 Feature Graph。
 
-设计取舍：**不追求齿面精度，追求"整机一次成型"**——每个齿轮用"四顶点/齿"
-的结构化梯形轮廓（分度圆上齿宽 48%、齿顶宽 24% 的近似），这样一张草图
-就能把整圈齿画完，拉伸即得齿轮体；再补三根轴与三处键槽，16 个特征构成
-一个可用于布置/干涉/传动比校核的整机模型。
+齿形：**真渐开线**（复用 `involute_gear.tooth_outline_points`，与单件齿轮、
+斜齿轮同一套点），每齿一条离散渐开线折线，齿根弧自然相接；整圈一张草图，
+拉伸即得齿轮体。再补三根轴与三处键槽，16 个特征构成一个可用于布置/干涉/
+传动比校核的整机模型。
 
 两级中心距按标准齿轮公式 ``a = m(z1+z2)/2``；第二级整体沿轴向偏置
 ``齿轮厚 + 轴向间隙``，避免两级在同一平面里打架。
@@ -15,30 +15,50 @@ import math
 from typing import Any
 
 from .contracts import ContractError, require_positive
-from .involute_gear import InvoluteGearSpec, validate_gear_spec
+from .involute_gear import (InvoluteGearSpec, tooth_outline_points,
+                            validate_gear_spec)
 
 
-def structural_gear_outline(spec: InvoluteGearSpec,
-                            center: tuple[float, float]) -> list[list[float]]:
-    """整圈齿轮轮廓：每齿四个顶点（齿根-齿顶-齿顶-齿根），闭合折线。"""
+def involute_gear_outline(
+    spec: InvoluteGearSpec,
+    center: tuple[float, float],
+    *,
+    samples_per_flank: int = 8,
+    samples_across_tip: int = 3,
+) -> list[list[float]]:
+    """整圈渐开线齿轮轮廓（平移到 ``center``），闭合折线。
+
+    每个齿用 :func:`tooth_outline_points` 生成（齿根 → 齿面 → 齿顶弧 → 齿面），
+    相邻齿之间靠齿根弦相接；比"四顶点梯形"多花一些点，但齿形是真渐开线，
+    啮合、干涉与齿厚都可以直接对表。
+    """
     cx, cy = center
     pitch_angle = 2.0 * math.pi / spec.tooth_count
-    root_half = pitch_angle * 0.46
-    tip_half = pitch_angle * 0.24
-
+    shift = getattr(spec, "profile_shift_x", 0.0)
     points: list[list[float]] = []
     for index in range(spec.tooth_count):
-        base_angle = index * pitch_angle
-        for radius, delta in (
-            (spec.root_radius_mm, -root_half),
-            (spec.outer_radius_mm, -tip_half),
-            (spec.outer_radius_mm, tip_half),
-            (spec.root_radius_mm, root_half),
-        ):
-            angle = base_angle + delta
-            points.append([cx + radius * math.cos(angle),
-                           cy + radius * math.sin(angle)])
+        tooth = tooth_outline_points(
+            pitch_radius_mm=spec.pitch_radius_mm,
+            base_radius_mm=spec.base_radius_mm,
+            root_radius_mm=spec.root_radius_mm,
+            outer_radius_mm=spec.outer_radius_mm,
+            tooth_count=spec.tooth_count,
+            rotation_rad=index * pitch_angle,
+            samples_per_flank=samples_per_flank,
+            samples_across_tip=samples_across_tip,
+            profile_shift_x=shift,
+            pressure_angle_deg=spec.pressure_angle_deg,
+        )
+        points.extend([[cx + x, cy + y] for x, y in tooth])
     return points
+
+
+def structural_gear_outline(
+    spec: InvoluteGearSpec,
+    center: tuple[float, float],
+) -> list[list[float]]:
+    """兼容旧名：现在返回的是**渐开线**轮廓（不再是对称梯形）。"""
+    return involute_gear_outline(spec, center)
 
 
 def _gear_features(prefix: str, center: tuple[float, float], plane: str,
@@ -51,7 +71,7 @@ def _gear_features(prefix: str, center: tuple[float, float], plane: str,
             "plane": plane,
             "entities": [
                 {"kind": "polyline", "closed": True,
-                 "points": structural_gear_outline(spec, center)},
+                 "points": involute_gear_outline(spec, center)},
                 {"kind": "circle", "center": [center[0], center[1]],
                  "radius_mm": spec.bore_diameter_mm / 2.0},
             ],

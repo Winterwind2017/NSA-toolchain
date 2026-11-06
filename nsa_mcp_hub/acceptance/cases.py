@@ -786,6 +786,17 @@ SW_CASES = [
      "no_setup": True,
      "timeout_s": 180},
 
+    {"id": "sw.create.reducer.live", "tool": "sw_create_two_stage_reducer",
+     "title": "减速器真机（渐开线齿轮）：16 特征、7 实体、总材积 192448（±3%）",
+     "args": {"execute": True},
+     "expect_ok": True,
+     "expect_reads": {"reads.graph_steps": 16, "reads.executed": True,
+                      "reads.ratio": 6.0,
+                      "reads.center_distance_stage1_mm": 60.0,
+                      "reads.execute.body_count": 7},
+     "expect_between": {"reads.execute.body_volume_mm3": [186674.5, 198221.4]},
+     "timeout_s": 900},
+
     {"id": "sw.create.sphere", "tool": "sw_create_sphere",
      "title": "一步到位封装：球体出图 + 解析体积 4/3·π·r³",
      "args": {"diameter_mm": 40.0, "execute": False},

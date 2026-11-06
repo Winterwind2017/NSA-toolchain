@@ -432,7 +432,7 @@ def hubsw_tools() -> list:
             gear_involute_plan, timeout_s=120),
         ToolSpec(
             "sw_gearbox_plan",
-            "两级平行轴减速器：生成整机 Feature Graph（16 个特征），"
+            "两级平行轴减速器：生成整机 Feature Graph（16 个特征，渐开线齿形），"
             "判据是传动比 (z2/z1)·(z4/z3) 与两级中心距 a=m(z1+z2)/2。",
             {"type": "object",
              "properties": {"module_mm": N, "pressure_angle_deg": N,

@@ -31,12 +31,22 @@ def _new_part(app, template_path: str | None):
     return model
 
 
-def _body_volume_mm3(model):
+def _solid_bodies(model):
     bodies = model.GetBodies2(0, False)          # 0 = swSolidBody
-    if not bodies:
-        return 0.0
-    data = bodies[0].GetMassProperties(1)
-    return float(data[3]) * 1e9
+    return list(bodies) if bodies else []
+
+
+def _body_volume_mm3(model):
+    """所有实体的体积之和。
+
+    注意：只看 bodies[0] 是错的——多实体零件（减速器 7 个实体）读到的体
+    取决于创建顺序，同一张图两次可能一个 110963、一个 11110（真机踩过）。
+    """
+    total = 0.0
+    for body in _solid_bodies(model):
+        data = body.GetMassProperties(1)
+        total += float(data[3])
+    return total * 1e9
 
 
 def execute_feature_graph(args: dict) -> dict:
@@ -79,8 +89,11 @@ def execute_feature_graph(args: dict) -> dict:
     ok_steps = sum(1 for r in results if r.get("ok"))
     names = [f["name"] for f in native_features.feature_names(model)]
     try:
+        bodies = _solid_bodies(model)
+        body_count = len(bodies)
         volume = _body_volume_mm3(model)
     except Exception:                                 # noqa: BLE001
+        body_count = None
         volume = None
 
     save_path = (args.get("save_path") or "").strip()
@@ -98,6 +111,7 @@ def execute_feature_graph(args: dict) -> dict:
         _check("features_added", len(names), ">基线", True,
                "%d 个特征名（含默认文件夹）" % len(names)),
         _check("body_volume_mm3", volume, ">0", bool(volume) and volume > 0),
+        _check("body_count", body_count, ">=1", bool(body_count)),
     ]
     if args.get("expected_volume_mm3"):
         want = float(args["expected_volume_mm3"])
@@ -113,6 +127,7 @@ def execute_feature_graph(args: dict) -> dict:
                                "step_results": results,
                                "features_tail": names[-8:],
                                "body_volume_mm3": round(volume, 3) if volume else volume,
+                               "body_count": body_count,
                                "save_path": save_path or None, "saved": saved})
     payload["checks"] = checks
     payload["ok"] = all(c["ok"] for c in checks) and not payload["errors"]

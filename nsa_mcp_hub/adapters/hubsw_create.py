@@ -90,6 +90,7 @@ def _compose(name: str, graph: dict, args: dict) -> dict:
             "plan_steps": (result.get("reads") or {}).get("plan_steps"),
             "steps_ok": (result.get("reads") or {}).get("steps_ok"),
             "body_volume_mm3": (result.get("reads") or {}).get("body_volume_mm3"),
+            "body_count": (result.get("reads") or {}).get("body_count"),
             "features_tail": (result.get("reads") or {}).get("features_tail"),
         }
         checks.append(_check("executed", result.get("ok"), True, bool(result.get("ok"))))
@@ -316,7 +317,7 @@ def create_tools() -> list:
              create_parametric_part),
 
         spec("sw_create_two_stage_reducer",
-             "一步到位：两级平行轴减速器（16 个特征）→ 出图 → 建出来。"
+             "一步到位：两级平行轴减速器（16 个特征，渐开线齿轮）→ 出图 → 建出来。"
              "判据附传动比与两级中心距。",
              {"module_mm": _TYPE_NUM, "pressure_angle_deg": _TYPE_NUM,
               "stage1_teeth": {"type": "array", "items": _TYPE_NUM},
