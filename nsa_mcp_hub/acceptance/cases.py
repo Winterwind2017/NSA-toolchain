@@ -784,12 +784,19 @@ SW_CASES = [
 
     # ── 检验图（视图 + 标题栏 + 检验注释）──
     {"id": "sw.sheet.gear", "tool": "sw_inspection_drawing",
-     "title": "齿轮检验图一条龙：现建齿轮 → 工程图 → 前视/上视 → 检验注释 + 标题栏（读回校验）",
+     "title": "齿轮检验图一条龙：现建齿轮 → 工程图 → 前视/上视 → 视图尺寸 + 检验注释 + 标题栏",
      "args": {"kind": "gear", "title": "输入齿轮检验图", "drawing_number": "NSA-0001",
               "auto_part": True},
      "expect_ok": True,
      "expect_reads": {"reads.document_type": 3, "reads.drawing_created": True},
      "timeout_s": 900},
+
+    {"id": "sw.asm.reducer.drawing", "tool": "sw_reducer_assembly_drawing",
+     "title": "减速器整机装配图：7 组件装配 → 前视/等轴测 → BOM 表 + 7 项明细注释 + 标题栏",
+     "args": {"title": "两级减速器装配图", "drawing_number": "NSA-ASM-0001"},
+     "expect_ok": True,
+     "expect_reads": {"reads.components": 7, "reads.bom_rows": 1},
+     "timeout_s": 1800},
 
     {"id": "sw.sheet.spline", "tool": "sw_inspection_drawing",
      "title": "花键检验图：现建花键轴 → 工程图 + 检验注释（跨棒距 + 量柱）",
