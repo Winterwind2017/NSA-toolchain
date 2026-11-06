@@ -3112,67 +3112,82 @@ def _ug_no_bound_machine_fixture(context=None) -> bool:
 
 
 def _ug_machine_simulate_flow(client, context):
-    """ug 剧本十四：真跑机床仿真（绑定 → 刀路 → readiness → start → stop）。
+    """ug 剧本十四：真跑机床仿真（**自己绑机床** → 刀路 → readiness → start → stop）。
 
-    前置：fixture 工作区已经**人工绑过机床**（`libref=sim05_mill_5ax_fanuc`）。
-    本条剧本证明的是"绑定之后整条链能跑"，并把它固定成可回归的证据：
+    2026-11-06 起不再依赖外部 fixture：先用 `ug_bind_machine_from_library` 把
+    `sim05_mill_5ax_fanuc` 绑到新零件上（journal 抠出来的 API 序列），再走
 
-    * `create_cam_milling_context` 建**新**程序组（老的工序没有刀路，会拖累 readiness）
-    * `create_cam_operation(FLOOR_FACING)` + `configure_cam_milling_operation`
-      （切削面 selectors + floor_z + 进给）→ `generate_cam_toolpath` 真的出刀路
-      （`PLANAR_MILL` / `FACE_MILL_ZIGZAG` / `FACE_MILL_MIDPASS` 这几个模板
-      `generate` 恒失败、且不暴露 DepthPerCut，别用）
-    * `inspect_machine_simulation_readiness` → `blockers=[]`、`ready=true`
-    * `start_machine_simulation_with_collision_stop(play_immediately=False)`
-      → `simulation_prepared=true`、`status=prepared`（不自动播放，避免真动机床）
-    * `stop_active_machine_simulation` → `stopped=true`、`released=true`
+        create_cam_milling_context(新程序组) -> FLOOR_FACING 工序 ->
+        configure(cut_area 面 + floor_z + 进给) -> generate_cam_toolpath ->
+        readiness(blockers=[]) -> start(prepared) -> stop
+
+    这就是"从零到机床仿真"的完整闭环。
     """
-    import json as _json
     import time as _time
+    import uuid as _uuid
 
-    fixture = _ug_bound_machine_fixture()
-    if fixture is None:
-        return {"ok": False, "reads": {"failed_at": "fixture_missing"},
-                "errors": ["没有绑过机床的 fixture 工作区"], "checks": []}
     tag = int(_time.time() % 100000)
-    program = "MCP_SIMC_%d" % tag
-    operation = "MCP_GENC_%d" % tag
-    checks = []
-    reads = {}
+    part_name = "sim_%s.prt" % _uuid.uuid4().hex[:6]
+    program = "MCP_SIMD_%d" % tag
+    operation = "MCP_GEND_%d" % tag
+    checks, reads = [], {}
 
-    def record(name, payload, expect_ok=True, needle=None):
-        actual = bool(payload.get("ok"))
-        errors = " ".join(str(x) for x in (payload.get("errors") or []))
-        matched = needle is None or needle.lower() in errors.lower()
-        ok = (actual == expect_ok) and matched
-        checks.append({"check": name, "got": actual, "want": expect_ok, "ok": ok})
-        reads.setdefault("steps", []).append(
-            {"tool": name, "ok": ok, "errors": errors[:200]})
+    gaps = []
+
+    def record(name, payload, want_ok=True):
+        ok = bool(payload.get("ok")) is want_ok
+        gaps.append({"tool": name, "ok": bool(payload.get("ok"))})
+        checks.append({"check": name, "got": bool(payload.get("ok")), "want": want_ok,
+                       "ok": ok})
+        if not ok:
+            reads.setdefault("errors", []).append(
+                "%s: %s" % (name, str(payload.get("errors"))[:200]))
         return payload.get("reads") or {}
 
-    record("ug_save_work_part", client.call("ug_save_work_part", {}))
-    record("ug_activate_machine_build_workspace", client.call(
-        "ug_activate_machine_build_workspace", {
-            "workspace_file_name": _BOUND_MACHINE_FIXTURE,
-            "recovery_token": ((_json.loads(
-                (_MACHINE_BUILD_DIR / (_BOUND_MACHINE_FIXTURE + ".nxmcp.json"))
-                .read_text(encoding="utf-8"))) or {}).get("recovery_token") or "",
-            "dry_run": False, "preserve_current": False,
-            "confirmation": "ACTIVATE_MACHINE_BUILD_WORKSPACE"}))
+    # 1) 干净零件 + 机床绑定
+    for tool, args in (
+        ("ug_create_part", {"file_name": part_name}),
+        ("ug_run_python", {"code": (
+            "import NXOpen\ns = NXOpen.Session.GetSession()\n"
+            "s.ApplicationSwitchImmediate('UG_APP_MANUFACTURING')\n"
+            "result = {'app': str(s.ApplicationName)}")}),
+        ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+        ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+    ):
+        payload = client.call(tool, args)
+        if not payload.get("ok"):
+            return {"ok": False, "reads": reads,
+                    "errors": ["%s 失败：%s" % (tool, str(payload.get("errors"))[:180])],
+                    "checks": checks}
+
+    bound = record("ug_bind_machine_from_library",
+                   client.call("ug_bind_machine_from_library",
+                               {"libref": "sim05_mill_5ax_fanuc"}))
+    checks.append({"check": "machine_bound", "got": bool(bound.get("bound")), "want": True,
+                   "ok": bool(bound.get("bound"))})
+    if not bound.get("bound"):
+        reads["bind"] = bound
+        return {"ok": False, "reads": reads, "errors": ["机床没绑上"], "checks": checks}
+
+    # 2) CAM 链：刀具 -> 新程序组 + FLOOR_FACING + 刀路
+    tool = record("ug_create_cam_mill_tool", client.call("ug_create_cam_mill_tool", {
+        "name": "MCP_T01", "diameter": 10.0, "flute_length": 30.0,
+        "overall_length": 75.0}))
+    tool_name = tool.get("name") or "MCP_T01"
     ctx = record("ug_create_cam_milling_context", client.call(
         "ug_create_cam_milling_context", {
             "origin": [0.0, 0.0, 0.0], "part_body_indices": [0],
             "program_name": program, "method_name": "MCP_METHOD",
-            "mcs_name": "MCP_MCS", "workpiece_name": "MCP_WPC_%d" % tag,
+            "mcs_name": "MCP_MCS", "workpiece_name": "MCP_WPD_%d" % tag,
             "blank_offset": 2.0}))
     program_name = ctx.get("program_name") or program
     method_name = ctx.get("method_name") or "MCP_METHOD"
-    geometry_name = ctx.get("workpiece_name") or ("MCP_WPC_%d" % tag)
+    geometry_name = ctx.get("workpiece_name") or ("MCP_WPD_%d" % tag)
     record("ug_create_cam_operation", client.call("ug_create_cam_operation", {
         "name": operation, "template_type": "mill_planar",
         "template_subtype": "FLOOR_FACING", "program_name": program_name,
         "method_name": method_name, "geometry_name": geometry_name,
-        "tool_name": "MCP_T01"}))
+        "tool_name": tool_name}))
     record("ug_configure_cam_milling_operation", client.call(
         "ug_configure_cam_milling_operation", {
             "operation_name": operation, "body_index": 0, "part_body_indices": [0],
@@ -3184,12 +3199,14 @@ def _ug_machine_simulate_flow(client, context):
         "ug_generate_cam_toolpath", {"operation_names": [operation]}))
     checks.append({"check": "toolpath_generated", "got": toolpath.get("generated_count"),
                    "want": 1, "ok": toolpath.get("generated_count") == 1})
+
+    # 3) readiness -> start -> stop
     readiness = record("ug_inspect_machine_simulation_readiness", client.call(
         "ug_inspect_machine_simulation_readiness", {
-            "program_name": program_name,
-            "required_axes": ["X", "Y", "Z"], "require_axis_limits": False,
-            "require_tool_geometry": True, "require_workpiece_geometry": True,
-            "require_holder_geometry": False, "require_fixture_geometry": False}))
+            "program_name": program_name, "required_axes": ["X", "Y", "Z"],
+            "require_axis_limits": False, "require_tool_geometry": True,
+            "require_workpiece_geometry": True, "require_holder_geometry": False,
+            "require_fixture_geometry": False}))
     checks.append({"check": "readiness_blockers_empty",
                    "got": readiness.get("blockers"), "want": [],
                    "ok": readiness.get("blockers") == []})
@@ -3217,14 +3234,173 @@ def _ug_machine_simulate_flow(client, context):
         "ug_stop_active_machine_simulation", {"release": True}))
     checks.append({"check": "simulation_stopped", "got": stopped.get("stopped"),
                    "want": True, "ok": stopped.get("stopped") is True})
-    record("ug_save_work_part", client.call("ug_save_work_part", {}))
-    reads.update({"program": program_name, "operation": operation,
+    reads["steps"] = gaps
+    reads.update({"part": part_name, "program": program_name, "operation": operation,
                   "readiness": {"blockers": readiness.get("blockers"),
                                 "ready": readiness.get("machine_simulation_ready")},
                   "start": {"prepared": started.get("simulation_prepared"),
                             "status": started.get("status")}})
-    return {"ok": all(c["ok"] for c in checks), "reads": reads,
-            "errors": [], "checks": checks}
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["仿真链未通过"], "checks": checks}
+
+
+
+def _nx_dialog_clicker(stop_event, log, timeout_s=240):
+    """在 host 侧点掉 NX 的模态对话框（绑定机床时会弹「添加加工部件」）。
+
+    为什么要它：`mb.Commit()` 在 NX 里会阻塞等这个对话框，而我们的工具调用是
+    同步 RPC —— 不点掉就会一直挂着。所以验收用例起一个后台线程，一边阻塞调工具，
+    一边把 NX 的 `NX_SURFACE_WND_DIALOG` 点掉。
+    """
+    import time as _time
+
+    try:
+        import win32con
+        import win32gui
+        import win32process
+    except Exception as exc:                       # noqa: BLE001
+        log.append("no win32: %s" % type(exc).__name__)
+        return
+
+    deadline = _time.time() + timeout_s
+
+    def nx_pids():
+        import subprocess as _sp
+        out = _sp.run(["tasklist", "/FI", "IMAGENAME eq ugraf.exe"],
+                      capture_output=True, text=True)
+        pids = set()
+        for line in out.stdout.splitlines():
+            if line.lower().startswith("ugraf"):
+                try:
+                    pids.add(int(line.split()[1]))
+                except Exception:                  # noqa: BLE001
+                    pass
+        return pids
+
+    while not stop_event.is_set() and _time.time() < deadline:
+        pids = nx_pids()
+        found = []
+
+        def cb(hwnd, _):
+            try:
+                _, owner = win32process.GetWindowThreadProcessId(hwnd)
+                if owner in pids and win32gui.IsWindowVisible(hwnd) \
+                        and win32gui.GetClassName(hwnd) == "NX_SURFACE_WND_DIALOG":
+                    found.append(hwnd)
+            except Exception:                      # noqa: BLE001
+                pass
+            return True
+
+        try:
+            win32gui.EnumWindows(cb, None)
+        except Exception:                          # noqa: BLE001
+            pass
+        for hwnd in found:
+            clicked = False
+            kids = []
+            try:
+                win32gui.EnumChildWindows(
+                    hwnd,
+                    lambda h, _: kids.append((h, win32gui.GetWindowText(h))) or True,
+                    None)
+            except Exception:                      # noqa: BLE001
+                pass
+            for h, text in kids:
+                if text.strip() in ("确定", "OK", "是"):
+                    try:
+                        win32gui.SendMessage(h, win32con.BM_CLICK, 0, 0)
+                        clicked = True
+                        log.append("clicked %s" % text.strip())
+                    except Exception:              # noqa: BLE001
+                        pass
+                    break
+            if not clicked:
+                try:
+                    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+                    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+                    log.append("enter")
+                except Exception:                  # noqa: BLE001
+                    pass
+        _time.sleep(0.5)
+
+
+def _ug_machine_bind_flow(client, context):
+    """ug 剧本十五：**脚本化绑定机床**（从库调用 → 生成 SPINDLE/POCKET）。
+
+    序列是用 NX journal 录制 UI 操作抠出来的（见 MACHINE_KINEMATICS.md 第 17 节）：
+
+        FindObject("GENERIC_MACHINE") -> CreateMachineGroupBuilder ->
+        CreateNcmptPartMountingBuilder(libref) -> RemoveMachine -> Commit -> UpdateCamSetup
+
+    判据：`GetMachineLibref()` 变成 libref，导航器出现 SPINDLE + ≥4 个 POCKET。
+    """
+    import threading as _threading
+    import time as _time
+    import uuid as _uuid
+
+    part = "bind_%s.prt" % _uuid.uuid4().hex[:6]
+    checks, reads = [], {}
+    clicks = []
+
+    steps = []
+
+    def record(name, payload, want_ok=True):
+        ok = bool(payload.get("ok")) is want_ok
+        steps.append({"tool": name, "ok": bool(payload.get("ok"))})
+        checks.append({"check": name, "got": bool(payload.get("ok")), "want": want_ok,
+                       "ok": ok})
+        err = str(payload.get("errors"))[:200] if not payload.get("ok") else ""
+        return payload.get("reads") or {}, err
+
+    for tool, args in (
+        ("ug_create_part", {"file_name": part}),
+        ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+        ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+    ):
+        payload = client.call(tool, args)
+        steps.append({"tool": tool, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": {"steps": reads},
+                    "errors": ["%s 失败：%s" % (tool, str(payload.get("errors"))[:180])],
+                    "checks": checks}
+
+    stop = _threading.Event()
+    clicker = _threading.Thread(target=_nx_dialog_clicker,
+                                args=(stop, clicks, 240), daemon=True)
+    clicker.start()
+    try:
+        payload = client.call("ug_bind_machine_from_library",
+                              {"libref": "sim05_mill_5ax_fanuc",
+                               "positioning": "assembly"})
+    finally:
+        stop.set()
+        clicker.join(timeout=5)
+
+    bound_reads, err = record("ug_bind_machine_from_library", payload)
+    reads.update(bound_reads)
+    reads["dialog_clicks"] = clicks[:10]
+    if err:
+        reads["errors"] = err
+    checks.append({"check": "machine_bound",
+                   "got": bool(bound_reads.get("bound")), "want": True,
+                   "ok": bool(bound_reads.get("bound"))})
+    checks.append({"check": "libref_matches",
+                   "got": bound_reads.get("libref_after"),
+                   "want": "sim05_mill_5ax_fanuc",
+                   "ok": bound_reads.get("libref_after") == "sim05_mill_5ax_fanuc"})
+    groups = [str(g).upper() for g in (bound_reads.get("machine_groups") or [])]
+    checks.append({"check": "has_spindle", "got": any(g.startswith("SPINDLE") for g in groups),
+                   "want": True, "ok": any(g.startswith("SPINDLE") for g in groups)})
+    pockets = sum(1 for g in groups if g.startswith("POCKET"))
+    checks.append({"check": "pockets_created", "got": pockets, "want": ">=4",
+                   "ok": pockets >= 4})
+    reads["steps"] = steps
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["绑定未完成：%s" % (checks,)],
+            "checks": checks}
+
 
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
@@ -3314,11 +3490,17 @@ UG_CASES = [
      "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
      "args": {}, "expect_ok": True,
      "call": lambda client, context: _ug_machine_validate_flow(client, context)},
-    {"id": "ug.flow.machine_simulate", "timeout_s": 1200, "tool": None,
-     "title": "ug 剧本十四：真跑机床仿真（绑定→刀路→readiness→start→stop）",
+    {"id": "ug.flow.machine_simulate", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十四：真跑机床仿真（自绑机床→刀路→readiness→start→stop）",
      "args": {}, "expect_ok": True,
-     "skip_if": _ug_no_bound_machine_fixture,
+     "skip_if": _ug_no_live_nx,
      "call": lambda client, context: _ug_machine_simulate_flow(client, context)},
+
+    {"id": "ug.flow.machine_bind", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本十五：脚本化绑定机床（从库调用 → SPINDLE/POCKET 生成）",
+     "args": {}, "expect_ok": True,
+     "skip_if": _ug_no_live_nx,
+     "call": lambda client, context: _ug_machine_bind_flow(client, context)},
 
 ]
 

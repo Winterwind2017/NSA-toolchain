@@ -1128,3 +1128,18 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 | fixture 保护 | `close_test_parts` 默认保护 `acc_kit_61ab27`（关掉会导致 `start_machine_simulation` 报 641073 加载部件失败） |
 
 覆盖：**621/621 = 100%**（验收 497 ｜ 契约 245 ｜ 快乐路径 470 ｜ 未覆盖 0）。
+
+## 绑定机床脚本化 + 仿真闭环自包含（2026-11-06 10:25）
+
+用 NX `JournalManager.RecordJournal` 录了一次 UI 的手动绑定，抠出真实 API 序列，
+`CreateMachineGroupBuilder` 的参数就是 `CAMGroupCollection.FindObject("GENERIC_MACHINE")`
+（之前传 None/Null 都错）。**顺序是硬要求**：`UpdateCamSetup(Yes)` → `mb.Commit()` →
+`mgb.Commit()`，反过来静默不生效或报 650004。
+
+| 能力 | 证据 |
+|---|---|
+| `ug_bind_machine_from_library(libref)` | 新工具；返回 `bound / libref_after / machine_groups` |
+| `ug.flow.machine_bind`（新用例） | **PASS 2.8 s**：建件→CAM 设置→绑定→断言 `libref=sim05_mill_5ax_fanuc` + SPINDLE + ≥4 POCKET |
+| `ug.flow.machine_simulate` 改为**自己绑机床** | **PASS 9.8 s**：绑定→刀具→程序组→FLOOR_FACING→刀路→readiness(blockers=[])→start(prepared)→stop，不再依赖外部 fixture |
+
+ug 全量：**17/17 PASS，143.8 s**。覆盖：**622/622 = 100%**（验收 498 ｜ 契约 245 ｜ 快乐路径 471 ｜ 未覆盖 0）。
