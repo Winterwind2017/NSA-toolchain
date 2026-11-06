@@ -55,27 +55,29 @@ def slot_outline(start_mm: float, length_mm: float, width_mm: float,
 
 
 def _profile_points() -> list[list[float]]:
+    """实心半剖面：单调沿 +X 走完七段台阶，两端各一个倒角。
+
+    必须保证 x 单调不减——一旦回折（例如先到 x=2 又回 x=0），轮廓自交，
+    SolidWorks 的旋转会直接建不出特征（实测）。
+    """
     stations = _stations()
     radii = [diameter / 2.0 for diameter in SEGMENT_DIAMETERS]
     chamfer = UNSPECIFIED_CHAMFER_MM
-    core_radius = CORE_HOLE["diameter_mm"] / 2.0
-    core_depth = CORE_HOLE["depth_mm"]
+    total = stations[-1]
 
-    # 从轴心处的核心孔底开始，绕外轮廓一圈回到轴心
     points: list[list[float]] = [
-        [core_depth, 0.0],
-        [core_depth, core_radius],
-        [0.0, core_radius],
+        [0.0, 0.0],
         [0.0, radii[0] - chamfer],
         [chamfer, radii[0]],
     ]
     for index, radius in enumerate(radii):
-        points.append([stations[index], radius])
-        points.append([stations[index + 1], radius])
+        end_x = total - chamfer if index == len(radii) - 1 else stations[index + 1]
+        points.append([end_x, radius])
+        if index < len(radii) - 1:
+            points.append([stations[index + 1], radii[index + 1]])
     points += [
-        [stations[-1] - chamfer, radii[-1]],
-        [stations[-1], radii[-1] - chamfer],
-        [stations[-1], 0.0],
+        [total, radii[-1] - chamfer],
+        [total, 0.0],
     ]
     return points
 
@@ -142,24 +144,44 @@ def build_output_shaft_from_dwg_graph() -> dict[str, Any]:
         "features": [
             {"name": "OutputShaftPart", "kind": "new_part",
              "title": "Output Shaft from DWG"},
-            {"name": "OutputShaftAxis", "kind": "reference_axis",
-             "planes": ["Front Plane", "Top Plane"]},
             {
                 "name": "OutputShaftProfile",
                 "kind": "sketch",
                 "plane": "Front Plane",
-                "entities": [{"kind": "polyline", "closed": True,
-                              "points": _profile_points()}],
+                "entities": [
+                    # 第一段是构造线，兼作旋转轴（实测比"两基准面求交的参考轴"可靠）
+                    {"kind": "line", "start": [0.0, 0.0],
+                     "end": [_stations()[-1], 0.0], "construction": True},
+                    {"kind": "polyline", "closed": True,
+                     "points": _profile_points()},
+                ],
             },
             {
                 "name": "OutputShaftRevolve",
                 "kind": "boss_revolve",
                 "sketch": "OutputShaftProfile",
-                "axis": "OutputShaftAxis",
+                "axis_segment": "Line1",
                 "angle_deg": 360.0,
                 "merge": True,
             },
             *_keyway_features(),
+            {
+                "name": "CoreHoleSketch",
+                "kind": "sketch",
+                "plane": "Right Plane",
+                "entities": [{
+                    "kind": "circle",
+                    "center": [0.0, 0.0],
+                    "radius_mm": CORE_HOLE["diameter_mm"] / 2.0,
+                }],
+            },
+            {
+                "name": "CoreHoleDia5Depth20",
+                "kind": "cut_extrude",
+                "sketch": "CoreHoleSketch",
+                "depth_mm": CORE_HOLE["depth_mm"],
+                "reverse_direction": True,
+            },
             {
                 "name": "RadialHoleSketch",
                 "kind": "sketch",

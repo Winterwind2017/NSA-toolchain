@@ -254,6 +254,6 @@ def create_tools() -> list:
              create_two_stage_reducer),
 
         spec("sw_create_output_shaft",
-             "一步到位：按《输出轴零件图.DWG》的输出轴（12 个特征、333 mm）→ 出图 → 建出来。",
+             "一步到位：按《输出轴零件图.DWG》的输出轴（13 个特征、333 mm）→ 出图 → 建出来。",
              dict(_COMMON), create_output_shaft),
     ]

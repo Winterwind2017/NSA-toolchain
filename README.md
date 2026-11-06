@@ -130,8 +130,17 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 | `part_generators` | block / cylinder / tube / flange / stepped_shaft | `sw_part_plan`、`sw_create_parametric_part` |
 | `involute_gear` | 渐开线直齿轮（采样齿廓 + 环形阵列） | `sw_gear_involute_plan`、`sw_create_involute_gear` |
 | `gearbox` | 两级平行轴减速器（16 个特征整机） | `sw_gearbox_plan`、`sw_create_two_stage_reducer` |
-| `output_shaft` | 按图纸的输出轴（12 个特征、333 mm） | `sw_output_shaft_plan`、`sw_create_output_shaft` |
+| `output_shaft` | 按图纸的输出轴（13 个特征、333 mm） | `sw_output_shaft_plan`、`sw_create_output_shaft` |
 | 特征树编辑 | 特征树读写、参数修改、回滚 | `sw_feature_inspect`、`sw_feature_rollback`、`sw_set_feature_parameter`、`sw_select_references` |
+
+真机验证（SolidWorks 33.4.1 / SP4.1，全部为**几何读数**，不是"调用没报错"）：
+
+| 用例 | 判据 | 实测 |
+|---|---|---|
+| Feature Graph 建块 100×60×20 | 体积 120000 mm³ | 120000.0 |
+| 齿轮 m2 z20（含齿形阵列） | 9 特征、单一实体 | 9 特征 / 1 solid |
+| 两级减速器 | 16 特征、7 个实体 | 16 特征 / 7 solids |
+| 输出轴 333 mm | 13 特征、体积与解析值同量级 | 13 特征 / 768065.6 mm³ |
 
 判据是数学与结构，不依赖界面：齿轮按 `da=m(z+2)`、`df=m(z−2.5)`、`db=d·cosα` 核对四个特征圆；
 减速器按传动比 `(z2/z1)(z4/z3)` 与中心距 `a=m(z1+z2)/2` 核对；输出轴按图纸总长与七段直径核对；

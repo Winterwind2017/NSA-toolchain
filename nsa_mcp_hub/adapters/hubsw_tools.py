@@ -273,7 +273,7 @@ def hubsw_tools() -> list:
             part_plan, timeout_s=120),
         ToolSpec(
             "sw_output_shaft_plan",
-            "按《输出轴零件图.DWG》生成输出轴 Feature Graph（12 个特征、333 mm）。",
+            "按《输出轴零件图.DWG》生成输出轴 Feature Graph（13 个特征、333 mm）。",
             {"type": "object", "properties": {}, "additionalProperties": False},
             output_shaft_plan, timeout_s=120),
         ToolSpec(
