@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nsa-mcp-hub"
 version = "0.1.0"
-description = "把多个 CAD/PLC 自动化内核统一包装成 MCP 服务器（一个共享内核 + 每 kit 一个进程）"
+description = "NSA（Non-standard automation，非标自动化）工具链：把多个 CAD/PLC 自动化内核统一包装成 MCP 服务器（一个共享内核 + 每 kit 一个进程）"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
