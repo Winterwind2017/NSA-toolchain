@@ -1,5 +1,9 @@
 # gxkit
 
+> **NSA = Non-standard automation（非标自动化）** —— 仓库名与 `nsa_*` 工具前缀都取自这个缩写。
+> 本仓是这套工具链的一员：目标是**让做非标自动化设备设计的工程师，能更方便地驱动手边这些软件**，
+> 把重复的建模、出图、编号、编程动作交给 agent，精力留在方案、机构与判断上。
+
 **MELSOFT GX Works3 的自动化内核**（工控 PLC 编程）：无 COM、无 API，靠真实界面操作 + 工程文件读数。
 
 引擎：**GX Works3 1.117.0.1**（`D:\Program Files (x86)\MELSOFT\GPPW3\GXW3.exe`）
