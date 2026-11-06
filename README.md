@@ -80,7 +80,7 @@ py -3.11 -m venv .venv
 
 | kit key | 名称 | 宿主软件 | 接法 | 工具数（参考） |
 |---|---|---|---|---|
-| `sw` | swkit | SolidWorks 2025 | 子 MCP + hub 侧脚本/特征层 | 176 |
+| `sw` | swkit | SolidWorks 2025 | 子 MCP + hub 侧脚本/特征层 | 192 |
 | `acad` | acadkit | AutoCAD 2025 | 进程内（COM） | 55 |
 | `nx` | nxkit | NX 2512 | 进程内（`run_journal` 批处理） | 66 |
 | `ug` | NX 扩展服务 | NX 2512 | proxy（.NET remoting 挂活会话） | 88 |
@@ -90,7 +90,7 @@ py -3.11 -m venv .venv
 | `catia` | CATIA 服务 | CATIA V5 | proxy | 56 |
 | `eplan` | EPLAN 服务 | EPLAN 2.9 | proxy | 16 |
 
-合计约 600 个工具。数量随宿主软件版本、是否在线、以及本机内核版本浮动；工具名一律带 kit 前缀（`sw_`、`acad_`、`ug_` …），便于路由。
+合计约 620 个工具。数量随宿主软件版本、是否在线、以及本机内核版本浮动；工具名一律带 kit 前缀（`sw_`、`acad_`、`ug_` …），便于路由。
 
 > proxy kit 的服务端源码不在本仓库内：它们是**可插拔的外部服务**，用 `CAD_SERVERS_HOME` 指到本机目录。没准备好时该 kit 只暴露 `<前缀>_unavailable` 诊断工具并说明原因，**其余 kit 不受影响**。
 
@@ -118,19 +118,32 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 
 真机验收用例需要对应软件在场；不在场时用例会失败或跳过，而不是假装通过——这是刻意设计。
 
-## v0.1.0 范围
+## 版本
 
-第一个版本包含：hub 框架、9 个 kit 入口、适配器、验收框架、脚本、文档。
+### v0.2.0
 
-**本版不含**（后续以重新实现的方式补回，共 16 个 `sw_*` 工具）：
+补上了一整层**纯几何 / 特征图**能力（全部自带实现、不依赖 SolidWorks 在场即可编译与校验）：
 
-`sw_gear_involute_plan`、`sw_gearbox_plan`、`sw_output_shaft_plan`、`sw_sphere_plan`、`sw_part_plan`、`sw_create_involute_gear`、`sw_create_output_shaft`、`sw_create_parametric_part`、`sw_create_sphere`、`sw_create_two_stage_reducer`、`sw_feature_graph_compile`、`sw_execute_feature_graph`、`sw_feature_inspect`、`sw_feature_rollback`、`sw_set_feature_parameter`、`sw_select_references`
+| 模块 | 作用 | 配套工具 |
+|---|---|---|
+| `feature_graph` | Feature Graph IR 的校验与编译，输出确定性步骤表 | `sw_feature_graph_compile` |
+| `part_generators` | block / cylinder / tube / flange / stepped_shaft | `sw_part_plan`、`sw_create_parametric_part` |
+| `involute_gear` | 渐开线直齿轮（采样齿廓 + 环形阵列） | `sw_gear_involute_plan`、`sw_create_involute_gear` |
+| `gearbox` | 两级平行轴减速器（16 个特征整机） | `sw_gearbox_plan`、`sw_create_two_stage_reducer` |
+| `output_shaft` | 按图纸的输出轴（12 个特征、333 mm） | `sw_output_shaft_plan`、`sw_create_output_shaft` |
+| 特征树编辑 | 特征树读写、参数修改、回滚 | `sw_feature_inspect`、`sw_feature_rollback`、`sw_set_feature_parameter`、`sw_select_references` |
 
-原因：这些工具依赖的几何/特征图算法模块不在本版发布范围内。SolidWorks 的建模、装配、出图、钣金、仿真等能力不受影响（经 swkit 提供）。
+判据是数学与结构，不依赖界面：齿轮按 `da=m(z+2)`、`df=m(z−2.5)`、`db=d·cosα` 核对四个特征圆；
+减速器按传动比 `(z2/z1)(z4/z3)` 与中心距 `a=m(z1+z2)/2` 核对；输出轴按图纸总长与七段直径核对；
+零件生成器核对特征数与参数回显。
+
+### v0.1.0
+
+首个版本：hub 框架、9 个 kit 入口、适配器、验收框架、脚本、文档。
 
 路线图：
 
-1. 自行实现参数化零件生成器与特征图编译器，恢复上述 16 个工具；
+1. 把几何层继续做深（斜齿轮、内齿轮、花键轴、键槽标准库）；
 2. 继续扩充各 kit 的真机验收覆盖面；
 3. 为 proxy kit 提供统一的服务端接口约定，降低接入成本。
 
