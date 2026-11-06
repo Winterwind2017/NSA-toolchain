@@ -665,7 +665,7 @@ SW_CASES = [
 
     # ── 深几何层（内齿圈 / 斜齿轮 / 花键 / 键槽库）：纯计算 ──
     {"id": "sw.plan.internal_gear", "tool": "sw_internal_gear_plan",
-     "title": "内齿圈 m2 z40：分度 R40 / 齿顶 R38（朝内）/ 齿根 R42.5 / 体积 28522.46",
+     "title": "内齿圈 m2 z40：分度 R40 / 齿顶 R38（朝内）/ 齿根 R42.5 / 渐开线齿槽 体积 26325.888",
      "args": {"module_mm": 2, "tooth_count": 40, "thickness_mm": 12,
               "rim_outer_diameter_mm": 96},
      "expect_ok": True,
@@ -673,15 +673,15 @@ SW_CASES = [
                       "reads.spec.pitch_radius_mm": 40.0,
                       "reads.spec.tip_radius_mm": 38.0,
                       "reads.spec.root_radius_mm": 42.5,
-                      "reads.expected_volume_mm3": 28522.46},
+                      "reads.expected_volume_mm3": 26325.888},
      "tol": 1e-2, "no_setup": True, "timeout_s": 120},
 
     {"id": "sw.plan.helical_gear", "tool": "sw_helical_gear_plan",
-     "title": "斜齿轮 mn2 z24 β20：mt=2.128356、导程 440.8993、扭转 0.285017、14 特征",
+     "title": "斜齿轮 mn2 z24 β20：mt=2.128356、导程 440.8993、扭转 0.285017、12 特征（放样）",
      "args": {"module_normal_mm": 2, "tooth_count": 24, "helix_angle_deg": 20,
               "thickness_mm": 20, "bore_diameter_mm": 16, "slices": 4},
      "expect_ok": True,
-     "expect_reads": {"reads.feature_count": 14,
+     "expect_reads": {"reads.feature_count": 12,
                       "reads.spec.module_transverse_mm": 2.128356,
                       "reads.spec.lead_mm": 440.8993,
                       "reads.spec.total_twist_rad": 0.285017},
@@ -726,11 +726,11 @@ SW_CASES = [
 
     # ── 深几何层：真机建出来（判据是体积区间）──
     {"id": "sw.create.internal_gear", "tool": "sw_create_internal_gear",
-     "title": "内齿圈真机：3 特征、体积 28522.46（±1%）",
+     "title": "内齿圈真机：3 特征、渐开线齿槽、体积 26325.888（±1%）",
      "args": {"module_mm": 2, "tooth_count": 40, "thickness_mm": 12, "execute": True},
      "expect_ok": True,
      "expect_reads": {"reads.graph_steps": 3, "reads.executed": True},
-     "expect_between": {"reads.execute.body_volume_mm3": [28237.2, 28807.7]},
+     "expect_between": {"reads.execute.body_volume_mm3": [26062.6, 26589.1]},
      "timeout_s": 600},
 
     {"id": "sw.create.spline_shaft", "tool": "sw_create_spline_shaft",
@@ -743,13 +743,13 @@ SW_CASES = [
      "timeout_s": 600},
 
     {"id": "sw.create.helical_gear", "tool": "sw_create_helical_gear",
-     "title": "斜齿轮真机（4 片分层）：14 特征、体积 39312.8（±3%）",
+     "title": "斜齿轮真机（4 段放样、真螺旋面）：12 特征、体积 36290.5（±3%）",
      "args": {"module_normal_mm": 2, "tooth_count": 24, "helix_angle_deg": 20,
               "thickness_mm": 20, "bore_diameter_mm": 16, "slices": 4,
               "execute": True},
      "expect_ok": True,
-     "expect_reads": {"reads.graph_steps": 14, "reads.executed": True},
-     "expect_between": {"reads.execute.body_volume_mm3": [38133.4, 40489.2]},
+     "expect_reads": {"reads.graph_steps": 12, "reads.executed": True},
+     "expect_between": {"reads.execute.body_volume_mm3": [35201.8, 37379.2]},
      "timeout_s": 900},
 
     {"id": "sw.create.output_shaft", "tool": "sw_create_output_shaft",

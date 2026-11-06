@@ -318,15 +318,15 @@ def helical_gear_plan(args: dict) -> dict:
                    abs(spec.lead_mm - want_lead) < 1e-6),
             _check("total_twist_rad", spec.total_twist_rad, want_twist,
                    abs(spec.total_twist_rad - want_twist) < 1e-9),
-            _check("graph_features", len(feats), 2 + 3 * spec.slices,
-                   len(feats) == 2 + 3 * spec.slices),
+            _check("graph_features", len(feats), 4 + 2 * spec.slices,
+                   len(feats) == 4 + 2 * spec.slices),
         ]
     ok = bool(spec is not None and checks and all(c["ok"] for c in checks))
     payload = normalize(
         KIT_KEY, "helical_gear_plan", ok=ok,
         reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
                "spec_error": why, "feature_count": len(feats),
-               "approximation": "lamina stack", "feature_graph": graph},
+               "approximation": "loft (true helical surface)", "feature_graph": graph},
         errors=[] if ok else ["斜齿轮参数不合法：" + (why or "判据未通过")])
     payload["checks"] = checks
     return payload
@@ -482,7 +482,7 @@ def hubsw_tools() -> list:
         ToolSpec(
             "sw_helical_gear_plan",
             "斜齿圆柱齿轮（分层近似）：换算端面模数/导程/扭转角，每片两个特征。"
-            "判据是 mt=mn/cosβ、L=πd/tanβ、θ=b·tanβ/r 与特征数 2+3·slices。",
+            "判据是 mt=mn/cosβ、L=πd/tanβ、θ=b·tanβ/r 与特征数 4+2·slices。",
             {"type": "object",
              "properties": {"module_normal_mm": N, "tooth_count": I,
                             "pressure_angle_deg": N, "helix_angle_deg": N,

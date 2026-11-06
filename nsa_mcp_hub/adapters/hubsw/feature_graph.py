@@ -24,6 +24,7 @@ FEATURE_KINDS = frozenset({
     "sketch",
     "boss_extrude",
     "boss_revolve",
+    "loft_boss",
     "cut_extrude",
     "reference_plane_offset",
     "reference_axis",
@@ -242,6 +243,21 @@ def _step_boss_revolve(feature: dict[str, Any], index: int,
     }
 
 
+def _step_loft_boss(feature: dict[str, Any], index: int,
+                     seen: set[str]) -> dict[str, Any]:
+    """放样：sections 是草图名列表，必须至少两个且已出现。"""
+    sections = feature.get("sections")
+    if not isinstance(sections, list) or len(sections) < 2:
+        raise ContractError(f"features[{index}].sections must contain at least two sketches")
+    return {
+        "operation": "loft_boss",
+        "sections": [_reference(section, seen, f"features[{index}].sections")
+                     for section in sections],
+        "closed": _bool(feature.get("closed")),
+        "merge": _bool(feature.get("merge"), True),
+    }
+
+
 def _step_cut_extrude(feature: dict[str, Any], index: int,
                       seen: set[str]) -> dict[str, Any]:
     through_all = _bool(feature.get("through_all"))
@@ -333,6 +349,7 @@ _STEP_BUILDERS: dict[str, Callable[[dict[str, Any], int, set[str]], dict[str, An
     "sketch": _step_sketch,
     "boss_extrude": _step_boss_extrude,
     "boss_revolve": _step_boss_revolve,
+    "loft_boss": _step_loft_boss,
     "cut_extrude": _step_cut_extrude,
     "reference_plane_offset": _step_plane_offset,
     "reference_axis": _step_reference_axis,
