@@ -1188,3 +1188,18 @@ ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 
   → 跑机床用例前清测试零件；③ `machine_validate` 会破坏本会话机床库 → 排到最后；
   ④ 一次会话第 5 次绑定会挂 → 换型用例在阴影库会话跳过。
 * 全量：标准库 **18/20 + 2 跳过 / 152.5 s**；阴影库 **19/20 + 1 跳过 / 166.5 s**；覆盖 623/623 = 100%。
+
+## 轴超程 / 撞刀判定（2026-11-06 16:15）
+
+* 新增 `ug_check_machine_axis_travel(mcs_origin, margin_mm)`：拿 NX `KinematicConfigurator`
+  的轴限（这台 kit 机床 MIKRON_E500U_TNC640：X ±500 / Y ±450 / Z ±400）比工件包围盒。
+  实测原点 within；MCS 偏 1500 → X 超程 **1080 mm**，Y/Z 仍 within。
+* 新增 `ug_check_tool_shank_clearance(floor_z, flute_length)`：刀柄起点 = floor_z + 刃长，
+  低于工件顶面即撞刀。实测 floor 0 → clear；floor −55 → 插入 **55 mm**（刀柄起点 −25）。
+* **动态播放不可用**（一手证据）：`PlayForward()` 在 `Session.Execute` 里不返回
+  （实测 >600 s / 970 s 被杀）；`AddSimStop/AddSimEnd/AddSimStart/AddVncStatus` 能注册
+  （`SimStopCb()` 无参，拿不到原因）但播放未跑时从不触发；`SingleStepForward` 约 9 s/步且无回调；
+  杀客户端不会停播放，会毒化后续整轮 → 必须重启 NX。
+  因此 `play_/step_/describe_simulation_api` 三个诊断工具已撤掉。
+* 新用例：`ug.flow.machine_kit_axis_limit`（阴影库，11.1 s）、`ug.flow.machine_kit_collision`（1.9 s）。
+* 覆盖：**625/625 = 100%**（验收 501 ｜ 契约 245 ｜ 快乐路径 474 ｜ 未覆盖 0）。

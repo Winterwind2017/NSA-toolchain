@@ -3902,6 +3902,182 @@ def _nx_close_info_windows(log=None, timeout_s=6):
     return closed
 
 
+
+def _ug_machine_kit_axis_limit_flow(client, context):
+    """ug 剧本十九：用真实工件几何触发**轴超程**判定。
+
+    ISV 的动态播放（`PlayForward`）在 `Session.Execute` 线程里不返回，
+    所以"跑到超程处让仿真停住"这件事没法在 MCP 里观测（详见 docs 第 22 节）。
+    可观测且同样真实的做法是**静态容量检查**：
+    取 NX `KinematicConfigurator` 报出来的每根线性轴 limit（这台 kit 机床是
+    MIKRON_E500U_TNC640：X ±500 / Y ±450 / Z ±400），把工件包围盒按 MCS 平移成
+    机床坐标，比出超程量与哪根轴超程。
+
+    判据三条：
+    ① 工件在原点时 `all_within_travel=True`（不误报）；
+    ② 工件偏到 X=1500 时 `all_within_travel=False`，且 violation 就是 X 轴、超程 ≈1080；
+    ③ 轴限来自机床（X 上限 500），不是我们写死的常数。
+    """
+    import json as _json
+    import uuid as _uuid
+
+    checks, reads, steps = [], {}, []
+
+    def record(name, payload):
+        ok = bool(payload.get("ok"))
+        steps.append({"tool": name, "ok": ok})
+        if not ok:
+            reads.setdefault("errors", []).append(
+                "%s: %s" % (name, str(payload.get("errors"))[:220]))
+        return payload.get("reads") or {}
+
+    client.call("ug_close_test_parts",
+                {"dry_run": False, "time_limit_s": 40,
+                 "confirmation": "CLOSE_TEST_PARTS"})
+
+    def build(tag):
+        part = "trav_%s.prt" % tag.lower()
+        for tool, args in (
+            ("ug_create_part", {"file_name": part}),
+            ("ug_run_python", {"code": (
+                "import NXOpen\ns = NXOpen.Session.GetSession()\n"
+                "s.ApplicationSwitchImmediate('UG_APP_MANUFACTURING')\n"
+                "result = {}")}),
+            ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+            ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+        ):
+            payload = client.call(tool, args)
+            if not payload.get("ok"):
+                raise RuntimeError("%s 失败：%s" % (tool, str(payload.get("errors"))[:180]))
+        bound = record("ug_bind_machine_from_library", client.call(
+            "ug_bind_machine_from_library", {"libref": "nsa_template_probe"}))
+        _nx_close_info_windows()
+        return part, bound
+
+    # ① 正常位置
+    tag = _uuid.uuid4().hex[:5].upper()
+    part, bound = build(tag)
+    checks.append({"check": "kit_machine_bound", "got": bound.get("libref_after"),
+                   "want": "nsa_template_probe",
+                   "ok": bound.get("libref_after") == "nsa_template_probe"})
+    inside = record("ug_check_machine_axis_travel", client.call(
+        "ug_check_machine_axis_travel", {"mcs_origin": [0.0, 0.0, 0.0]}))
+    checks.append({"check": "normal_part_within_travel",
+                   "got": inside.get("all_within_travel"), "want": True,
+                   "ok": inside.get("all_within_travel") is True})
+    x_row = next((row for row in (inside.get("axes") or [])
+                  if row.get("axis") == "X"), {})
+    checks.append({"check": "limits_come_from_machine",
+                   "got": [x_row.get("lower_limit"), x_row.get("upper_limit")],
+                   "want": [-500.0, 500.0],
+                   "ok": x_row.get("lower_limit") == -500.0
+                         and x_row.get("upper_limit") == 500.0})
+    checks.append({"check": "machine_kinematics_name",
+                   "got": inside.get("kinematics"), "want": "MIKRON_E500U_TNC640",
+                   "ok": inside.get("kinematics") == "MIKRON_E500U_TNC640"})
+
+    # ② 偏到 X=1500（远超 ±500 行程）
+    tag2 = _uuid.uuid4().hex[:5].upper()
+    part2, _bound2 = build(tag2)
+    beyond = record("ug_check_machine_axis_travel", client.call(
+        "ug_check_machine_axis_travel", {"mcs_origin": [1500.0, 0.0, 0.0]}))
+    checks.append({"check": "offset_part_exceeds_travel",
+                   "got": beyond.get("all_within_travel"), "want": False,
+                   "ok": beyond.get("all_within_travel") is False})
+    violations = beyond.get("violations") or []
+    checks.append({"check": "violation_is_x_axis",
+                   "got": [item.get("axis") for item in violations], "want": ["X"],
+                   "ok": [item.get("axis") for item in violations] == ["X"]})
+    overshoot = violations[0].get("overshoot") if violations else None
+    checks.append({"check": "overshoot_magnitude",
+                   "got": overshoot, "want": ">=1000",
+                   "ok": isinstance(overshoot, (int, float)) and overshoot >= 1000})
+    checks.append({"check": "y_z_still_within",
+                   "got": [item.get("within_travel") for item in (beyond.get("axes") or [])
+                           if item.get("axis") in ("Y", "Z")],
+                   "want": [True, True],
+                   "ok": all(item.get("within_travel") is True
+                             for item in (beyond.get("axes") or [])
+                             if item.get("axis") in ("Y", "Z"))})
+
+    reads["steps"] = steps
+    reads["within"] = {"all_within": inside.get("all_within_travel"),
+                       "axes": inside.get("axes")}
+    reads["beyond"] = {"all_within": beyond.get("all_within_travel"),
+                       "violations": violations}
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["轴超程判定未通过：%s" % (_json.dumps(
+                [c for c in checks if not c["ok"]], ensure_ascii=False)[:400])],
+            "checks": checks}
+
+
+
+def _ug_machine_kit_collision_flow(client, context):
+    """ug 剧本二十：用真实刀具/工件尺寸判定**撞刀**（刀柄插进材料）。
+
+    ISV 的动态碰撞停止在 MCP 里观测不到（`PlayForward` 在 Execute 线程不返回，
+    见 docs 第 22 节），但"会不会撞"是可以算的：
+    刀尖在 `floor_z`，刀柄起点在 `floor_z + flute_length`；
+    只要这个位置低于工件顶面，刀柄就已经在材料里了。
+
+    判据：① 正常切顶面（floor=0、刃长 30）→ clear，间隙 0；
+         ② 切到 -55 → collision，插入深度 55 mm，刀柄起点 -25。
+    """
+    import json as _json
+    import uuid as _uuid
+
+    checks, reads, steps = [], {}, []
+    tag = _uuid.uuid4().hex[:5]
+    for tool, args in (
+        ("ug_create_part", {"file_name": "scl_%s.prt" % tag}),
+        ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+    ):
+        payload = client.call(tool, args)
+        steps.append({"tool": tool, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            reads["steps"] = steps
+            return {"ok": False, "reads": reads,
+                    "errors": ["%s 失败：%s" % (tool, str(payload.get("errors"))[:180])],
+                    "checks": checks}
+
+    clear = client.call("ug_check_tool_shank_clearance",
+                        {"floor_z": 0.0, "flute_length": 30.0})
+    steps.append({"tool": "ug_check_tool_shank_clearance", "ok": bool(clear.get("ok"))})
+    clear_reads = clear.get("reads") or {}
+    checks.append({"check": "ug_check_tool_shank_clearance",
+                   "got": clear.get("ok"), "want": True, "ok": bool(clear.get("ok"))})
+    checks.append({"check": "surface_clear", "got": clear_reads.get("verdict"),
+                   "want": "clear", "ok": clear_reads.get("verdict") == "clear"})
+    checks.append({"check": "surface_clash_zero", "got": clear_reads.get("clash_depth_mm"),
+                   "want": 0.0, "ok": clear_reads.get("clash_depth_mm") == 0.0})
+
+    clash = client.call("ug_check_tool_shank_clearance",
+                        {"floor_z": -55.0, "flute_length": 30.0})
+    steps.append({"tool": "ug_check_tool_shank_clearance", "ok": bool(clash.get("ok"))})
+    clash_reads = clash.get("reads") or {}
+    checks.append({"check": "deep_cut_collides", "got": clash_reads.get("verdict"),
+                   "want": "collision",
+                   "ok": clash_reads.get("verdict") == "collision"})
+    checks.append({"check": "clash_depth_expected", "got": clash_reads.get("clash_depth_mm"),
+                   "want": 55.0,
+                   "ok": clash_reads.get("clash_depth_mm") == 55.0})
+    checks.append({"check": "shank_start_z_expected",
+                   "got": clash_reads.get("shank_start_z"), "want": -25.0,
+                   "ok": clash_reads.get("shank_start_z") == -25.0})
+    checks.append({"check": "collision_flag", "got": clash_reads.get("collision_risk"),
+                   "want": True, "ok": clash_reads.get("collision_risk") is True})
+
+    reads["steps"] = steps
+    reads["clear"] = clear_reads
+    reads["clash"] = clash_reads
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["撞刀判定未通过：%s" % (_json.dumps(
+                [c for c in checks if not c["ok"]], ensure_ascii=False)[:400])],
+            "checks": checks}
+
+
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
     {"id": "ug.flow.machine_build", "timeout_s": 900, "tool": None,
@@ -4018,6 +4194,18 @@ UG_CASES = [
      "skip_if": lambda context: _ug_no_live_nx(context) or _ug_shadow_active(context),
      "call": lambda client, context: _ug_machine_swap_flow(client, context)},
 
+    {"id": "ug.flow.machine_kit_axis_limit", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十九：轴超程判定（工件偏 1500 mm → X 超程 1080 mm）",
+     "args": {}, "expect_ok": True,
+     "skip_if": lambda context: _ug_no_shadow_library(context) or _ug_no_live_nx(context),
+     "call": lambda client, context: _ug_machine_kit_axis_limit_flow(client, context)},
+
+    {"id": "ug.flow.machine_kit_collision", "timeout_s": 600, "tool": None,
+     "title": "ug 剧本二十：撞刀判定（刀柄插进工件 55 mm）",
+     "args": {}, "expect_ok": True,
+     "skip_if": _ug_no_live_nx,
+     "call": lambda client, context: _ug_machine_kit_collision_flow(client, context)},
+
     # machine_validate 必须放最后：它内部会把一个 MTK 导入临时阴影库，
     # 跑完之后 NX 会话里的机床库查询会变成 "MOM_TCL：用户选择了中止"
     # （DB 句柄还指着那个随后被清理的临时目录），之后所有机床绑定都会失败。
@@ -4025,6 +4213,7 @@ UG_CASES = [
      "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
      "args": {}, "expect_ok": True,
      "call": lambda client, context: _ug_machine_validate_flow(client, context)},
+
 
 ]
 
