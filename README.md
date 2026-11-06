@@ -1,5 +1,10 @@
 # nsa-mcp-hub —— 六个 CAD/PLC 自动化内核的统一 MCP 封装
 
+> **NSA = Non-standard automation（非标自动化）**。仓库名、包名 `nsa_mcp_hub`、工具前缀 `nsa_*`
+> 都取自这个缩写；整套工具的目标是**让做非标自动化设备设计的工程师，能更方便地驱动手边这些软件**
+> （AutoCAD、SolidWorks、NX、EPLAN、CODESYS、GX Works3、AutoShop、CATIA），把重复的建模/出图/
+> 编号/编程动作交给 agent，精力留在方案与机构上。
+
 把 nxkit / gxkit / acadkit / swkit / codesyskit / autoshopkit 收进**一个内核**，
 每个 kit 仍然是**独立进程**（COM 单实例、NX 冷启动、GX 抢焦点这些特性各自关在自己的进程里）。
 
