@@ -250,7 +250,7 @@
 | `sw_gear_inspection` | module_mm, tooth_count, pressure_angle_deg, profile_shift_x, pin_diameter_mm, internal, **helix_angle_deg**, rim_outer_diameter_mm, thickness_mm, bore_diameter_mm | 齿轮检验尺寸：**公法线长度 W_k**、**跨棒距 M**（外齿 +d_p / 内齿 −d_p、奇偶齿修正）、分度圆齿厚；给 `helix_angle_deg` 时按**当量直齿轮**（z_v=z/cos³β）算**法向**公法线与**量球**跨距（量柱会沿螺旋面滑）。量柱/量球直径默认按**接触点落在齿高中部反算**（`pin_diameter_rule`/`contact_radius_mm` 会把依据与落点一并给出） |
 | `sw_spline_inspection` | outer_diameter_mm, inner_diameter_mm, tooth_count, key_width_mm, length_mm, pin_diameter_mm | 矩形花键检具尺寸：齿厚 b、齿槽宽、**推荐量柱直径**、**跨棒距 M**（量柱夹在相对两齿槽，奇偶齿修正）；判据含 M > 外径、量柱必须真夹在齿侧（落底即判失败） |
 | `sw_inspection_note` | kind(gear/helical/internal/spline/**reducer**), write, x, y, 以及该类型的几何参数 | 把检验尺寸写成**工程图注释**（没有工程图就新建一张），判据是**注释文本读回**里真的出现 W/M/量柱数值；`write=false` 只返回注释文本 |
-| `sw_inspection_drawing` | kind, title, drawing_number, scale, material, auto_part, 以及几何参数 | 一条龙出**检验图**：零件另存 → 新建工程图 → 放前视/上视 → 写检验注释与标题栏；判据是视图数 ≥1、**视图上真标出尺寸**（`GetDisplayDimensions` 计数增加）、注释读回含关键数值、标题栏读回含图号 |
+| `sw_inspection_drawing` | kind, title, drawing_number, scale, material, auto_part, 以及几何参数 | 一条龙出**检验图**：零件另存 → 新建工程图 → 放前视/上视 → 写检验注释与标题栏；判据是视图数 ≥1、**视图上真标出尺寸**（单实体尺寸，读回 `engineering_dimensions`：能测的给真尺寸、轮廓给参考尺寸 φ…）、注释读回含关键数值、标题栏读回含图号 |
 | `sw_reducer_assembly_drawing` | module_mm, gear_thickness_mm, axial_gap_mm, stage1_teeth, stage2_teeth, bore_diameters_mm, title, drawing_number | 整机装配图：现建/复用 4 齿轮 + 3 轴 → 装配（7 组件）→ 图纸前视/等轴测 → BOM 表 + 明细注释 + 标题栏；判据=组件数 7、BOM 表存在、7 个零件名都在 BOM 表格里（`bom_table.kind=note_grid`，8 行×4 列）、球标（`balloons.kind` 如实标注）、标题栏含图号 |
 | `sw_keyway_lookup` | shaft_diameter_mm, required_length_mm | 标准平键与键槽 GB/T 1096；按轴径给 b×h、t1、t2，键长向上取标准系列 |
 | `sw_create_internal_gear` | 同上 + execute | 一步到位建内齿圈（渐开线齿槽）；真机判据=体积 26325.888（±1%） |
