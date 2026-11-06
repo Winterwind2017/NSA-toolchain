@@ -1143,3 +1143,14 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 | `ug.flow.machine_simulate` 改为**自己绑机床** | **PASS 9.8 s**：绑定→刀具→程序组→FLOOR_FACING→刀路→readiness(blockers=[])→start(prepared)→stop，不再依赖外部 fixture |
 
 ug 全量：**17/17 PASS，143.8 s**。覆盖：**622/622 = 100%**（验收 498 ｜ 契约 245 ｜ 快乐路径 471 ｜ 未覆盖 0）。
+
+## 换型 + 绑定持久化（2026-11-06 10:34）
+
+| 能力 | 证据 |
+|---|---|
+| `ug_remove_machine()` | 新工具；`RemoveMachine()` 后 `libref` 变空、SPINDLE/POCKET 消失、`GENERIC_MACHINE` 根节点重现 |
+| 换型 | 卸完直接 `ug_bind_machine_from_library("sim05_mill_5ax_tnc")` → `libref=sim05_mill_5ax_tnc`，无需重启 NX |
+| 持久化 | `save → close → OpenActiveDisplay` 后 `libref` 仍是 tnc（绑定写进 .prt） |
+| 新用例 `ug.flow.machine_swap` | **PASS 6.6 s**：fanuc 绑 → 卸 → tnc 绑 → 存盘 → 关重开 → 断言 libref/spindle |
+
+ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 ｜ 契约 245 ｜ 快乐路径 472 ｜ 未覆盖 0）。

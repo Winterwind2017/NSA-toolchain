@@ -3402,6 +3402,112 @@ def _ug_machine_bind_flow(client, context):
             "checks": checks}
 
 
+
+def _ug_machine_swap_flow(client, context):
+    """ug 剧本十六：**换型 + 持久化**（绑 fanuc → 卸 → 绑 tnc → 存盘 → 关重开）。
+
+    覆盖三件事，都是 2026-11-06 实测出来的：
+
+    1. `CAMSetup.RemoveMachine()` 能把机床卸干净（libref 变空、SPINDLE/POCKET 消失、
+       `GENERIC_MACHINE` 根节点重新出现）；
+    2. 卸完可以再 `bind_machine_from_library` 换一台（换成 `sim05_mill_5ax_tnc`）；
+    3. 绑定是**落在部件文件里**的：存盘 → 关闭 → 重开，`GetMachineLibref()` 仍是 tnc。
+    """
+    import json as _json
+    import uuid as _uuid
+
+    part = "swapc_%s.prt" % _uuid.uuid4().hex[:6]
+    checks, reads, steps = [], {}, []
+
+    def record(name, payload, want_ok=True):
+        ok = bool(payload.get("ok")) is want_ok
+        steps.append({"tool": name, "ok": bool(payload.get("ok"))})
+        checks.append({"check": name, "got": bool(payload.get("ok")), "want": want_ok,
+                       "ok": ok})
+        if not ok:
+            reads.setdefault("errors", []).append(
+                "%s: %s" % (name, str(payload.get("errors"))[:200]))
+        return payload.get("reads") or {}
+
+    for tool, args in (
+        ("ug_create_part", {"file_name": part}),
+        ("ug_run_python", {"code": (
+            "import NXOpen\ns = NXOpen.Session.GetSession()\n"
+            "s.ApplicationSwitchImmediate('UG_APP_MANUFACTURING')\n"
+            "result = {'app': str(s.ApplicationName)}")}),
+        ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+        ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+    ):
+        payload = client.call(tool, args)
+        steps.append({"tool": tool, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": reads,
+                    "errors": ["%s 失败：%s" % (tool, str(payload.get("errors"))[:180])],
+                    "checks": checks}
+
+    first = record("ug_bind_machine_from_library", client.call(
+        "ug_bind_machine_from_library", {"libref": "sim05_mill_5ax_fanuc"}))
+    checks.append({"check": "first_bind_fanuc",
+                   "got": first.get("libref_after"), "want": "sim05_mill_5ax_fanuc",
+                   "ok": first.get("libref_after") == "sim05_mill_5ax_fanuc"})
+
+    removed = record("ug_remove_machine", client.call("ug_remove_machine", {}))
+    checks.append({"check": "remove_clears_libref", "got": removed.get("libref_after"),
+                   "want": "", "ok": removed.get("libref_after") == ""})
+    checks.append({"check": "remove_drops_spindle",
+                   "got": removed.get("spindle_present"), "want": False,
+                   "ok": removed.get("spindle_present") is False})
+    checks.append({"check": "generic_machine_back",
+                   "got": removed.get("generic_machine"), "want": True,
+                   "ok": removed.get("generic_machine") is True})
+
+    second = record("ug_bind_machine_from_library_tnc", client.call(
+        "ug_bind_machine_from_library", {"libref": "sim05_mill_5ax_tnc"}))
+    checks.append({"check": "swap_to_tnc", "got": second.get("libref_after"),
+                   "want": "sim05_mill_5ax_tnc",
+                   "ok": second.get("libref_after") == "sim05_mill_5ax_tnc"})
+    groups = [str(g).upper() for g in (second.get("machine_groups") or [])]
+    checks.append({"check": "swap_has_spindle",
+                   "got": any(g.startswith("SPINDLE") for g in groups), "want": True,
+                   "ok": any(g.startswith("SPINDLE") for g in groups)})
+
+    record("ug_save_work_part", client.call("ug_save_work_part", {}))
+    PY_REOPEN = (
+        "import NXOpen\n"
+        "s = NXOpen.Session.GetSession()\n"
+        "work = s.Parts.Work\n"
+        "before = str(work.CAMSetup.GetMachineLibref() or '')\n"
+        "path = str(work.FullPath)\n"
+        "work.Close(NXOpen.BasePartCloseWholeTree.TrueValue,\n"
+        "           NXOpen.BasePartCloseModified.CloseModified, None)\n"
+        "part, status = s.Parts.OpenActiveDisplay(path, NXOpen.DisplayPartOption.AllowAdditional)\n"
+        "s.Parts.SetDisplay(part, True, True)\n"
+        "s.Parts.SetWork(part)\n"
+        "names = [str(getattr(g, 'Name', '') or '') for g in part.CAMSetup.CAMGroupCollection]\n"
+        "result = {'libref_before': before, 'leaf': str(getattr(part, 'Leaf', '') or ''),\n"
+        "          'libref_after': str(part.CAMSetup.GetMachineLibref() or ''),\n"
+        "          'spindle': any(n.upper().startswith('SPINDLE') for n in names)}\n"
+    )
+    reopened_payload = client.call("ug_run_python", {"code": PY_REOPEN})
+    reopened = record("ug_run_python", reopened_payload)
+    # run_python 的读数在 reads.return_value 里
+    reopened = (reopened_payload.get("reads") or {}).get("return_value") or {}
+    checks.append({"check": "persisted_after_reopen",
+                   "got": reopened.get("libref_after"), "want": "sim05_mill_5ax_tnc",
+                   "ok": reopened.get("libref_after") == "sim05_mill_5ax_tnc"})
+    checks.append({"check": "persisted_spindle",
+                   "got": reopened.get("spindle"), "want": True,
+                   "ok": reopened.get("spindle") is True})
+    reads["steps"] = steps
+    reads["reopen"] = {k: reopened.get(k) for k in ("libref_before", "libref_after",
+                                                    "leaf", "spindle")}
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["换型/持久化未通过：%s" % (_json.dumps(
+                [c for c in checks if not c["ok"]], ensure_ascii=False)[:400])],
+            "checks": checks}
+
+
 UG_CASES = [
     # ── 2026-11-05：NX 桥起来之后（UGII_USER_DIR 指到 nx_user 自动加载 DLL）──
     {"id": "ug.flow.machine_build", "timeout_s": 900, "tool": None,
@@ -3501,6 +3607,12 @@ UG_CASES = [
      "args": {}, "expect_ok": True,
      "skip_if": _ug_no_live_nx,
      "call": lambda client, context: _ug_machine_bind_flow(client, context)},
+
+    {"id": "ug.flow.machine_swap", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十六：换型+持久化（fanuc→卸→tnc→存盘→关重开仍在）",
+     "args": {}, "expect_ok": True,
+     "skip_if": _ug_no_live_nx,
+     "call": lambda client, context: _ug_machine_swap_flow(client, context)},
 
 ]
 
