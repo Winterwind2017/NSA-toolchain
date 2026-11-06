@@ -478,7 +478,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "所以不是缺标准件库。结论：这条 API 在本机不可交付；判据已从「体积变小」升级成"
         "「用去除体积反算孔径，和 TAP_DRILL_MM 比」，比不过就判失败并指向 "
         "docs/RECIPES.md §3 的底孔+倒角+螺纹配方。"
-        "另：本机没有 sw_threaded_hole 这个工具（历史上只在文档里被引用过）")),
+        "另：螺纹孔现在有正式工具 `sw_threaded_hole`（verified，底孔+倒角+真实螺纹），"
+        "判据是体积反算孔径对规格表；本工具仅作根因记录保留")),
 
     ("sw_dimxpert_autodim", ToolEntry("sw_dimxpert_autodim", "meta", "unverified",
         "IDimXpertPart.AutoDimensionScheme(option)", "",

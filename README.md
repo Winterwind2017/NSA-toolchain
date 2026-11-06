@@ -184,15 +184,15 @@ MCP 与 CLI 都按两层暴露，**绝不把"没验证"包装成"已验证"**：
 | `sw_document_info` / `sw_status` / `sw_registry` | — | 元信息，无需判据 |
 
 <!-- gen:recipes:BEGIN -->
-外加 registry 里 **138 条 verified 配方**（不含元数据类；特征 / 草图 / 出图 / 装配 / 仿真 / 元数据），
+外加 registry 里 **139 条 verified 配方**（不含元数据类；特征 / 草图 / 出图 / 装配 / 仿真 / 元数据），
 每条都带 API 名与“用什么数字证明它成了”。
-> 另有 MCP **144** 工具、CLI **91** 子命令、**31** 个回归套件。
+> 另有 MCP **145** 工具、CLI **91** 子命令、**31** 个回归套件。
 <!-- gen:recipes:END -->
 
 > 清单不虚高的关键：`verified` 只代表**配方已验证**，另有 `implemented` 标记代表
 <!-- gen:tier_a:BEGIN -->
-> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **150 已验证 / 3 已知不稳 / 17 已登记未打通**。
-> 用 `swkit registry --implemented` 只看能直接用的那批（implemented 150 vs verified 150，相等）。
+> **本仓库已编码、现在就能经 CLI/MCP 调**。当前 **151 已验证 / 3 已知不稳 / 17 已登记未打通**。
+> 用 `swkit registry --implemented` 只看能直接用的那批（implemented 150 vs verified 151，不等）。
 <!-- gen:tier_a:END -->
 
 ### Tier B · api（透传，**unverified**）
@@ -257,7 +257,7 @@ src/swkit/
 
 > **两层数字别混淆**：
 > * **上游 188 条** → 已覆盖 **125** / 未达可用 **14** / 未复核 **42**（其余判死 5、不稳 2）
-> * **registry 的 verified 150** = 上游同名 **125** + 本仓库自有 **25**（另有 3 项已知不稳）
+> * **registry 的 verified 151** = 上游同名 **125** + 本仓库自有 **26**（另有 3 项已知不稳）
 >
 > 逐条“卡在哪里”见 [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) 的 unverified 分类表
 > （参数未定 / 假成功 / 夹具造不出 / 枚举不存在 / 方程接口 / 破坏性不主动做）。
