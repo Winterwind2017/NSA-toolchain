@@ -1154,3 +1154,12 @@ ug 全量：**17/17 PASS，143.8 s**。覆盖：**622/622 = 100%**（验收 498 
 | 新用例 `ug.flow.machine_swap` | **PASS 6.6 s**：fanuc 绑 → 卸 → tnc 绑 → 存盘 → 关重开 → 断言 libref/spindle |
 
 ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 ｜ 契约 245 ｜ 快乐路径 472 ｜ 未覆盖 0）。
+
+## `.mtk` 自家机床绑定：探到 MOM_TCL（2026-11-06 10:38）
+
+* MTK 导入需要**运动学已初始化**（先绑一台库机床再 `import_machine_kit_readback` 才成功，42 文件、isolated）。
+* 阴影库 + 四个 `UGII_CAM_LIBRARY_*` 环境变量启动 NX 后，`CreateNcmctPartMountingBuilder("nsa_template_probe")`
+  能被解析（之前报"机床没有分类"）；再往后卡在 `MOM_TCL：无法打开 TCL 脚本文件`。
+  已排除 tcl/def 缺失、post 段改成 NX 自带 fanuc post 仍报同样错。
+* 下一步候选：① 用 sim0x 机床做模板替换 graphics prt；② 给 kit 补齐 Bin/Controller/Libraries；③ 只用库机床。
+* 副作用已记录：设了阴影库 env 后标准库不可见，测完必须清变量重启（已实测恢复 2/2 PASS）。
