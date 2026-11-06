@@ -120,6 +120,32 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 
 ## 版本
 
+### v0.11.0
+
+装配图的 BOM 真正展开成 8 行表格，球标也有了；检验图的尺寸读数改成如实上报。
+
+| 改动 | 内容 |
+|---|---|
+| BOM 表 | 从"一句明细注释"换成 **8 行 × 4 列表格**（序号/零件名称/数量/材料），32 格逐格写入并逐格读回；判据 = 行数 8、格数 32、7 个零件名全在表里 |
+| 球标 | 先试 SW 的 `AutoBalloon2`；它依赖 BOM 项号，本机不生效时**退化为带圈件号注释**（①②③…），并把实际用的是哪一种如实写进 `reads.balloons.kind` |
+| 尺寸读数 | 视图尺寸现在会读出**数值**：`IDisplayDimension.GetDimension2(0).GetSystemValue2("")`（系统单位米/弧度），线性折算 mm、角度如实给弧度 |
+
+**为什么表格是"注释网格"而不是 SW 表格对象**：`InsertTableAnnotation2/InsertTableAnnotation` 在本机（pywin32 动态绑定）恒定报
+`com_error -2147352571 类型不匹配 参数4`，`gencache.EnsureDispatch("SldWorks.Application")` 也直接拒绝
+（`This COM object can not automate the makepy process`）。所以表格用逐格注释摆出来：视觉上是表、能逐格读回，
+`reads.bom_table.kind` 会写 `note_grid`，不冒充 SW 原生表。
+
+同样如实说明的一条：视图尺寸目前是**自动配对实体**得到的，本机实测配对结果是两个**角度尺寸**（3.11 / 3.08 rad），
+`reads.dimension_values` 会写明；有工程含义的 φ/齿宽尺寸需要先按实体类型挑边（下一步）。
+
+实测：
+
+| 用例 | 结果 |
+|---|---|
+| 减速器整机装配图 | PASS 2.7 s，7 组件、BOM 表 **8 行×4 列 / 32 格 / 7 项**、球标（圈号注释）、标题栏 |
+| 齿轮检验图 | PASS 5.2 s，2 个角度尺寸（读数已报） |
+| 花键检验图 | PASS 2.7 s |
+
 ### v0.10.0
 
 检验图从"注释"升级成"带尺寸的图"，并补上整机装配图 + BOM。
