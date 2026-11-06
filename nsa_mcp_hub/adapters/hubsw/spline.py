@@ -164,13 +164,59 @@ def pin_contact_radius(spec: SplineSpec, pin_diameter_mm: float) -> tuple[float,
     return 0.5 * (low + high), "flank"
 
 
+def _probe(spec: SplineSpec, pin_diameter_mm: float):
+    """返回 (中心半径, 接触方式) 或 None（量柱放不进齿槽）。"""
+    try:
+        return pin_contact_radius(spec, pin_diameter_mm)
+    except ContractError:
+        return None
+
+
+def flank_transition_pin(spec: SplineSpec) -> float:
+    """齿槽从"量柱落底"过渡到"夹在齿侧"的临界量柱直径。
+
+    小于它，量柱沉到齿根圆上（量不到齿厚）；大于它才会被两侧齿侧夹住。
+    """
+    low, high = 1e-3, spec.outer_diameter_mm
+    for _ in range(60):
+        if _probe(spec, high) is not None:
+            break
+        high *= 0.5
+    else:
+        raise ContractError("反算量柱失败：齿槽容不下任何量柱")
+    for _ in range(80):
+        middle = 0.5 * (low + high)
+        probe = _probe(spec, middle)
+        if probe is None or probe[1] == "root":
+            low = middle
+        else:
+            high = middle
+    return high
+
+
 def recommended_pin_diameter(spec: SplineSpec) -> float:
-    """让量柱接触点落在齿高中部时的量柱直径（两倍齿侧距离）。"""
-    mid = 0.5 * (spec.inner_diameter_mm + spec.outer_diameter_mm) / 2.0
-    bisector = math.pi / spec.tooth_count
-    a, b = _flank_line(spec, 0)
-    point = [mid * math.cos(bisector), mid * math.sin(bisector)]
-    return round(2.0 * _distance_to_line(point, a, b), 3)
+    """推荐量柱直径：在**齿侧接触**的分支上，让量柱中心尽量落在齿高中部半径。
+
+    花键的"齿高中部"指**径向**中径 ``(d + D)/2 / 2``。直齿侧上如果该半径还
+    未脱离"落底"区，就取临界量柱（``flank_transition_pin``）——此时量柱同时
+    贴住两侧齿侧与齿根，是这条齿槽能用的最细量具。
+    """
+    transition = flank_transition_pin(spec)
+    target = 0.5 * (spec.inner_diameter_mm + spec.outer_diameter_mm) / 2.0
+    probe = _probe(spec, transition)
+    start_radius = probe[0] if probe else 0.0
+    if start_radius >= target:              # 已经在中径以外：取临界量柱
+        return round(transition, 3)
+
+    low, high = transition, spec.outer_diameter_mm
+    for _ in range(80):
+        middle = 0.5 * (low + high)
+        result = _probe(spec, middle)
+        if result is None or result[0] > target:
+            high = middle
+        else:
+            low = middle
+    return round(0.5 * (low + high), 3)
 
 
 def span_over_pins(spec: SplineSpec, pin_diameter_mm: float | None = None) -> dict[str, Any]:
@@ -185,7 +231,11 @@ def span_over_pins(spec: SplineSpec, pin_diameter_mm: float | None = None) -> di
         span = 2.0 * radius * math.cos(math.pi / (2.0 * spec.tooth_count)) + pin
     return {
         "pin_diameter_mm": round(pin, 4),
+        "pin_diameter_rule": ("flank contact at radial mid height"
+                              if not pin_diameter_mm else "caller-specified"),
         "pin_contact_radius_mm": round(radius, 4),
+        "mid_tooth_height_radius_mm": round(
+            0.5 * (spec.inner_diameter_mm + spec.outer_diameter_mm) / 2.0, 4),
         "span_mm": round(span, 4),
         "even_teeth": spec.tooth_count % 2 == 0,
         "contact": contact,

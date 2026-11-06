@@ -290,6 +290,62 @@ def create_spline_shaft(args: dict) -> dict:
     })
     return payload
 
+def _build_inspection(args: dict) -> tuple[dict, str, list[str]]:
+    """按 kind 算检验报告，返回 (report, note_text, 必须出现的数值)。"""
+    kind = str(args.get("kind") or "gear").strip().lower()
+    pin = args.get("pin_diameter_mm")
+    modules = float(args.get("module_mm", 2.0))
+    teeth = int(args.get("tooth_count", 20))
+    alpha = float(args.get("pressure_angle_deg", 20.0))
+    thickness = float(args.get("thickness_mm", 10.0))
+    bore = float(args.get("bore_diameter_mm", 10.0))
+    shift = float(args.get("profile_shift_x", 0.0))
+
+    if kind == "reducer":
+        meta = gb.build_two_stage_reducer_graph(
+            module_mm=modules, pressure_angle_deg=alpha,
+            gear_thickness_mm=thickness,
+            bore_diameters_mm=tuple(float(x) for x in
+                                    (args.get("bore_diameters_mm") or [10.0, 12.0, 14.0])),
+            axial_gap_mm=float(args.get("axial_gap_mm", 8.0)))["metadata"]
+        report = dict(meta)
+        report["kind"] = "two_stage_parallel_shaft_reducer"
+    elif kind == "spline":
+        spec = sp.validate_spline_spec(
+            outer_diameter_mm=float(args.get("outer_diameter_mm", 46.0)),
+            inner_diameter_mm=float(args.get("inner_diameter_mm", 40.0)),
+            tooth_count=int(args.get("tooth_count", 8)),
+            key_width_mm=float(args.get("key_width_mm", 8.0)),
+            length_mm=float(args.get("length_mm", 60.0)))
+        report = sp.spline_inspection(spec, float(pin) if pin else None)
+    elif kind == "helical":
+        spec = hg.validate_helical_gear_spec(
+            module_normal_mm=float(args.get("module_normal_mm", 2.0)),
+            tooth_count=teeth, pressure_angle_normal_deg=alpha,
+            helix_angle_deg=float(args.get("helix_angle_deg", 20.0)),
+            thickness_mm=float(args.get("thickness_mm", 20.0)),
+            bore_diameter_mm=float(args.get("bore_diameter_mm", 16.0)),
+            slices=int(args.get("slices") or hg.DEFAULT_SLICES))
+        report = gin.helical_gear_inspection(spec, float(pin) if pin else None)
+    elif kind == "internal":
+        ring = igr.validate_internal_gear_spec(
+            module_mm=modules, tooth_count=teeth, pressure_angle_deg=alpha,
+            thickness_mm=float(args.get("thickness_mm", 12.0)),
+            rim_outer_diameter_mm=float(
+                args.get("rim_outer_diameter_mm") or modules * (teeth + 8.0)),
+            profile_shift_x=shift)
+        report = gin.internal_gear_inspection(ring, float(pin) if pin else None)
+    else:
+        gear = ig.validate_gear_spec(
+            module_mm=modules, tooth_count=teeth, pressure_angle_deg=alpha,
+            thickness_mm=thickness, bore_diameter_mm=bore,
+            root_fillet_mm=min(0.45, modules * 0.225),
+            tip_chamfer_mm=min(0.25, modules * 0.125),
+            profile_shift_x=shift)
+        report = gin.external_gear_inspection(gear, float(pin) if pin else None)
+
+    return report, dn.note_text(report), dn.required_numbers(report)
+
 def inspection_note(args: dict) -> dict:
     """把齿轮/花键的检验尺寸写成工程图注释（并读回校验）。"""
     kind = str(args.get("kind") or "gear").strip().lower()
@@ -297,55 +353,8 @@ def inspection_note(args: dict) -> dict:
     x = float(args.get("x", 0.06))
     y = float(args.get("y", 0.10))
 
-    report: dict = {}
-    why = ""
     try:
-        if kind == "spline":
-            spec = sp.validate_spline_spec(
-                outer_diameter_mm=float(args.get("outer_diameter_mm", 46.0)),
-                inner_diameter_mm=float(args.get("inner_diameter_mm", 40.0)),
-                tooth_count=int(args.get("tooth_count", 8)),
-                key_width_mm=float(args.get("key_width_mm", 8.0)),
-                length_mm=float(args.get("length_mm", 60.0)))
-            pin = args.get("pin_diameter_mm")
-            report = sp.spline_inspection(spec, float(pin) if pin else None)
-        elif kind == "helical":
-            spec = hg.validate_helical_gear_spec(
-                module_normal_mm=float(args.get("module_normal_mm", 2.0)),
-                tooth_count=int(args.get("tooth_count", 24)),
-                pressure_angle_normal_deg=float(args.get("pressure_angle_deg", 20.0)),
-                helix_angle_deg=float(args.get("helix_angle_deg", 20.0)),
-                thickness_mm=float(args.get("thickness_mm", 20.0)),
-                bore_diameter_mm=float(args.get("bore_diameter_mm", 16.0)),
-                slices=int(args.get("slices") or hg.DEFAULT_SLICES))
-            pin = args.get("pin_diameter_mm")
-            report = gin.helical_gear_inspection(spec, float(pin) if pin else None)
-        elif kind == "internal":
-            module = float(args.get("module_mm", 2.0))
-            teeth = int(args.get("tooth_count", 40))
-            ring = igr.validate_internal_gear_spec(
-                module_mm=module, tooth_count=teeth,
-                pressure_angle_deg=float(args.get("pressure_angle_deg", 20.0)),
-                thickness_mm=float(args.get("thickness_mm", 12.0)),
-                rim_outer_diameter_mm=float(
-                    args.get("rim_outer_diameter_mm") or module * (teeth + 8.0)),
-                profile_shift_x=float(args.get("profile_shift_x", 0.0)))
-            pin = args.get("pin_diameter_mm")
-            report = gin.internal_gear_inspection(ring, float(pin) if pin else None)
-        else:
-            module = float(args.get("module_mm", 2.0))
-            teeth = int(args.get("tooth_count", 20))
-            gear = ig.validate_gear_spec(
-                module_mm=module, tooth_count=teeth,
-                pressure_angle_deg=float(args.get("pressure_angle_deg", 20.0)),
-                thickness_mm=float(args.get("thickness_mm", 10.0)),
-                bore_diameter_mm=float(args.get("bore_diameter_mm", 10.0)),
-                root_fillet_mm=min(0.45, module * 0.225),
-                tip_chamfer_mm=min(0.25, module * 0.125),
-                profile_shift_x=float(args.get("profile_shift_x", 0.0)))
-            pin = args.get("pin_diameter_mm")
-            report = gin.external_gear_inspection(gear, float(pin) if pin else None)
-        text = dn.note_text(report)
+        report, text, numbers = _build_inspection(args)
     except Exception as exc:                                # noqa: BLE001
         return normalize(KIT_KEY, "inspection_note", ok=False,
                          errors=["%s: %s" % (type(exc).__name__, exc)])
@@ -402,6 +411,118 @@ def inspection_note(args: dict) -> dict:
 
     ok = all(c.get("ok") for c in checks) and not errors
     return normalize(KIT_KEY, "inspection_note", ok=ok, reads=reads,
+                     checks=checks, errors=errors)
+
+def inspection_drawing(args: dict) -> dict:
+    """一条龙出"齿轮检验图"：视图 + 标题栏 + 检验注释（并读回校验）。"""
+    title = str(args.get("title") or "齿轮检验图")
+    number = str(args.get("drawing_number") or "NSA-0001")
+    scale = str(args.get("scale") or "1:1")
+    material = str(args.get("material") or "45")
+
+    try:
+        report, text, numbers = _build_inspection(args)
+        title_lines = dn.title_block_lines(title, number, scale, material)
+    except Exception as exc:                                # noqa: BLE001
+        return normalize(KIT_KEY, "inspection_drawing", ok=False,
+                         errors=["%s: %s" % (type(exc).__name__, exc)])
+
+    reads: dict[str, Any] = {"kind": report.get("kind"), "note_text": text,
+                             "views": [], "notes": []}
+    checks: list = []
+    errors: list[str] = []
+
+    try:
+        try:
+            app, part = _attach()
+        except Exception:                                   # noqa: BLE001
+            import win32com.client as _w32
+            from .hubsw_feat import _solidworks_running
+            if not _solidworks_running():
+                raise
+            app = _w32.Dispatch("SldWorks.Application")
+            part = app.ActiveDoc
+        # 没有可用零件时，按 kind 现建一个（让这条工具能一条龙跑通）
+        usable = part is not None and int(dn._val(part, "GetType") or 0) == 1
+        if not usable and args.get("auto_part", True):
+            kind_value = str(args.get("kind") or "gear").strip().lower()
+            builder = {
+                "gear": create_involute_gear,
+                "helical": create_helical_gear,
+                "internal": create_internal_gear,
+                "spline": create_spline_shaft,
+                "reducer": create_two_stage_reducer,
+            }.get(kind_value)
+            if builder is not None:
+                builder(dict(args, execute=True))
+                part = app.ActiveDoc
+                usable = part is not None and int(dn._val(part, "GetType") or 0) == 1
+        if not usable:
+            raise RuntimeError("没有可用的零件文档（type=%s）：先建零件或让 auto_part=true"
+                               % dn._val(part, "GetType"))
+
+        part_path = str(dn._val(part, "GetPathName") or "")
+        if not part_path:
+            import os as _os
+            import time as _time
+            folder = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+                _os.path.abspath(__file__)))), "_runs", "inspection_sheet")
+            _os.makedirs(folder, exist_ok=True)
+            part_path = _os.path.join(
+                folder, "insp_%d.SLDPRT" % int(_time.time()))
+            # SaveAs4 的第 4/5 参是 byref VARIANT，传 None 会「类型不匹配」；
+            # SaveAs 一步到位（本机实测返回 True 且落盘）。
+            try:
+                part.SaveAs(part_path)
+            except Exception:                        # noqa: BLE001
+                part.SaveAs4(part_path, 0, 1, None, None)
+            if not _os.path.isfile(part_path):
+                raise RuntimeError("零件另存失败：%s 没落盘" % part_path)
+            part_path = str(dn._val(part, "GetPathName") or part_path)
+
+        active = app.ActiveDoc
+        if int(dn._val(active, "GetType") or 0) == 3:
+            drawing, created = active, False
+        else:
+            drawing, created = dn.ensure_drawing(app, None)
+        reads["drawing_created"] = created
+
+        placed = []
+        # 本机中文模板只认本地化视图名（*Front 返回 None，*前视 才建得出来）
+        for names, (vx, vy) in ((["*前视", "*Front"], (0.12, 0.16)),
+                                (["*上视", "*Top"], (0.42, 0.16))):
+            for view_name in names:
+                try:
+                    view = drawing.CreateDrawViewFromModelView3(
+                        part_path, view_name, vx, vy, 0.0)
+                except Exception:                        # noqa: BLE001
+                    view = None
+                if view is not None:
+                    placed.append(view_name)
+                    break
+        reads["views"] = placed
+        checks.append(_check("views_placed", len(placed), ">= 1", bool(placed)))
+
+        inspection = dn.insert_note(drawing, text, 0.10, 0.30)
+        block = dn.insert_note(drawing, "\n".join(title_lines), 0.45, 0.02)
+        reads["notes"] = [inspection.get("text") or "", block.get("text") or ""]
+        reads["document_type"] = inspection.get("type")
+        checks += [
+            _check("inspection_note_readback", bool(inspection.get("text")), True,
+                   bool(inspection.get("text"))),
+            _check("inspection_note_has_numbers", len(numbers), "all present",
+                   bool(numbers) and all(n in (inspection.get("text") or "")
+                                         for n in numbers)),
+            _check("title_block_readback", bool(block.get("text")), True,
+                   bool(block.get("text"))),
+            _check("title_block_has_number", number in (block.get("text") or ""), True,
+                   number in (block.get("text") or "")),
+        ]
+    except Exception as exc:                                # noqa: BLE001
+        errors.append("%s: %s" % (type(exc).__name__, exc))
+
+    ok = bool(checks) and all(c.get("ok") for c in checks) and not errors
+    return normalize(KIT_KEY, "inspection_drawing", ok=ok, reads=reads,
                      checks=checks, errors=errors)
 
 def create_tools() -> list:
@@ -488,4 +609,20 @@ def create_tools() -> list:
               "inner_diameter_mm": _TYPE_NUM, "key_width_mm": _TYPE_NUM,
               "length_mm": _TYPE_NUM},
              inspection_note),
+
+        spec("sw_inspection_drawing",
+             "一条龙出齿轮检验图：把零件另存 → 新建工程图 → 放前视/上视 → 写检验注释与标题栏，"
+             "并读回校验（视图数、注释文本含关键数值、标题栏含图号）。kind 同 sw_inspection_note。",
+             {"kind": _TYPE_STR, "title": _TYPE_STR, "drawing_number": _TYPE_STR,
+              "scale": _TYPE_STR, "material": _TYPE_STR,
+              "module_mm": _TYPE_NUM, "module_normal_mm": _TYPE_NUM,
+              "tooth_count": _TYPE_INT, "pressure_angle_deg": _TYPE_NUM,
+              "helix_angle_deg": _TYPE_NUM, "profile_shift_x": _TYPE_NUM,
+              "thickness_mm": _TYPE_NUM, "bore_diameter_mm": _TYPE_NUM,
+              "rim_outer_diameter_mm": _TYPE_NUM, "pin_diameter_mm": _TYPE_NUM,
+              "slices": _TYPE_INT, "outer_diameter_mm": _TYPE_NUM,
+              "inner_diameter_mm": _TYPE_NUM, "key_width_mm": _TYPE_NUM,
+              "length_mm": _TYPE_NUM, "bore_diameters_mm": {"type": "array"},
+              "axial_gap_mm": _TYPE_NUM},
+             inspection_drawing),
     ]
