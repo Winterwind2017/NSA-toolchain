@@ -13,7 +13,8 @@ from __future__ import annotations
 import math
 
 from ..tools import ToolSpec, normalize
-from .hubsw import (feature_graph as fg, gearbox as gb, helical_gear as hg,
+from .hubsw import (feature_graph as fg, gearbox as gb, gear_inspection as gin,
+                    helical_gear as hg,
                     internal_gear as igr, involute_gear as ig, keyways as kw,
                     output_shaft as os_, part_generators as pg, primitives as pr,
                     spline as sp)
@@ -85,6 +86,7 @@ def gear_involute_plan(args: dict) -> dict:
         KIT_KEY, "gear_involute_plan", ok=valid,
         reads={"spec": spec.to_dict() if hasattr(spec, "to_dict") else dict(spec.__dict__),
                "spec_valid": valid, "spec_error": why,
+               "inspection": gin.external_gear_inspection(spec) if valid else None,
                "feature_count": len(feats),
                "feature_names": [f.get("name") if isinstance(f, dict) else str(f)
                                  for f in feats][:12],
@@ -272,6 +274,7 @@ def internal_gear_plan(args: dict) -> dict:
         KIT_KEY, "internal_gear_plan", ok=ok,
         reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
                "spec_error": why, "feature_count": len(feats),
+               "inspection": gin.internal_gear_inspection(spec) if spec else None,
                "ring_area_mm2": meta.get("ring_area_mm2"),
                "expected_volume_mm3": meta.get("expected_volume_mm3"),
                "tip_above_base": meta.get("tip_above_base"),
@@ -408,6 +411,93 @@ def keyway_lookup(args: dict) -> dict:
                      reads=reads, checks=checks, errors=[])
 
 
+# --------------------------------------------------------------- 齿轮检验尺寸
+def gear_inspection(args: dict) -> dict:
+    """公法线长度 / 跨棒距 / 分度圆齿厚（外齿与内齿两套公式）。"""
+    module = float(args.get("module_mm") or 2.0)
+    teeth = int(args.get("tooth_count") or 20)
+    alpha = float(args.get("pressure_angle_deg") or 20.0)
+    shift = float(args.get("profile_shift_x") or 0.0)
+    pin = args.get("pin_diameter_mm")
+    internal = bool(args.get("internal"))
+
+    report: dict = {}
+    why = ""
+    try:
+        if internal:
+            rim = float(args.get("rim_outer_diameter_mm")
+                        or module * (teeth + 8.0))
+            ring = igr.validate_internal_gear_spec(
+                module_mm=module, tooth_count=teeth, pressure_angle_deg=alpha,
+                thickness_mm=float(args.get("thickness_mm") or 12.0),
+                rim_outer_diameter_mm=rim, profile_shift_x=shift)
+            report = gin.internal_gear_inspection(
+                ring, float(pin) if pin else None)
+            pitch_diameter = 2.0 * ring.pitch_radius_mm
+        else:
+            spec = ig.validate_gear_spec(
+                module_mm=module, tooth_count=teeth, pressure_angle_deg=alpha,
+                thickness_mm=float(args.get("thickness_mm") or 10.0),
+                bore_diameter_mm=float(args.get("bore_diameter_mm") or module * 5.0),
+                root_fillet_mm=min(0.45, module * 0.225),
+                tip_chamfer_mm=min(0.25, module * 0.125),
+                profile_shift_x=shift)
+            report = gin.external_gear_inspection(
+                spec, float(pin) if pin else None)
+            pitch_diameter = 2.0 * spec.pitch_radius_mm
+    except Exception as exc:                              # noqa: BLE001
+        why = "%s: %s" % (type(exc).__name__, exc)
+
+    checks: list = []
+    if report:
+        span = report["span_over_pins"]
+        if not internal:
+            # 基节不变式：跨 k+1 齿比跨 k 齿正好长一个基节
+            spec = ig.validate_gear_spec(
+                module_mm=module, tooth_count=teeth, pressure_angle_deg=alpha,
+                thickness_mm=float(args.get("thickness_mm") or 10.0),
+                bore_diameter_mm=float(args.get("bore_diameter_mm") or module * 5.0),
+                root_fillet_mm=min(0.45, module * 0.225),
+                tip_chamfer_mm=min(0.25, module * 0.125),
+                profile_shift_x=shift)
+            k = report["span_measurement"]["k"]
+            w_k = gin.span_measurement(spec, k)["span_length_mm"]
+            w_next = gin.span_measurement(spec, k + 1)["span_length_mm"]
+            base_pitch = math.pi * module * math.cos(math.radians(alpha))
+            checks.append(_check("span_step_equals_base_pitch_mm",
+                                 round(w_next - w_k, 4), round(base_pitch, 4),
+                                 abs((w_next - w_k) - base_pitch) < 1e-3))
+            checks.append(_check("span_over_pins_gt_pitch_diameter",
+                                 span["span_mm"], "> pitch diameter",
+                                 span["span_mm"] > pitch_diameter))
+            checks.append(_check("tooth_thickness_at_pitch_mm",
+                                 report["tooth_thickness_at_pitch_mm"], "> 0",
+                                 report["tooth_thickness_at_pitch_mm"] > 0.0))
+        else:
+            checks.append(_check("span_over_pins_lt_pitch_diameter",
+                                 span["span_mm"], "< pitch diameter",
+                                 span["span_mm"] < pitch_diameter))
+        if internal:
+            # 内齿测量发生在分度圆内侧，α_M 必然小于压力角
+            checks.append(_check("alpha_M_below_pressure_angle_deg",
+                                 span["alpha_M_deg"], "< alpha",
+                                 0.0 < span["alpha_M_deg"] < alpha))
+            checks.append(_check("span_over_pins_above_base_diameter",
+                                 span["span_mm"],
+                                 round(report["base_diameter_mm"], 4),
+                                 span["span_mm"] > report["base_diameter_mm"]))
+        else:
+            checks.append(_check("alpha_M_within_range_deg", span["alpha_M_deg"],
+                                 "alpha .. 45", alpha <= span["alpha_M_deg"] <= 45.0))
+
+    ok = bool(report and checks and all(c["ok"] for c in checks))
+    payload = normalize(KIT_KEY, "gear_inspection", ok=ok,
+                        reads={"inspection": report or None, "spec_error": why},
+                        errors=[] if ok else ["检验尺寸算不出来：" + (why or "判据未通过")])
+    payload["checks"] = checks
+    return payload
+
+
 S = {"type": "string"}
 I = {"type": "integer"}
 N = {"type": "number"}
@@ -431,7 +521,7 @@ def hubsw_tools() -> list:
             gear_involute_plan, timeout_s=120),
         ToolSpec(
             "sw_gearbox_plan",
-            "两级平行轴减速器：生成整机 Feature Graph（16 个特征，渐开线齿形），"
+            "两级平行轴减速器：生成整机 Feature Graph（16 个特征，渐开线齿形 + GB/T 1096 键槽），"
             "判据是传动比 (z2/z1)·(z4/z3) 与两级中心距 a=m(z1+z2)/2。",
             {"type": "object",
              "properties": {"module_mm": N, "pressure_angle_deg": N,
@@ -505,4 +595,16 @@ def hubsw_tools() -> list:
              "properties": {"shaft_diameter_mm": N, "required_length_mm": N},
              "additionalProperties": False},
             keyway_lookup, timeout_s=60),
+        ToolSpec(
+            "sw_gear_inspection",
+            "齿轮检验尺寸：公法线长度 W_k（含 k 值与标准规则）、跨棒距 M（外齿/内齿两套符号、"
+            "奇偶齿修正）、分度圆齿厚；判据含基节不变式 W(k+1)-W(k)=π·m·cosα。",
+            {"type": "object",
+             "properties": {"module_mm": N, "tooth_count": I, "pressure_angle_deg": N,
+                            "profile_shift_x": N, "pin_diameter_mm": N,
+                            "internal": {"type": "boolean"},
+                            "rim_outer_diameter_mm": N, "thickness_mm": N,
+                            "bore_diameter_mm": N},
+             "additionalProperties": False},
+            gear_inspection, timeout_s=120),
     ]
