@@ -50,6 +50,11 @@ def _solve_involute(target: float) -> float:
     return theta
 
 
+def span_normal_step(module_mm: float, pressure_angle_deg: float) -> float:
+    """法向基节 π·m·cosα：跨 k+1 齿比跨 k 齿正好长这么多。"""
+    return math.pi * module_mm * math.cos(math.radians(pressure_angle_deg))
+
+
 def tooth_thickness_at_pitch(spec: InvoluteGearSpec) -> float:
     """分度圆齿厚 s = m(π/2 + 2x·tanα)。"""
     shift = getattr(spec, "profile_shift_x", 0.0)
@@ -140,6 +145,85 @@ def span_over_pins_internal(spec: InternalGearSpec,
         "even_teeth": spec.tooth_count % 2 == 0,
     }
 
+
+
+def helical_gear_inspection(spec: "HelicalGearSpec",
+                            ball_diameter_mm: float | None = None) -> dict[str, Any]:
+    """斜齿轮检验尺寸：法向公法线 + **量球**跨棒距。
+
+    斜齿轮的齿是拧着的，所以：
+
+    * 公法线只能在**法向**用专用量具量（沿法向跨 k 齿）；
+    * 跨棒距必须用**量球**——量柱会顺着螺旋面滑走，量不住。
+
+    工程上按**当量直齿轮**（virtual spur gear）算，这是手册通行做法：
+
+        z_v = z / cos³β          m_n（法向模数）    α_n（法向压力角）
+
+    ``z_v`` 不是整数没关系，公式本来就是连续的。
+    """
+    from .helical_gear import HelicalGearSpec          # 避免循环导入
+
+    if not isinstance(spec, HelicalGearSpec):
+        raise ContractError("helical_gear_inspection expects a HelicalGearSpec")
+
+    beta = math.radians(spec.helix_angle_deg)
+    alpha_n = math.radians(spec.pressure_angle_normal_deg)
+    cos_beta = math.cos(beta)
+    if cos_beta <= 1e-6:
+        raise ContractError("螺旋角过大：cosβ 接近 0")
+
+    virtual_teeth = spec.tooth_count / (cos_beta ** 3)
+    module_n = spec.module_normal_mm
+    pitch_v = module_n * virtual_teeth / 2.0
+    base_v = pitch_v * math.cos(alpha_n)
+    inv_alpha_n = math.tan(alpha_n) - alpha_n
+
+    k = int(round(virtual_teeth * spec.pressure_angle_normal_deg / 180.0 + 0.5))
+    if k < 2:
+        raise ContractError("当量齿数太小，算不出公法线")
+    span_length = (module_n * math.cos(alpha_n)
+                   * (math.pi * (k - 0.5) + virtual_teeth * inv_alpha_n))
+
+    ball = float(ball_diameter_mm) if ball_diameter_mm else \
+        require_positive(PIN_DIAMETER_FACTOR * module_n, "ball_diameter_mm")
+    target = inv_alpha_n + ball / (2.0 * base_v) - math.pi / (2.0 * virtual_teeth)
+    if target <= 0.0:
+        raise ContractError("量球相对当量基圆太大：跨棒距无解")
+    alpha_m = _solve_involute(target)
+    cos_m = math.cos(alpha_m)
+    if cos_m <= 1e-9:
+        raise ContractError("量球过大：α_M 接近 90°，跨棒距无解")
+    if spec.tooth_count % 2 == 0:
+        span = 2.0 * base_v / cos_m + ball
+    else:
+        span = 2.0 * base_v * math.cos(math.pi / (2.0 * spec.tooth_count)) / cos_m + ball
+
+    return {
+        "kind": "helical_involute_gear",
+        "normal_module_mm": module_n,
+        "transverse_module_mm": round(spec.module_transverse_mm, 6),
+        "tooth_count": spec.tooth_count,
+        "helix_angle_deg": spec.helix_angle_deg,
+        "pressure_angle_normal_deg": spec.pressure_angle_normal_deg,
+        "virtual_tooth_count": round(virtual_teeth, 4),
+        "pitch_diameter_mm": round(2.0 * spec.pitch_radius_mm, 4),
+        "base_diameter_mm": round(2.0 * spec.base_radius_mm, 4),
+        "tip_diameter_mm": round(2.0 * spec.outer_radius_mm, 4),
+        "root_diameter_mm": round(2.0 * spec.root_radius_mm, 4),
+        "normal_span_measurement": {
+            "k": k,
+            "span_length_mm": round(span_length, 4),
+            "span_rule": "k = round(z_v·α_n/180° + 0.5), z_v = z/cos³β",
+        },
+        "span_over_balls": {
+            "ball_diameter_mm": round(ball, 4),
+            "alpha_M_deg": round(math.degrees(alpha_m), 4),
+            "span_mm": round(span, 4),
+            "even_teeth": spec.tooth_count % 2 == 0,
+        },
+        "measurement_note": "公法线沿法向量；跨棒距用量球（量柱会沿螺旋面滑）",
+    }
 
 def external_gear_inspection(spec: InvoluteGearSpec,
                              pin_diameter_mm: float | None = None) -> dict[str, Any]:

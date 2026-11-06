@@ -107,6 +107,111 @@ def _polygon_area(points: list[list[float]]) -> float:
     return abs(total) / 2.0
 
 
+def _flank_line(spec: SplineSpec, tooth_index: int) -> tuple[list[float], list[float]]:
+    """某个齿**右侧**齿侧直线的两个端点（外径 → 内径）。"""
+    step = 2.0 * math.pi / spec.tooth_count
+    center = tooth_index * step
+    outer_r = spec.outer_diameter_mm / 2.0
+    inner_r = spec.inner_diameter_mm / 2.0
+    p_out = [outer_r * math.cos(center + spec.outer_half_angle_rad),
+             outer_r * math.sin(center + spec.outer_half_angle_rad)]
+    p_in = [inner_r * math.cos(center + spec.inner_half_angle_rad),
+            inner_r * math.sin(center + spec.inner_half_angle_rad)]
+    return p_out, p_in
+
+
+def _distance_to_line(point: list[float], a: list[float], b: list[float]) -> float:
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    length = math.hypot(dx, dy)
+    if length <= 1e-12:
+        return math.hypot(point[0] - a[0], point[1] - a[1])
+    return abs(dx * (point[1] - a[1]) - dy * (point[0] - a[0])) / length
+
+
+def pin_contact_radius(spec: SplineSpec, pin_diameter_mm: float) -> tuple[float, str]:
+    """量柱同时贴住某个齿槽两侧齿侧时的中心半径。
+
+    返回 ``(半径, 接触方式)``：``flank`` = 被两侧齿侧夹住（正常）；``root`` = 量柱
+    太小、一直落到齿根圆上（量不到齿厚，属于**量具选小了**）。
+    齿槽外宽内窄，所以"离齿侧的距离"随半径单调增，二分很稳。
+    """
+    if pin_diameter_mm <= 0.0:
+        raise ContractError("pin_diameter_mm must be positive")
+    radius_pin = pin_diameter_mm / 2.0
+    bisector = math.pi / spec.tooth_count          # 齿槽中心线角度
+    a, b = _flank_line(spec, 0)
+    inner_radius = spec.inner_diameter_mm / 2.0
+
+    def gap(center_radius: float) -> float:
+        point = [center_radius * math.cos(bisector),
+                 center_radius * math.sin(bisector)]
+        return _distance_to_line(point, a, b) - radius_pin
+
+    if gap(inner_radius) >= 0.0:
+        # 量柱比齿槽底还窄：直接落底，量不到齿厚
+        return inner_radius + radius_pin, "root"
+
+    high = spec.outer_diameter_mm / 2.0 + pin_diameter_mm
+    if gap(high) <= 0.0:
+        raise ContractError("量柱过大：推到齿顶以外仍碰不到齿侧")
+    low = inner_radius
+    for _ in range(80):
+        middle = 0.5 * (low + high)
+        if gap(middle) > 0.0:
+            high = middle
+        else:
+            low = middle
+    return 0.5 * (low + high), "flank"
+
+
+def recommended_pin_diameter(spec: SplineSpec) -> float:
+    """让量柱接触点落在齿高中部时的量柱直径（两倍齿侧距离）。"""
+    mid = 0.5 * (spec.inner_diameter_mm + spec.outer_diameter_mm) / 2.0
+    bisector = math.pi / spec.tooth_count
+    a, b = _flank_line(spec, 0)
+    point = [mid * math.cos(bisector), mid * math.sin(bisector)]
+    return round(2.0 * _distance_to_line(point, a, b), 3)
+
+
+def span_over_pins(spec: SplineSpec, pin_diameter_mm: float | None = None) -> dict[str, Any]:
+    """外花键跨棒距 M：量柱放在**相对**的两个齿槽里量。"""
+    pin = float(pin_diameter_mm) if pin_diameter_mm else recommended_pin_diameter(spec)
+    if pin <= 0.0:
+        raise ContractError("pin_diameter_mm must be positive")
+    radius, contact = pin_contact_radius(spec, pin)
+    if spec.tooth_count % 2 == 0:
+        span = 2.0 * radius + pin
+    else:
+        span = 2.0 * radius * math.cos(math.pi / (2.0 * spec.tooth_count)) + pin
+    return {
+        "pin_diameter_mm": round(pin, 4),
+        "pin_contact_radius_mm": round(radius, 4),
+        "span_mm": round(span, 4),
+        "even_teeth": spec.tooth_count % 2 == 0,
+        "contact": contact,
+    }
+
+
+def spline_inspection(spec: SplineSpec,
+                      pin_diameter_mm: float | None = None) -> dict[str, Any]:
+    """矩形花键检验尺寸：齿厚、齿槽宽、量柱直径与跨棒距。"""
+    pitch_diameter = (spec.outer_diameter_mm + spec.inner_diameter_mm) / 2.0
+    space_width = (math.pi * pitch_diameter / spec.tooth_count
+                   - spec.key_width_mm)
+    return {
+        "kind": "rectangular_spline",
+        "standard": "GB/T 1144",
+        "outer_diameter_mm": spec.outer_diameter_mm,
+        "inner_diameter_mm": spec.inner_diameter_mm,
+        "tooth_count": spec.tooth_count,
+        "key_width_mm": spec.key_width_mm,
+        "tooth_thickness_mm": spec.key_width_mm,
+        "space_width_at_pitch_mm": round(space_width, 4),
+        "recommended_pin_diameter_mm": recommended_pin_diameter(spec),
+        "span_over_pins": span_over_pins(spec, pin_diameter_mm),
+    }
+
+
 def build_spline_shaft_graph(spec: SplineSpec) -> dict[str, Any]:
     """3 个特征：新建零件 → 花键截面 → 拉伸成轴。"""
     outline = spline_outline(spec)
