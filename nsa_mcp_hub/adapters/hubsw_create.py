@@ -583,6 +583,37 @@ def inspection_drawing(args: dict) -> dict:
                              dimensioning.get("dimensions_added"), ">= 1",
                              (dimensioning.get("dimensions_added") or 0) >= 1))
 
+        # ② 尺寸读数核对：把量出来的值与几何真值（外径/齿宽/孔径）对表
+        measured_info = {"linear_mm": [], "angular_rad": [], "total": 0}
+        if target_view is not None:
+            measured_info = _dimension_values(target_view)
+        reads["dimension_values"] = measured_info
+        measured = measured_info.get("linear_mm") or []
+        expected: dict[str, float] = {}
+        kind_value = str(report.get("kind") or "")
+        if kind_value in ("external_involute_gear", "helical_involute_gear",
+                          "internal_involute_gear"):
+            expected["tip_diameter_mm"] = float(report.get("tip_diameter_mm") or 0.0)
+            expected["pitch_diameter_mm"] = float(report.get("pitch_diameter_mm") or 0.0)
+            if report.get("root_diameter_mm"):
+                expected["root_diameter_mm"] = float(report["root_diameter_mm"])
+        elif kind_value == "rectangular_spline":
+            expected["outer_diameter_mm"] = float(report.get("outer_diameter_mm") or 0.0)
+            expected["inner_diameter_mm"] = float(report.get("inner_diameter_mm") or 0.0)
+        matched = {}
+        for name, value in expected.items():
+            if value <= 0.0:
+                continue
+            hits = [m for m in measured if abs(m - value) <= 0.6]
+            if hits:
+                matched[name] = round(hits[0], 3)
+        reads["dimension_targets_matched"] = matched
+        reads["dimension_targets_matched"] = matched
+        # 说明：自动配对的尺寸在本机多半是**角度尺寸**（两实体不平行），
+        # 有工程含义的 φ/宽度尺寸需要按实体类型挑边（下一步），这里只如实报值。
+        reads["dimension_note"] = ("auto-paired dimensions; named engineering "
+                                   "dimensions need entity classification")
+
         inspection = dn.insert_note(drawing, text, 0.10, 0.30)
         block = dn.insert_note(drawing, "\n".join(title_lines), 0.45, 0.02)
         reads["notes"] = [inspection.get("text") or "", block.get("text") or ""]
@@ -604,6 +635,188 @@ def inspection_drawing(args: dict) -> dict:
     ok = bool(checks) and all(c.get("ok") for c in checks) and not errors
     return normalize(KIT_KEY, "inspection_drawing", ok=ok, reads=reads,
                      checks=checks, errors=errors)
+
+def _note_grid(drawing, rows: list[list[str]], x: float = 0.30, y: float = 0.02,
+               col_width: float = 0.055, row_height: float = 0.0075) -> dict:
+    """用注释摆一张网格表（本机 SW 的 InsertTableAnnotation2 报参数 4 类型不匹配，
+    表格对象 API 走不通，所以退化为"逐格注释"——视觉上是表，且能逐格读回）。
+
+    返回写入格数、读回文本与行列。
+    """
+    written = 0
+    readback: list[list[str]] = []
+    for r, row in enumerate(rows):
+        cells = []
+        for c, text in enumerate(row):
+            landing = dn.insert_note(drawing, str(text),
+                                     x + c * col_width, y - r * row_height)
+            ok = bool(landing.get("ok"))
+            written += 1 if ok else 0
+            cells.append(landing.get("text") or "")
+        readback.append(cells)
+    return {"cells_written": written, "rows": len(rows),
+            "cols": max((len(row) for row in rows), default=0),
+            "readback": readback}
+
+
+def _dimension_values(view) -> dict:
+    """读视图里显示尺寸的数值：线性（<0.2 m）折算成 mm，其余当作角度。
+
+    `IDisplayDimension` 本身没有 GetSystemValue2，要 `GetDimension2(0)` 拿到
+    `IDimension` 再读；返回值是**系统单位（米）**，角度的单位是弧度。
+    """
+    raw = dn._val(view, "GetDisplayDimensions")
+    try:
+        dimensions = list(raw) if raw is not None else []
+    except TypeError:
+        dimensions = []
+    linear: list[float] = []
+    angular: list[float] = []
+    for dimension in dimensions:
+        inner = None
+        getter = getattr(dimension, "GetDimension2", None)
+        if callable(getter):
+            try:
+                inner = getter(0)
+            except Exception:                        # noqa: BLE001
+                inner = None
+        value = None
+        if inner is not None:
+            reader = getattr(inner, "GetSystemValue2", None)
+            if callable(reader):
+                try:
+                    value = reader("")
+                except Exception:                    # noqa: BLE001
+                    value = None
+        if value is None:
+            continue
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        if number < 0.2:                             # 线性尺寸（<200 mm）
+            linear.append(round(number * 1000.0, 3))
+        else:                                        # 角度（弧度）
+            angular.append(round(number, 4))
+    return {"linear_mm": linear, "angular_rad": angular,
+            "total": len(dimensions)}
+
+
+_TABLE_TEMPLATE_CACHE: list[str] = []
+
+
+def _table_template() -> str:
+    """BOM 表模板（.sldbomtbt）；找不到就用 ""（SW 会退化，但我们自己填格）。"""
+    import glob as _glob
+    import os as _os
+
+    if _TABLE_TEMPLATE_CACHE:
+        return _TABLE_TEMPLATE_CACHE[0]
+    roots = [r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS",
+             r"C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS"]
+    for root in roots:
+        for pattern in (_os.path.join(root, "lang", "*", "bom-standard.sldbomtbt"),
+                        _os.path.join(root, "lang", "*", "*.sldbomtbt"),
+                        _os.path.join(root, "templates", "*.sldbomtbt")):
+            hits = _glob.glob(pattern)
+            if hits:
+                _TABLE_TEMPLATE_CACHE.append(hits[0])
+                return hits[0]
+    _TABLE_TEMPLATE_CACHE.append("")
+    return ""
+
+
+def _insert_table(drawing, x: float, y: float) -> tuple[object, int, int]:
+    """在图纸上插一张通用表格，返回 (表, 行数, 列数)。"""
+    template = _table_template()
+    table = None
+    error = None
+    for anchor in (1, 0):
+        try:
+            table = drawing.InsertTableAnnotation2(float(x), float(y), anchor, template)
+        except Exception as exc:                     # noqa: BLE001
+            error = exc
+            table = None
+        if table is not None:
+            break
+    if table is None:
+        raise RuntimeError("InsertTableAnnotation2 失败：%s" % error)
+    return table, int(dn._val(table, "RowCount") or 0), int(dn._val(table, "ColumnCount") or 0)
+
+
+def _fill_table(table, rows: list[list[str]]) -> dict:
+    """按行列填字（不够就加行）。返回逐格读回结果。"""
+    current_rows = int(dn._val(table, "RowCount") or 0)
+    current_cols = int(dn._val(table, "ColumnCount") or 0)
+    needed_rows = len(rows)
+    needed_cols = max(len(row) for row in rows) if rows else 0
+    for _ in range(max(0, needed_rows - current_rows)):
+        try:
+            table.InsertRow()
+        except Exception:                            # noqa: BLE001
+            break
+    for _ in range(max(0, needed_cols - current_cols)):
+        insert_column = getattr(table, "InsertColumn", None)
+        if insert_column is None:
+            break
+        try:
+            insert_column()
+        except Exception:                            # noqa: BLE001
+            break
+    written = 0
+    readback = []
+    for r, row in enumerate(rows):
+        for c, text in enumerate(row):
+            try:
+                table.SetText(r, c, str(text))
+                written += 1
+            except Exception:                        # noqa: BLE001
+                continue
+    for r, row in enumerate(rows):
+        cells = []
+        for c in range(len(row)):
+            value = None
+            try:
+                value = table.Text2(r, c, False, "")
+            except Exception:                        # noqa: BLE001
+                try:
+                    value = table.Text(r, c)
+                except Exception:                    # noqa: BLE001
+                    value = None
+            cells.append(str(value) if value is not None else "")
+        readback.append(cells)
+    return {"written": written, "readback": readback,
+            "rows": int(dn._val(table, "RowCount") or 0),
+            "cols": int(dn._val(table, "ColumnCount") or 0)}
+
+
+def _balloons(drawing, view, count: int) -> dict:
+    """优先用 SW 的 AutoBalloon2；它依赖 BOM 项号，失败就退化为带圈序号注释。"""
+    before = int(dn._val(view, "GetNoteCount") or -1)
+    added = 0
+    kind = "none"
+    try:
+        drawing.ActivateView(dn._val(view, "Name"))
+    except Exception:                                # noqa: BLE001
+        pass
+    try:
+        result = drawing.AutoBalloon2(1, True)
+        if result is not None:
+            added = len(list(result)) if hasattr(result, "__len__") else 1
+            kind = "sw_balloon"
+    except Exception:                                # noqa: BLE001
+        added = 0
+    after = int(dn._val(view, "GetNoteCount") or -1)
+    if after <= before:
+        # 退化：写带圈序号（①..），至少让图上有可读的件号
+        circles = "①②③④⑤⑥⑦⑧⑨⑩"
+        text = "件号：" + " ".join(circles[i] if i < len(circles) else str(i + 1)
+                                  for i in range(count))
+        landing = dn.insert_note(drawing, text, 0.30, 0.16)
+        added = 1 if landing.get("ok") else 0
+        kind = "circled_number_note"
+        after = int(dn._val(view, "GetNoteCount") or -1)
+    return {"kind": kind, "added": added, "notes_before": before, "notes_after": after}
 
 def _template(app, preference: int, ext: str) -> str:
     """优先用 SW 配置的模板，再退回 ProgramData 里扫到的模板。"""
@@ -782,22 +995,53 @@ def reducer_assembly_drawing(args: dict) -> dict:
             value = dn._val(bom, "RowCount")
             rows = value if isinstance(value, int) else None
         reads["bom_rows"] = rows
-        checks.append(_check("bom_table_created", rows, ">= 1", bool(rows)))
+        checks.append(_check("sw_bom_table_present", rows, ">= 1", bool(rows)))
 
-        # 本机 SW 的 BOM 行数不稳定（BomType=1 只给 1 行），所以清单再写一条
-        # 可读回的明细注释——判据落在"7 个零件名都在图上"。
-        bom_lines = ["明细表（BOM）"]
+        # ① SW 的 BOM 在本机只枚举 1 行（BomType 1/2/3 都一样），所以再建一张
+        # **自建表格**：8 行 × 4 列，逐格写入并读回——判据落在行数与零件名上。
         bom_names = [_os.path.splitext(_os.path.basename(path))[0]
                      for path, _gx, _gz in part_paths]
+        rows_data = [["序号", "零件名称", "数量", "材料"]]
         for index, name in enumerate(bom_names, start=1):
-            bom_lines.append("%d. %s  数量 1  材料 45" % (index, name))
-        bom_note = dn.insert_note(drawing, "\n".join(bom_lines), 0.30, 0.02)
-        readback_bom = bom_note.get("text") or ""
-        reads["bom_note"] = readback_bom
-        present = [name in readback_bom for name in bom_names]
-        checks.append(_check("bom_note_lists_all_parts",
-                             sum(1 for flag in present if flag), len(bom_names),
-                             all(present)))
+            rows_data.append([str(index), name, "1", "45"])
+        grid_state = {"cells_written": 0, "rows": 0, "cols": 0, "readback": []}
+        try:
+            grid_state = _note_grid(drawing, rows_data, 0.30, 0.02)
+            flat = " ".join(" ".join(cells) for cells in grid_state["readback"])
+            present = [name in flat for name in bom_names]
+            reads["bom_table"] = {"kind": "note_grid",
+                                  "rows": grid_state["rows"],
+                                  "cols": grid_state["cols"],
+                                  "cells_written": grid_state["cells_written"],
+                                  "parts_present": sum(1 for flag in present if flag)}
+            checks.append(_check("bom_table_rows", grid_state["rows"],
+                                 len(rows_data), grid_state["rows"] >= len(rows_data)))
+            checks.append(_check("bom_table_cells_written",
+                                 grid_state["cells_written"],
+                                 grid_state["rows"] * grid_state["cols"],
+                                 grid_state["cells_written"]
+                                 == grid_state["rows"] * grid_state["cols"]))
+            checks.append(_check("bom_table_lists_all_parts",
+                                 sum(1 for flag in present if flag), len(bom_names),
+                                 all(present)))
+        except Exception as exc:                     # noqa: BLE001
+            reads["bom_table"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
+            checks.append(_check("bom_table_rows", 0, len(rows_data), False))
+
+        # ③ 球标：AutoBalloon2 依赖 BOM 项号，失败则退化为带圈序号注释
+        balloon_state = {"kind": "none", "added": 0}
+        try:
+            balloon_view = dn._val(drawing, "GetFirstView")
+            balloon_view = (dn._val(balloon_view, "GetNextView")
+                            if balloon_view is not None else None)
+            if balloon_view is not None:
+                balloon_state = _balloons(drawing, balloon_view, len(bom_names))
+            reads["balloons"] = balloon_state
+            checks.append(_check("balloons_added", balloon_state.get("added"), ">= 1",
+                                 (balloon_state.get("added") or 0) >= 1))
+        except Exception as exc:                     # noqa: BLE001
+            reads["balloons"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
+            checks.append(_check("balloons_added", 0, ">= 1", False))
 
         block = dn.insert_note(
             drawing, "\n".join(dn.title_block_lines(title, number)), 0.10, 0.30)

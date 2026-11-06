@@ -792,10 +792,13 @@ SW_CASES = [
      "timeout_s": 900},
 
     {"id": "sw.asm.reducer.drawing", "tool": "sw_reducer_assembly_drawing",
-     "title": "减速器整机装配图：7 组件装配 → 前视/等轴测 → BOM 表 + 7 项明细注释 + 标题栏",
+     "title": "减速器整机装配图：7 组件 → 前视/等轴测 → BOM 表（8 行×4 列 32 格）+ 球标 + 标题栏",
      "args": {"title": "两级减速器装配图", "drawing_number": "NSA-ASM-0001"},
      "expect_ok": True,
-     "expect_reads": {"reads.components": 7, "reads.bom_rows": 1},
+     "expect_reads": {"reads.components": 7, "reads.bom_rows": 1,
+                      "reads.bom_table.rows": 8, "reads.bom_table.cols": 4,
+                      "reads.bom_table.cells_written": 32,
+                      "reads.bom_table.parts_present": 7},
      "timeout_s": 1800},
 
     {"id": "sw.sheet.spline", "tool": "sw_inspection_drawing",
