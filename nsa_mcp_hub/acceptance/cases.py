@@ -151,6 +151,74 @@ def _fea_prepare(client):
     return {}
 
 
+
+def _sw_threaded_hole_flow(client, context):
+    """SW 剧本：螺纹孔（`sw_threaded_hole`，verified）。
+
+    2026-11-06 起 SolidWorks 侧终于有可交付的螺纹孔工具：孔向导对本机不可用
+    （HoleWizard5 27 参错位 + COM 下不建特征，见 swkit docs/SILENT_FAILURES.md），
+    改走「底孔 FeatureCut4 + 口部倒角 + 真实 ThreadFeatureData」。
+
+    判据全看几何：实测圆柱直径必须等于规格表底孔（±0.15 mm）、孔口出现锥面、
+    螺纹是 real（不是 cosmetic 降级），三项齐了 `delivery_gate_passed` 才为 True。
+    """
+    import json as _json
+
+    checks, reads, steps = [], {}, []
+
+    def record(name, payload):
+        ok = bool(payload.get("ok"))
+        checks.append({"check": name, "got": ok, "want": True, "ok": ok})
+        return payload.get("reads") or {}
+
+    for tool, args in (("sw_create_part", {}),
+                       ("sw_create_parametric_part",
+                        {"part_type": "block",
+                         "parameters": {"length": 120, "width": 60, "height": 20},
+                         "execute": True})):
+        payload = client.call(tool, args)
+        steps.append({"tool": tool, "ok": bool(payload.get("ok"))})
+        if tool == "sw_create_parametric_part":
+            made = payload
+    if not made.get("ok"):
+        return {"ok": False, "reads": reads,
+                "errors": ["建块失败：%s" % str(made.get("errors"))[:160]],
+                "checks": checks}
+
+    # 顶面在 z=0（sw_create_parametric_part 的块以顶面为基准），按点选面更稳
+    for size, x, expected in (("M6", -20.0, 5.0), ("M12", 20.0, 10.2)):
+        payload = client.call("sw_threaded_hole", {
+            "size": size, "depth": 15.0, "through": False,
+            "hole_x": x, "hole_y": 0.0,
+            "face_x": 0.0, "face_y": 0.0, "face_z": 0.0,
+            "mouth_chamfer": 0.5})
+        steps.append({"tool": "sw_threaded_hole", "ok": bool(payload.get("ok"))})
+        data = record("threaded_hole_%s" % size, payload)
+        reads["%s" % size] = data
+        checks.append({"check": "%s_bore" % size, "got": data.get("bore_diameter_mm"),
+                       "want": expected,
+                       "ok": data.get("bore_diameter_mm") is not None
+                             and abs(float(data["bore_diameter_mm"]) - expected) <= 0.15})
+        checks.append({"check": "%s_chamfer" % size, "got": data.get("cone_faces"),
+                       "want": ">=1",
+                       "ok": (data.get("cone_faces") or 0) >= 1})
+        checks.append({"check": "%s_real_thread" % size, "got": data.get("thread_kind"),
+                       "want": "real", "ok": data.get("thread_kind") == "real"})
+        checks.append({"check": "%s_gate" % size,
+                       "got": data.get("delivery_gate_passed"), "want": True,
+                       "ok": data.get("delivery_gate_passed") is True})
+        checks.append({"check": "%s_volume_dropped" % size,
+                       "got": data.get("volume_delta_mm3"), "want": "<0",
+                       "ok": (data.get("volume_delta_mm3") or 0) < 0})
+
+    reads["steps"] = steps
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["螺纹孔未达门槛：%s" % _json.dumps(
+                [c for c in checks if not c["ok"]], ensure_ascii=False)[:400]],
+            "checks": checks}
+
+
 SW_CASES = [
     {"id": "sw.inspect.topology", "tool": "sw_feature_inspect",
      "title": "列出特征树 + 拓扑 + token",
@@ -692,6 +760,13 @@ SW_CASES = [
 
     {"id": "sw.tool.runtime", "tool": "kit_runtime",
      "title": "SW 内核运行状态（kit_runtime）", "args": {}, "expect_ok": True, "timeout_s": 120},
+    {"id": "sw.threaded_hole", "tool": None,
+     "title": "SW 剧本：螺纹孔 M6/M12（底孔 Ø5.0/Ø10.2 + 倒角 + 真实螺纹）",
+     "args": {}, "expect_ok": True, "timeout_s": 900,
+     "requires": ["solidworks"],
+     "call": lambda client, context: _sw_threaded_hole_flow(client, context),
+     "cleanup": lambda client, context: _close_unsaved_docs(client)},
+
 ]
 
 
