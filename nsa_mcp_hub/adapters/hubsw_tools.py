@@ -479,8 +479,14 @@ def gear_inspection(args: dict) -> dict:
                        span["span_mm"], "> pitch diameter",
                        span["span_mm"] > pitch_diameter),
                 _check("alpha_M_within_range_deg", span["alpha_M_deg"],
-                       "alpha_n .. 45",
-                       alpha <= span["alpha_M_deg"] <= 45.0),
+                       "0 .. 45", 0.0 < span["alpha_M_deg"] < 45.0),
+                _check("ball_contact_inside_flank",
+                       span.get("contact_radius_mm"),
+                       "virtual root .. virtual tip radius",
+                       span.get("contact_radius_mm") is not None
+                       and report["virtual_root_radius_mm"]
+                       <= span["contact_radius_mm"]
+                       <= report["virtual_tip_radius_mm"]),
             ]
             ok_helical = bool(checks and all(c["ok"] for c in checks))
             payload = normalize(KIT_KEY, "gear_inspection", ok=ok_helical,
@@ -511,22 +517,33 @@ def gear_inspection(args: dict) -> dict:
             checks.append(_check("tooth_thickness_at_pitch_mm",
                                  report["tooth_thickness_at_pitch_mm"], "> 0",
                                  report["tooth_thickness_at_pitch_mm"] > 0.0))
+            contact = span.get("contact_radius_mm")
+            checks.append(_check("contact_inside_flank",
+                                 contact, "root..tip radius",
+                                 contact is not None
+                                 and report["root_diameter_mm"] / 2.0 <= contact
+                                 <= report["tip_diameter_mm"] / 2.0))
         else:
             checks.append(_check("span_over_pins_lt_pitch_diameter",
                                  span["span_mm"], "< pitch diameter",
                                  span["span_mm"] < pitch_diameter))
         if internal:
-            # 内齿测量发生在分度圆内侧，α_M 必然小于压力角
-            checks.append(_check("alpha_M_below_pressure_angle_deg",
-                                 span["alpha_M_deg"], "< alpha",
-                                 0.0 < span["alpha_M_deg"] < alpha))
+            # 内齿的接触点位于齿顶圆与齿根圆之间；α_M 可能高于压力角（量柱按齿高中部反算时）
+            contact = span.get("contact_radius_mm")
+            checks.append(_check("contact_inside_flank",
+                                 contact, "tip..root radius",
+                                 contact is not None
+                                 and report["tip_diameter_mm"] / 2.0 <= contact
+                                 <= report["root_diameter_mm"] / 2.0))
+            checks.append(_check("alpha_M_within_range_deg", span["alpha_M_deg"],
+                                 "0 .. 45", 0.0 < span["alpha_M_deg"] < 45.0))
             checks.append(_check("span_over_pins_above_base_diameter",
                                  span["span_mm"],
                                  round(report["base_diameter_mm"], 4),
                                  span["span_mm"] > report["base_diameter_mm"]))
         else:
             checks.append(_check("alpha_M_within_range_deg", span["alpha_M_deg"],
-                                 "alpha .. 45", alpha <= span["alpha_M_deg"] <= 45.0))
+                                 "0 .. 45", 0.0 < span["alpha_M_deg"] < 45.0))
 
     ok = bool(report and checks and all(c["ok"] for c in checks))
     payload = normalize(KIT_KEY, "gear_inspection", ok=ok,

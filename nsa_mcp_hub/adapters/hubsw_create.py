@@ -17,6 +17,8 @@ import math
 from typing import Any
 
 from ..tools import ToolSpec, normalize
+from .hubsw import drawing_note as dn
+from .hubsw import gear_inspection as gin
 from .hubsw import gearbox as gb
 from .hubsw import helical_gear as hg
 from .hubsw import internal_gear as igr
@@ -26,6 +28,7 @@ from .hubsw import part_generators as pg
 from .hubsw import primitives as pr
 from .hubsw import spline as sp
 from .hubsw_exec import execute_feature_graph
+from .hubsw_feat import _attach
 from .hubsw_feat import _check
 
 KIT_KEY = "sw"
@@ -287,6 +290,120 @@ def create_spline_shaft(args: dict) -> dict:
     })
     return payload
 
+def inspection_note(args: dict) -> dict:
+    """把齿轮/花键的检验尺寸写成工程图注释（并读回校验）。"""
+    kind = str(args.get("kind") or "gear").strip().lower()
+    write = args.get("write", True) is not False
+    x = float(args.get("x", 0.06))
+    y = float(args.get("y", 0.10))
+
+    report: dict = {}
+    why = ""
+    try:
+        if kind == "spline":
+            spec = sp.validate_spline_spec(
+                outer_diameter_mm=float(args.get("outer_diameter_mm", 46.0)),
+                inner_diameter_mm=float(args.get("inner_diameter_mm", 40.0)),
+                tooth_count=int(args.get("tooth_count", 8)),
+                key_width_mm=float(args.get("key_width_mm", 8.0)),
+                length_mm=float(args.get("length_mm", 60.0)))
+            pin = args.get("pin_diameter_mm")
+            report = sp.spline_inspection(spec, float(pin) if pin else None)
+        elif kind == "helical":
+            spec = hg.validate_helical_gear_spec(
+                module_normal_mm=float(args.get("module_normal_mm", 2.0)),
+                tooth_count=int(args.get("tooth_count", 24)),
+                pressure_angle_normal_deg=float(args.get("pressure_angle_deg", 20.0)),
+                helix_angle_deg=float(args.get("helix_angle_deg", 20.0)),
+                thickness_mm=float(args.get("thickness_mm", 20.0)),
+                bore_diameter_mm=float(args.get("bore_diameter_mm", 16.0)),
+                slices=int(args.get("slices") or hg.DEFAULT_SLICES))
+            pin = args.get("pin_diameter_mm")
+            report = gin.helical_gear_inspection(spec, float(pin) if pin else None)
+        elif kind == "internal":
+            module = float(args.get("module_mm", 2.0))
+            teeth = int(args.get("tooth_count", 40))
+            ring = igr.validate_internal_gear_spec(
+                module_mm=module, tooth_count=teeth,
+                pressure_angle_deg=float(args.get("pressure_angle_deg", 20.0)),
+                thickness_mm=float(args.get("thickness_mm", 12.0)),
+                rim_outer_diameter_mm=float(
+                    args.get("rim_outer_diameter_mm") or module * (teeth + 8.0)),
+                profile_shift_x=float(args.get("profile_shift_x", 0.0)))
+            pin = args.get("pin_diameter_mm")
+            report = gin.internal_gear_inspection(ring, float(pin) if pin else None)
+        else:
+            module = float(args.get("module_mm", 2.0))
+            teeth = int(args.get("tooth_count", 20))
+            gear = ig.validate_gear_spec(
+                module_mm=module, tooth_count=teeth,
+                pressure_angle_deg=float(args.get("pressure_angle_deg", 20.0)),
+                thickness_mm=float(args.get("thickness_mm", 10.0)),
+                bore_diameter_mm=float(args.get("bore_diameter_mm", 10.0)),
+                root_fillet_mm=min(0.45, module * 0.225),
+                tip_chamfer_mm=min(0.25, module * 0.125),
+                profile_shift_x=float(args.get("profile_shift_x", 0.0)))
+            pin = args.get("pin_diameter_mm")
+            report = gin.external_gear_inspection(gear, float(pin) if pin else None)
+        text = dn.note_text(report)
+    except Exception as exc:                                # noqa: BLE001
+        return normalize(KIT_KEY, "inspection_note", ok=False,
+                         errors=["%s: %s" % (type(exc).__name__, exc)])
+
+    numbers = dn.required_numbers(report)
+    checks = [_check("note_has_lines", len(text.splitlines()), ">= 3",
+                     len(text.splitlines()) >= 3),
+              _check("note_contains_key_numbers", len(numbers), ">= 2",
+                     len(numbers) >= 2 and all(number in text for number in numbers))]
+
+    reads: dict[str, Any] = {
+        "kind": report.get("kind"),
+        "note_text": text,
+        "required_numbers": numbers,
+        "written": False,
+    }
+    errors: list[str] = []
+
+    if write:
+        try:
+            try:
+                app, current = _attach()
+            except Exception:                            # noqa: BLE001
+                # 没有打开的文档时也要能画：只附加应用，随后新建一张图纸
+                import win32com.client as _w32
+                from .hubsw_feat import _solidworks_running
+                if not _solidworks_running():
+                    raise
+                app = _w32.Dispatch("SldWorks.Application")
+                current = app.ActiveDoc
+            doc, created = dn.ensure_drawing(app, current)
+            landing = dn.insert_note(doc, text, x, y)
+            readback = landing.get("text") or ""
+            reads.update({
+                "written": bool(landing.get("ok")),
+                "drawing_created": created,
+                "document_type": landing.get("type"),
+                "note_readback": readback,
+                "note_position": landing.get("position"),
+            })
+            checks += [
+                _check("drawing_document", landing.get("type"), 3,
+                       landing.get("type") == 3),
+                _check("note_text_readback", bool(readback), True, bool(readback)),
+                _check("readback_contains_numbers", len(numbers), "all present",
+                       bool(numbers) and all(number in readback for number in numbers)),
+                _check("note_position_set", landing.get("position"), "not None",
+                       bool(landing.get("position"))),
+            ]
+            if not landing.get("ok"):
+                errors.append(landing.get("error") or "插入注释失败")
+        except Exception as exc:                            # noqa: BLE001
+            errors.append("%s: %s" % (type(exc).__name__, exc))
+
+    ok = all(c.get("ok") for c in checks) and not errors
+    return normalize(KIT_KEY, "inspection_note", ok=ok, reads=reads,
+                     checks=checks, errors=errors)
+
 def create_tools() -> list:
     def spec(name, description, properties, handler):
         schema = {"type": "object", "properties": properties,
@@ -356,4 +473,19 @@ def create_tools() -> list:
               "tooth_count": _TYPE_INT, "key_width_mm": _TYPE_NUM,
               "length_mm": _TYPE_NUM, **_COMMON},
              create_spline_shaft),
+
+        spec("sw_inspection_note",
+             "把齿轮/花键的检验尺寸（公法线、跨棒距、量球/量柱直径、齿厚）写成工程图注释；"
+             "没有工程图就新建一张。判据是**注释文本读回**里真的出现这些数值。"
+             "kind=gear|helical|internal|spline；write=false 只返回注释文本。",
+             {"kind": _TYPE_STR, "write": _TYPE_BOOL, "x": _TYPE_NUM, "y": _TYPE_NUM,
+              "module_mm": _TYPE_NUM, "module_normal_mm": _TYPE_NUM,
+              "tooth_count": _TYPE_INT, "pressure_angle_deg": _TYPE_NUM,
+              "helix_angle_deg": _TYPE_NUM, "profile_shift_x": _TYPE_NUM,
+              "thickness_mm": _TYPE_NUM, "bore_diameter_mm": _TYPE_NUM,
+              "rim_outer_diameter_mm": _TYPE_NUM, "pin_diameter_mm": _TYPE_NUM,
+              "slices": _TYPE_INT, "outer_diameter_mm": _TYPE_NUM,
+              "inner_diameter_mm": _TYPE_NUM, "key_width_mm": _TYPE_NUM,
+              "length_mm": _TYPE_NUM},
+             inspection_note),
     ]
