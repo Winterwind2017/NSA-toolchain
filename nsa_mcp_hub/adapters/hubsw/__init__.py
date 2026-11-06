@@ -9,10 +9,12 @@
 * ``interactive`` / ``native_features`` / ``primitives`` —— 特征树与基础几何
 """
 
-from . import (contracts, feature_graph, gearbox, interactive, involute_gear,
-               native_features, output_shaft, part_generators, primitives)  # noqa: F401
+from . import (contracts, feature_graph, gearbox, helical_gear, interactive,
+               internal_gear, involute_gear, keyways, native_features,
+               output_shaft, part_generators, primitives, spline)  # noqa: F401
 
 __all__ = [
     "contracts", "feature_graph", "part_generators", "involute_gear",
-    "gearbox", "output_shaft", "interactive", "native_features", "primitives",
+    "gearbox", "output_shaft", "helical_gear", "internal_gear", "spline",
+    "keyways", "interactive", "native_features", "primitives",
 ]

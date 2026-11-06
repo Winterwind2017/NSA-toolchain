@@ -14,8 +14,10 @@ from __future__ import annotations
 import math
 
 from ..tools import ToolSpec, normalize
-from .hubsw import (feature_graph as fg, gearbox as gb, involute_gear as ig,
-                    output_shaft as os_, part_generators as pg, primitives as pr)
+from .hubsw import (feature_graph as fg, gearbox as gb, helical_gear as hg,
+                    internal_gear as igr, involute_gear as ig, keyways as kw,
+                    output_shaft as os_, part_generators as pg, primitives as pr,
+                    spline as sp)
 
 KIT_KEY = "sw"
 
@@ -232,6 +234,181 @@ def feature_graph_compile(args: dict) -> dict:
     return payload
 
 
+# ------------------------------------------------------------------- 内齿圈
+def internal_gear_plan(args: dict) -> dict:
+    module = float(args.get("module_mm") or 2.0)
+    teeth = int(args.get("tooth_count") or 40)
+    shift = float(args.get("profile_shift_x") or 0.0)
+    rim = float(args.get("rim_outer_diameter_mm") or (module * teeth + 8.0 * module))
+
+    spec = None
+    why = ""
+    graph: dict = {}
+    try:
+        spec = igr.validate_internal_gear_spec(
+            module_mm=module, tooth_count=teeth,
+            pressure_angle_deg=float(args.get("pressure_angle_deg") or 20.0),
+            thickness_mm=float(args.get("thickness_mm") or 12.0),
+            rim_outer_diameter_mm=rim, profile_shift_x=shift)
+        graph = igr.build_internal_gear_graph(spec)
+    except Exception as exc:                              # noqa: BLE001
+        why = "%s: %s" % (type(exc).__name__, exc)
+
+    feats = _features(graph)
+    meta = (graph.get("metadata") or {}) if isinstance(graph, dict) else {}
+    checks: list = []
+    if spec is not None:
+        wall = spec.rim_outer_diameter_mm / 2.0 - spec.root_radius_mm
+        checks = [
+            _check("pitch_diameter_mm", 2 * spec.pitch_radius_mm, module * teeth, True),
+            _check("tip_diameter_mm", 2 * spec.tip_radius_mm,
+                   2 * (spec.pitch_radius_mm - module * (1.0 - shift)), True),
+            _check("root_diameter_mm", 2 * spec.root_radius_mm,
+                   2 * (spec.pitch_radius_mm + module * (1.25 + shift)), True),
+            _check("rim_wall_mm", round(wall, 4), ">= module", wall >= module),
+            _check("graph_features", len(feats), ">= 3", len(feats) >= 3),
+        ]
+    ok = bool(spec is not None and checks and all(c["ok"] for c in checks))
+    payload = normalize(
+        KIT_KEY, "internal_gear_plan", ok=ok,
+        reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
+               "spec_error": why, "feature_count": len(feats),
+               "ring_area_mm2": meta.get("ring_area_mm2"),
+               "expected_volume_mm3": meta.get("expected_volume_mm3"),
+               "tip_above_base": meta.get("tip_above_base"),
+               "feature_graph": graph},
+        errors=[] if ok else ["内齿圈参数不合法：" + (why or "判据未通过")])
+    payload["checks"] = checks
+    return payload
+
+
+# ------------------------------------------------------------------- 斜齿轮
+def helical_gear_plan(args: dict) -> dict:
+    slices = int(args.get("slices") or hg.DEFAULT_SLICES)
+    spec = None
+    why = ""
+    graph: dict = {}
+    try:
+        spec = hg.validate_helical_gear_spec(
+            module_normal_mm=float(args.get("module_normal_mm") or 2.0),
+            tooth_count=int(args.get("tooth_count") or 24),
+            pressure_angle_normal_deg=float(args.get("pressure_angle_deg") or 20.0),
+            helix_angle_deg=float(args.get("helix_angle_deg") or 20.0),
+            thickness_mm=float(args.get("thickness_mm") or 20.0),
+            bore_diameter_mm=float(args.get("bore_diameter_mm") or 16.0),
+            slices=slices)
+        graph = hg.build_helical_gear_graph(spec)
+    except Exception as exc:                              # noqa: BLE001
+        why = "%s: %s" % (type(exc).__name__, exc)
+
+    feats = _features(graph)
+    checks: list = []
+    if spec is not None:
+        beta = math.radians(spec.helix_angle_deg)
+        want_mt = spec.module_normal_mm / math.cos(beta)
+        want_pitch_d = want_mt * spec.tooth_count
+        want_lead = math.pi * want_pitch_d / math.tan(beta)
+        want_twist = spec.thickness_mm * math.tan(beta) / (want_pitch_d / 2.0)
+        checks = [
+            _check("transverse_module_mm", spec.module_transverse_mm, want_mt,
+                   abs(spec.module_transverse_mm - want_mt) < 1e-9),
+            _check("pitch_diameter_mm", 2 * spec.pitch_radius_mm, want_pitch_d,
+                   abs(2 * spec.pitch_radius_mm - want_pitch_d) < 1e-9),
+            _check("lead_mm", spec.lead_mm, want_lead,
+                   abs(spec.lead_mm - want_lead) < 1e-6),
+            _check("total_twist_rad", spec.total_twist_rad, want_twist,
+                   abs(spec.total_twist_rad - want_twist) < 1e-9),
+            _check("graph_features", len(feats), 2 + 3 * spec.slices,
+                   len(feats) == 2 + 3 * spec.slices),
+        ]
+    ok = bool(spec is not None and checks and all(c["ok"] for c in checks))
+    payload = normalize(
+        KIT_KEY, "helical_gear_plan", ok=ok,
+        reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
+               "spec_error": why, "feature_count": len(feats),
+               "approximation": "lamina stack", "feature_graph": graph},
+        errors=[] if ok else ["斜齿轮参数不合法：" + (why or "判据未通过")])
+    payload["checks"] = checks
+    return payload
+
+
+# ------------------------------------------------------------------- 花键轴
+def spline_plan(args: dict) -> dict:
+    spec = None
+    why = ""
+    graph: dict = {}
+    try:
+        spec = sp.validate_spline_spec(
+            outer_diameter_mm=float(args.get("outer_diameter_mm") or 46.0),
+            inner_diameter_mm=float(args.get("inner_diameter_mm") or 40.0),
+            tooth_count=int(args.get("tooth_count") or 8),
+            key_width_mm=float(args.get("key_width_mm") or 8.0),
+            length_mm=float(args.get("length_mm") or 60.0))
+        graph = sp.build_spline_shaft_graph(spec)
+    except Exception as exc:                              # noqa: BLE001
+        why = "%s: %s" % (type(exc).__name__, exc)
+
+    feats = _features(graph)
+    meta = (graph.get("metadata") or {}) if isinstance(graph, dict) else {}
+    area = meta.get("section_area_mm2")
+    checks: list = []
+    if spec is not None and area is not None:
+        inner_area = math.pi * (spec.inner_diameter_mm / 2.0) ** 2
+        outer_area = math.pi * (spec.outer_diameter_mm / 2.0) ** 2
+        checks = [
+            _check("section_area_between_circles", area, "[inner, outer]",
+                   inner_area < area < outer_area),
+            _check("expected_volume_mm3", meta.get("expected_volume_mm3"),
+                   round(area * spec.length_mm, 3),
+                   # metadata 里的面积已按 3 位小数归档，体积比对给 0.01 mm³ 容差
+                   abs(meta.get("expected_volume_mm3", 0.0)
+                       - area * spec.length_mm) < 1e-2),
+            _check("graph_features", len(feats), ">= 3", len(feats) >= 3),
+        ]
+    ok = bool(spec is not None and checks and all(c["ok"] for c in checks))
+    payload = normalize(
+        KIT_KEY, "spline_plan", ok=ok,
+        reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
+               "spec_error": why, "feature_count": len(feats),
+               "section_area_mm2": area,
+               "expected_volume_mm3": meta.get("expected_volume_mm3"),
+               "feature_graph": graph},
+        errors=[] if ok else ["花键参数不合法：" + (why or "判据未通过")])
+    payload["checks"] = checks
+    return payload
+
+
+# --------------------------------------------------------------- 标准键槽库
+def keyway_lookup(args: dict) -> dict:
+    diameter = float(args.get("shaft_diameter_mm") or 50.0)
+    try:
+        key = kw.key_for_shaft(diameter)
+    except Exception as exc:                              # noqa: BLE001
+        return normalize(KIT_KEY, "keyway_lookup", ok=False,
+                         errors=["%s: %s" % (type(exc).__name__, exc)])
+
+    reads: dict = {"key": key.to_dict()}
+    checks = [
+        _check("width_mm", key.width_mm, "> 0", key.width_mm > 0),
+        _check("height_mm", key.height_mm, "> 0", key.height_mm > 0),
+        _check("key_height_lt_width_ok", key.height_mm, "<= 2.2 x width",
+               key.height_mm <= 2.2 * key.width_mm),
+    ]
+    required = args.get("required_length_mm")
+    if required is not None:
+        try:
+            standard = kw.standard_length(float(required))
+            reads["standard_length_mm"] = standard
+            checks.append(_check("standard_length_covers_requirement", standard,
+                                 float(required), standard >= float(required)))
+        except Exception as exc:                          # noqa: BLE001
+            reads["standard_length_error"] = "%s: %s" % (type(exc).__name__, exc)
+            checks.append(_check("standard_length_covers_requirement", None,
+                                 float(required), False))
+    return normalize(KIT_KEY, "keyway_lookup", ok=all(c["ok"] for c in checks),
+                     reads=reads, checks=checks, errors=[])
+
+
 S = {"type": "string"}
 I = {"type": "integer"}
 N = {"type": "number"}
@@ -292,4 +469,41 @@ def hubsw_tools() -> list:
              "properties": {"diameter_mm": {"type": "number"}},
              "additionalProperties": False},
             sphere_plan, timeout_s=120),
+        ToolSpec(
+            "sw_internal_gear_plan",
+            "内齿轮（内齿圈）：齿顶朝内，3 个特征（轮缘圆 + 内侧齿形 + 拉伸）。"
+            "判据是四个特征圆直径、轮缘壁厚 >= 1 个模数。齿形为结构梯形。",
+            {"type": "object",
+             "properties": {"module_mm": N, "tooth_count": I, "pressure_angle_deg": N,
+                            "thickness_mm": N, "rim_outer_diameter_mm": N,
+                            "profile_shift_x": N},
+             "additionalProperties": False},
+            internal_gear_plan, timeout_s=120),
+        ToolSpec(
+            "sw_helical_gear_plan",
+            "斜齿圆柱齿轮（分层近似）：换算端面模数/导程/扭转角，每片两个特征。"
+            "判据是 mt=mn/cosβ、L=πd/tanβ、θ=b·tanβ/r 与特征数 2+3·slices。",
+            {"type": "object",
+             "properties": {"module_normal_mm": N, "tooth_count": I,
+                            "pressure_angle_deg": N, "helix_angle_deg": N,
+                            "thickness_mm": N, "bore_diameter_mm": N, "slices": I},
+             "additionalProperties": False},
+            helical_gear_plan, timeout_s=120),
+        ToolSpec(
+            "sw_spline_plan",
+            "矩形花键轴（GB/T 1144）：3 个特征（截面 + 拉伸）。"
+            "判据是截面积夹在内外圆之间、体积 = 面积 × 长度。",
+            {"type": "object",
+             "properties": {"outer_diameter_mm": N, "inner_diameter_mm": N,
+                            "tooth_count": I, "key_width_mm": N, "length_mm": N},
+             "additionalProperties": False},
+            spline_plan, timeout_s=120),
+        ToolSpec(
+            "sw_keyway_lookup",
+            "查标准平键与键槽（GB/T 1096）：按轴径给 b×h、轴槽深 t1、毂槽深 t2；"
+            "给了键长需求时向上取标准长度系列。",
+            {"type": "object", "required": ["shaft_diameter_mm"],
+             "properties": {"shaft_diameter_mm": N, "required_length_mm": N},
+             "additionalProperties": False},
+            keyway_lookup, timeout_s=60),
     ]

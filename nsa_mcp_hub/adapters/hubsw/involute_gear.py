@@ -40,6 +40,8 @@ class InvoluteGearSpec:
     base_radius_mm: float
     root_radius_mm: float
     outer_radius_mm: float
+    #: 变位系数 x（正变位齿顶外移、齿厚增加）；0 即标准齿轮
+    profile_shift_x: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -66,6 +68,7 @@ def validate_gear_spec(
     bore_diameter_mm: float,
     root_fillet_mm: float,
     tip_chamfer_mm: float,
+    profile_shift_x: float = 0.0,
 ) -> InvoluteGearSpec:
     """校验参数并算出四个特征圆半径；不合规就抛 ContractError。"""
     module = require_positive(module_mm, "module_mm")
@@ -85,10 +88,18 @@ def validate_gear_spec(
             f"pressure_angle_deg must be from {MIN_PRESSURE_ANGLE} to "
             f"{MAX_PRESSURE_ANGLE} degrees")
 
+    try:
+        shift = float(profile_shift_x)
+    except (TypeError, ValueError) as exc:
+        raise ContractError("profile_shift_x must be a number") from exc
+    if not -0.8 <= shift <= 1.0:
+        raise ContractError("profile_shift_x must be within -0.8 .. 1.0")
+
     pitch = module * tooth_count / 2.0
     base = pitch * math.cos(math.radians(angle_deg))
-    root = pitch - 1.25 * module
-    outer = pitch + module
+    # 变位：齿顶外移 x·m，齿根内收 (1.25 - x)·m
+    root = pitch - (1.25 - shift) * module
+    outer = pitch + (1.0 + shift) * module
 
     if root <= 0.0:
         raise ContractError("module/tooth_count produces a non-positive root radius")
@@ -111,7 +122,63 @@ def validate_gear_spec(
         base_radius_mm=base,
         root_radius_mm=root,
         outer_radius_mm=outer,
+        profile_shift_x=shift,
     )
+
+
+def tooth_outline_points(
+    *,
+    pitch_radius_mm: float,
+    base_radius_mm: float,
+    root_radius_mm: float,
+    outer_radius_mm: float,
+    tooth_count: int,
+    rotation_rad: float = 0.0,
+    samples_per_flank: int = 16,
+    samples_across_tip: int = 5,
+    profile_shift_x: float = 0.0,
+    pressure_angle_deg: float = 20.0,
+) -> list[list[float]]:
+    """一个齿的闭合轮廓（齿根 → 一侧齿面 → 齿顶圆弧 → 另一侧齿面 → 齿根）。
+
+    斜齿轮、内齿轮、外齿轮共用这套点，齿形不会各写一份而慢慢漂移。
+    """
+    if samples_per_flank < 6:
+        raise ContractError("samples_per_flank must be at least 6")
+    if samples_across_tip < 2:
+        raise ContractError("samples_across_tip must be at least 2")
+
+    half_tooth = (math.pi / (2.0 * tooth_count)
+                  + 2.0 * profile_shift_x
+                  * math.tan(math.radians(pressure_angle_deg)) / tooth_count)
+    base_half = half_tooth + involute_angle(pitch_radius_mm, base_radius_mm)
+    roll_end = math.sqrt((outer_radius_mm / base_radius_mm) ** 2 - 1.0)
+
+    flank: list[list[float]] = []
+    for index in range(samples_per_flank):
+        t = roll_end * index / (samples_per_flank - 1)
+        x = base_radius_mm * (math.cos(t) + t * math.sin(t))
+        y = -base_radius_mm * (math.sin(t) - t * math.cos(t))
+        cos_a, sin_a = math.cos(base_half), math.sin(base_half)
+        flank.append([x * cos_a - y * sin_a, x * sin_a + y * cos_a])
+
+    mirrored = [[point[0], -point[1]] for point in flank]
+    tip_half = math.atan2(flank[-1][1], flank[-1][0])
+    tip_arc = [
+        _polar(outer_radius_mm,
+               -tip_half + 2.0 * tip_half * index / (samples_across_tip - 1))
+        for index in range(samples_across_tip)
+    ]
+
+    local: list[list[float]] = [
+        _polar(root_radius_mm, -base_half),
+        *mirrored,
+        *tip_arc[1:-1],
+        *reversed(flank),
+        _polar(root_radius_mm, base_half),
+    ]
+    cos_r, sin_r = math.cos(rotation_rad), math.sin(rotation_rad)
+    return [[x * cos_r - y * sin_r, x * sin_r + y * cos_r] for x, y in local]
 
 
 def sampled_involute_tooth_points(
@@ -122,49 +189,21 @@ def sampled_involute_tooth_points(
     samples_per_flank: int = 16,
     samples_across_tip: int = 5,
 ) -> list[list[float]]:
-    """单齿闭合折线（齿根一点 → 一侧齿面 → 齿顶圆弧 → 另一侧齿面 → 齿根一点）。"""
-    if samples_per_flank < 6:
-        raise ContractError("samples_per_flank must be at least 6")
-    if samples_across_tip < 2:
-        raise ContractError("samples_across_tip must be at least 2")
-
-    half_tooth = math.pi / (2.0 * spec.tooth_count)
-    base_half_angle = half_tooth + involute_angle(spec.pitch_radius_mm,
-                                                  spec.base_radius_mm)
-    roll_end = math.sqrt((spec.outer_radius_mm / spec.base_radius_mm) ** 2 - 1.0)
-
-    # 基圆坐标系下的渐开线（t 为滚动角）
-    flank: list[list[float]] = []
-    for index in range(samples_per_flank):
-        t = roll_end * index / (samples_per_flank - 1)
-        x = spec.base_radius_mm * (math.cos(t) + t * math.sin(t))
-        y = -spec.base_radius_mm * (math.sin(t) - t * math.cos(t))
-        cos_a, sin_a = math.cos(base_half_angle), math.sin(base_half_angle)
-        flank.append([x * cos_a - y * sin_a, x * sin_a + y * cos_a])
-
-    mirrored = [[point[0], -point[1]] for point in flank]
-    tip_half = math.atan2(flank[-1][1], flank[-1][0])
-    tip_arc = [
-        _polar(spec.outer_radius_mm,
-               -tip_half + 2.0 * tip_half * index / (samples_across_tip - 1))
-        for index in range(samples_across_tip)
-    ]
-
-    local: list[list[float]] = [
-        _polar(spec.root_radius_mm, -base_half_angle),
-        *mirrored,
-        *tip_arc[1:-1],
-        *reversed(flank),
-        _polar(spec.root_radius_mm, base_half_angle),
-    ]
-
+    """单齿闭合折线；坐标平移到 ``center_mm``。"""
+    local = tooth_outline_points(
+        pitch_radius_mm=spec.pitch_radius_mm,
+        base_radius_mm=spec.base_radius_mm,
+        root_radius_mm=spec.root_radius_mm,
+        outer_radius_mm=spec.outer_radius_mm,
+        tooth_count=spec.tooth_count,
+        rotation_rad=rotation_rad,
+        samples_per_flank=samples_per_flank,
+        samples_across_tip=samples_across_tip,
+        profile_shift_x=getattr(spec, "profile_shift_x", 0.0),
+        pressure_angle_deg=spec.pressure_angle_deg,
+    )
     cx, cy = center_mm
-    cos_r, sin_r = math.cos(rotation_rad), math.sin(rotation_rad)
-    return [
-        [cx + point[0] * cos_r - point[1] * sin_r,
-         cy + point[0] * sin_r + point[1] * cos_r]
-        for point in local
-    ]
+    return [[cx + point[0], cy + point[1]] for point in local]
 
 
 def sampled_involute_gear_entities(

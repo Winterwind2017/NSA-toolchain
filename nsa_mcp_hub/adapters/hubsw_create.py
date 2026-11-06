@@ -18,16 +18,20 @@ from typing import Any
 
 from ..tools import ToolSpec, normalize
 from .hubsw import gearbox as gb
+from .hubsw import helical_gear as hg
+from .hubsw import internal_gear as igr
 from .hubsw import involute_gear as ig
 from .hubsw import output_shaft as os_
 from .hubsw import part_generators as pg
 from .hubsw import primitives as pr
+from .hubsw import spline as sp
 from .hubsw_exec import execute_feature_graph
 from .hubsw_feat import _check
 
 KIT_KEY = "sw"
 
 _TYPE_NUM = {"type": "number"}
+_TYPE_INT = {"type": "integer"}
 _TYPE_BOOL = {"type": "boolean"}
 _TYPE_STR = {"type": "string"}
 _TYPE_OBJ = {"type": "object"}
@@ -212,6 +216,76 @@ _COMMON = {"execute": _TYPE_BOOL, "save_path": _TYPE_STR,
            "expected_volume_mm3": _TYPE_NUM, "include_graph": _TYPE_BOOL}
 
 
+def create_internal_gear(args: dict) -> dict:
+    module = float(args.get("module_mm", 2.0))
+    teeth = int(args.get("tooth_count", 40))
+    try:
+        spec = igr.validate_internal_gear_spec(
+            module_mm=module,
+            tooth_count=teeth,
+            pressure_angle_deg=float(args.get("pressure_angle_deg", 20.0)),
+            thickness_mm=float(args.get("thickness_mm", 12.0)),
+            rim_outer_diameter_mm=float(
+                args.get("rim_outer_diameter_mm") or module * (teeth + 8.0)),
+            profile_shift_x=float(args.get("profile_shift_x", 0.0)))
+        graph = igr.build_internal_gear_graph(spec)
+    except Exception as exc:                                   # noqa: BLE001
+        return normalize(KIT_KEY, "create_internal_gear", ok=False,
+                         errors=["%s: %s" % (type(exc).__name__, exc)])
+    payload = _compose("create_internal_gear", graph, args)
+    payload["reads"].update({
+        "pitch_diameter_mm": round(2 * spec.pitch_radius_mm, 4),
+        "tip_diameter_mm": round(2 * spec.tip_radius_mm, 4),
+        "root_diameter_mm": round(2 * spec.root_radius_mm, 4),
+        "expected_volume_mm3": graph["metadata"]["expected_volume_mm3"],
+    })
+    return payload
+
+
+def create_helical_gear(args: dict) -> dict:
+    try:
+        spec = hg.validate_helical_gear_spec(
+            module_normal_mm=float(args.get("module_normal_mm", 2.0)),
+            tooth_count=int(args.get("tooth_count", 24)),
+            pressure_angle_normal_deg=float(args.get("pressure_angle_deg", 20.0)),
+            helix_angle_deg=float(args.get("helix_angle_deg", 20.0)),
+            thickness_mm=float(args.get("thickness_mm", 20.0)),
+            bore_diameter_mm=float(args.get("bore_diameter_mm", 16.0)),
+            slices=int(args.get("slices") or hg.DEFAULT_SLICES))
+        graph = hg.build_helical_gear_graph(spec)
+    except Exception as exc:                                   # noqa: BLE001
+        return normalize(KIT_KEY, "create_helical_gear", ok=False,
+                         errors=["%s: %s" % (type(exc).__name__, exc)])
+    payload = _compose("create_helical_gear", graph, args)
+    payload["reads"].update({
+        "module_transverse_mm": round(spec.module_transverse_mm, 6),
+        "lead_mm": round(spec.lead_mm, 4),
+        "total_twist_rad": round(spec.total_twist_rad, 6),
+        "slices": spec.slices,
+        "approximation": "lamina stack",
+    })
+    return payload
+
+
+def create_spline_shaft(args: dict) -> dict:
+    try:
+        spec = sp.validate_spline_spec(
+            outer_diameter_mm=float(args.get("outer_diameter_mm", 46.0)),
+            inner_diameter_mm=float(args.get("inner_diameter_mm", 40.0)),
+            tooth_count=int(args.get("tooth_count", 8)),
+            key_width_mm=float(args.get("key_width_mm", 8.0)),
+            length_mm=float(args.get("length_mm", 60.0)))
+        graph = sp.build_spline_shaft_graph(spec)
+    except Exception as exc:                                   # noqa: BLE001
+        return normalize(KIT_KEY, "create_spline_shaft", ok=False,
+                         errors=["%s: %s" % (type(exc).__name__, exc)])
+    payload = _compose("create_spline_shaft", graph, args)
+    payload["reads"].update({
+        "section_area_mm2": graph["metadata"]["section_area_mm2"],
+        "expected_volume_mm3": graph["metadata"]["expected_volume_mm3"],
+    })
+    return payload
+
 def create_tools() -> list:
     def spec(name, description, properties, handler):
         schema = {"type": "object", "properties": properties,
@@ -256,4 +330,29 @@ def create_tools() -> list:
         spec("sw_create_output_shaft",
              "一步到位：按《输出轴零件图.DWG》的输出轴（13 个特征、333 mm）→ 出图 → 建出来。",
              dict(_COMMON), create_output_shaft),
+        spec("sw_create_internal_gear",
+             "一步到位：内齿圈（3 个特征，齿顶朝内）→ 出图 → 建出来。"
+             "判据附四个特征圆直径与解析体积。",
+             {"module_mm": _TYPE_NUM, "tooth_count": _TYPE_INT,
+              "pressure_angle_deg": _TYPE_NUM, "thickness_mm": _TYPE_NUM,
+              "rim_outer_diameter_mm": _TYPE_NUM, "profile_shift_x": _TYPE_NUM,
+              **_COMMON},
+             create_internal_gear),
+
+        spec("sw_create_helical_gear",
+             "一步到位：斜齿轮（分层近似，默认 8 片）→ 出图 → 建出来。"
+             "判据附端面模数、导程、整圈扭转角。",
+             {"module_normal_mm": _TYPE_NUM, "tooth_count": _TYPE_INT,
+              "pressure_angle_deg": _TYPE_NUM, "helix_angle_deg": _TYPE_NUM,
+              "thickness_mm": _TYPE_NUM, "bore_diameter_mm": _TYPE_NUM,
+              "slices": _TYPE_INT, **_COMMON},
+             create_helical_gear),
+
+        spec("sw_create_spline_shaft",
+             "一步到位：矩形花键轴（GB/T 1144，3 个特征）→ 出图 → 建出来。"
+             "判据附截面积与解析体积。",
+             {"outer_diameter_mm": _TYPE_NUM, "inner_diameter_mm": _TYPE_NUM,
+              "tooth_count": _TYPE_INT, "key_width_mm": _TYPE_NUM,
+              "length_mm": _TYPE_NUM, **_COMMON},
+             create_spline_shaft),
     ]
