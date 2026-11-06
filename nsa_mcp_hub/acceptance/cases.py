@@ -660,7 +660,7 @@ SW_CASES = [
      "args": {},
      "expect_ok": True,
      "expect_reads": {"reads.metadata.total_length_mm": 333.0,
-                      "reads.feature_count": 12},
+                      "reads.feature_count": 13},
      "no_setup": True, "timeout_s": 120},
 
     {"id": "sw.create.sphere.live", "tool": "sw_create_sphere",

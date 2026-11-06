@@ -32,7 +32,8 @@ INSTRUCTIONS = (
 
 
 def build_kit():
-    py = venv_python(HUB)
+    # 优先 MCP/EPLAN/.venv（mcp>=1.27.1 + jsonschema），退回共享 CAD-Agent-Hub/.venv
+    py = venv_python(EPLAN_DIR, HUB)
     argv = [py, "server.py"]
     env_extra = {
         "PYTHONPATH": EPLAN_DIR + (os.pathsep + os.environ["PYTHONPATH"]

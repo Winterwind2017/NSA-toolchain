@@ -35,7 +35,8 @@ INSTRUCTIONS = (
 
 
 def build_kit():
-    py = venv_python(HUB)
+    # 优先 MCP/UG/.venv（mcp==1.26.0），退回共享 CAD-Agent-Hub/.venv
+    py = venv_python(UG_DIR, HUB)
     # 注意：mcp_server.py 只是 3 个工具的雏形；完整的 82 个在 server.py
     argv = [py, "server.py"]
     env_extra = {
@@ -46,4 +47,4 @@ def build_kit():
     return build_proxy_kit(
         key=KIT_KEY, name=KIT_NAME, argv=argv, cwd=UG_DIR, env_extra=env_extra,
         instructions=INSTRUCTIONS, prefix="ug", timeout_s=1800.0,
-        prelude="UG MCP 起不来（检查 CAD-Agent-Hub/.venv 是否有 mcp 包）")
+        prelude="UG MCP 起不来（检查 MCP/UG/.venv 或 CAD-Agent-Hub/.venv 是否有 mcp 包）")

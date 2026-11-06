@@ -17,7 +17,8 @@ from .proxymcp import build_proxy_kit, venv_python
 KIT_KEY = "catia"
 KIT_NAME = "CAD-Agent-Hub CATIA V5 MCP（建模·曲面·原生 Analysis）"
 HUB = os.environ.get("CAD_AGENT_HUB", r"D:\bililive\CAD-Agent-Hub")
-SRC = os.path.join(HUB, "MCP", "CATIA", "src")
+CATIA_DIR = os.path.join(HUB, "MCP", "CATIA")
+SRC = os.path.join(CATIA_DIR, "src")
 
 INSTRUCTIONS = (
     "catia：CATIA V5 的建模/曲面/原生 Analysis 工具面（代理 CAD-Agent-Hub 的 CATIA MCP）。"
@@ -27,7 +28,8 @@ INSTRUCTIONS = (
 
 
 def build_kit():
-    py = venv_python(HUB)
+    # 优先 MCP/CATIA/.venv（mcp + pywin32），退回共享 CAD-Agent-Hub/.venv
+    py = venv_python(CATIA_DIR, HUB)
     argv = [py, "-m", "catia_mcp.server"]
     env_extra = {
         "PYTHONPATH": SRC + (os.pathsep + os.environ["PYTHONPATH"]

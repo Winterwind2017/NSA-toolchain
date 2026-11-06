@@ -244,7 +244,7 @@
 | `sw_gear_involute_plan` | module_mm, tooth_count, pressure_angle_deg, thickness_mm, bore_diameter_mm, root_fillet_mm, tip_chamfer_mm, include_finishing | 渐开线直齿轮：算出分度/基圆/齿顶/齿根半径并生成可执行的 Feature Graph。判据是数学恒等式（da=m(z+2)、df=m(z- |
 | `sw_gearbox_plan` | module_mm, pressure_angle_deg, stage1_teeth, stage2_teeth, gear_thickness_mm, axial_gap_mm, bore_diameters_mm, radial_clearance_mm, shaft_extension_mm | 两级平行轴减速器：生成整机 Feature Graph（16 个特征），判据是传动比 (z2/z1)·(z4/z3) 与两级中心距 a=m( |
 | `sw_part_plan` | part_type, parameters | 参数化零件 Feature Graph：block / cylinder / tube / flange / stepped_shaft。 |
-| `sw_output_shaft_plan` | — | 按《输出轴零件图.DWG》生成输出轴 Feature Graph（12 个特征、333 mm）。 |
+| `sw_output_shaft_plan` | — | 按《输出轴零件图.DWG》生成输出轴 Feature Graph（13 个特征、333 mm）。 |
 | `sw_feature_graph_compile` | feature_graph | 校验并编译 Feature Graph IR，返回确定性的可审计执行计划（纯函数，不碰 COM）。 |
 | `sw_feature_inspect` | include_topology, include_tokens, limit | 列出活动文档的特征树与相互关系（可含拓扑与持久引用 token）。只读。 |
 | `sw_feature_rollback` | location, feature | 移动回滚棒：location = end / previous / before / after（后两者需 feature）。 |

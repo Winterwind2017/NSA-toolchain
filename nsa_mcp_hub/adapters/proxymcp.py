@@ -180,7 +180,21 @@ def build_proxy_kit(*, key: str, name: str, argv: list, cwd: str,
     return kit
 
 
-def venv_python(root: str) -> str:
-    """优先用 CAD-Agent-Hub 自带的 venv（里面有 mcp / pywin32）。"""
-    cand = os.path.join(root, ".venv", "Scripts", "python.exe")
-    return cand if os.path.isfile(cand) else sys.executable
+def venv_python(*roots: str) -> str:
+    """按顺序找 ``<root>/.venv/Scripts/python.exe``，全都找不到时退回当前解释器。
+
+    传多个 root 时**先查更具体的那一个**（例如 ``MCP/UG``），再退回仓库根
+    （``CAD-Agent-Hub``）。这样每个被代理的 server 可以有独立 venv：UG 需要
+    ``mcp==1.26.0``、EPLAN 需要 ``mcp>=1.27.1``，共享一个 venv 时两者互斥。
+
+    例子::
+
+        venv_python(UG_DIR, HUB)      # 先 MCP/UG/.venv，再 CAD-Agent-Hub/.venv
+    """
+    for root in roots:
+        if not root:
+            continue
+        cand = os.path.join(root, ".venv", "Scripts", "python.exe")
+        if os.path.isfile(cand):
+            return cand
+    return sys.executable
