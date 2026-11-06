@@ -15,6 +15,8 @@ import math
 from typing import Any
 
 from .contracts import ContractError, require_positive
+from .gear_inspection import external_gear_inspection
+from .keyways import key_for_shaft, standard_length
 from .involute_gear import (InvoluteGearSpec, tooth_outline_points,
                             validate_gear_spec)
 
@@ -165,6 +167,18 @@ def build_two_stage_reducer_graph(
     if any(value <= 0.0 for value in shaft_diameters):
         raise ContractError("radial clearance leaves a non-positive shaft diameter")
 
+    # 键与键槽按轴径查 GB/T 1096：b×h、轴槽深 t1、毂槽深 t2、标准键长
+    try:
+        shaft_keyways = [key_for_shaft(diameter) for diameter in shaft_diameters]
+    except ContractError as exc:
+        raise ContractError("轴径查不到标准平键：%s" % exc) from exc
+    key_length = standard_length(thickness)
+    for spec_key, diameter in zip(shaft_keyways, shaft_diameters):
+        if spec_key.width_mm >= diameter:
+            raise ContractError(
+                "标准键宽 %.1f 不小于轴径 %.1f：请加大轴径或改用花键"
+                % (spec_key.width_mm, diameter))
+
     features: list[dict[str, Any]] = [
         {"name": "TwoStageReducer", "kind": "new_part",
          "title": "Two Stage Reducer Gearset"},
@@ -198,10 +212,17 @@ def build_two_stage_reducer_graph(
             "name": "ReducerKeywaySketch",
             "kind": "sketch",
             "plane": "Front Plane",
+            # 键宽与轴槽深按 GB/T 1096 查表（shaft_keyways 在函数开头算好）
             "entities": [
-                keyway_rectangle(centers[0][0], shaft_diameters[0], 3.0, 1.6),
-                keyway_rectangle(centers[1][0], shaft_diameters[1], 4.0, 2.0),
-                keyway_rectangle(centers[3][0], shaft_diameters[2], 5.0, 2.5),
+                keyway_rectangle(centers[0][0], shaft_diameters[0],
+                                 shaft_keyways[0].width_mm,
+                                 shaft_keyways[0].shaft_depth_mm),
+                keyway_rectangle(centers[1][0], shaft_diameters[1],
+                                 shaft_keyways[1].width_mm,
+                                 shaft_keyways[1].shaft_depth_mm),
+                keyway_rectangle(centers[3][0], shaft_diameters[2],
+                                 shaft_keyways[2].width_mm,
+                                 shaft_keyways[2].shaft_depth_mm),
             ],
         },
         {"name": "ReducerKeywayCut", "kind": "cut_extrude",
@@ -225,7 +246,21 @@ def build_two_stage_reducer_graph(
             "stage2_axial_offset_mm": stage2_offset,
             "shaft_diameters_mm": shaft_diameters,
             "body_count_expected": 7,
-            "tooth_geometry": "structural trapezoidal outline, four vertices per tooth",
+            "tooth_geometry": "true involute outline (shared tooth_outline_points)",
+            "keyways": [
+                dict(spec.to_dict(), key_length_mm=key_length,
+                     shaft_diameter_mm=round(diameter, 3))
+                for spec, diameter in zip(shaft_keyways, shaft_diameters)
+            ],
+            "keyway_standard": "GB/T 1096",
+            # 每个齿轮的检验尺寸（公法线/跨棒距），出图时可直接给检验员
+            "gear_inspections": [
+                dict(external_gear_inspection(spec_gear), label=label)
+                for spec_gear, label in zip(
+                    specs,
+                    ("Stage1InputGear", "Stage1DrivenGear",
+                     "Stage2Pinion", "Stage2OutputGear"))
+            ],
         },
         "features": features,
     }
