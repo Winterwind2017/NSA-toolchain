@@ -48,15 +48,15 @@ python tests/run_all.py --skip-live
 <!-- gen:counts:BEGIN -->
 | 指标 | 数字 |
 |---|---|
-| registry 能力总数 | 64 |
-| verified（有判据、真机通过） | 56 |
+| registry 能力总数 | 66 |
+| verified（有判据、真机通过） | 58 |
 | usable_unjudged | 0 |
 | pending | 0 |
 | dead（本机无官方路径） | 8 |
 | external（外部资产 / 未移植） | 0 |
-| 内核实现能力（`caps`） | 58 |
-| caps 覆盖的 registry id | 56 / 64 |
-| 真机用例 | 58 条（含负例 2 条） |
+| 内核实现能力（`caps`） | 60 |
+| caps 覆盖的 registry id | 58 / 66 |
+| 真机用例 | 60 条（含负例 2 条） |
 <!-- gen:counts:END -->
 
 ## 快速开始
