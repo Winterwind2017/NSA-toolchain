@@ -1,5 +1,9 @@
 # ww-codesys-automation
 
+> **NSA = Non-standard automation（非标自动化）** —— 仓库名与 `nsa_*` 工具前缀都取自这个缩写。
+> 本仓是这套工具链的一员：目标是**让做非标自动化设备设计的工程师，能更方便地驱动手边这些软件**，
+> 把重复的建模、出图、编号、编程动作交给 agent，精力留在方案、机构与判断上。
+
 CODESYS 3.5 的**无界面自动化技能**（执行内核：[codesyskit](https://github.com/Winterwind2017/codesyskit)）。
 
 本仓库只放"怎么用、怎么验证、什么别试"：`SKILL.md` 给 agent 路由用，
