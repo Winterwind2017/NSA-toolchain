@@ -30,6 +30,19 @@ size 空/M6）**全部返回 None、体积分毫未变** —— 孔向导在 COM
 * `thread_kind`：`real`（ThreadFeatureData 建成）/ `cosmetic`（降级）/ `none`
 * 三者都满足才算可交付；`ok` 就等于 `delivery_gate_passed`
 
+## 实测踩到的三个坑（都已在代码里处理）
+
+1. **`SelectByID2("", "FACE", 点)` 在原点/边上会失败**：块体的顶面中心正好是
+   (0,0,0)，直接点选返回 False。所以 `_select_face_by_point` 带 4 组微偏移重试，
+   还失败就 `_select_top_face` 兜底：挑「`IsPlane` 且法向 z>0.9」的最高面，
+   用**面对象自己的 `Select2(False, 0)`** 选中（这条最稳）。
+2. **`val()` 只接受 3 个参数**（obj, name, default）：早先写成
+   `val(face, "Select2", False, 0)` 会 TypeError 被吞掉 → 面选不上。多参数方法要用
+   `getattr(obj, "Select2")(False, 0)`。
+3. **贯穿孔**：`FeatureCut4` 必须用 `swEndCondThroughAll=1` 且深度传 0（盲孔才是 0+深度）；
+   而 `ThreadFeatureData` **没有"贯穿"枚举**（只有 Blind/Revolutions/UpToSelection），
+   所以贯穿孔的螺纹按 `BlindDepth = 深度` 给。
+
 单位：对外 **mm**，内部转米。
 """
 
@@ -176,12 +189,80 @@ def _find_mouth_edge(doc_w: Any, radius_mm: float,
 
 
 def _select_face_by_point(doc: Any, point_mm: Tuple[float, float, float]) -> bool:
+    """按点选面；点正好落在原点/边上时 SelectByID2 会失败，所以带微偏移重试。"""
     x, y, z = [float(v) / 1000.0 for v in point_mm]
+    offsets = [(0.0, 0.0, 0.0), (0.001, 0.001, 0.0), (-0.001, 0.001, 0.0),
+               (0.001, -0.001, 0.0), (-0.001, -0.001, 0.0)]
+    for dx, dy, dz in offsets:
+        try:
+            ok = doc.Extension.SelectByID2("", "FACE", x + dx, y + dy, z + dz,
+                                           False, 0, None, 0)
+            if ok:
+                return True
+        except Exception:                          # noqa: BLE001
+            continue
+    return False
+
+
+def _select_top_face(doc: Any,
+                     debug: Optional[List[str]] = None) -> Tuple[bool, Optional[float]]:
+    """兜底：挑**法向朝 +Z 的平面**里最高的那张，用它自己的 GetBox 中心点选它。
+
+    返回值 `(selected, z_mm)`；`z_mm` 是该面的高度，调用方可以据此判断孔口平面。
+    """
+    doc_w = doc
+    best = None                                    # (z, point)
     try:
-        ok = doc.Extension.SelectByID2("", "FACE", x, y, z, False, 0, None, 0)
-        return bool(ok)
-    except Exception:                              # noqa: BLE001
-        return False
+        all_bodies = bodies(doc_w, 0)
+    except Exception as exc:                       # noqa: BLE001
+        if debug is not None:
+            debug.append("bodies: %s: %s" % (type(exc).__name__, str(exc)[:70]))
+        return False, None
+    face_index = 0
+    for body in all_bodies:
+        for face in faces_of(body):
+            face_w = wrap(face)
+            face_index += 1
+            try:
+                surf = val(face_w, "GetSurface")
+                is_plane = bool(val(surf, "IsPlane")) if surf is not None else False
+                normal = list(val(face_w, "Normal") or [])
+                if surf is None or not is_plane:
+                    continue
+                if len(normal) < 3 or float(normal[2]) < 0.9:
+                    continue
+                box = list(val(face_w, "GetBox") or [])
+                if len(box) < 6:
+                    continue
+                z_mid = (float(box[2]) + float(box[5])) / 2.0
+                point = ((float(box[0]) + float(box[3])) / 2.0,
+                         (float(box[1]) + float(box[4])) / 2.0,
+                         float(box[5]))
+                if best is None or z_mid > best[0]:
+                    best = (z_mid, point, face_w)
+            except Exception as exc:               # noqa: BLE001
+                if debug is not None and len(debug) < 10:
+                    debug.append("face: %s: %s" % (type(exc).__name__, str(exc)[:70]))
+                continue
+    if debug is not None:
+        debug.append("best=%s" % (None if best is None else round(best[0] * 1000.0, 3)))
+    if best is None:
+        return False, None
+    z_mid, point, face_w = best
+    # 直接对该面对象 Select2：点选在原点/边上会失败，面对象选择最稳
+    selected = False
+    try:
+        fn = getattr(face_w, "Select2")
+        selected = bool(fn(False, 0))
+    except Exception as exc:                       # noqa: BLE001
+        if debug is not None:
+            debug.append("Select2: %s: %s" % (type(exc).__name__, str(exc)[:70]))
+        selected = False
+    if not selected:
+        selected = _select_face_by_point(doc, tuple(v * 1000.0 for v in point))
+    if debug is not None:
+        debug.append("selected=%s z=%.3f" % (selected, z_mid * 1000.0))
+    return bool(selected), round(z_mid * 1000.0, 3)
 
 
 def threaded_hole(doc: Any, size: str = "M6", depth_mm: float = 12.0,
@@ -227,8 +308,17 @@ def threaded_hole(doc: Any, size: str = "M6", depth_mm: float = 12.0,
 
     # ── ① 选面 + 草图 + 圆 ───────────────────────────────────────
     face_selected = True
+    face_source = "current_selection"
     if face_point_mm is not None:
         face_selected = _select_face_by_point(doc, face_point_mm)
+        face_source = "point"
+        if not face_selected:
+            face_pick_debug: List[str] = []
+            face_selected, top_z = _select_top_face(doc, debug=face_pick_debug)
+            out["detail"]["face_pick_debug"] = face_pick_debug[:10]
+            face_source = "auto_top_face(z=%s mm)" % top_z
+            out["detail"]["face_auto_z_mm"] = top_z
+    out["detail"]["face_source"] = face_source
     if not face_selected:
         out["detail"]["error"] = "选面失败：face_point_mm 处没有可用的面"
         return out
