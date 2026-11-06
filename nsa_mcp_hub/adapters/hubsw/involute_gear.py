@@ -152,11 +152,16 @@ def tooth_outline_points(
                   + 2.0 * profile_shift_x
                   * math.tan(math.radians(pressure_angle_deg)) / tooth_count)
     base_half = half_tooth + involute_angle(pitch_radius_mm, base_radius_mm)
+
+    # 渐开线只在基圆以外存在；齿根圆比基圆大时（z 大，约 z>=42），齿面从齿根圆起算，
+    # 否则轮廓会先掉到基圆再回来，形成一个小钩子（自交）。
+    start_radius = max(base_radius_mm, root_radius_mm)
     roll_end = math.sqrt((outer_radius_mm / base_radius_mm) ** 2 - 1.0)
+    roll_start = math.sqrt((start_radius / base_radius_mm) ** 2 - 1.0)
 
     flank: list[list[float]] = []
     for index in range(samples_per_flank):
-        t = roll_end * index / (samples_per_flank - 1)
+        t = roll_start + (roll_end - roll_start) * index / (samples_per_flank - 1)
         x = base_radius_mm * (math.cos(t) + t * math.sin(t))
         y = -base_radius_mm * (math.sin(t) - t * math.cos(t))
         cos_a, sin_a = math.cos(base_half), math.sin(base_half)

@@ -532,3 +532,5 @@
 | `autoshop_output_tail` | — | 读输出窗口文本（output，编译/错误原文）。 |
 | `autoshop_status_launch` | project | 启动（若未运行）并报告 AutoShop 状态（status --launch）。 |
 | `autoshop_hcp_write_xml` | project, xml_file | 把一份 XML 加密写回 .hcp（hcp --project FILE.hcp --write-xml FILE）。会改写工程文件，属写操 |
+
+> `sw_execute_feature_graph` / 各 `sw_create_*` 的 `reads.execute` 现在同时给 `body_volume_mm3`（**全部实体求和**）与 `body_count`（实体数）。多实体零件（如减速器 7 个实体）只读第一个实体会随创建顺序漂移，已修正。
