@@ -6,7 +6,7 @@
 
 ## 总览
 
-registry 64 条 = verified 56 + usable_unjudged 0 + pending 0 + dead 8 + external 0；内核实现 58 条，覆盖 56 个 registry id。
+registry 66 条 = verified 58 + usable_unjudged 0 + pending 0 + dead 8 + external 0；内核实现 60 条，覆盖 58 个 registry id。
 
 ## 按族
 
@@ -14,6 +14,7 @@ registry 64 条 = verified 56 + usable_unjudged 0 + pending 0 + dead 8 + externa
 - `block`（3）：`block.define`、`block.insert_with_attributes`、`block.short_attributes`
 - `boolean`（4）：`boolean.union`、`boolean.subtract`、`boolean.intersect`、`boolean.section_slice`
 - `dim`（12）：`dim.linear`、`dim.aligned`、`dim.diametric`、`dim.radial`、`dim.angular`、`dim.ordinate`、`dim.arc`、`dim.baseline`、`dim.continuous`、`dim.tolerance`、`dim.fit_code`、`dim.api_missing`
+- `doc`（2）：`doc.new`、`doc.close`
 - `env`（2）：`env.sysvar`、`env.dimstyle`
 - `export`（4）：`export.dwg`、`export.dxf`、`export.pdf`、`export.pdf_multipage`
 - `frame`（2）：`frame.titleblock`、`layout.multipage`
@@ -53,6 +54,8 @@ registry 64 条 = verified 56 + usable_unjudged 0 + pending 0 + dead 8 + externa
 | `dim.ordinate` | dim | L1–L4 | verified | 坐标标注：Measurement=X |
 | `dim.radial` | dim | L1–L4 | verified | 半径标注：Measurement=R |
 | `dim.tolerance` | dim | L2–L4 | verified | 尺寸公差：DIMTOL+TextOverride 读回 |
+| `doc.close` | doc | L1–L3 | verified | 关闭图纸：文档数回到原位 / 无模态 / 活动文档回退 |
+| `doc.new` | doc | L1–L3 | verified | 新建图纸：文档数 +1 / 名称 / 空模型空间 / 用完即关 |
 | `env.dimstyle` | env | L2 | verified | 标注样式：ActiveDimStyle + DIMTXT |
 | `env.sysvar` | env | L2 | verified | 系统变量：设置/读回/还原 |
 | `export.dwg` | export | L0–L4 | verified | DWG：文件 + AC10 + 重开一致 |
