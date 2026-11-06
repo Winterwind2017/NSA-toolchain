@@ -716,7 +716,8 @@ class SolidWorksApp(BaseCADApp):
 
     def hole_wizard(self, hole_type: str = "simple", size: str = "",
                     depth: float = 10.0, through_all: bool = False,
-                    x: float = 0.0, y: float = 0.0):
+                    x: float = 0.0, y: float = 0.0,
+                    standard_index: int = 1, fastener_type: int = 0):
         """
         Create a hole using Hole Wizard.
 
@@ -730,16 +731,40 @@ class SolidWorksApp(BaseCADApp):
         """
         doc = self._require_doc()
         end_cond = SW_END_THROUGH_ALL if through_all else SW_END_BLIND
+        # 真常量（从 sldworks.tlb 的 swWzd* 读出来的）：
+        #   swWzdCounterBore=0 / swWzdCounterSink=1 / swWzdHole=2 / swWzdTap=4
+        # 旧映射把 "simple" 写成 0 —— 那其实是**沉头孔**，所以我们一直在建沉头孔。
         hole_type_map = {
-            "simple": 0, "counterbore": 1, "countersink": 2,
-            "straight_tap": 3, "tapered_tap": 4,
+            "simple": 2, "counterbore": 0, "countersink": 1,
+            "straight_tap": 4, "tapered_tap": 4,
         }
         wh_type = hole_type_map.get(hole_type.lower(), 0)
+        # HoleWizard5 的真签名是 **27 参**（从 sldworks.tlb 读出来的顺序）：
+        #   GenericHoleType, StandardIndex, FastenerTypeIndex, SSize(BSTR),
+        #   EndType, Diameter, Depth, Length, Value1..Value12,
+        #   ThreadClass(BSTR), RevDir, FeatureScope, AutoSelect,
+        #   AssemblyFeatureScope, AutoSelectComponents, PropagateFeatureToParts
+        # 旧代码只传了 14 个且从第 3 个起就错位：StandardIndex 落成 0（=ANSI 英寸）、
+        # SSize 位置塞的是深度数值、Diameter=0（用默认）→ SW 就按「英寸 + 默认 2″」
+        # 造出 Ø50.8 的孔。这就是"孔向导几何恒 Ø50.8"的真正原因。
         feat = doc.FeatureManager.HoleWizard5(
-            wh_type, 0, end_cond,
-            _m(depth), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            _m(x), _m(y), 0.0,
-            True,
+            wh_type,                      # 1 GenericHoleType
+            int(standard_index),          # 2 StandardIndex（1 = ANSI Metric）
+            int(fastener_type),           # 3 FastenerTypeIndex
+            str(size or ""),              # 4 SSize（"M6" 这种字符串）
+            int(end_cond),                # 5 EndType
+            0.0,                          # 6 Diameter（0 = 由标准库决定）
+            _m(depth),                    # 7 Depth
+            0.0,                          # 8 Length
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  # 9-20 Value1..Value12
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            "",                           # 21 ThreadClass
+            True,                         # 22 RevDir
+            True,                         # 23 FeatureScope
+            True,                         # 24 AutoSelect
+            False,                        # 25 AssemblyFeatureScope
+            False,                        # 26 AutoSelectComponents
+            False,                        # 27 PropagateFeatureToParts
         )
         if feat is None:
             raise DrawingError(

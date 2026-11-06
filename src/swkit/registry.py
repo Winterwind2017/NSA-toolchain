@@ -459,12 +459,19 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "但体积 4800→4800、面 6→6 不变。根因：InsertSketchForEdgeFlange 造的轮廓草图是空的（0 段 0 点），而 IEdgeFlangeFeatureData 没有 Length、长度只来自该草图 → 零几何；SetBendState 0/1/2/3 与重建都无效；改 OffsetType 报 RPC_E_SERVERFAULT。详见 docs/SHEET_METAL_NOTES.md")),
     ("sw_hole_wizard", ToolEntry("sw_hole_wizard", "feature", "unverified",
         "IFeatureManager.HoleWizard5(27 参)", "",
-        "按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），"
-        "选顶面或选基准面都返回 None、体积 48000→48000 不变 —— 孔向导对本机不可用；"
-        "而且它**不解析规格表**（几何恒 Ø50.8），所以判据已从「体积变小」升级成"
+        "**根因（2026-11-06 实测）**：HoleWizard5 真签名 27 参（TLB 顺序 GenericHoleType/"
+        "StandardIndex/FastenerTypeIndex/SSize/EndType/Diameter/Depth/Length/Value1..12/"
+        "ThreadClass/RevDir/FeatureScope/AutoSelect/...）；旧调用只传 14 个，从第 3 个起就错位："
+        "StandardIndex 落成 0（ANSI 英寸）、SSize 位置被塞进深度数值、Diameter=0（让 SW 用默认）"
+        "→ 默认 2 英寸 = Ø50.8 mm，这就是「几何恒 Ø50.8」的来源。孔类型常量也错："
+        "simple 传 0，而 0 是 swWzdCounterBore（沉头孔），真 Hole 是 2。"
+        "把 27 参和 type=2 都改对、面也选中后，6 组（std 0/1/2 × size 空/M6）全部返回 None、"
+        "体积 120000 mm³ 分毫未变 —— 孔向导在 COM 下连特征都不建；Toolbox 是装了的"
+        "（D:/SOLIDWORKS Data + Toolbox 目录 + Solidworks Toolbox Browser 注册项），"
+        "所以不是缺标准件库。结论：这条 API 在本机不可交付；判据已从「体积变小」升级成"
         "「用去除体积反算孔径，和 TAP_DRILL_MM 比」，比不过就判失败并指向 "
         "docs/RECIPES.md §3 的底孔+倒角+螺纹配方。"
-        "注意：本机**没有** sw_threaded_hole 这个工具（历史上只在文档里被引用过）")),
+        "另：本机没有 sw_threaded_hole 这个工具（历史上只在文档里被引用过）")),
 
     ("sw_dimxpert_autodim", ToolEntry("sw_dimxpert_autodim", "meta", "unverified",
         "IDimXpertPart.AutoDimensionScheme(option)", "",
