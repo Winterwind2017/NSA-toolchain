@@ -3513,6 +3513,11 @@ _SHADOW_ACTIVE_JSON = _PathForMachineBuilds(
     r"D:\bililive\CAD-Agent-Hub\MCP\UG\machine_shadow\active.json")
 
 
+def _ug_shadow_active(context=None):
+    """当前 NX 是不是「混合机床库」（scripts/start-nx-shadow.ps1）起的会话。"""
+    return not _ug_no_shadow_library(context)
+
+
 def _ug_no_shadow_library(context=None):
     """当前 NX 是不是用「混合机床库」（scripts/start-nx-shadow.ps1）起的。
 
@@ -3563,6 +3568,10 @@ def _ug_machine_kit_bind_flow(client, context):
     libref = "nsa_template_probe"
     part = "kitb_%s.prt" % _uuid.uuid4().hex[:6]
     checks, reads, steps = [], {}, []
+    # 先清会话：绑机床会加载整台机床装配，零件堆多了后面会挂住（实测全量里踩过）
+    client.call("ug_close_test_parts",
+                {"dry_run": False, "time_limit_s": 40,
+                 "confirmation": "CLOSE_TEST_PARTS"})
 
     def record(name, payload, want_ok=True):
         ok = bool(payload.get("ok")) is want_ok
@@ -3592,6 +3601,8 @@ def _ug_machine_kit_bind_flow(client, context):
 
     bound = record("ug_bind_machine_from_library", client.call(
         "ug_bind_machine_from_library", {"libref": libref}))
+    # 绑自家机床后 NX 会弹「信息」模态窗，不关掉后面的 CAM 调用会全卡住
+    reads["info_windows_closed"] = _nx_close_info_windows()
     checks.append({"check": "kit_machine_bound", "got": bound.get("libref_after"),
                    "want": libref, "ok": bound.get("libref_after") == libref})
     groups = [str(g).upper() for g in (bound.get("machine_groups") or [])]
@@ -3631,6 +3642,264 @@ def _ug_machine_kit_bind_flow(client, context):
             "errors": [] if ok else ["自家机床绑定未通过：%s" % (_json.dumps(
                 [c for c in checks if not c["ok"]], ensure_ascii=False)[:400])],
             "checks": checks}
+
+
+
+def _ug_machine_kit_simulate_flow(client, context):
+    """ug 剧本十八：自家 `.mtk` 机床跑**完整机床仿真**（阴影库会话）。
+
+    链路：绑 `nsa_template_probe` → 刀具 → 程序组/MCS/工件 → FLOOR_FACING 工序 →
+    刀路 → readiness（要看清运动学真的被解析出来）→ start（碰撞/轴限/刀柄全开）→
+    inspect（面板 + 时间）→ stop。
+
+    关键判据不是"没报错"，而是 NX 报出来的**运动学结构**：
+    `machine.kinematics` 里要有 5 轴链条（`nsa_template_probe` 这台是
+    `MIKRON_E500U_TNC640`：轴 `Y/Z/S/X/B/C`、通道 `TNC_640`、链 `Z-Y-X-B-C`），
+    说明 .mtk 里的机床定义真的进了 CAM 装配，而不是只写了个 libref 字符串。
+    """
+    import json as _json
+    import uuid as _uuid
+
+    libref = "nsa_template_probe"
+    # NX 会把 CAM 组名转大写，这里直接用大写，避免读回比对时大小写不一致
+    tag = _uuid.uuid4().hex[:5].upper()
+    part = "kitsim_%s.prt" % tag.lower()
+    program = "MCP_KITS_%s" % tag
+    operation = "MCP_KITOP_%s" % tag
+    checks, reads, steps = [], {}, []
+
+    def record(name, payload, want_ok=True):
+        ok = bool(payload.get("ok")) is want_ok
+        steps.append({"tool": name, "ok": bool(payload.get("ok"))})
+        checks.append({"check": name, "got": bool(payload.get("ok")), "want": want_ok,
+                       "ok": ok})
+        if not ok:
+            reads.setdefault("errors", []).append(
+                "%s: %s" % (name, str(payload.get("errors"))[:220]))
+        return payload.get("reads") or {}
+
+    # 先清会话：绑机床会加载整台机床装配，零件堆多了后面会挂住（实测全量里踩过）
+    client.call("ug_close_test_parts",
+                {"dry_run": False, "time_limit_s": 40,
+                 "confirmation": "CLOSE_TEST_PARTS"})
+
+    # 1) 零件 + CAM 设置 + 绑自家机床
+    for tool, args in (
+        ("ug_create_part", {"file_name": part}),
+        ("ug_run_python", {"code": (
+            "import NXOpen\ns = NXOpen.Session.GetSession()\n"
+            "s.ApplicationSwitchImmediate('UG_APP_MANUFACTURING')\n"
+            "result = {'app': str(s.ApplicationName)}")}),
+        ("ug_create_block", {"length": 80.0, "width": 50.0, "height": 30.0}),
+        ("ug_initialize_cam_setup", {"template_name": "mill_planar"}),
+    ):
+        payload = client.call(tool, args)
+        steps.append({"tool": tool, "ok": bool(payload.get("ok"))})
+        if not payload.get("ok"):
+            return {"ok": False, "reads": reads,
+                    "errors": ["%s 失败：%s" % (tool, str(payload.get("errors"))[:180])],
+                    "checks": checks}
+
+    bound = record("ug_bind_machine_from_library", client.call(
+        "ug_bind_machine_from_library", {"libref": libref}))
+    # 绑自家机床后 NX 会弹「信息」模态窗，不关掉后面的 CAM 调用会全卡住
+    reads["info_windows_closed"] = _nx_close_info_windows()
+    checks.append({"check": "kit_bound", "got": bound.get("libref_after"), "want": libref,
+                   "ok": bound.get("libref_after") == libref})
+    if bound.get("libref_after") != libref:
+        return {"ok": False, "reads": reads,
+                "errors": ["自家机床没绑上"], "checks": checks}
+
+    # 2) 刀具 / 程序组 / 工序 / 刀路
+    tool_reads = record("ug_create_cam_mill_tool", client.call("ug_create_cam_mill_tool", {
+        "name": "MCP_T01", "diameter": 10.0, "flute_length": 30.0,
+        "overall_length": 75.0}))
+    ctx = record("ug_create_cam_milling_context", client.call(
+        "ug_create_cam_milling_context", {
+            "origin": [0.0, 0.0, 0.0], "part_body_indices": [0],
+            "program_name": program, "method_name": "MCP_METHOD",
+            "mcs_name": "MCP_MCS", "workpiece_name": "MCP_WPK_%s" % tag,
+            "blank_offset": 2.0}))
+    names = ctx.get("names") or {}
+    program_name = names.get("program") or program
+    method_name = names.get("method") or "MCP_METHOD"
+    geometry_name = names.get("workpiece") or ("MCP_WPK_%s" % tag)
+    record("ug_create_cam_operation", client.call("ug_create_cam_operation", {
+        "name": operation, "template_type": "mill_planar",
+        "template_subtype": "FLOOR_FACING", "program_name": program_name,
+        "method_name": method_name, "geometry_name": geometry_name,
+        "tool_name": tool_reads.get("name") or "MCP_T01"}))
+    record("ug_configure_cam_milling_operation", client.call(
+        "ug_configure_cam_milling_operation", {
+            "operation_name": operation, "body_index": 0, "part_body_indices": [0],
+            "cut_area_face_selectors": [{"sort_by": "largest"}],
+            "depth_per_cut": 5.0, "floor_z": 0.0, "top_offset": 0.0,
+            "spindle_rpm": 2000.0, "cut_feed": 300.0,
+            "approach_feed": 100.0, "retract_feed": 500.0}))
+    toolpath = record("ug_generate_cam_toolpath", client.call(
+        "ug_generate_cam_toolpath", {"operation_names": [operation]}))
+    checks.append({"check": "toolpath_generated", "got": toolpath.get("generated_count"),
+                   "want": 1, "ok": toolpath.get("generated_count") == 1})
+
+    # 3) readiness：运动学必须被解析成 5 轴链条
+    readiness = record("ug_inspect_machine_simulation_readiness", client.call(
+        "ug_inspect_machine_simulation_readiness", {
+            "program_name": program_name, "required_axes": ["X", "Y", "Z"],
+            "require_axis_limits": False, "require_tool_geometry": True,
+            "require_workpiece_geometry": True, "require_holder_geometry": False,
+            "require_fixture_geometry": False}))
+    machine = readiness.get("machine") or {}
+    kinematics = machine.get("kinematics") or {}
+    axes = [str(a) for a in (kinematics.get("axis_names") or [])]
+    chains = [str(c.get("name")) for c in (kinematics.get("chains") or [])]
+    checks.append({"check": "readiness_blockers_empty",
+                   "got": readiness.get("blockers"), "want": [],
+                   "ok": readiness.get("blockers") == []})
+    checks.append({"check": "kit_libref_reported", "got": machine.get("libref"),
+                   "want": libref, "ok": machine.get("libref") == libref})
+    checks.append({"check": "kit_kinematics_axes",
+                   "got": axes, "want": "含 B 和 C（5 轴）",
+                   "ok": "B" in axes and "C" in axes})
+    checks.append({"check": "kit_kinematics_chain",
+                   "got": chains, "want": "非空",
+                   "ok": bool(chains)})
+    checks.append({"check": "kit_kinematics_junctions",
+                   "got": kinematics.get("junction_count"), "want": ">=5",
+                   "ok": int(kinematics.get("junction_count") or 0) >= 5})
+
+    # 4) start -> inspect -> stop
+    started = record("ug_start_machine_simulation_with_collision_stop", client.call(
+        "ug_start_machine_simulation_with_collision_stop", {
+            "program_name": program_name, "operation_names": [operation],
+            "required_axes": ["X", "Y", "Z"], "play_immediately": False,
+            "require_axis_limits": False, "require_tool_geometry": True,
+            "require_workpiece_geometry": True, "require_holder_geometry": False,
+            "require_fixture_geometry": False}))
+    checks.append({"check": "simulation_prepared",
+                   "got": started.get("simulation_prepared"), "want": True,
+                   "ok": started.get("simulation_prepared") is True})
+    checks.append({"check": "simulation_status_prepared",
+                   "got": started.get("status"), "want": "prepared",
+                   "ok": started.get("status") == "prepared"})
+    options = started.get("options") or {}
+    checks.append({"check": "collision_stop_armed",
+                   "got": options.get("stop_on_collision"), "want": True,
+                   "ok": options.get("stop_on_collision") is True})
+    checks.append({"check": "limit_stop_armed",
+                   "got": options.get("stop_on_limit_violation"), "want": True,
+                   "ok": options.get("stop_on_limit_violation") is True})
+
+    inspected = record("ug_inspect_active_machine_simulation", client.call(
+        "ug_inspect_active_machine_simulation", {}))
+    checks.append({"check": "simulation_panel_present",
+                   "got": inspected.get("active_panel_present"), "want": True,
+                   "ok": inspected.get("active_panel_present") is True})
+    checks.append({"check": "simulation_time_readable",
+                   "got": inspected.get("machine_time"), "want": "非空",
+                   "ok": bool(inspected.get("machine_time"))})
+
+    stopped = record("ug_stop_active_machine_simulation", client.call(
+        "ug_stop_active_machine_simulation", {"release": True}))
+    checks.append({"check": "simulation_stopped", "got": stopped.get("stopped"),
+                   "want": True, "ok": stopped.get("stopped") is True})
+
+    reads["steps"] = steps
+    reads.update({
+        "part": part, "libref": libref, "program": program_name,
+        "operation": operation,
+        "kinematics": {"name": kinematics.get("name"), "axes": axes,
+                       "channels": kinematics.get("channels"),
+                       "chains": chains,
+                       "junctions": kinematics.get("junction_count")},
+        "toolpath": {"length_mm": (toolpath.get("operations") or [{}])[0].get("toolpath_length"),
+                     "minutes": (toolpath.get("operations") or [{}])[0].get("toolpath_time_minutes")},
+        "simulation": {"prepared": started.get("simulation_prepared"),
+                       "status": started.get("status"),
+                       "machine_time": inspected.get("machine_time")},
+    })
+    ok = all(item["ok"] for item in checks)
+    return {"ok": ok, "reads": reads,
+            "errors": [] if ok else ["自家机床仿真未通过：%s" % (_json.dumps(
+                [c for c in checks if not c["ok"]], ensure_ascii=False)[:400])],
+            "checks": checks}
+
+
+def _nx_close_info_windows(log=None, timeout_s=6):
+    """关掉 NX 的「信息」窗口（class `#32770`，标题 `信息`）。
+
+    为什么需要：**绑定自家 .mtk 机床之后 NX 会弹一个「信息」窗**（机床库报告之类），
+    它是模态的——不关掉，后续任何 CAM 调用（建零件 / 建工序 / 起仿真）都会卡到超时。
+    2026-11-06 全量跑里 `machine_kit_simulate` 就是被它挂死的。
+
+    依次尝试 WM_SYSCOMMAND(SC_CLOSE) 与 Escape；窗口关闭有延迟，用 IsWindow 轮询。
+    """
+    import time as _time
+
+    try:
+        import subprocess as _subprocess
+
+        import win32con
+        import win32gui
+        import win32process
+    except Exception as exc:                       # noqa: BLE001
+        if log is not None:
+            log.append("no win32: %s" % type(exc).__name__)
+        return []
+
+    deadline = _time.time() + timeout_s
+    closed = []
+    while _time.time() < deadline:
+        pids = set()
+        out = _subprocess.run(["tasklist", "/FI", "IMAGENAME eq ugraf.exe"],
+                              capture_output=True, text=True)
+        for line in out.stdout.splitlines():
+            if line.lower().startswith("ugraf"):
+                try:
+                    pids.add(int(line.split()[1]))
+                except Exception:                  # noqa: BLE001
+                    pass
+        targets = []
+
+        def cb(hwnd, _):
+            try:
+                _, owner = win32process.GetWindowThreadProcessId(hwnd)
+                if owner in pids and win32gui.IsWindowVisible(hwnd) \
+                        and win32gui.GetClassName(hwnd) == "#32770" \
+                        and win32gui.GetWindowText(hwnd).strip() == "信息":
+                    targets.append(hwnd)
+            except Exception:                      # noqa: BLE001
+                pass
+            return True
+
+        try:
+            win32gui.EnumWindows(cb, None)
+        except Exception:                          # noqa: BLE001
+            pass
+        if not targets:
+            return closed
+        for hwnd in targets:
+            if str(hwnd) in closed:
+                continue
+            try:
+                win32gui.PostMessage(hwnd, win32con.WM_SYSCOMMAND,
+                                     win32con.SC_CLOSE, 0)
+            except Exception:                      # noqa: BLE001
+                pass
+            _time.sleep(0.6)
+            if win32gui.IsWindow(hwnd):
+                try:
+                    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN,
+                                         win32con.VK_ESCAPE, 0)
+                    win32gui.PostMessage(hwnd, win32con.WM_KEYUP,
+                                         win32con.VK_ESCAPE, 0)
+                except Exception:                  # noqa: BLE001
+                    pass
+                _time.sleep(0.6)
+            closed.append(str(hwnd))
+            if log is not None:
+                log.append("closed info window %s" % hwnd)
+        _time.sleep(0.4)
+    return closed
 
 
 UG_CASES = [
@@ -3717,10 +3986,18 @@ UG_CASES = [
      "timeout_s": 300,
      "skip_if": _ug_no_live_nx},
 
-    {"id": "ug.flow.machine_validate", "timeout_s": 900, "tool": None,
-     "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
+    {"id": "ug.flow.machine_kit_bind", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十七：绑自家 .mtk 机床（阴影机床库路线）",
      "args": {}, "expect_ok": True,
-     "call": lambda client, context: _ug_machine_validate_flow(client, context)},
+     "skip_if": lambda context: _ug_no_shadow_library(context) or _ug_no_live_nx(context),
+     "call": lambda client, context: _ug_machine_kit_bind_flow(client, context)},
+
+    {"id": "ug.flow.machine_kit_simulate", "timeout_s": 1200, "tool": None,
+     "title": "ug 剧本十八：自家 .mtk 机床完整仿真（绑定→刀路→运动学→start→stop）",
+     "args": {}, "expect_ok": True,
+     "skip_if": lambda context: _ug_no_shadow_library(context) or _ug_no_live_nx(context),
+     "call": lambda client, context: _ug_machine_kit_simulate_flow(client, context)},
+
     {"id": "ug.flow.machine_simulate", "timeout_s": 900, "tool": None,
      "title": "ug 剧本十四：真跑机床仿真（自绑机床→刀路→readiness→start→stop）",
      "args": {}, "expect_ok": True,
@@ -3736,14 +4013,18 @@ UG_CASES = [
     {"id": "ug.flow.machine_swap", "timeout_s": 900, "tool": None,
      "title": "ug 剧本十六：换型+持久化（fanuc→卸→tnc→存盘→关重开仍在）",
      "args": {}, "expect_ok": True,
-     "skip_if": _ug_no_live_nx,
+     # 阴影库会话里不做换型：一次会话里第 5 次绑定会挂住（机床装配累积），
+     # 而换型/持久化在标准库会话里已经覆盖到了。
+     "skip_if": lambda context: _ug_no_live_nx(context) or _ug_shadow_active(context),
      "call": lambda client, context: _ug_machine_swap_flow(client, context)},
 
-    {"id": "ug.flow.machine_kit_bind", "timeout_s": 900, "tool": None,
-     "title": "ug 剧本十七：绑自家 .mtk 机床（阴影机床库路线）",
+    # machine_validate 必须放最后：它内部会把一个 MTK 导入临时阴影库，
+    # 跑完之后 NX 会话里的机床库查询会变成 "MOM_TCL：用户选择了中止"
+    # （DB 句柄还指着那个随后被清理的临时目录），之后所有机床绑定都会失败。
+    {"id": "ug.flow.machine_validate", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
      "args": {}, "expect_ok": True,
-     "skip_if": lambda context: _ug_no_shadow_library(context) or _ug_no_live_nx(context),
-     "call": lambda client, context: _ug_machine_kit_bind_flow(client, context)},
+     "call": lambda client, context: _ug_machine_validate_flow(client, context)},
 
 ]
 
@@ -6102,6 +6383,10 @@ EPLAN_CASES = [
      "expect_reads": {"reads.wire_groups": 4,
                       "reads.scope": "offline_declared_wire_graph_and_constraints_only"},
      "timeout_s": 180},
+    {"id": "ug.flow.machine_validate", "timeout_s": 900, "tool": None,
+     "title": "ug 剧本十三：机床校验五件套（模板路线，运动学+碰撞全通过）",
+     "args": {}, "expect_ok": True,
+     "call": lambda client, context: _ug_machine_validate_flow(client, context)},
 ]
 
 
