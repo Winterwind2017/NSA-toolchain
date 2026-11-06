@@ -117,11 +117,52 @@ def spline_note_lines(report: dict) -> list[str]:
     ]
 
 
+
+def reducer_note_lines(meta: dict) -> list[str]:
+    """减速器整机检验表：4 个齿轮 + 3 处键槽，一条注释装下。"""
+    lines = ["两级平行轴减速器检验表"]
+    for item in meta.get("gear_inspections") or []:
+        if not item:
+            continue
+        span = item["span_measurement"]
+        pins = item["span_over_pins"]
+        lines.append(
+            "%s  z=%d  W%d=%s  M=%s（d_p %s）"
+            % (item.get("label", "gear"), item["tooth_count"], span["k"],
+               _fmt(span["span_length_mm"]), _fmt(pins["span_mm"]),
+               _fmt(pins["pin_diameter_mm"])))
+    keyways = meta.get("keyways") or []
+    if keyways:
+        lines.append("键槽（GB/T 1096）")
+        for item in keyways:
+            lines.append(
+                "φ%s：b×h %s×%s，轴槽 t1 %s，毂槽 t2 %s，键长 %s"
+                % (_fmt(item.get("shaft_diameter_mm")), _fmt(item.get("width_mm")),
+                   _fmt(item.get("height_mm")), _fmt(item.get("shaft_depth_mm")),
+                   _fmt(item.get("hub_depth_mm")), _fmt(item.get("key_length_mm"))))
+    return lines
+
+
+def title_block_lines(title: str, number: str, scale: str = "1:1",
+                      material: str = "45", inspector: str = "—") -> list[str]:
+    """标题栏文字（图名/图号/材料/比例/设计/检验）。"""
+    import datetime
+
+    today = datetime.date.today().isoformat()
+    return [
+        title,
+        "图号 %s    材料 %s    比例 %s" % (number, material, scale),
+        "设计 —    检验 %s    日期 %s" % (inspector, today),
+    ]
+
 def note_text(report: dict) -> str:
-    """把报告拼成一段多行注释（SW 注释里用 \\n 换行）。"""
-    if report.get("kind") == "rectangular_spline":
-        return "\n".join(spline_note_lines(report))
-    return "\n".join(gear_note_lines(report))
+    """把报告拼成一段多行注释。"""
+    kind = report.get("kind")
+    if kind == "rectangular_spline":
+        return chr(10).join(spline_note_lines(report))
+    if kind == "two_stage_parallel_shaft_reducer":
+        return chr(10).join(reducer_note_lines(report))
+    return chr(10).join(gear_note_lines(report))
 
 
 def required_numbers(report: dict) -> list[str]:
@@ -139,9 +180,21 @@ def required_numbers(report: dict) -> list[str]:
         numbers = [_fmt(report["span_measurement"]["span_length_mm"]),
                    _fmt(report["span_over_pins"]["span_mm"]),
                    _fmt(report["span_over_pins"]["pin_diameter_mm"])]
+    elif kind == "two_stage_parallel_shaft_reducer":
+        for item in report.get("gear_inspections") or []:
+            if item:
+                numbers.append(_fmt(item["span_over_pins"]["span_mm"]))
+        if report.get("keyways"):
+            numbers.append(_fmt(report["keyways"][0].get("width_mm")))
     elif kind == "rectangular_spline":
         numbers = [_fmt(report["span_over_pins"]["span_mm"]),
                    _fmt(report["span_over_pins"]["pin_diameter_mm"])]
+    elif kind == "two_stage_parallel_shaft_reducer":
+        for item in report.get("gear_inspections") or []:
+            if item:
+                numbers.append(_fmt(item["span_over_pins"]["span_mm"]))
+        if report.get("keyways"):
+            numbers.append(_fmt(report["keyways"][0].get("width_mm")))
     return numbers
 
 
