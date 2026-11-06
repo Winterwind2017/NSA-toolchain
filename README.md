@@ -56,6 +56,22 @@ python scripts/assert_private_repos.py --only nsa-mcp-hub     # 只查本仓库
 脚本用 `gh` 读 `isPrivate`，只要有一个仓库不是私有就 **退出码 1** 并逐条列出——
 把“我以为它是私有的”变成一条可执行断言。
 
+## 仓库怎么归集
+
+22 个仓库全部私有，因此 **profile 上不会有 Pinned 卡片**——GitHub 的规则是
+"[You can pin a **public** repository](https://docs.github.com/en/account-and-profile/reference/profile-reference#pinning-items-to-your-profile)"，
+私有仓不进入钉选候选集（`viewer.pinnableItems` 实测 `totalCount = 0`）。
+归集改用 **GitHub Lists**（支持私有仓，只有本人可见）：
+
+| List | 数量 |
+|---|---|
+| 非标自动化 · 适配内核 | 7 |
+| 非标自动化 · Agent 技能 | 6 |
+| 工作台与资产 | 5 |
+| 其它工具 | 4 |
+
+打开 `https://github.com/Winterwind2017?tab=lists` 可见；仓内的文字索引见 [docs/repos.md](docs/repos.md)。
+
 ## 设计目标
 
 | 目标 | 做法 |
@@ -171,6 +187,11 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 真机验收用例需要对应软件在场；不在场时用例会失败或跳过，而不是假装通过——这是刻意设计。
 
 ## 版本
+
+### v0.15.4
+
+补充说明：全私有 + GitHub 只允许 pin 公开仓 ⇒ profile 上 Pinned 必然为空，归集依赖 GitHub Lists
+（4 组、22 仓）与 [docs/repos.md](docs/repos.md)。可见性策略不变（保持全私有）。功能无变化。
 
 ### v0.15.3
 

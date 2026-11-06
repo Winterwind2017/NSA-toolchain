@@ -69,6 +69,12 @@ NX 2512、GX Works3、CODESYS 3.5、AutoShop V4.11），混在一个仓里既没
 gh search repos --owner Winterwind2017 --topic nonstandard-automation --limit 50
 ```
 
+## 为什么 profile 上没有 Pinned
+
+所有仓库都是私有的，而 GitHub 只允许 pin **公开**仓库（`viewer.pinnableItems` 实测 `totalCount = 0`）。
+所以归集走 **GitHub Lists**（支持私有仓）：`https://github.com/Winterwind2017?tab=lists`
+——适配内核 / Agent 技能 / 工作台与资产 / 其它工具 四组。
+
 ## 可见性
 
 **全部仓库均为私有（private）。** 这里的「发布 vX.Y.Z」只表示打 git tag + 推 main，不改变可见性；
