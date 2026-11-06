@@ -1238,3 +1238,25 @@ ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 
   `machine_validate` 31.3 s PASS（含换会话的 ~18 s）。
   **代价**：这条用例会重启 NX，所以它必须留在最后一条。
 * 覆盖：**625/625 = 100%**（验收 501 ｜ 契约 245 ｜ 快乐路径 474 ｜ 未覆盖 0）。
+
+## sw 螺纹孔转正：`sw_threaded_hole`（2026-11-06 18:30）
+
+孔向导（`HoleWizard5`）在本机不可交付（27 参错位 + 改对后 COM 下仍不建特征，
+Toolbox 已装）。按 `swkit/docs/RECIPES.md` §3 的配方做成正式工具：
+
+* **实现**（`swkit/verified/holes.py`）：选面 → `InsertSketch(True)` →
+  `CreateCircleByRadius(底孔半径)` → `FeatureCut4`（盲孔 / 贯穿用
+  `swEndCondThroughAll=1`+深度 0）→ 找孔口圆边 → `InsertFeatureChamfer(0,1,d,45°)`
+  → `CreateDefinition(87=swFmSweepThread)` + `ThreadFeatureData`；失败降级
+  `IFeatureManager.InsertCosmeticThread3` 并标 `thread_kind=cosmetic`。
+* **三个真机坑**：① `SelectByID2("","FACE",点)` 在块体顶面中心 (0,0,0) 返回 False →
+  加微偏移重试 + 兜底「挑 IsPlane 且法向 z>0.9 的最高面，用面对象 `Select2(False,0)`」；
+  ② `val()` 只吃 3 个参数，多参数方法必须 `getattr(...)(...)`；
+  ③ 贯穿孔切木用 ThroughAll，但螺纹没有"贯穿"枚举，按 `BlindDepth=深度` 给。
+* **实测**（同一块 120×60×20）：M3 Ø2.5 / M6 Ø5.0 / M8 Ø6.8 / M10 Ø8.5 / M12 Ø10.2
+  全部对上规格表，锥面 1→5 累加，螺纹均 `real`，`delivery_gate_passed=True`；
+  M6 贯穿体积 −983.4 mm³ 同样通过。
+* **验收**：`sw.threaded_hole`（PASS 24.6 s，M6+M12 两点）；覆盖 **626/626 = 100%**
+  （验收 502 ｜ 契约 245 ｜ 快乐路径 475）。
+* 附带发现：`sw.flow.inspect` 在开着多个测试文档时会 600 s 超时（既有用例，与本次改动无关），
+  做全量前先把 SolidWorks 里的测试文档关掉。
