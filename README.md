@@ -120,6 +120,31 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 
 ## 版本
 
+### v0.13.0
+
+上一版判定"SW 表格 API 不可用"是**错的**——生成早期绑定后三件事全通了。
+
+| 改动 | 内容 |
+|---|---|
+| 表格真相 | `InsertTableAnnotation2` 的真实签名是 **7 参**：`(UseAnchorPoint, X, Y, AnchorType, TableTemplate, Rows, Columns)`。之前只传 4 参，所以恒定报「类型不匹配 参数4」。补上参数后**原生表格**直接建成 |
+| 单元格 | `ITableAnnotation.SetText` 在**动态绑定下不可见**，必须用 makepy 生成的早期绑定接口包一层（`mod.ITableAnnotation(table._oleobj_)`）；没有绑定就按需现场生成一次 |
+| 球标 | `SelectByID2` 的 callout 必须是 `VARIANT(VT_DISPATCH, None)`，选中视图后 `AutoBalloon2(1, True)` 返回**球标数组**——原生球标成立 |
+| BOM 表 | SW 自己的 BOM 仍只枚举 1 行（BomType 1/2/3 都一样），但现在不影响交付：明细走**原生表格** |
+
+实测（减速器装配图，3.0 s）：
+
+| 项 | 结果 |
+|---|---|
+| 原生表格 | `kind=sw_table`，**9 行 × 4 列**（SW 自带表头），**32 格写入** |
+| 零件名读回 | **7/7**（逐格读回核对） |
+| 球标 | `kind=sw_balloon`，`added=1`（原生） |
+| 组件 | 7 |
+
+怎么拿到这些签名的：对 `sldworks.tlb` 跑 `python -m win32com.client.makepy`，生成
+`{83A33D31-27C5-11CE-BFD4-00400513BB57} v33`，然后直接读生成文件里的 `def InsertTableAnnotation2(...)`。
+附带结论：`gencache.EnsureDispatch("SldWorks.Application")` 仍然拒绝（coclass 没登记 typelib），
+但**把已有对象包进生成的接口**（`mod.IDrawingDoc(doc._oleobj_)`）是完全可行的。
+
 ### v0.12.0
 
 检验图的尺寸终于有了工程含义。
