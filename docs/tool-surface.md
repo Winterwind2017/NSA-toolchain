@@ -247,7 +247,8 @@
 | `sw_internal_gear_plan` | module_mm, tooth_count, pressure_angle_deg, thickness_mm, rim_outer_diameter_mm, profile_shift_x | 内齿圈（齿顶朝内，**渐开线齿槽**，3 特征）；判据=四个特征圆直径、齿槽半角、轮缘壁厚 ≥ 1 个模数 |
 | `sw_helical_gear_plan` | module_normal_mm, tooth_count, pressure_angle_deg, helix_angle_deg, thickness_mm, bore_diameter_mm, slices | 斜齿轮（**放样真螺旋面**，slices 段截面）；判据=mt=mn/cosβ、L=πd/tanβ、θ=b·tanβ/r、特征数 4+2·slices |
 | `sw_spline_plan` | outer_diameter_mm, inner_diameter_mm, tooth_count, key_width_mm, length_mm | 矩形花键轴 GB/T 1144（3 特征）；判据=截面积夹在内外圆之间、体积=面积×长度 |
-| `sw_gear_inspection` | module_mm, tooth_count, pressure_angle_deg, profile_shift_x, pin_diameter_mm, internal, rim_outer_diameter_mm, thickness_mm, bore_diameter_mm | 齿轮检验尺寸：**公法线长度 W_k**（含 k 与标准规则）、**跨棒距 M**（外齿 +d_p / 内齿 −d_p、奇偶齿修正）、分度圆齿厚；判据含基节不变式 `W(k+1)−W(k)=π·m·cosα` |
+| `sw_gear_inspection` | module_mm, tooth_count, pressure_angle_deg, profile_shift_x, pin_diameter_mm, internal, **helix_angle_deg**, rim_outer_diameter_mm, thickness_mm, bore_diameter_mm | 齿轮检验尺寸：**公法线长度 W_k**、**跨棒距 M**（外齿 +d_p / 内齿 −d_p、奇偶齿修正）、分度圆齿厚；给 `helix_angle_deg` 时按**当量直齿轮**（z_v=z/cos³β）算**法向**公法线与**量球**跨距（量柱会沿螺旋面滑） |
+| `sw_spline_inspection` | outer_diameter_mm, inner_diameter_mm, tooth_count, key_width_mm, length_mm, pin_diameter_mm | 矩形花键检具尺寸：齿厚 b、齿槽宽、**推荐量柱直径**、**跨棒距 M**（量柱夹在相对两齿槽，奇偶齿修正）；判据含 M > 外径、量柱必须真夹在齿侧（落底即判失败） |
 | `sw_keyway_lookup` | shaft_diameter_mm, required_length_mm | 标准平键与键槽 GB/T 1096；按轴径给 b×h、t1、t2，键长向上取标准系列 |
 | `sw_create_internal_gear` | 同上 + execute | 一步到位建内齿圈（渐开线齿槽）；真机判据=体积 26325.888（±1%） |
 | `sw_create_helical_gear` | 同上 + execute | 一步到位建斜齿轮（放样）；真机判据=体积 36290.5（4 段，±3%） |

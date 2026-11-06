@@ -328,6 +328,7 @@ def helical_gear_plan(args: dict) -> dict:
         KIT_KEY, "helical_gear_plan", ok=ok,
         reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
                "spec_error": why, "feature_count": len(feats),
+               "inspection": gin.helical_gear_inspection(spec) if spec else None,
                "approximation": "loft (true helical surface)", "feature_graph": graph},
         errors=[] if ok else ["斜齿轮参数不合法：" + (why or "判据未通过")])
     payload["checks"] = checks
@@ -372,6 +373,7 @@ def spline_plan(args: dict) -> dict:
         KIT_KEY, "spline_plan", ok=ok,
         reads={"spec": spec.to_dict() if spec else None, "spec_valid": spec is not None,
                "spec_error": why, "feature_count": len(feats),
+               "inspection": sp.spline_inspection(spec) if spec else None,
                "section_area_mm2": area,
                "expected_volume_mm3": meta.get("expected_volume_mm3"),
                "feature_graph": graph},
@@ -420,11 +422,22 @@ def gear_inspection(args: dict) -> dict:
     shift = float(args.get("profile_shift_x") or 0.0)
     pin = args.get("pin_diameter_mm")
     internal = bool(args.get("internal"))
+    helix = float(args.get("helix_angle_deg") or 0.0)
 
     report: dict = {}
     why = ""
     try:
-        if internal:
+        if helix > 0.0:
+            helical = hg.validate_helical_gear_spec(
+                module_normal_mm=module, tooth_count=teeth,
+                pressure_angle_normal_deg=alpha, helix_angle_deg=helix,
+                thickness_mm=float(args.get("thickness_mm") or 20.0),
+                bore_diameter_mm=float(args.get("bore_diameter_mm") or module * 8.0),
+                slices=4)
+            report = gin.helical_gear_inspection(
+                helical, float(pin) if pin else None)
+            pitch_diameter = 2.0 * helical.pitch_radius_mm
+        elif internal:
             rim = float(args.get("rim_outer_diameter_mm")
                         or module * (teeth + 8.0))
             ring = igr.validate_internal_gear_spec(
@@ -450,6 +463,30 @@ def gear_inspection(args: dict) -> dict:
 
     checks: list = []
     if report:
+        if helix > 0.0:
+            span = report["span_over_balls"]
+            step = (gin.span_normal_step(module, alpha))
+            checks = [
+                _check("virtual_tooth_count_gt_z",
+                       report["virtual_tooth_count"], "> tooth_count",
+                       report["virtual_tooth_count"] > teeth),
+                _check("normal_span_step_equals_base_pitch_mm",
+                       round(step, 4),
+                       round(math.pi * module * math.cos(math.radians(alpha)), 4),
+                       abs(step - math.pi * module * math.cos(math.radians(alpha))) < 1e-6),
+                _check("span_over_balls_gt_pitch_diameter",
+                       span["span_mm"], "> pitch diameter",
+                       span["span_mm"] > pitch_diameter),
+                _check("alpha_M_within_range_deg", span["alpha_M_deg"],
+                       "alpha_n .. 45",
+                       alpha <= span["alpha_M_deg"] <= 45.0),
+            ]
+            ok_helical = bool(checks and all(c["ok"] for c in checks))
+            payload = normalize(KIT_KEY, "gear_inspection", ok=ok_helical,
+                                reads={"inspection": report, "spec_error": ""},
+                                errors=[] if ok_helical else ["斜齿轮检验尺寸判据未通过"])
+            payload["checks"] = checks
+            return payload
         span = report["span_over_pins"]
         if not internal:
             # 基节不变式：跨 k+1 齿比跨 k 齿正好长一个基节
@@ -494,6 +531,47 @@ def gear_inspection(args: dict) -> dict:
     payload = normalize(KIT_KEY, "gear_inspection", ok=ok,
                         reads={"inspection": report or None, "spec_error": why},
                         errors=[] if ok else ["检验尺寸算不出来：" + (why or "判据未通过")])
+    payload["checks"] = checks
+    return payload
+
+
+# ------------------------------------------------------------------ 花键检具
+def spline_inspection(args: dict) -> dict:
+    """矩形花键检具尺寸：齿厚、齿槽宽、推荐量柱直径、跨棒距 M。"""
+    spec = None
+    why = ""
+    report: dict = {}
+    try:
+        spec = sp.validate_spline_spec(
+            outer_diameter_mm=float(args.get("outer_diameter_mm") or 46.0),
+            inner_diameter_mm=float(args.get("inner_diameter_mm") or 40.0),
+            tooth_count=int(args.get("tooth_count") or 8),
+            key_width_mm=float(args.get("key_width_mm") or 8.0),
+            length_mm=float(args.get("length_mm") or 60.0))
+        pin = args.get("pin_diameter_mm")
+        report = sp.spline_inspection(spec, float(pin) if pin else None)
+    except Exception as exc:                              # noqa: BLE001
+        why = "%s: %s" % (type(exc).__name__, exc)
+
+    checks: list = []
+    if report:
+        span = report["span_over_pins"]
+        checks = [
+            _check("tooth_thickness_mm", report["tooth_thickness_mm"],
+                   report["key_width_mm"],
+                   abs(report["tooth_thickness_mm"] - report["key_width_mm"]) < 1e-9),
+            _check("space_width_at_pitch_mm", report["space_width_at_pitch_mm"],
+                   "> 0", report["space_width_at_pitch_mm"] > 0.0),
+            _check("pin_contact_is_flank", span["contact"], "flank",
+                   span["contact"] == "flank"),
+            _check("span_over_pins_gt_outer_diameter_mm", span["span_mm"],
+                   report["outer_diameter_mm"],
+                   span["span_mm"] > report["outer_diameter_mm"]),
+        ]
+    ok = bool(report and checks and all(c["ok"] for c in checks))
+    payload = normalize(KIT_KEY, "spline_inspection", ok=ok,
+                        reads={"inspection": report or None, "spec_error": why},
+                        errors=[] if ok else ["花键检具尺寸算不出来：" + (why or "判据未通过")])
     payload["checks"] = checks
     return payload
 
@@ -607,4 +685,14 @@ def hubsw_tools() -> list:
                             "bore_diameter_mm": N},
              "additionalProperties": False},
             gear_inspection, timeout_s=120),
+        ToolSpec(
+            "sw_spline_inspection",
+            "矩形花键检具尺寸（GB/T 1144）：齿厚 b、齿槽宽、推荐量柱直径、"
+            "跨棒距 M（量柱夹在相对两齿槽里，奇偶齿修正）。判据含 M > 外径、量柱必须夹在齿侧上。",
+            {"type": "object",
+             "properties": {"outer_diameter_mm": N, "inner_diameter_mm": N,
+                            "tooth_count": I, "key_width_mm": N, "length_mm": N,
+                            "pin_diameter_mm": N},
+             "additionalProperties": False},
+            spline_inspection, timeout_s=120),
     ]
