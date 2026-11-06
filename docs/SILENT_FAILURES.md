@@ -66,7 +66,7 @@ doc.InsertSheetMetalEdgeFlange(edge, sk, 0, rad(90),     # 返回 CDispatch
 | 基准面 | `None` | **48000** |
 
 **结论**：参数齐了也不出几何，而且**不解析规格表**（几何恒 Ø50.8）。
-本机没有 `sw_threaded_hole` 这个工具（文档曾引用一个不存在的名字）；
+本机现在有 `sw_threaded_hole`（verified，2026-11-06 起的正式工具）；
 要交付螺纹孔请按 `docs/RECIPES.md` §3 配方（底孔 + 口部倒角 + `swFmSweepThread`）；
 `sw_hole_wizard` 判据已改成「体积反算孔径 vs 规格表」，比不过即判失败。
 

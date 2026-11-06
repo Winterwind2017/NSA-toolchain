@@ -93,6 +93,12 @@ feat = docw.FeatureManager.CreateFeature(dataw)
 
 ## 3. 螺纹孔（底孔 + 口部倒角 + 真实螺纹）
 
+> **2026-11-06 起有正式工具**：`sw_threaded_hole`（verified）。
+> M3/M4/M5/M6/M8/M10/M12 实测底孔 Ø2.5/3.3/4.2/5.0/6.8/8.5/10.2 全部对上，
+> 口部倒角 + 真实 `ThreadFeatureData` 建成，`delivery_gate_passed=True`；
+> 贯穿孔（`through=True`）同样通过。下面的配方是它的实现依据，出问题时对着看。
+
+
 **真因**：孔向导（`HoleWizard4` / `InitializeHole`）**不解析规格表**，几何恒为 Ø50.8；
 真正能交付的做法是绕过它，自己画底孔再打螺纹。
 

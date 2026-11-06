@@ -240,6 +240,13 @@ _CUTS: List[Tuple[str, ToolEntry]] = [
     _e("sw_chamfer", "feature", "IFeatureManager.InsertFeatureChamfer(8 参)",
        "80×50×12 板 4 条边倒角 5mm：体积 48000→**46616.667**（Δ=-1383.33）、面 6→**10**、边 12→**20**",
        "内核把前两参写反（Options/ChamferType）→ 建出空特征；改正后几何真变"),
+    _e("sw_threaded_hole", "feature",
+       "FeatureCut4 + InsertFeatureChamfer + ThreadFeatureData(swFmSweepThread=87)",
+       "M3/M6/M8/M10/M12 逐个实测：底孔 Ø2.5/5.0/6.8/8.5/10.2 全部对上规格表，"
+       "孔口倒角每次 +1 锥面（累计 1→5），真实螺纹特征『螺纹线1』建成，"
+       "delivery_gate_passed 全 True；贯穿 M6（through=True）体积 −983.4 mm³、同样 real thread",
+       "孔向导不可用（27 参错位 + COM 下不建特征，见 sw_hole_wizard）；"
+       "用本工具按 docs/RECIPES.md §3 走；真实螺纹失败会降级装饰螺纹并标注 thread_kind=cosmetic"),
     _e("sw_cut_extrude", "feature", "IFeatureManager.FeatureCut4(27 参)",
        "80×50×12 板顶面两处 Ø10 通孔：体积 48000→**46115.044**（每孔 −942.478，理论 −942.48）",
        "UseAutoSelect 必须 True（False 时只选草图会静默失败）；Dir=False 才是朝材料里切"),

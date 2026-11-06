@@ -144,16 +144,36 @@ def test_tap_drill_table_matches_docs() -> None:
                             "M8": 6.8, "M10": 8.5, "M12": 10.2}
 
 
-def test_no_phantom_tool_names() -> None:
-    """registry/docs 里不许出现"不存在的工具名"（sw_threaded_hole 曾长期被引用）。"""
-    from pathlib import Path as _Path
+def test_threaded_hole_is_really_wired() -> None:
+    """`sw_threaded_hole` 必须三处都在：registry(verified) + server 工具 + verified 实现。
 
-    root = _Path(__file__).resolve().parents[1]
-    phantom = "sw_threaded_hole"
-    offenders = []
-    for path in list(root.glob("src/**/*.py")) + list(root.glob("docs/*.md")):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        for lineno, line in enumerate(text.splitlines(), 1):
-            if phantom in line and "没有" not in line and "不存在" not in line:
-                offenders.append("%s:%d" % (path.name, lineno))
-    assert not offenders, offenders
+    这条测试的由来：历史上文档把 `sw_threaded_hole` 当"正解"引用，但它根本没实现
+    （registry 只有一句注释、server 没注册），用户照做只会得到 unknown tool。
+    现在它是真工具，这个测试防止它再次"文档里存在、代码里没有"。
+    """
+    import inspect as _inspect
+
+    from swkit.mcp import server as _server
+    from swkit.registry import REGISTRY
+    from swkit.verified import holes as _holes
+
+    entry = REGISTRY.get("sw_threaded_hole")
+    assert entry is not None, "registry 里没有 sw_threaded_hole"
+    assert entry.status == "verified", entry.status
+    assert hasattr(_holes, "threaded_hole"), "verified 实现缺失"
+    sig = _inspect.signature(_server.sw_threaded_hole)
+    for name in ("size", "depth", "through", "hole_x", "hole_y"):
+        assert name in sig.parameters, name
+    # 实现必须自己报交付门槛，不能只回 ok
+    src = _inspect.getsource(_holes.threaded_hole)
+    for token in ("has_tap_drill_cut", "has_mouth_chamfer", "delivery_gate_passed"):
+        assert token in src, token
+
+def test_tap_tables_are_complete() -> None:
+    """规格表三件套必须齐全且自洽（底孔 < 公称，螺距 > 0）。"""
+    from swkit.verified.holes import NOMINAL_MM, TAP_DRILL_MM, TAP_PITCH_MM
+
+    assert set(TAP_DRILL_MM) == set(TAP_PITCH_MM) == set(NOMINAL_MM)
+    for size, tap in TAP_DRILL_MM.items():
+        assert 0 < tap < NOMINAL_MM[size], size
+        assert TAP_PITCH_MM[size] > 0, size

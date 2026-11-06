@@ -470,6 +470,35 @@ def sw_add_bom_table(x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
     return _with_doc(DX.add_bom_table, x, y)
 
 
+@mcp.tool(name="sw_threaded_hole")
+def sw_threaded_hole(size: str = "M6", depth: float = 12.0,
+                     through: bool = False,
+                     hole_x: float = 0.0, hole_y: float = 0.0,
+                     face_x: Optional[float] = None,
+                     face_y: Optional[float] = None,
+                     face_z: Optional[float] = None,
+                     mouth_chamfer: float = 0.5,
+                     with_thread: bool = True,
+                     right_handed: bool = True) -> Dict[str, Any]:
+    """螺纹孔（verified）：底孔 FeatureCut4 + 口部倒角 + 真实 ThreadFeatureData。
+
+    为什么不用孔向导：`HoleWizard5` 真签名 27 参，旧调用只传 14 个 → 参数错位、
+    永得「2 英寸默认 = Ø50.8」；按 TLB 改对后实测 6 组仍全部返回 None（COM 下不建特征）。
+    所以按 docs/RECIPES.md §3 自己画。
+
+    规格：M3/M4/M5/M6/M8/M10/M12（底孔 2.5/3.3/4.2/5.0/6.8/8.5/10.2）。
+    需要先有一个实体；`face_x/y/z` 给定则先按该点选面，否则用当前选择。
+    判据是**几何**：实测圆柱直径 = 底孔直径（±0.15）、孔口出现锥面、螺纹特征建成；
+    `delivery_gate_passed` 才是"可交付"，`ok` 等于它。
+    """
+    from ..verified import holes as H
+    face_point = None
+    if face_x is not None and face_y is not None and face_z is not None:
+        face_point = (float(face_x), float(face_y), float(face_z))
+    return _with_doc(H.threaded_hole, size, depth, through, hole_x, hole_y,
+                     face_point, mouth_chamfer, with_thread, right_handed)
+
+
 @mcp.tool(name="sw_cut_extrude")
 def sw_cut_extrude(depth: float = 12.0, through_all: bool = False,
                    flip_side: bool = False) -> Dict[str, Any]:
