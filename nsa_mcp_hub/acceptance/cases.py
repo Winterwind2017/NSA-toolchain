@@ -784,11 +784,14 @@ SW_CASES = [
 
     # ── 检验图（视图 + 标题栏 + 检验注释）──
     {"id": "sw.sheet.gear", "tool": "sw_inspection_drawing",
-     "title": "齿轮检验图一条龙：现建齿轮 → 工程图 → 前视/上视 → 视图尺寸 + 检验注释 + 标题栏",
+     "title": "齿轮检验图：视图 + 真尺寸（齿根半径 17.5）+ 参考尺寸 φ44/φ40 + 检验注释 + 标题栏",
      "args": {"kind": "gear", "title": "输入齿轮检验图", "drawing_number": "NSA-0001",
               "auto_part": True},
      "expect_ok": True,
-     "expect_reads": {"reads.document_type": 3, "reads.drawing_created": True},
+     "expect_reads": {"reads.document_type": 3, "reads.drawing_created": True,
+                      "reads.engineering_dimensions.dimensions.root_diameter_mm.value_mm": 17.5,
+                      "reads.engineering_dimensions.dimensions.root_diameter_mm.kind": "radius",
+                      "reads.engineering_dimensions.reference_notes.tip_diameter_mm": "φ44"},
      "timeout_s": 900},
 
     {"id": "sw.asm.reducer.drawing", "tool": "sw_reducer_assembly_drawing",

@@ -583,12 +583,7 @@ def inspection_drawing(args: dict) -> dict:
                              dimensioning.get("dimensions_added"), ">= 1",
                              (dimensioning.get("dimensions_added") or 0) >= 1))
 
-        # ② 尺寸读数核对：把量出来的值与几何真值（外径/齿宽/孔径）对表
-        measured_info = {"linear_mm": [], "angular_rad": [], "total": 0}
-        if target_view is not None:
-            measured_info = _dimension_values(target_view)
-        reads["dimension_values"] = measured_info
-        measured = measured_info.get("linear_mm") or []
+        # ② 工程尺寸：按目标值在实体里找真尺寸，找不到的给参考尺寸注释
         expected: dict[str, float] = {}
         kind_value = str(report.get("kind") or "")
         if kind_value in ("external_involute_gear", "helical_involute_gear",
@@ -600,19 +595,15 @@ def inspection_drawing(args: dict) -> dict:
         elif kind_value == "rectangular_spline":
             expected["outer_diameter_mm"] = float(report.get("outer_diameter_mm") or 0.0)
             expected["inner_diameter_mm"] = float(report.get("inner_diameter_mm") or 0.0)
-        matched = {}
-        for name, value in expected.items():
-            if value <= 0.0:
-                continue
-            hits = [m for m in measured if abs(m - value) <= 0.6]
-            if hits:
-                matched[name] = round(hits[0], 3)
-        reads["dimension_targets_matched"] = matched
-        reads["dimension_targets_matched"] = matched
-        # 说明：自动配对的尺寸在本机多半是**角度尺寸**（两实体不平行），
-        # 有工程含义的 φ/宽度尺寸需要按实体类型挑边（下一步），这里只如实报值。
-        reads["dimension_note"] = ("auto-paired dimensions; named engineering "
-                                   "dimensions need entity classification")
+
+        engineering = {"dimensions": {}, "reference_notes": {}}
+        if target_view is not None and expected:
+            engineering = _engineering_dimensions(drawing, target_view, expected)
+        reads["engineering_dimensions"] = engineering
+        covered = len(engineering.get("dimensions") or {}) + len(
+            engineering.get("reference_notes") or {})
+        checks.append(_check("engineering_dimensions_covered", covered,
+                             len(expected), covered >= 2))
 
         inspection = dn.insert_note(drawing, text, 0.10, 0.30)
         block = dn.insert_note(drawing, "\n".join(title_lines), 0.45, 0.02)
@@ -817,6 +808,85 @@ def _balloons(drawing, view, count: int) -> dict:
         kind = "circled_number_note"
         after = int(dn._val(view, "GetNoteCount") or -1)
     return {"kind": kind, "added": added, "notes_before": before, "notes_after": after}
+
+def _single_entity_dimension(drawing, view, entity, x: float, y: float):
+    """给单个实体加尺寸（圆边→直径/半径，直线边→长度），返回读数 mm 或 None。
+
+    关键：**单实体**尺寸不会退化成角度尺寸（角度需要两条不平行的边）。
+    """
+    before = _display_dimension_count(view)
+    drawing.ClearSelection2(True)
+    try:
+        entity.Select2(False, 1)
+    except Exception:                                # noqa: BLE001
+        return None
+    try:
+        drawing.AddDimension2(float(x), float(y), 0.0)
+    except Exception:                                # noqa: BLE001
+        return None
+    if _display_dimension_count(view) <= before:
+        return None
+    dimensions = list(dn._val(view, "GetDisplayDimensions") or [])
+    if not dimensions:
+        return None
+    inner = None
+    try:
+        inner = dimensions[-1].GetDimension2(0)
+    except Exception:                                # noqa: BLE001
+        inner = None
+    if inner is None:
+        return None
+    try:
+        value = float(inner.GetSystemValue2("")) * 1000.0
+    except Exception:                                # noqa: BLE001
+        return None
+    return round(value, 3)
+
+
+def _engineering_dimensions(drawing, view, expected: dict, x: float = 0.40,
+                            y: float = 0.20, limit: int = 60) -> dict:
+    """按"目标值"去视图实体里找真尺寸；找不到的目标给参考尺寸注释。
+
+    为什么这样：本机齿轮轮廓是**多段线**（每齿若干小线段），外径/齿根根本不是
+    一条圆边，SW 无法对轮廓加 φ 尺寸；轴孔才是真的圆边。工程上遇到这种情况，
+    轮廓尺寸按**参考尺寸**（加括号或 φ 标注）写，能测的实体照常标。
+    """
+    entities = []
+    try:
+        raw = view.GetVisibleEntities2(_none_dispatch(), 1)
+        entities = list(raw) if raw is not None else []
+    except Exception:                                # noqa: BLE001
+        entities = []
+
+    remaining = {name: float(value) for name, value in expected.items() if value}
+    found: dict[str, dict] = {}
+    reference: dict[str, str] = {}
+    scanned = 0
+
+    for index, entity in enumerate(entities[:limit]):
+        if not remaining:
+            break
+        scanned += 1
+        value = _single_entity_dimension(drawing, view, entity, x, y)
+        if value is None:
+            continue
+        for name, target in list(remaining.items()):
+            if abs(value - target) <= 0.6 or abs(value - target / 2.0) <= 0.6:
+                found[name] = {"value_mm": value, "entity_index": index,
+                               "kind": "diameter" if abs(value - target) <= 0.6
+                                       else "radius"}
+                remaining.pop(name)
+                break
+
+    for name, target in remaining.items():
+        label = ("φ%s" % (("%.3f" % target).rstrip("0").rstrip("."))
+                 if "diameter" in name else
+                 ("%s" % (("%.3f" % target).rstrip("0").rstrip("."))))
+        landing = dn.insert_note(drawing, label, 0.52, y)
+        reference[name] = landing.get("text") or ""
+
+    return {"dimensions": found, "reference_notes": reference,
+            "entities_scanned": scanned, "targets": list(expected)}
 
 def _template(app, preference: int, ext: str) -> str:
     """优先用 SW 配置的模板，再退回 ProgramData 里扫到的模板。"""
