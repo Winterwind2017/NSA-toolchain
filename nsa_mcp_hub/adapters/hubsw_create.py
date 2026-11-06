@@ -593,13 +593,21 @@ def inspection_drawing(args: dict) -> dict:
             expected["pitch_diameter_mm"] = float(report.get("pitch_diameter_mm") or 0.0)
             if report.get("root_diameter_mm"):
                 expected["root_diameter_mm"] = float(report["root_diameter_mm"])
+            # 轴孔是真圆边（真正能加 φ 的几何），作为最确定的目标
+            if report.get("bore_diameter_mm"):
+                expected["bore_diameter_mm"] = float(report["bore_diameter_mm"])
         elif kind_value == "rectangular_spline":
             expected["outer_diameter_mm"] = float(report.get("outer_diameter_mm") or 0.0)
             expected["inner_diameter_mm"] = float(report.get("inner_diameter_mm") or 0.0)
 
         engineering = {"dimensions": {}, "reference_notes": {}}
         if target_view is not None and expected:
-            engineering = _engineering_dimensions(drawing, target_view, expected)
+            # 先扫 60 个实体（快）；一个真尺寸都没命中再扫到 150（稳）
+            engineering = _engineering_dimensions(drawing, target_view, expected,
+                                                  0.40, 0.20, 60)
+            if not (engineering.get("dimensions") or {}):
+                engineering = _engineering_dimensions(drawing, target_view, expected,
+                                                      0.40, 0.56, 150)
         reads["engineering_dimensions"] = engineering
         covered = len(engineering.get("dimensions") or {}) + len(
             engineering.get("reference_notes") or {})
