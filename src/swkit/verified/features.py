@@ -268,10 +268,24 @@ def chamfer(doc: Any, distance_mm: float = 2.0, angle_deg: float = 45.0,
     return out
 
 
+# 螺纹孔规格表（底孔直径 mm）——与 docs/RECIPES.md §3 一致
+TAP_DRILL_MM = {"M3": 2.5, "M4": 3.3, "M5": 4.2, "M6": 5.0,
+                "M8": 6.8, "M10": 8.5, "M12": 10.2}
+
+
 def hole_wizard(doc: Any, hole_type: str = "simple", size: str = "",
                 depth_mm: float = 10.0, through_all: bool = False,
                 x_mm: float = 0.0, y_mm: float = 0.0) -> Dict[str, Any]:
-    """异型孔（需先选面）。判据：特征 +1 且体积**减少**。"""
+    """异型孔（需先选面）。
+
+    判据从"体积变小"升级成**孔径对不对**：孔向导不解析规格表（几何恒 Ø50.8，
+    见 docs/SILENT_FAILURES.md），所以只看"体积减少"会把它当成成功。
+    这里用盲孔体积反算实测孔径 `d = 2·sqrt(V_removed/(π·depth))`，
+    再和 `TAP_DRILL_MM` 里的底孔直径比；比不过就 `ok=False` 并给出配方指引。
+
+    贯穿孔无法用体积反算孔径 → `diameter_verified=False`、直接判失败，
+    不允许"没验证就当交付"。
+    """
     out = _result("sw_hole_wizard", "IChamferHoleWizard / WizardHoleFeatureData2")
     before = shape_counts(doc)
     v0 = _volume_mm3(doc)
@@ -283,15 +297,49 @@ def hole_wizard(doc: Any, hole_type: str = "simple", size: str = "",
         return out
     after = shape_counts(doc)
     v1 = _volume_mm3(doc)
-    out["detail"].update({"depth_mm": depth_mm,
-                          "features_before": before["features"],
-                          "features_after": after["features"],
-                          "volume_before_mm3": round(v0, 3) if v0 is not None else None,
-                          "volume_after_mm3": round(v1, 3) if v1 is not None else None})
-    out["checks"] = {
+    removed = None
+    if v0 is not None and v1 is not None:
+        removed = float(v0) - float(v1)
+    key = str(size or "").strip().upper()
+    for sep in ("X", "×", " "):
+        if sep in key:
+            key = key.split(sep)[0]
+    expected_d = TAP_DRILL_MM.get(key)
+    measured_d = None
+    if removed and removed > 0 and depth_mm and not through_all:
+        measured_d = 2.0 * math.sqrt(removed / (math.pi * float(depth_mm)))
+    out["detail"].update({
+        "depth_mm": depth_mm,
+        "through_all": bool(through_all),
+        "size": size,
+        "features_before": before["features"],
+        "features_after": after["features"],
+        "volume_before_mm3": round(v0, 3) if v0 is not None else None,
+        "volume_after_mm3": round(v1, 3) if v1 is not None else None,
+        "removed_volume_mm3": round(removed, 3) if removed is not None else None,
+        "expected_tap_drill_mm": expected_d,
+        "hole_diameter_mm": round(measured_d, 3) if measured_d is not None else None,
+    })
+    checks = {
         "feature_added": after["features"] > before["features"],
-        "volume_decreased": (v0 is not None and v1 is not None and v1 < v0),
+        "volume_decreased": bool(removed and removed > 0),
     }
+    if expected_d is not None:
+        if measured_d is None:
+            checks["diameter_verified"] = False
+            out["detail"]["warning"] = (
+                "贯穿孔/体积不可用，无法反算孔径；禁止按尺寸交付。"
+                "按 docs/RECIPES.md §3 走底孔+倒角+螺纹配方。")
+        else:
+            tolerance = max(0.25, expected_d * 0.08)
+            checks["diameter_matches"] = abs(measured_d - expected_d) <= tolerance
+            if not checks["diameter_matches"]:
+                out["detail"]["size_ignored"] = True
+                out["detail"]["delegate"] = (
+                    "孔向导不解析规格表：实测 Ø%.2f ≠ 规格底孔 Ø%.2f（%s）。"
+                    "按 docs/RECIPES.md §3 自己画底孔+倒角+螺纹。"
+                    % (measured_d, expected_d, size))
+    out["checks"] = checks
     out["ok"] = all(out["checks"].values())
     return out
 

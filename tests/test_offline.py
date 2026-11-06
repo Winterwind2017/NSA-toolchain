@@ -92,3 +92,68 @@ def test_drawing_view_names_are_localized() -> None:
 
     assert VIEW_MAP["front"] == "*前视"
     assert all(v.startswith("*") for v in VIEW_MAP.values())
+
+
+def test_hole_wizard_rejects_wrong_diameter() -> None:
+    """孔向导不解析规格表（几何恒 Ø50.8）——判据必须把它拦下来。
+
+    这是 2026-11-06 修掉的一个"假通过"：旧判据只看"体积变小"，
+    于是 M6 请求被做成 Ø50.8 也照样 ok=True。现在用去除体积反算孔径
+    `d = 2·sqrt(V/(π·depth))`，和 TAP_DRILL_MM 比，比不过就判失败。
+    """
+    import math
+    import types
+
+    from swkit.verified import features
+
+    def run(v0: float, v1: float, size: str, depth: float, through: bool = False):
+        doc = types.SimpleNamespace(v0=v0, v1=v1, call=0)
+        features._volume_mm3 = lambda d: (d.v0 if d.call == 0 else d.v1)
+        features.shape_counts = lambda d: {
+            "features": 1 if d.call == 0 else 2
+        }
+
+        def fake(**kwargs):
+            doc.call = 1
+
+        features._kernel = lambda: types.SimpleNamespace(hole_wizard=fake)
+        return features.hole_wizard(doc, size=size, depth_mm=depth, through_all=through)
+
+    good = math.pi / 4 * 5.0 ** 2 * 12
+    ok = run(48000.0, 48000.0 - good, "M6", 12.0)
+    assert ok["ok"] is True
+    assert ok["checks"]["diameter_matches"] is True
+    assert abs(ok["detail"]["hole_diameter_mm"] - 5.0) < 1e-6
+
+    wrong = math.pi / 4 * 50.8 ** 2 * 12
+    bad = run(200000.0, 200000.0 - wrong, "M6", 12.0)
+    assert bad["ok"] is False
+    assert bad["checks"]["diameter_matches"] is False
+    assert "RECIPES.md" in bad["detail"]["delegate"]
+
+    blind_unknown = run(48000.0, 47000.0, "M6", 12.0, through=True)
+    assert blind_unknown["ok"] is False
+    assert blind_unknown["checks"]["diameter_verified"] is False
+
+
+def test_tap_drill_table_matches_docs() -> None:
+    """规格表必须和 docs/RECIPES.md §3 一致（M3–M12）。"""
+    from swkit.verified.features import TAP_DRILL_MM
+
+    assert TAP_DRILL_MM == {"M3": 2.5, "M4": 3.3, "M5": 4.2, "M6": 5.0,
+                            "M8": 6.8, "M10": 8.5, "M12": 10.2}
+
+
+def test_no_phantom_tool_names() -> None:
+    """registry/docs 里不许出现"不存在的工具名"（sw_threaded_hole 曾长期被引用）。"""
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[1]
+    phantom = "sw_threaded_hole"
+    offenders = []
+    for path in list(root.glob("src/**/*.py")) + list(root.glob("docs/*.md")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if phantom in line and "没有" not in line and "不存在" not in line:
+                offenders.append("%s:%d" % (path.name, lineno))
+    assert not offenders, offenders

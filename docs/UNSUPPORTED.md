@@ -121,7 +121,15 @@
 ### `sw_hole_wizard`（feature）
 
 - API：`IFeatureManager.HoleWizard5(27 参)`
-- 结论：按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），选顶面或选基准面都返回 None、体积 48000→48000 不变 —— 孔向导对本机不可用；等价能力走 sw_threaded_hole（底孔 FeatureCut4 + 倒角 + 真实螺纹，8/8 通过）
+- 结论：按官方示例 27 参调用（swWzdHole=2/AnsiMetric=1/Pan=32/M6/贯穿），选顶面或选基准面都返回 None、体积 48000→48000 不变 —— 孔向导对本机不可用；它也不解析规格表（恒 Ø50.8）。本机没有 `sw_threaded_hole`，螺纹孔按 `docs/RECIPES.md` §3 配方做。
+
+### 螺纹孔（`sw_threaded_hole` 不存在）
+
+本机**没有** `sw_threaded_hole` 这个工具（历史上文档引用过一个不存在的名字）。
+`sw_hole_wizard` 的判据已改成"体积反算孔径 vs 规格表"，比不过即判失败；
+要真正交付螺纹孔请按 `docs/RECIPES.md` §3 的配方：
+底孔 `FeatureCut4` → 口部 `InsertFeatureChamfer` → `CreateDefinition(87=swFmSweepThread)`
++ `ThreadFeatureData`（`edge.Select2(False, 1)`，Type="Metric Tap"）。
 
 ### `sw_miter_flange`（sheet_metal）
 
