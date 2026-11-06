@@ -251,7 +251,7 @@
 | `sw_spline_inspection` | outer_diameter_mm, inner_diameter_mm, tooth_count, key_width_mm, length_mm, pin_diameter_mm | 矩形花键检具尺寸：齿厚 b、齿槽宽、**推荐量柱直径**、**跨棒距 M**（量柱夹在相对两齿槽，奇偶齿修正）；判据含 M > 外径、量柱必须真夹在齿侧（落底即判失败） |
 | `sw_inspection_note` | kind(gear/helical/internal/spline/**reducer**), write, x, y, 以及该类型的几何参数 | 把检验尺寸写成**工程图注释**（没有工程图就新建一张），判据是**注释文本读回**里真的出现 W/M/量柱数值；`write=false` 只返回注释文本 |
 | `sw_inspection_drawing` | kind, title, drawing_number, scale, material, auto_part, 以及几何参数 | 一条龙出**检验图**：零件另存 → 新建工程图 → 放前视/上视 → 写检验注释与标题栏；判据是视图数 ≥1、**视图上真标出尺寸**（单实体尺寸，读回 `engineering_dimensions`：能测的给真尺寸、轮廓给参考尺寸 φ…）、注释读回含关键数值、标题栏读回含图号 |
-| `sw_reducer_assembly_drawing` | module_mm, gear_thickness_mm, axial_gap_mm, stage1_teeth, stage2_teeth, bore_diameters_mm, title, drawing_number | 整机装配图：现建/复用 4 齿轮 + 3 轴 → 装配（7 组件）→ 图纸前视/等轴测 → **国标 A3 图框** + **6 列 BOM 表**（8 行×6 列 42 格，序号/代号/名称/数量/材料/备注）+ **原生球标** + 标题栏栏位填充；判据=组件数 7、表格行列与格数、7 个零件名逐格读回、标题栏 `matched>=3`、装配视图尺寸覆盖数 |
+| `sw_reducer_assembly_drawing` | module_mm, gear_thickness_mm, axial_gap_mm, stage1_teeth, stage2_teeth, bore_diameters_mm, title, drawing_number, **code_rule**(drawing_number/type_code/filename), sheet_size(a0–a4), material, scale, reuse_existing | 整机装配图：现建/复用 4 齿轮 + 3 轴 → 装配（7 组件）→ 图纸前视/等轴测 → **国标 A3 图框** + **6 列 BOM 表**（8 行×6 列 42 格，序号/代号/名称/数量/材料/备注）+ **原生球标** + 标题栏栏位填充；判据=组件数 7、表格行列与格数、7 个零件名逐格读回、标题栏 `matched>=3`、装配视图尺寸覆盖数 |
 | `sw_keyway_lookup` | shaft_diameter_mm, required_length_mm | 标准平键与键槽 GB/T 1096；按轴径给 b×h、t1、t2，键长向上取标准系列 |
 | `sw_create_internal_gear` | 同上 + execute | 一步到位建内齿圈（渐开线齿槽）；真机判据=体积 26325.888（±1%） |
 | `sw_create_helical_gear` | 同上 + execute | 一步到位建斜齿轮（放样）；真机判据=体积 36290.5（4 段，±3%） |
