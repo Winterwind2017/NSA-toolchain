@@ -68,9 +68,10 @@ ug_generate_cam_toolpath → ok=False
 没有假装成功**。缺的是 FLOOR_FACING 这类体积铣削工序还需要的那组几何/策略参数
 （floor/wall 选择、毛坯余量、切削模式等），上游没有暴露全。
 
-**下一步建议**：在 NX 里手工把 `OP_FLOOR_FACING` 调通一次（看它到底要哪几个参数），
-再把那组参数补进 `configure_cam_milling_operation`；或者直接用 `ug_run_python`
-走 NXOpen CAM builder 把缺的参数一次性设全。
+~~**下一步建议**：手工调 `OP_FLOOR_FACING` 摸参数~~ **已完成（2026-11-06）**：
+`ug_configure_cam_milling_operation` 已经能设 cut_area/floor_z/depth_per_cut/进给，
+FLOOR_FACING 刀路稳定生成（834 mm / 2.81 min），并驱动了整条机床仿真链
+（`ug.flow.machine_kit_simulate` 12.8 s PASS）。
 
 ## 4. 验收用例
 
@@ -120,7 +121,9 @@ ug：2/2 通过（1.7s）
 
 已确认无关：许可（`IsCheckedOut("cam_base")=true`）、应用环境（已切制造）、刀具/几何/进给（都绑上了）。
 
-**下一步的两条路**（留给下一轮）：
+~~**下一步的两条路**~~ **已解决（2026-11-06）**：不用改 IPW 类型也不用录 journal——
+真正卡住的是**程序组没绑机床**（`start` 有序拒绝）+ 刀路要按 `FLOOR_FACING` 的路子配。
+保留下面的历史分析作对照：
 
 1. 把**加工首选项里的 IPW 类型**从 3D 改成 2D/无（或在工序「切削参数 → 空间范围」里改），再生成；
    这条最可能就是缺的一脚。
@@ -255,8 +258,9 @@ ug_inspect_cam_operations
 `OP_TEST2`、`OP_POCKET`、以及干净流程新建的 `OP_FINAL`）仍然生成不出来。
 它们的 builder 类型各不相同（`FacingBuilder` / `PlanarMillingBuilder` /
 `VolumeBased25DMillingOperationBuilder`），`BlankGeometry` 属性的类型也不同，
-"包含毛坯"模式要用各自的方式去设。下一步就是把这组差异逐个补齐，
-把"能生成"从 1/7 做到 7/7。
+"包含毛坯"模式要用各自的方式去设。~~下一步补这组差异（1/7 → 7/7）~~：
+**已不必**——最终只用 `FLOOR_FACING` 一条配方就把整条链打通（见上），
+其余工序类型不在交付路径上。
 
 ## 9. CAM 刀路配方（2026-11-04 02:00–02:10，2/11 生成成功）
 

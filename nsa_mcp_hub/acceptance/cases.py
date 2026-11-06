@@ -2885,6 +2885,52 @@ def _ug_machine_build_flow(client, context):
     return result
 
 
+def _ug_restart_nx_session(client, log=None):
+    """把 NX 换成**干净会话**再跑（只给 machine_validate 这类"会话敏感"用例用）。
+
+    实测（2026-11-06 17:00）：`ug.flow.machine_validate` 单独跑 11.9 s PASS，
+    但在全量序列里（前面已经开了 5 台机床、建了十几个零件）会挂到超时。
+    它内部要往临时阴影库导 MTK，会话一脏就卡在导入上。
+    所以这里直接重启 NX：kill ugraf → 清锁 → 按当前模式（阴影库/标准库）重启 → 等 48161。
+    """
+    import socket
+    import subprocess
+    import time as _time
+
+    def say(text):
+        if log is not None:
+            log(text)
+
+    shadow_marker = _PathForMachineBuilds(
+        r"D:\bililive\CAD-Agent-Hub\MCP\UG\machine_shadow\active.json")
+    say("   重启 NX（隔离会话）…")
+    subprocess.run(["taskkill", "/F", "/IM", "ugraf.exe"],
+                   capture_output=True, text=True, errors="replace")
+    _time.sleep(3)
+    lock = _PathForMachineBuilds(os.environ.get("TEMP", "")) / "nsa-mcp-hub-ug.lock"
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+    if shadow_marker.exists():
+        subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                        "-File", r"D:\bililive\CAD-Agent-Hub\MCP\UG\scripts\start-nx-shadow.ps1"],
+                       capture_output=True, text=True, errors="replace", timeout=600)
+    else:
+        env = os.environ.copy()
+        env["UGII_USER_DIR"] = r"D:\bililive\CAD-Agent-Hub\MCP\UG\nx_user"
+        subprocess.Popen([r"D:\Program Files\Siemens\DesigncenterNX2512\NXBIN\ugraf.exe"], env=env)
+        for _ in range(60):
+            _time.sleep(5)
+            try:
+                with socket.create_connection(("127.0.0.1", 48161), timeout=2):
+                    break
+            except OSError:
+                continue
+    client.restart()
+    say("   NX 已换新会话")
+
+
 def _ug_machine_validate_flow(client, context):
     """ug 剧本十三：机床校验五件套（走**官方 BC 模板**路线，真正通过）。
 
@@ -2904,6 +2950,22 @@ def _ug_machine_validate_flow(client, context):
     后三个工具（readiness / start / import readback）在没有 CAM 工序、没有 .mtk 时
     如实拒绝，这里断言拒绝原因。
     """
+    # 会话减负：这条用例排在最后，前面已经开了 6+ 个带机床的零件。
+    # 实测（2026-11-06 16:13）会话一膨胀，这里的 MTK 导入会挂到超时。
+    # 所以先做一次**容错**清理（失败不影响判定），再建自己的工作区。
+    # 这条用例对会话状态极敏感（全量序列里会挂，单独跑 11.9 s 就过），
+    # 所以先换成干净 NX 会话，再做容错清理。
+    try:
+        _ug_restart_nx_session(client)
+    except Exception:                                  # noqa: BLE001
+        pass
+    try:
+        client.call("ug_close_test_parts",
+                    {"dry_run": False, "time_limit_s": 60,
+                     "confirmation": "CLOSE_TEST_PARTS"})
+    except Exception:                                  # noqa: BLE001
+        pass
+
     _s = uuid.uuid4().hex[:6]
     workspace = "acc_kit_%s.prt" % _s
     kit_name = "nsa_acc_%s.mtk" % _s

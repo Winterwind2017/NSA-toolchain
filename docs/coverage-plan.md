@@ -1077,8 +1077,10 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
 `start` 的前提是 CAM 程序组绑了机床，所以这两条不通它就一直是有序拒绝。
 剧本里继续断言"拒绝 + 点名 blockers"，不假装通过。
 
-下一步建议（按性价比）：UI 里手工绑一次 → 用 `run_python` 读出绑定后的 CAM 字段照着复刻；
-或者拆 NX 自带机床定义对齐 `kit_information.xml`。
+~~下一步建议：UI 里手工绑一次复刻字段~~ **已完成（2026-11-06 09:10）**：用
+`JournalManager.RecordJournal` 录下 UI 手工绑定的真实序列，落成
+`ug_bind_machine_from_library`（工具 + 用例 `ug.flow.machine_bind`）。
+上面这段是当时的历史判断，保留作对照。
 
 ## 机床仿真真跑通（2026-11-06 01:20）
 
@@ -1108,7 +1110,7 @@ CAM 无工序的拒绝，import readback 断言"缺 kit 报错不假成功"。
   `cam_capabilities`（机床构建器应用粘性会毒化后续建模与 CAM）。
 * `ug.cam.capabilities` 去掉"建块"步骤（块建模已被 `ug.flow.model` 覆盖，且它在大序列里
   偶发 45 s 超时）。
-* 待办：加 `ug_close_test_parts`（只关 `acc_*`/`cap_*`/`nsa_accept_*`），在 CAM 用例开头清理会话。
+* ~~待办：加 `ug_close_test_parts`~~ **已完成（2026-11-06 02:30，见下一节）**。
 
 ## 会话减负：`close_test_parts` 让 `cam.capabilities` 稳定（2026-11-06 02:30）
 
@@ -1161,7 +1163,10 @@ ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 
 * 阴影库 + 四个 `UGII_CAM_LIBRARY_*` 环境变量启动 NX 后，`CreateNcmctPartMountingBuilder("nsa_template_probe")`
   能被解析（之前报"机床没有分类"）；再往后卡在 `MOM_TCL：无法打开 TCL 脚本文件`。
   已排除 tcl/def 缺失、post 段改成 NX 自带 fanuc post 仍报同样错。
-* 下一步候选：① 用 sim0x 机床做模板替换 graphics prt；② 给 kit 补齐 Bin/Controller/Libraries；③ 只用库机床。
+* ~~下一步候选：① 用 sim0x 做模板替换 graphics prt；② 给 kit 补齐 Bin/Controller/Libraries；③ 只用库机床。~~
+  **都已不必**：① 走通了更直接的路（阴影库 + DBC 脚本，见 10:56 与 11:40 两节）；
+  ② 只补了必要的 `cam_setup/` 与 cse 缺件，靠 `nx_machine_shadow.py --build` 自动借；
+  ③ 保留两条路：标准库跑通用用例、阴影库跑自家 `.mtk` 用例。
 * 副作用已记录：设了阴影库 env 后标准库不可见，测完必须清变量重启（已实测恢复 2/2 PASS）。
 
 ## ✅ 自家 .mtk 机床绑定打通（2026-11-06 10:56）
@@ -1202,4 +1207,34 @@ ug 全量：**18/18 PASS，146.1 s**。覆盖：**623/623 = 100%**（验收 499 
   杀客户端不会停播放，会毒化后续整轮 → 必须重启 NX。
   因此 `play_/step_/describe_simulation_api` 三个诊断工具已撤掉。
 * 新用例：`ug.flow.machine_kit_axis_limit`（阴影库，11.1 s）、`ug.flow.machine_kit_collision`（1.9 s）。
+* 覆盖：**625/625 = 100%**（验收 501 ｜ 契约 245 ｜ 快乐路径 474 ｜ 未覆盖 0）。
+
+## 收尾五件事（2026-11-06 17:10）
+
+按用户要求处理了 backlog 的 2/3/4/5 四类（第 1 类验收矩阵由用户确认不做）：
+
+* **2. `sw_hole_wizard` 的"假通过"**：旧判据只看"体积变小"，而孔向导不解析规格表
+  （几何恒 Ø50.8），所以 M6 请求被做成 Ø50.8 也照样 ok=True。
+  改成「用去除体积反算孔径 `d=2·sqrt(V/(π·depth))` 和 `TAP_DRILL_MM` 比」，
+  比不过 → `ok=False` + `detail.delegate` 指向 `docs/RECIPES.md` §3；
+  贯穿孔无法反算 → `diameter_verified=False`，禁止"没验证就交付"。
+  另发现 **`sw_threaded_hole` 这个工具根本不存在**（只在文档/registry 注释里被引用过），
+  已把 registry 与两处 docs 改成"本机没有该工具，走 RECIPES §3"，
+  并加 3 条离线测试（孔径判据 / 规格表一致性 / 幽灵工具名守卫）。
+* **3. 文档漂移**：`coverage-plan.md` 三处、`ug-verification.md` 三处"下一步/待办"
+  已标注为完成并写明实际走通的路（绑定脚本化、FLOOR_FACING 配方、.mtk 阴影库）。
+* **4. 卫生清理**：`MCP/UG/workspace` 67 个测试零件 → 只留 9 个 fixture
+  （`nsa_simple_machine.prt` 等，profile 指定的源件），其余进
+  `workspace/_trash_20261106-164617`（可逆）；`machine_kit_imports` 50 个目录 → 1 个
+  （`nsa_reference_kit-szb9r4bp`，阴影库就是用它建的）；
+  `_TEST_PART_PREFIXES` 收敛到 18 个真前缀（补 `trav_`/`scl_`，去掉 8 个死前缀）；
+  过期的 `machine_shadow/active.json` 清掉。
+  **踩坑记录**：第一次清得太狠，把 fixture 也挪走了 → `machine_build`/`machine_validate`
+  报 `machine build workspace does not exist` / `configured machine source part is unavailable`；
+  按 `config/machine_sources.local` 的 `source_part` 逐个还原后才恢复。
+* **5. `machine_validate` 会话敏感**：单独跑 11.9 s PASS，全量序列里必挂（前面已开 5 台机床）。
+  加了 `_ug_restart_nx_session()`：跑这条用例前 kill ugraf → 清锁 → 按当前模式重启 NX →
+  `client.restart()`，再做容错清理。全量 **21/22 PASS + 1 SKIP / 226.2 s**，
+  `machine_validate` 31.3 s PASS（含换会话的 ~18 s）。
+  **代价**：这条用例会重启 NX，所以它必须留在最后一条。
 * 覆盖：**625/625 = 100%**（验收 501 ｜ 契约 245 ｜ 快乐路径 474 ｜ 未覆盖 0）。
