@@ -193,3 +193,41 @@ doc = app.OpenDoc(part_path, 1)  # 重新打开
 `sw_set_dimension` 本身没 bug，缺的是"真实存在的命名尺寸"：参数化零件（feature graph）
 建出来的块自带 `D1@BlockBoss`，`doc.Parameter("D1@BlockBoss")` 可读可写（20 mm → 25 mm
 读回一致）。空零件上手画矩形没有命名尺寸，所以验收夹具用 `sw_create_parametric_part`。
+
+## 16. `InsertProtrusionBlend2` 是 **18 参**，不是 14 参
+
+放样（loft）这个 API 的参数个数特别容易记错：少传会直接抛
+`com_error -2147352561 DISP_E_PARAMNOTOPTIONAL`（"参数非可选"），
+而且报错信息里**不会告诉你缺哪个**。
+
+真签名（`sldworks.tlb` 读出，2026-11-06）：
+
+```
+InsertProtrusionBlend2(
+    Closed, KeepTangency, ForceNonRational, TessToleranceFactor,   # 1-4
+    StartMatchingType, EndMatchingType,                            # 5-6
+    StartTangentLength, EndTangentLength,                          # 7-8
+    StartTangentDir, EndTangentDir,                                # 9-10
+    IsThinBody, Thickness1, Thickness2, ThinType,                   # 11-14
+    Merge, UseFeatScope, UseAutoSelect, GuideCurveInfluence,        # 15-18
+)
+```
+
+`SolidWorksApp.loft()` 早期只传 14 个，结果**永远建不出特征**
+（异常被 `if feat is None` 之后的兜底掩盖成"Loft failed"）。
+修正后实测：两块平行矩形（60×40 @z=0 与 30×20 @z=20）放样，
+体积 **28000.0 mm³**，与棱台公式 `(A1+A2+√(A1A2))/3 · h` 完全一致。
+
+同类 API 的参数量都要以 tlb 为准，别按文档页数记：
+
+* `InsertProtrusionSwept4` 20 参、`InsertCutSwept5` 22 参
+* `HoleWizard5` 27 参（见第 3 节，错位会得到 Ø50.8）
+
+查参数量最省事的办法（本机就一条命令）：
+
+```python
+import pythoncom
+tl = pythoncom.LoadTypeLib(r"...\sldworks.tlb")
+ti = tl.GetTypeInfo(i); attrs = ti.GetTypeAttr()
+fd = ti.GetFuncDesc(j); ti.GetNames(fd.memid)     # 名字顺序即参数顺序
+```

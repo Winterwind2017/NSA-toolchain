@@ -807,10 +807,17 @@ class SolidWorksApp(BaseCADApp):
             close_loft: Close the loft back to the first profile
         """
         doc = self._require_doc()
+        # 真签名 **18 参**（从 sldworks.tlb 读出，2026-11-06 实测）：
+        # Closed, KeepTangency, ForceNonRational, TessToleranceFactor,
+        # StartMatchingType, EndMatchingType, StartTangentLength, EndTangentLength,
+        # StartTangentDir, EndTangentDir, IsThinBody, Thickness1, Thickness2,
+        # ThinType, Merge, UseFeatScope, UseAutoSelect, GuideCurveInfluence
+        # 少传会直接 DISP_E_PARAMNOTOPTIONAL（旧实现只传 14 个，永远建不出特征）。
         feat = doc.FeatureManager.InsertProtrusionBlend2(
-            close_loft, True, True, 1, 0.0, 0.0,
-            False, False, True, True,
-            0, 0, True, True,
+            close_loft, True, False, 1.0,
+            0, 0, 1.0, 1.0,
+            False, False, False, 0.0, 0.0, 0,
+            True, True, True, 0,
         )
         if feat is None:
             raise DrawingError(
