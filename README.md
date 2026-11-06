@@ -21,6 +21,26 @@ AutoCAD、SolidWorks、NX、EPLAN、CODESYS、GX Works3、汇川 AutoShop、CATI
 建模要读回体积与特征数，出图要读回注释文本和表格单元格，PLC 要有编译诊断与行号定位——
 **非标项目里最贵的成本是"改错一次"**，所以判据优先于功能数量。
 
+## 仓库地图
+
+这条链是**多仓结构**：每个内核都要跟一款具体软件的版本、许可证、装机目录绑定
+（AutoCAD 2025 / SolidWorks 2025 / NX 2512 / GX Works3 / CODESYS 3.5 / AutoShop V4.11），
+并进一个仓就没法各自发版、各自跑验收；技能则是"怎么用、别踩什么"，发版节奏也不同。
+
+| 层 | 仓库 |
+|---|---|
+| 适配内核（库 + CLI + MCP，带判据） | `nsa-mcp-hub`（总入口）· `solidworks-agent-kit` · `autocad-agent-kit` · `nxkit` · `gxkit` · `codesyskit` · `autoshopkit` |
+| Agent 技能（怎么用 / 别踩什么） | `ww-solidworks-automation` · `ww-autocad-automation` · `ww-nx-automation` · `ww-gxworks-automation` · `ww-codesys-automation` · `ww-autoshop-automation` |
+| 工作台与资产 | `Non-standard-automation-design` · `workspace-assets` · `global-assets` · `skill-nonstandard-project-manager` · `skill-management-advisor` |
+| 其它 | `ww-obsidian` · `ww-obsidian-agent` · `value-investing-skills` · `dsh-sidebar-edge` |
+
+逐仓说明见 [docs/repos.md](docs/repos.md)。全部仓库都打了 topics，可以按 `nonstandard-automation` /
+`mcp` / `agent-skills` / `cad` / `plc` 横向筛：
+
+```bash
+gh search repos --owner Winterwind2017 --topic nonstandard-automation --limit 50
+```
+
 ## 仓库可见性
 
 **本仓库是私有（private）仓库。** 文档里的「发布 vX.Y.Z」指的是**打 git tag + 推 main 分支**，
@@ -151,6 +171,12 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 真机验收用例需要对应软件在场；不在场时用例会失败或跳过，而不是假装通过——这是刻意设计。
 
 ## 版本
+
+### v0.15.3
+
+仓库归集：新增 [docs/repos.md](docs/repos.md) 仓库地图（适配内核 / Agent 技能 / 工作台与资产 / 其它四层），
+22 个仓库全部补齐 topics（`nonstandard-automation`、`mcp`、`agent-skills` 及按软件分的
+`solidworks` / `autocad` / `siemens-nx` / `gx-works3` / `codesys` / `autoshop` 等）。功能无变化。
 
 ### v0.15.2
 
