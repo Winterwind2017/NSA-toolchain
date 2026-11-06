@@ -100,8 +100,13 @@ def execute_feature_graph(args: dict) -> dict:
     saved = None
     if save_path:
         try:
-            saved = bool(model.SaveAs4(save_path, 0, 1, None, None)) \
-                if hasattr(model, "SaveAs4") else bool(model.SaveAs(save_path))
+            # SaveAs4 的第 4/5 参是 byref VARIANT，传 None 会报「类型不匹配」；
+            # 先用 SaveAs，再退回 SaveAs4（本机 SaveAs 实测可用）。
+            try:
+                model.SaveAs(save_path)
+            except Exception:                          # noqa: BLE001
+                model.SaveAs4(save_path, 0, 1, None, None)
+            saved = os.path.isfile(save_path)
         except Exception as exc:                      # noqa: BLE001
             saved = "失败：%s" % exc
 
