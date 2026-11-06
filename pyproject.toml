@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nsa-mcp-hub"
-version = "0.15.0"
+version = "0.15.1"
 description = "把多个 CAD/PLC 自动化内核统一包装成 MCP 服务器（一个入口 + 每 kit 独立进程 + 判据优先）"
 readme = "README.md"
 requires-python = ">=3.11"

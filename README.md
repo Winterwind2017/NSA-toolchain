@@ -4,6 +4,21 @@
 
 这个仓库是我在日常非标自动化设计、出图、PLC 编程中沉淀下来的一层基础设施：每个软件背后是一套独立内核（AutoCAD、SolidWorks、NX、GX Works3、CODESYS、汇川 AutoShop、CATIA、EPLAN），hub 负责把它们接成统一的工具面、统一的返回结构、统一的验收口径。
 
+## 仓库可见性
+
+**本仓库是私有（private）仓库。** 文档里的「发布 vX.Y.Z」指的是**打 git tag + 推 main 分支**，
+不是把仓库转成公开；仓库可见性不随发版变化。
+
+想复核可以跑：
+
+```bash
+python scripts/assert_private_repos.py                        # 检查账号下全部仓库
+python scripts/assert_private_repos.py --only nsa-mcp-hub     # 只查本仓库
+```
+
+脚本用 `gh` 读 `isPrivate`，只要有一个仓库不是私有就 **退出码 1** 并逐条列出——
+把“我以为它是私有的”变成一条可执行断言。
+
 ## 设计目标
 
 | 目标 | 做法 |
@@ -119,6 +134,12 @@ tests/                协议/工具/服务器级测试（不依赖宿主软件�
 真机验收用例需要对应软件在场；不在场时用例会失败或跳过，而不是假装通过——这是刻意设计。
 
 ## 版本
+
+### v0.15.1
+
+只加一条护栏：把「私有仓库」与「发布 = 打 tag」写进 README，并新增
+`scripts/assert_private_repos.py`——用 `gh` 读 `isPrivate`，任一仓库非私有即退出码 1。
+本轮实测：账号下 **22 个仓库全部私有**，`nsa-mcp-hub` / `solidworks-agent-kit` 均为 `PRIVATE`。
 
 ### v0.15.0
 
