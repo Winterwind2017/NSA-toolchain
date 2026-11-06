@@ -3,12 +3,16 @@
 内齿轮的齿朝**内**长：齿顶圆在分度圆内侧 ``ra = r − m(1 − x)``，齿根圆在外侧
 ``rf = r + m(1.25 + x)``，整体是一个"外圆环形 + 内侧齿形"的截面。
 
-几何取舍（写在明处）：齿形用**结构梯形**（每齿四顶点），不做渐开线逼近。
-理由是内齿圈的渐开线要按"齿槽包络"反求，属于刀具/啮合仿真范畴；而这里要的是
-**可用于布置、干涉、壁厚校核的环体**。齿顶/齿根/基圆按标准公式给，能对得上
-齿轮基本参数；需要切齿精度时另行按刀具包络生成。
+**齿形用真渐开线**：内齿圈上开出来的是"齿槽"，标准齿轮的齿槽在分度圆上的弧齿厚
+也是 ``πm/2``，所以齿槽两侧就是同一族的渐开线，只是角度关系带负号——
 
-截面 = 外圆（轮缘）+ 内侧齿形轮廓，一次拉伸即得内齿圈：3 个特征。
+    θ(r) = π/(2z) + inv(α_p) − inv(α_r)        （r 从齿顶 ra 走到齿根 rf）
+
+θ 是齿槽在半径 r 处的**半角**。半径越大 θ 越小：齿槽在根部变窄、在齿顶变宽，
+于是内齿的齿是"根宽顶窄"，与啮合事实一致（外齿轮的齿正好相反）。
+齿顶低于基圆时（小齿数内齿的常见情形），基圆以下用径向直线补齐。
+
+截面 = 外圆（轮缘）+ 内齿槽轮廓，一次拉伸即得内齿圈：3 个特征。
 """
 
 from __future__ import annotations
@@ -18,10 +22,11 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from .contracts import ContractError, require_positive
+from .involute_gear import involute_angle
 
-#: 结构齿形的角度分配（占单齿节距的比例）
-ROOT_HALF_RATIO = 0.46
-TIP_HALF_RATIO = 0.24
+#: 齿槽轮廓采样：每侧齿面点数、每段圆弧点数
+FLANK_SAMPLES = 8
+ARC_SAMPLES = 4
 
 
 @dataclass
@@ -94,27 +99,89 @@ def validate_internal_gear_spec(
     )
 
 
-def internal_tooth_outline(spec: InternalGearSpec,
-                           samples_per_tooth: int = 4) -> list[list[float]]:
-    """内齿圈的闭合内轮廓：每齿四顶点，齿顶朝圆心。"""
-    if samples_per_tooth < 4:
-        raise ContractError("samples_per_tooth must be at least 4")
+def space_half_angle(spec: InternalGearSpec, radius: float) -> float:
+    """半径处齿槽的半角（内齿：半径越大，齿槽越窄）。"""
+    base_pitch_half = math.pi / (2.0 * spec.tooth_count)
+    inv_pitch = involute_angle(spec.pitch_radius_mm, spec.base_radius_mm)
+    if radius <= spec.base_radius_mm:
+        # 基圆以内渐开线无定义：按基圆处的角度取径向直线
+        return base_pitch_half + inv_pitch
+    return base_pitch_half + inv_pitch - involute_angle(radius, spec.base_radius_mm)
+
+
+def internal_space_outline(
+    spec: InternalGearSpec,
+    *,
+    flank_samples: int = FLANK_SAMPLES,
+    arc_samples: int = ARC_SAMPLES,
+) -> list[list[float]]:
+    """内齿圈的**内轮廓**（齿槽 + 齿顶）闭合折线。
+
+    遍历次序（整圈一圈到底）：以每个齿槽中心 ``s`` 为起点，
+
+    1. 齿根圆弧：半径 ``rf``（齿槽底），从 ``s − θ_root`` 到 ``s + θ_root``
+    2. 右侧齿面：半径 ``rf → ra``，角度 ``s + θ(r)``（渐开线）
+    3. 齿顶圆弧：半径 ``ra``，从 ``s + θ_tip`` 跨过齿中心到 ``s + pitch − θ_tip``
+    4. 左侧齿面：半径 ``ra → rf``，角度 ``s + pitch − θ(r)``
+
+    下一步正好接下一个齿槽的齿根圆弧，因此整条折线首尾相接、不自交。
+    """
+    if flank_samples < 3 or arc_samples < 2:
+        raise ContractError("flank_samples >= 3 and arc_samples >= 2 are required")
+
     pitch_angle = 2.0 * math.pi / spec.tooth_count
-    root_half = pitch_angle * ROOT_HALF_RATIO
-    tip_half = pitch_angle * TIP_HALF_RATIO
+    tip_r = spec.tip_radius_mm
+    root_r = spec.root_radius_mm
+
+    theta_tip = space_half_angle(spec, tip_r)
+    theta_root = space_half_angle(spec, root_r)
+    half_pitch = pitch_angle / 2.0
+    if theta_tip >= half_pitch:
+        raise ContractError(
+            "齿槽在齿顶处互相侵占（z 太小或变位过大）：请增大齿数或调整变位系数")
+    if theta_root <= 0.0:
+        raise ContractError("齿槽在齿根处已闭合（齿根圆过大）：请检查变位系数")
+
+    # 齿面半径：从齿根走到齿顶（渐开线在基圆以下退化为径向直线）
+    flank_radii = [root_r + (tip_r - root_r) * index / (flank_samples - 1)
+                   for index in range(flank_samples)]
+
+    def polar(radius: float, angle: float) -> list[float]:
+        return [radius * math.cos(angle), radius * math.sin(angle)]
 
     points: list[list[float]] = []
     for index in range(spec.tooth_count):
-        center = index * pitch_angle
-        for radius, delta in (
-            (spec.root_radius_mm, -root_half),
-            (spec.tip_radius_mm, -tip_half),
-            (spec.tip_radius_mm, tip_half),
-            (spec.root_radius_mm, root_half),
-        ):
-            angle = center + delta
-            points.append([radius * math.cos(angle), radius * math.sin(angle)])
-    return points
+        center = (index + 0.5) * pitch_angle
+
+        # 1) 齿根圆弧（齿槽底）
+        for step in range(arc_samples + 1):
+            angle = center - theta_root + 2.0 * theta_root * step / arc_samples
+            points.append(polar(root_r, angle))
+
+        # 2) 右侧齿面：齿根 → 齿顶
+        for radius in flank_radii:
+            points.append(polar(radius, center + space_half_angle(spec, radius)))
+
+        # 3) 齿顶圆弧：跨过一个齿
+        tip_from = center + theta_tip
+        tip_to = center + pitch_angle - theta_tip
+        for step in range(1, arc_samples + 1):
+            angle = tip_from + (tip_to - tip_from) * step / arc_samples
+            points.append(polar(tip_r, angle))
+
+        # 4) 左侧齿面：齿顶 → 齿根（下一齿槽的左侧）
+        for radius in reversed(flank_radii):
+            points.append(polar(radius, center + pitch_angle
+                                - space_half_angle(spec, radius)))
+
+    # 相邻段在接缝处会重复同一点，去掉，避免草图出现零长度线段
+    cleaned: list[list[float]] = []
+    for point in points:
+        if not cleaned or abs(point[0] - cleaned[-1][0]) > 1e-9                 or abs(point[1] - cleaned[-1][1]) > 1e-9:
+            cleaned.append(point)
+    if len(cleaned) > 1 and abs(cleaned[0][0] - cleaned[-1][0]) < 1e-9             and abs(cleaned[0][1] - cleaned[-1][1]) < 1e-9:
+        cleaned.pop()
+    return cleaned
 
 
 def _polygon_area(points: list[list[float]]) -> float:
@@ -129,7 +196,7 @@ def _polygon_area(points: list[list[float]]) -> float:
 def build_internal_gear_graph(spec: InternalGearSpec) -> dict[str, Any]:
     """3 个特征：新建零件 → 截面草图（轮缘圆 + 内齿轮廓）→ 拉伸。"""
     rim_radius = spec.rim_outer_diameter_mm / 2.0
-    inner = internal_tooth_outline(spec)
+    inner = internal_space_outline(spec)
     ring_area = math.pi * rim_radius ** 2 - _polygon_area(inner)
 
     return {
@@ -141,7 +208,11 @@ def build_internal_gear_graph(spec: InternalGearSpec) -> dict[str, Any]:
             "tip_above_base": spec.tip_radius_mm > spec.base_radius_mm,
             "ring_area_mm2": round(ring_area, 3),
             "expected_volume_mm3": round(ring_area * spec.thickness_mm, 3),
-            "tooth_geometry": "structural trapezoid (four vertices per tooth, tip inward)",
+            "tooth_geometry": "true involute space profile (tip inward)",
+            "space_half_angle_at_tip_deg": round(
+                math.degrees(space_half_angle(spec, spec.tip_radius_mm)), 4),
+            "space_half_angle_at_root_deg": round(
+                math.degrees(space_half_angle(spec, spec.root_radius_mm)), 4),
         },
         "features": [
             {"name": "InternalRing", "kind": "new_part", "title": "Internal Ring Gear"},

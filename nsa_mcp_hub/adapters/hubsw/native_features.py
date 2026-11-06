@@ -430,6 +430,47 @@ def boss_extrude(model: Any, name: str, sketch_name: str, depth_mm: float, merge
     return rename_feature(feature, name)
 
 
+def loft_boss(
+    model: Any,
+    name: str,
+    sections: list[str],
+    *,
+    closed: bool = False,
+    merge: bool = True,
+) -> Any:
+    """放样：按顺序把若干草图截面串成一个实体（斜齿轮的真螺旋面就走这里）。
+
+    截面必须**按顺序**选中并且用同一个选择标记（1）；`InsertProtrusionBlend2`
+    吃 14 个参数，第 1 个是"是否闭合"。
+    """
+    if len(sections) < 2:
+        raise RuntimeError("loft_boss requires at least two section sketches")
+
+    model.ClearSelection2(True)
+    for section in sections:
+        if not _select_by_id(model, section, "SKETCH", append=True, mark=1):
+            raise RuntimeError(f"Could not select loft section sketch: {section}")
+
+    # 真签名 18 参（从 sldworks.tlb 读出来的；少传会报 DISP_E_PARAMNOTOPTIONAL）：
+    # Closed, KeepTangency, ForceNonRational, TessToleranceFactor,
+    # StartMatchingType, EndMatchingType, StartTangentLength, EndTangentLength,
+    # StartTangentDir, EndTangentDir, IsThinBody, Thickness1, Thickness2, ThinType,
+    # Merge, UseFeatScope, UseAutoSelect, GuideCurveInfluence
+    try:
+        feature = model.FeatureManager.InsertProtrusionBlend2(
+            bool(closed), True, False, 1.0,
+            0, 0, 1.0, 1.0,
+            False, False, False, 0.0, 0.0, 0,
+            bool(merge), True, True, 0,
+        )
+    except Exception as exc:                                   # noqa: BLE001
+        raise RuntimeError(f"InsertProtrusionBlend2 raised {type(exc).__name__}: {exc}") from exc
+
+    if feature is None:
+        raise RuntimeError(f"SolidWorks returned no feature for {name} (loft)")
+    return rename_feature(feature, name)
+
+
 def boss_revolve(
     model: Any,
     name: str,
@@ -917,6 +958,14 @@ def execute_plan(
                 create_sketch(model, name, step["plane"], step["entities"])
             elif operation == "boss_extrude":
                 boss_extrude(model, name, step["sketch"], step["depth_mm"], step["merge"])
+            elif operation == "loft_boss":
+                loft_boss(
+                    model,
+                    name,
+                    step["sections"],
+                    closed=step["closed"],
+                    merge=step["merge"],
+                )
             elif operation == "boss_revolve":
                 _, revolve_backend = boss_revolve(
                     model,

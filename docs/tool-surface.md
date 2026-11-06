@@ -244,14 +244,14 @@
 | `sw_gearbox_plan` | module_mm, pressure_angle_deg, stage1_teeth, stage2_teeth, gear_thickness_mm, axial_gap_mm, bore_diameters_mm, radial_clearance_mm, shaft_extension_mm | 两级平行轴减速器：生成整机 Feature Graph（16 个特征），判据是传动比 (z2/z1)·(z4/z3) 与两级中心距 a=m( |
 | `sw_part_plan` | part_type, parameters | 参数化零件 Feature Graph：block / cylinder / tube / flange / stepped_shaft。 |
 | `sw_output_shaft_plan` | — | 按《输出轴零件图.DWG》生成输出轴 Feature Graph（13 个特征、333 mm）。 |
-| `sw_internal_gear_plan` | module_mm, tooth_count, pressure_angle_deg, thickness_mm, rim_outer_diameter_mm, profile_shift_x | 内齿圈（齿顶朝内，3 特征）；判据=四个特征圆直径、轮缘壁厚 ≥ 1 个模数 |
-| `sw_helical_gear_plan` | module_normal_mm, tooth_count, pressure_angle_deg, helix_angle_deg, thickness_mm, bore_diameter_mm, slices | 斜齿轮（分层近似）；判据=mt=mn/cosβ、L=πd/tanβ、θ=b·tanβ/r、特征数 2+3·slices |
+| `sw_internal_gear_plan` | module_mm, tooth_count, pressure_angle_deg, thickness_mm, rim_outer_diameter_mm, profile_shift_x | 内齿圈（齿顶朝内，**渐开线齿槽**，3 特征）；判据=四个特征圆直径、齿槽半角、轮缘壁厚 ≥ 1 个模数 |
+| `sw_helical_gear_plan` | module_normal_mm, tooth_count, pressure_angle_deg, helix_angle_deg, thickness_mm, bore_diameter_mm, slices | 斜齿轮（**放样真螺旋面**，slices 段截面）；判据=mt=mn/cosβ、L=πd/tanβ、θ=b·tanβ/r、特征数 4+2·slices |
 | `sw_spline_plan` | outer_diameter_mm, inner_diameter_mm, tooth_count, key_width_mm, length_mm | 矩形花键轴 GB/T 1144（3 特征）；判据=截面积夹在内外圆之间、体积=面积×长度 |
 | `sw_keyway_lookup` | shaft_diameter_mm, required_length_mm | 标准平键与键槽 GB/T 1096；按轴径给 b×h、t1、t2，键长向上取标准系列 |
-| `sw_create_internal_gear` | 同上 + execute | 一步到位建内齿圈；真机判据=体积 28522.46（±1%） |
-| `sw_create_helical_gear` | 同上 + execute | 一步到位建斜齿轮；真机判据=体积 39312.8（4 片，±3%） |
+| `sw_create_internal_gear` | 同上 + execute | 一步到位建内齿圈（渐开线齿槽）；真机判据=体积 26325.888（±1%） |
+| `sw_create_helical_gear` | 同上 + execute | 一步到位建斜齿轮（放样）；真机判据=体积 36290.5（4 段，±3%） |
 | `sw_create_spline_shaft` | 同上 + execute | 一步到位建花键轴；真机判据=体积 85197.301（±1%） |
-| `sw_feature_graph_compile` | feature_graph | 校验并编译 Feature Graph IR，返回确定性的可审计执行计划（纯函数，不碰 COM）。 |
+| `sw_feature_graph_compile` | feature_graph | 校验并编译 Feature Graph IR（含 sketch / boss_extrude / boss_revolve / loft_boss / cut_extrude / 阵列 / 基准面与基准轴），返回确定性的可审计执行计划（纯函数，不碰 COM）。 |
 | `sw_feature_inspect` | include_topology, include_tokens, limit | 列出活动文档的特征树与相互关系（可含拓扑与持久引用 token）。只读。 |
 | `sw_feature_rollback` | location, feature | 移动回滚棒：location = end / previous / before / after（后两者需 feature）。 |
 | `sw_set_feature_parameter` | feature, parameter, value, unit, configuration, rebuild, confirm | 按「特征名 + 参数名」改尺寸（比 sw_set_dimension 高一档）。需 confirm=true。 |

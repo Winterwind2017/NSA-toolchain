@@ -95,9 +95,10 @@ def validate_helical_gear_spec(
     if bore / 2.0 >= root - 0.5 * mn:
         raise ContractError("bore_diameter_mm leaves insufficient material at the tooth root")
 
-    slice_thickness = thickness / slices
+    # N 段截面均匀铺在 0..b 上：间距 b/(N-1)，这样放样出来的实体正好一个齿宽
+    slice_thickness = thickness / float(slices - 1) if slices > 1 else thickness
     if slice_thickness < 0.2:
-        raise ContractError("切片过薄（<0.2 mm）：请减少 slices 或加大齿宽")
+        raise ContractError("截面过密（间距 <0.2 mm）：请减少 sections 或加大齿宽")
 
     return HelicalGearSpec(
         module_normal_mm=mn,
@@ -140,48 +141,69 @@ def _slice_outline(spec: HelicalGearSpec, slice_rotation_rad: float,
 
 
 def build_helical_gear_graph(spec: HelicalGearSpec) -> dict[str, Any]:
-    """分层建斜齿轮：每片"草图 + 拉伸"，最后钻轴孔。"""
+    """真螺旋面：N 段截面（逐段绕轴转一个增量，铺满齿宽）→ 一次放样 → 钻轴孔。
+
+    之前的"分层拉伸"近似已经废弃：同一平面上多次拉伸不会沿 z 叠加，而且台阶面
+    不是螺旋面。放样只用一个特征就得到光滑螺旋齿面，段数 N 只影响精度。
+
+    轴孔不能用"与端面共面的草图 + through_all"（真机实测建不出特征），
+    改为在 −1 mm 的偏置面上画圆、向下盲切 b+2（reverse=True）。
+    """
     features: list[dict[str, Any]] = [
-        {"name": "HelicalGear", "kind": "new_part", "title": "Helical Gear (lamina)"},
+        {"name": "HelicalGear", "kind": "new_part", "title": "Helical Gear (loft)"},
     ]
+    sections: list[str] = []
     for index in range(spec.slices):
-        rotation = index * spec.twist_per_slice_rad
         plane = "Front Plane"
         if index > 0:
-            # 每片必须落在自己的偏置面上，否则所有切片都堆在 z=0，只算一片的料
-            plane = f"Slice{index + 1}Plane"
+            plane = f"Section{index + 1}Plane"
             features.append({
                 "name": plane,
                 "kind": "reference_plane_offset",
                 "base_plane": "Front Plane",
                 "offset_mm": index * spec.slice_thickness_mm,
             })
-        features += [
-            {
-                "name": f"Slice{index + 1}Sketch",
-                "kind": "sketch",
-                "plane": plane,
-                "entities": [{"kind": "polyline", "closed": True,
-                              "points": _slice_outline(spec, rotation)}],
-            },
-            {
-                "name": f"Slice{index + 1}Boss",
-                "kind": "boss_extrude",
-                "sketch": f"Slice{index + 1}Sketch",
-                "depth_mm": spec.slice_thickness_mm,
-                "merge": True,
-            },
-        ]
+        sketch_name = f"Section{index + 1}Sketch"
+        features.append({
+            "name": sketch_name,
+            "kind": "sketch",
+            "plane": plane,
+            "entities": [{
+                "kind": "polyline",
+                "closed": True,
+                "points": _slice_outline(spec, index * spec.twist_per_slice_rad),
+            }],
+        })
+        sections.append(sketch_name)
+
     features += [
+        {
+            "name": "HelicalLoft",
+            "kind": "loft_boss",
+            "sections": sections,
+            "closed": False,
+            "merge": True,
+        },
+        {
+            "name": "BorePlane",
+            "kind": "reference_plane_offset",
+            "base_plane": "Front Plane",
+            "offset_mm": -1.0,
+        },
         {
             "name": "BoreSketch",
             "kind": "sketch",
-            "plane": "Front Plane",
+            "plane": "BorePlane",
             "entities": [{"kind": "circle", "center": [0.0, 0.0],
                           "radius_mm": spec.bore_diameter_mm / 2.0}],
         },
-        {"name": "BoreCut", "kind": "cut_extrude", "sketch": "BoreSketch",
-         "through_all": True},
+        {
+            "name": "BoreCut",
+            "kind": "cut_extrude",
+            "sketch": "BoreSketch",
+            "depth_mm": spec.thickness_mm + 2.0,
+            "reverse_direction": True,
+        },
     ]
 
     return {
@@ -190,9 +212,11 @@ def build_helical_gear_graph(spec: HelicalGearSpec) -> dict[str, Any]:
             "generator": "nsa-mcp-hub",
             "part_type": "helical_spur_gear_lamina",
             "gear_spec": spec.to_dict(),
-            "approximation": "lamina stack: %d slices, twist %.4f rad/slice"
-                             % (spec.slices, spec.twist_per_slice_rad),
-            "features_per_slice": 3,  # 偏置面 + 草图 + 拉伸
+            "tooth_geometry": "true helical surface via loft through %d sections"
+                              % spec.slices,
+            "sections_span_mm": spec.thickness_mm,
+            "bore_strategy": "offset plane -1 mm + blind cut b+2 (reverse)",
+            "twist_per_section_rad": spec.twist_per_slice_rad,
         },
         "features": features,
     }
