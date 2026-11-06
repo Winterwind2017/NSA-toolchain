@@ -17,6 +17,7 @@ import math
 from typing import Any
 
 from ..tools import ToolSpec, normalize
+from .hubsw import drawing_gb as dgb
 from .hubsw import drawing_note as dn
 from .hubsw import gear_inspection as gin
 from .hubsw import gearbox as gb
@@ -989,7 +990,9 @@ def _engineering_dimensions(drawing, view, expected: dict, x: float = 0.40,
         if value is None:
             continue
         for name, target in list(remaining.items()):
-            if abs(value - target) <= 0.6 or abs(value - target / 2.0) <= 0.6:
+            is_diameter = "diameter" in name
+            if (abs(value - target) <= 0.6
+                    or (is_diameter and abs(value - target / 2.0) <= 0.6)):
                 found[name] = {"value_mm": value, "entity_index": index,
                                "kind": "diameter" if abs(value - target) <= 0.6
                                        else "radius"}
@@ -1137,7 +1140,12 @@ def reducer_assembly_drawing(args: dict) -> dict:
         reads["components"] = count
         checks.append(_check("components_inserted", count, len(part_paths), count == len(part_paths)))
 
-        drw_template = _template(app, 10, "drwdot")
+        # ③ 国标图纸：优先 gb_a3 模板（图纸格式里自带 GB/T 10609.1 标题栏）
+        sheet_size = str(args.get("sheet_size") or "a3")
+        try:
+            drw_template = dgb.find_gb_template(sheet_size)
+        except Exception:                            # noqa: BLE001
+            drw_template = _template(app, 10, "drwdot")
         drawing = app.NewDocument(drw_template, 0, 0, 0)
         if drawing is None:
             raise RuntimeError("新建工程图失败")
@@ -1186,35 +1194,91 @@ def reducer_assembly_drawing(args: dict) -> dict:
         reads["bom_rows"] = rows
         checks.append(_check("sw_bom_table_present", rows, ">= 1", bool(rows)))
 
-        # ① 用 SW **原生表格**承载明细（BOM 表本身在本机只枚举 1 行，见上）；
-        # `InsertTableAnnotation2` 的真实签名是 7 参，之前只传 4 参才报「参数4 类型不匹配」。
+        # ① 明细表：用**设计过的原生表格**（6 列 + 列标题 + 列宽 + 行高 + 标题行）
         bom_names = [_os.path.splitext(_os.path.basename(path))[0]
                      for path, _gx, _gz in part_paths]
-        rows_data = [["序号", "零件名称", "数量", "材料"]]
+        rows_data = []
         for index, name in enumerate(bom_names, start=1):
-            rows_data.append([str(index), name, "1", "45"])
-        table_state = {"written": 0, "rows": 0, "cols": 0, "readback": []}
+            rows_data.append([str(index), "NSA-%02d" % index, name, "1", "45", ""])
+        table_state = {"rows": 0, "cols": 0, "cells_written": 0,
+                       "readback": [], "titles": []}
         try:
-            table = _insert_table(drawing, 0.34, 0.02, len(rows_data), 4)
-            table_state = _fill_table(table, rows_data, app)
-            flat = " ".join(" ".join(cells) for cells in table_state["readback"])
+            built = dgb.designed_bom_table(drawing, rows_data, 0.30, 0.055)
+            flat = " ".join(" ".join(cells) for cells in built["readback"])
             present = [name in flat for name in bom_names]
             reads["bom_table"] = {"kind": "sw_table",
-                                  "rows": table_state["rows"],
-                                  "cols": table_state["cols"],
-                                  "cells_written": table_state["written"],
+                                  "rows": built["rows"],
+                                  "cols": built["cols"],
+                                  "cells_written": built["cells_written"],
+                                  "titles": built["titles"],
                                   "parts_present": sum(1 for flag in present if flag)}
-            checks.append(_check("bom_table_rows", table_state["rows"],
-                                 len(rows_data), table_state["rows"] >= len(rows_data)))
-            checks.append(_check("bom_table_cells_written", table_state["written"],
-                                 len(rows_data) * 4,
-                                 table_state["written"] == len(rows_data) * 4))
+            checks.append(_check("bom_table_rows", built["rows"],
+                                 len(rows_data) + 1,
+                                 built["rows"] >= len(rows_data)))
+            checks.append(_check("bom_table_columns", built["cols"],
+                                 len(dgb.BOM_COLUMNS),
+                                 built["cols"] >= len(dgb.BOM_COLUMNS)))
+            checks.append(_check("bom_table_cells_written", built["cells_written"],
+                                 len(rows_data) * len(dgb.BOM_COLUMNS),
+                                 built["cells_written"]
+                                 == len(rows_data) * len(dgb.BOM_COLUMNS)))
             checks.append(_check("bom_table_lists_all_parts",
                                  sum(1 for flag in present if flag), len(bom_names),
                                  all(present)))
         except Exception as exc:                     # noqa: BLE001
             reads["bom_table"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
             checks.append(_check("bom_table_rows", 0, len(rows_data), False))
+
+        # ③ 国标标题栏：填模板里的占位属性（Number/Description/Material/设计者…）
+        material_value = str(args.get("material") or "45")
+        properties = {"Number": number, "Description": title, "Material": material_value,
+                      "设计者": "NSA", "公司名称": "NSA"}
+        prop_state = {"written": {}, "readback": {}}
+        try:
+            prop_state = dgb.set_properties(drawing, properties)
+            # 标题栏里是静态格子，所以把值直接落到**空白栏位**上（按模板给的坐标）
+            scale_value = str(args.get("scale") or "1:1")
+            field_values = [title, number, material_value, scale_value, "NSA"]
+            slot_state = dgb.fill_gb_title_block(drawing, field_values)
+            tb_state = slot_state
+            reads["title_block"] = {"properties_written": sorted(prop_state["written"]),
+                                    "blanks": slot_state["blanks"],
+                                    "filled": slot_state["filled"],
+                                    "matched": slot_state["matched"]}
+            checks.append(_check("title_block_filled", slot_state["matched"],
+                                 len(field_values),
+                                 slot_state["matched"] >= 3))
+        except Exception as exc:                     # noqa: BLE001
+            reads["title_block"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
+            checks.append(_check("title_block_properties", 0, len(properties), False))
+        try:
+            note_texts = dgb.sheet_note_texts(drawing)
+            reads["sheet_notes"] = len(note_texts)
+            checks.append(_check("gb_sheet_notes_present", len(note_texts), ">= 20",
+                                 len(note_texts) >= 20))
+            filled_values = [item["value"] for item in (tb_state.get("filled") or [])
+                             if item["ok"] and item["readback"] == item["value"]]
+            checks.append(_check("title_block_values_written", len(filled_values),
+                                 len(field_values), len(filled_values) >= 3))
+        except Exception as exc:                     # noqa: BLE001
+            reads["sheet_notes"] = "error: %s" % str(exc)[:60]
+            checks.append(_check("gb_sheet_notes_present", 0, ">= 20", False))
+
+        # ② 装配图的视图尺寸（单实体尺寸，读回数值）
+        assembly_targets = {"shaft_length_mm": shaft_length,
+                            "gear_width_mm": thickness,
+                            "bore_mm": bores[0]}
+        eng = {"dimensions": {}, "reference_notes": {}}
+        try:
+            eng = _engineering_dimensions(drawing, first_view,
+                                          assembly_targets, 0.45, 0.20, 40)
+            covered = len(eng.get("dimensions") or {}) + len(eng.get("reference_notes") or {})
+            reads["assembly_dimensions"] = eng
+            checks.append(_check("assembly_dimensions_covered", covered,
+                                 len(assembly_targets), covered >= 1))
+        except Exception as exc:                     # noqa: BLE001
+            reads["assembly_dimensions"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
+            checks.append(_check("assembly_dimensions_covered", 0, ">= 1", False))
 
         # ③ 球标：AutoBalloon2 依赖 BOM 项号，失败则退化为带圈序号注释
         balloon_state = {"kind": "none", "added": 0}
