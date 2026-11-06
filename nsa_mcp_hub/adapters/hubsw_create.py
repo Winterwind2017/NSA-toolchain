@@ -717,89 +717,206 @@ def _table_template() -> str:
     return ""
 
 
-def _insert_table(drawing, x: float, y: float) -> tuple[object, int, int]:
-    """在图纸上插一张通用表格，返回 (表, 行数, 列数)。"""
+_SW_TYPELIB = "{83A33D31-27C5-11CE-BFD4-00400513BB57}"
+
+
+def _early_module():
+    """拿 makepy 生成的 SldWorks 早期绑定模块（没有就返回 None）。"""
+    try:
+        from win32com.client import gencache
+    except Exception:                                    # noqa: BLE001
+        return None
+    for major in (33, 32, 34, 35):
+        try:
+            module = gencache.EnsureModule(_SW_TYPELIB, 0, major, 0)
+        except Exception:                                # noqa: BLE001
+            continue
+        if module is not None:
+            return module
+    return None
+
+
+def _ensure_bindings(app):
+    """取早期绑定模块；gen_py 里没有就现场生成一次（首次约 20–40 s）。"""
+    module = _early_module()
+    if module is not None:
+        return module
+    import os as _os
+    import subprocess as _sp
+    import sys as _sys
+
+    tlb = None
+    try:
+        exe = str(dn._val(app, "GetExecutablePath") or "")
+        if exe:
+            candidate = _os.path.join(_os.path.dirname(exe), "sldworks.tlb")
+            if _os.path.isfile(candidate):
+                tlb = candidate
+    except Exception:                                    # noqa: BLE001
+        tlb = None
+    if tlb is None:
+        for candidate in (r"D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb",
+                          r"C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\sldworks.tlb"):
+            if _os.path.isfile(candidate):
+                tlb = candidate
+                break
+    if tlb is None:
+        return None
+    try:
+        _sp.run([_sys.executable, "-m", "win32com.client.makepy", tlb],
+                capture_output=True, timeout=900)
+    except Exception:                                    # noqa: BLE001
+        return None
+    return _early_module()
+
+
+def _insert_table(drawing, x: float, y: float, rows: int, cols: int):
+    """建 SW **原生**表格注解。
+
+    真实签名（从 makepy 生成的 `IDrawingDoc` 里读出来的）是 **7 参**：
+    ``InsertTableAnnotation2(UseAnchorPoint, X, Y, AnchorType, TableTemplate, Rows, Columns)``。
+    之前只传 4 参，所以恒定报「类型不匹配 参数4」——不是 API 不可用，是参数少了。
+    """
     template = _table_template()
-    table = None
-    error = None
+    last_error = None
     for anchor in (1, 0):
         try:
-            table = drawing.InsertTableAnnotation2(float(x), float(y), anchor, template)
-        except Exception as exc:                     # noqa: BLE001
-            error = exc
+            table = drawing.InsertTableAnnotation2(
+                True, float(x), float(y), anchor, template, int(rows), int(cols))
+        except Exception as exc:                         # noqa: BLE001
+            last_error = exc
             table = None
         if table is not None:
-            break
-    if table is None:
-        raise RuntimeError("InsertTableAnnotation2 失败：%s" % error)
-    return table, int(dn._val(table, "RowCount") or 0), int(dn._val(table, "ColumnCount") or 0)
+            return table
+    raise RuntimeError("InsertTableAnnotation2 失败：%s" % last_error)
 
 
-def _fill_table(table, rows: list[list[str]]) -> dict:
-    """按行列填字（不够就加行）。返回逐格读回结果。"""
-    current_rows = int(dn._val(table, "RowCount") or 0)
-    current_cols = int(dn._val(table, "ColumnCount") or 0)
-    needed_rows = len(rows)
-    needed_cols = max(len(row) for row in rows) if rows else 0
-    for _ in range(max(0, needed_rows - current_rows)):
+def _fill_table(table, rows: list[list[str]], app=None) -> dict:
+    """逐格写表：优先用早期绑定接口（`ITableAnnotation.SetText` 在动态绑定下不可见）。"""
+    module = _ensure_bindings(app) if app is not None else _early_module()
+    writer = table
+    if module is not None:
         try:
-            table.InsertRow()
-        except Exception:                            # noqa: BLE001
-            break
-    for _ in range(max(0, needed_cols - current_cols)):
-        insert_column = getattr(table, "InsertColumn", None)
-        if insert_column is None:
-            break
-        try:
-            insert_column()
-        except Exception:                            # noqa: BLE001
-            break
+            writer = module.ITableAnnotation(table._oleobj_)
+        except Exception:                                # noqa: BLE001
+            writer = table
+
     written = 0
-    readback = []
-    for r, row in enumerate(rows):
-        for c, text in enumerate(row):
-            try:
-                table.SetText(r, c, str(text))
-                written += 1
-            except Exception:                        # noqa: BLE001
-                continue
+    readback: list[list[str]] = []
     for r, row in enumerate(rows):
         cells = []
-        for c in range(len(row)):
-            value = None
-            try:
-                value = table.Text2(r, c, False, "")
-            except Exception:                        # noqa: BLE001
+        for c, text in enumerate(row):
+            value = str(text)
+            ok = False
+            for setter in ("SetText", "SetText2"):
+                method = getattr(writer, setter, None)
+                if method is None:
+                    continue
                 try:
-                    value = table.Text(r, c)
-                except Exception:                    # noqa: BLE001
-                    value = None
-            cells.append(str(value) if value is not None else "")
+                    if setter == "SetText":
+                        method(r, c, value)
+                    else:
+                        method(r, c, False, value)
+                    ok = True
+                    break
+                except Exception:                        # noqa: BLE001
+                    continue
+            if ok:
+                written += 1
+            shown = ""
+            for getter in ("DisplayedText", "Text2", "Text"):
+                method = getattr(writer, getter, None)
+                if method is None:
+                    continue
+                try:
+                    shown = method(r, c) if getter == "DisplayedText" else method(r, c, False, "")
+                    break
+                except Exception:                        # noqa: BLE001
+                    try:
+                        shown = method(r, c)
+                        break
+                    except Exception:                    # noqa: BLE001
+                        continue
+            cells.append(str(shown or ""))
         readback.append(cells)
     return {"written": written, "readback": readback,
             "rows": int(dn._val(table, "RowCount") or 0),
             "cols": int(dn._val(table, "ColumnCount") or 0)}
 
 
+def _dimension_values(view) -> dict:
+    """读视图里显示尺寸的数值：线性（<0.2 m）折算成 mm，其余当作角度。
+
+    `IDisplayDimension` 本身没有 GetSystemValue2，要 `GetDimension2(0)` 拿到
+    `IDimension` 再读；返回值是**系统单位（米）**，角度的单位是弧度。
+    """
+    raw = dn._val(view, "GetDisplayDimensions")
+    try:
+        dimensions = list(raw) if raw is not None else []
+    except TypeError:
+        dimensions = []
+    linear: list[float] = []
+    angular: list[float] = []
+    for dimension in dimensions:
+        inner = None
+        getter = getattr(dimension, "GetDimension2", None)
+        if callable(getter):
+            try:
+                inner = getter(0)
+            except Exception:                        # noqa: BLE001
+                inner = None
+        value = None
+        if inner is not None:
+            reader = getattr(inner, "GetSystemValue2", None)
+            if callable(reader):
+                try:
+                    value = reader("")
+                except Exception:                    # noqa: BLE001
+                    value = None
+        if value is None:
+            continue
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        if number < 0.2:                             # 线性尺寸（<200 mm）
+            linear.append(round(number * 1000.0, 3))
+        else:                                        # 角度（弧度）
+            angular.append(round(number, 4))
+    return {"linear_mm": linear, "angular_rad": angular,
+            "total": len(dimensions)}
+
+
 def _balloons(drawing, view, count: int) -> dict:
-    """优先用 SW 的 AutoBalloon2；它依赖 BOM 项号，失败就退化为带圈序号注释。"""
+    """原生球标：先 SelectByID2 选中视图（callout 必须是 VARIANT 的 NULL），再 AutoBalloon2。"""
+    import pythoncom as _py
+    import win32com.client as _w32
+
     before = int(dn._val(view, "GetNoteCount") or -1)
     added = 0
     kind = "none"
+    result_repr = None
     try:
-        drawing.ActivateView(dn._val(view, "Name"))
-    except Exception:                                # noqa: BLE001
+        callout = _w32.VARIANT(_py.VT_DISPATCH, None)
+        drawing.Extension.SelectByID2(dn._val(view, "Name"), "DRAWINGVIEW",
+                                      0, 0, 0, False, 0, callout, 0)
+    except Exception:                                    # noqa: BLE001
         pass
-    try:
-        result = drawing.AutoBalloon2(1, True)
-        if result is not None:
-            added = len(list(result)) if hasattr(result, "__len__") else 1
+    for layout in (1, 2, 3):
+        try:
+            result = drawing.AutoBalloon2(layout, True)
+        except Exception:                                # noqa: BLE001
+            continue
+        result_repr = repr(result)[:60]
+        if result:
+            try:
+                added = len(list(result))
+            except TypeError:
+                added = 1
             kind = "sw_balloon"
-    except Exception:                                # noqa: BLE001
-        added = 0
+            break
     after = int(dn._val(view, "GetNoteCount") or -1)
-    if after <= before:
-        # 退化：写带圈序号（①..），至少让图上有可读的件号
+    if added <= 0 and after <= before:
         circles = "①②③④⑤⑥⑦⑧⑨⑩"
         text = "件号：" + " ".join(circles[i] if i < len(circles) else str(i + 1)
                                   for i in range(count))
@@ -807,7 +924,8 @@ def _balloons(drawing, view, count: int) -> dict:
         added = 1 if landing.get("ok") else 0
         kind = "circled_number_note"
         after = int(dn._val(view, "GetNoteCount") or -1)
-    return {"kind": kind, "added": added, "notes_before": before, "notes_after": after}
+    return {"kind": kind, "added": added, "notes_before": before,
+            "notes_after": after, "result": result_repr}
 
 def _single_entity_dimension(drawing, view, entity, x: float, y: float):
     """给单个实体加尺寸（圆边→直径/半径，直线边→长度），返回读数 mm 或 None。
@@ -887,6 +1005,7 @@ def _engineering_dimensions(drawing, view, expected: dict, x: float = 0.40,
 
     return {"dimensions": found, "reference_notes": reference,
             "entities_scanned": scanned, "targets": list(expected)}
+
 
 def _template(app, preference: int, ext: str) -> str:
     """优先用 SW 配置的模板，再退回 ProgramData 里扫到的模板。"""
@@ -1067,30 +1186,29 @@ def reducer_assembly_drawing(args: dict) -> dict:
         reads["bom_rows"] = rows
         checks.append(_check("sw_bom_table_present", rows, ">= 1", bool(rows)))
 
-        # ① SW 的 BOM 在本机只枚举 1 行（BomType 1/2/3 都一样），所以再建一张
-        # **自建表格**：8 行 × 4 列，逐格写入并读回——判据落在行数与零件名上。
+        # ① 用 SW **原生表格**承载明细（BOM 表本身在本机只枚举 1 行，见上）；
+        # `InsertTableAnnotation2` 的真实签名是 7 参，之前只传 4 参才报「参数4 类型不匹配」。
         bom_names = [_os.path.splitext(_os.path.basename(path))[0]
                      for path, _gx, _gz in part_paths]
         rows_data = [["序号", "零件名称", "数量", "材料"]]
         for index, name in enumerate(bom_names, start=1):
             rows_data.append([str(index), name, "1", "45"])
-        grid_state = {"cells_written": 0, "rows": 0, "cols": 0, "readback": []}
+        table_state = {"written": 0, "rows": 0, "cols": 0, "readback": []}
         try:
-            grid_state = _note_grid(drawing, rows_data, 0.30, 0.02)
-            flat = " ".join(" ".join(cells) for cells in grid_state["readback"])
+            table = _insert_table(drawing, 0.34, 0.02, len(rows_data), 4)
+            table_state = _fill_table(table, rows_data, app)
+            flat = " ".join(" ".join(cells) for cells in table_state["readback"])
             present = [name in flat for name in bom_names]
-            reads["bom_table"] = {"kind": "note_grid",
-                                  "rows": grid_state["rows"],
-                                  "cols": grid_state["cols"],
-                                  "cells_written": grid_state["cells_written"],
+            reads["bom_table"] = {"kind": "sw_table",
+                                  "rows": table_state["rows"],
+                                  "cols": table_state["cols"],
+                                  "cells_written": table_state["written"],
                                   "parts_present": sum(1 for flag in present if flag)}
-            checks.append(_check("bom_table_rows", grid_state["rows"],
-                                 len(rows_data), grid_state["rows"] >= len(rows_data)))
-            checks.append(_check("bom_table_cells_written",
-                                 grid_state["cells_written"],
-                                 grid_state["rows"] * grid_state["cols"],
-                                 grid_state["cells_written"]
-                                 == grid_state["rows"] * grid_state["cols"]))
+            checks.append(_check("bom_table_rows", table_state["rows"],
+                                 len(rows_data), table_state["rows"] >= len(rows_data)))
+            checks.append(_check("bom_table_cells_written", table_state["written"],
+                                 len(rows_data) * 4,
+                                 table_state["written"] == len(rows_data) * 4))
             checks.append(_check("bom_table_lists_all_parts",
                                  sum(1 for flag in present if flag), len(bom_names),
                                  all(present)))
