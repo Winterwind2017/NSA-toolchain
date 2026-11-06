@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# 本地运行产物
+_runs/
+_archive/
+_test_logs/
+_snapshot*/
+*.log
+workspace/
+**/workspace/
+*.jsonl
+
+# 真机 CAD 产物（不入库）
+*.prt
+*.SLDPRT
+*.sldprt
+*.SLDASM
+*.sldasm
+*.SLDPRT
+*.dwg
+*.DXF
+*.dxf
+*.step
+*.STEP
+*.stp
+*.stl
+*.STL
+*.iges
+*.igs
+*.3mf
+*.slddrw
+*.SLDDRW
+
+# 编辑器/系统
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
