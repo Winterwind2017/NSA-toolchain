@@ -795,7 +795,7 @@ SW_CASES = [
      "timeout_s": 900},
 
     {"id": "sw.asm.reducer.drawing", "tool": "sw_reducer_assembly_drawing",
-     "title": "减速器整机装配图：国标 A3 图框 + 6 列 BOM 表（8×6，42 格）+ 标题栏 5 栏 + 参考尺寸",
+     "title": "减速器整机装配图：国标 A3 + 6 列 BOM（代号按图号 NSA-ASM-0001-01…07、中文名、备注带参数）+ 标题栏 5 栏",
      "args": {"title": "两级减速器装配图", "drawing_number": "NSA-ASM-0001",
               "scale": "1:2", "sheet_size": "a3"},
      "expect_ok": True,
@@ -804,7 +804,17 @@ SW_CASES = [
                       "reads.bom_table.kind": "sw_table",
                       "reads.bom_table.cells_written": 42,
                       "reads.bom_table.parts_present": 7,
-                      "reads.title_block.matched": 5},
+                      "reads.title_block.matched": 5,
+                      "reads.bom_codes.rule": "drawing_number"},
+     "timeout_s": 1800},
+
+    {"id": "sw.asm.reducer.type_code", "tool": "sw_reducer_assembly_drawing",
+     "title": "减速器装配图（次选代号规则）：按零件类型编码 G2x20-01…S13.8-07",
+     "args": {"title": "两级减速器装配图", "drawing_number": "NSA-ASM-0001",
+              "scale": "1:2", "sheet_size": "a3", "code_rule": "type_code"},
+     "expect_ok": True,
+     "expect_reads": {"reads.components": 7, "reads.bom_codes.rule": "type_code",
+                      "reads.bom_table.rows": 8, "reads.bom_table.cells_written": 42},
      "timeout_s": 1800},
 
     {"id": "sw.sheet.spline", "tool": "sw_inspection_drawing",

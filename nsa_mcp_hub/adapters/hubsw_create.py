@@ -1033,7 +1033,13 @@ def _template(app, preference: int, ext: str) -> str:
 
 
 def reducer_assembly_drawing(args: dict) -> dict:
-    """减整机装配图：现建 4 齿轮 + 3 轴 → 装配（7 组件）→ 图纸视图 + BOM 表 + 标题栏。"""
+    """两级减速器**整机装配图**：国标 A3 图框 + 六列 BOM 表 + 原生球标 + 标题栏栏位。
+
+    代号规则（`code_rule`）：
+      - ``drawing_number``（默认）：装配图号 + 序号，如 ``NSA-ASM-0001-03``
+      - ``type_code``：按零件类型编码，齿轮 ``G<模数>x<齿数>-序号``、轴 ``S<直径>-序号``
+      - ``filename``：直接用零件文件名
+    """
     import os as _os
     import time as _time
 
@@ -1045,9 +1051,12 @@ def reducer_assembly_drawing(args: dict) -> dict:
     z3, z4 = (int(v) for v in (args.get("stage2_teeth") or [20, 60]))
     title = str(args.get("title") or "两级减速器装配图")
     number = str(args.get("drawing_number") or "NSA-ASM-0001")
+    sheet_size = str(args.get("sheet_size") or "a3")
+    scale_value = str(args.get("scale") or "1:2")
+    material_value = str(args.get("material") or "45")
+    code_rule = str(args.get("code_rule") or "drawing_number").strip().lower()
 
-    reads: dict[str, Any] = {"parts": [], "components": None, "bom_rows": None,
-                             "views": [], "notes": []}
+    reads: dict[str, Any] = {"parts": [], "components": None, "views": []}
     checks: list = []
     errors: list[str] = []
 
@@ -1060,46 +1069,49 @@ def reducer_assembly_drawing(args: dict) -> dict:
         center1 = module * (z1 + z2) / 2.0
         center2 = module * (z3 + z4) / 2.0
         stage2 = thickness + gap
+        shaft_length = stage2 + thickness + 5.0
+        gear_names = ["一级小齿轮", "一级大齿轮", "二级小齿轮", "二级大齿轮"]
+        shaft_names = ["输入轴", "中间轴", "输出轴"]
+
         gear_layout = [(z1, 0.0, 0.0, bores[0]), (z2, center1, 0.0, bores[1]),
-                       (z3, center1, stage2, bores[0]), (z4, center1 + center2, stage2, bores[2])]
+                       (z3, center1, stage2, bores[0]),
+                       (z4, center1 + center2, stage2, bores[2])]
+        shaft_layout = [(bores[0] - 0.2, 0.0, 0.0, shaft_names[0]),
+                        (bores[1] - 0.2, center1, 0.0, shaft_names[1]),
+                        (bores[2] - 0.2, center1 + center2, stage2, shaft_names[2])]
 
         reuse = args.get("reuse_existing", True) is not False
-        part_paths: list[tuple[str, float, float]] = []
+        part_specs: list[dict] = []
+
         for index, (teeth, gx, gz, bore) in enumerate(gear_layout):
             path = _os.path.join(folder, "gear_%d_%d.SLDPRT" % (teeth, index))
-            if reuse and _os.path.isfile(path):
-                reads["parts"].append({"part": _os.path.basename(path), "ok": True,
-                                       "reused": True})
-                part_paths.append((path, gx, gz))
-                continue
-            result = create_involute_gear({
-                "module_mm": module, "tooth_count": teeth,
-                "thickness_mm": thickness, "bore_diameter_mm": bore,
-                "execute": True, "save_path": path})
-            reads["parts"].append({"part": _os.path.basename(path), "ok": result.get("ok")})
+            exists = bool(reuse and _os.path.isfile(path))
+            if not exists:
+                create_involute_gear({
+                    "module_mm": module, "tooth_count": teeth,
+                    "thickness_mm": thickness, "bore_diameter_mm": bore,
+                    "execute": True, "save_path": path})
+            reads["parts"].append({"part": _os.path.basename(path), "reused": exists})
             if not _os.path.isfile(path):
                 raise RuntimeError("齿轮零件没落盘：%s" % path)
-            part_paths.append((path, gx, gz))
+            part_specs.append({"path": path, "x": gx, "z": gz, "kind": "gear",
+                               "name": gear_names[index], "teeth": teeth,
+                               "remark": "m=%g z=%d" % (module, teeth)})
 
-        shaft_length = stage2 + thickness + 5.0
-        for index, diameter in enumerate(bores):
-            clean = diameter - 0.2
+        for index, (diameter, sx, sz, name) in enumerate(shaft_layout):
             path = _os.path.join(folder, "shaft_%d.SLDPRT" % index)
-            if reuse and _os.path.isfile(path):
-                reads["parts"].append({"part": _os.path.basename(path), "ok": True,
-                                       "reused": True})
-                part_paths.append((path, (0.0, center1, center1 + center2)[index],
-                                   0.0 if index < 2 else stage2))
-                continue
-            result = create_parametric_part({
-                "part_type": "cylinder",
-                "parameters": {"diameter": clean, "height": shaft_length},
-                "execute": True, "save_path": path})
-            reads["parts"].append({"part": _os.path.basename(path), "ok": result.get("ok")})
+            exists = bool(reuse and _os.path.isfile(path))
+            if not exists:
+                create_parametric_part({
+                    "part_type": "cylinder",
+                    "parameters": {"diameter": diameter, "height": shaft_length},
+                    "execute": True, "save_path": path})
+            reads["parts"].append({"part": _os.path.basename(path), "reused": exists})
             if not _os.path.isfile(path):
                 raise RuntimeError("轴零件没落盘：%s" % path)
-            part_paths.append((path, (0.0, center1, center1 + center2)[index],
-                               0.0 if index < 2 else stage2))
+            part_specs.append({"path": path, "x": sx, "z": sz, "kind": "shaft",
+                               "name": name, "diameter": diameter,
+                               "remark": "φ%.1f×%.0f" % (diameter, shaft_length)})
 
         import win32com.client as _w32
         from .hubsw_asm import _component_count, _insert
@@ -1112,12 +1124,13 @@ def reducer_assembly_drawing(args: dict) -> dict:
         assembly = app.NewDocument(asm_template, 0, 0, 0)
         if assembly is None:
             raise RuntimeError("新建装配体失败（模板：%s）" % asm_template)
-        for path, gx, gz in part_paths:
+        for spec in part_specs:
             component = None
             last_error = None
             for attempt in range(3):
                 try:
-                    component = _insert(app, assembly, path, gx, 0.0, gz)
+                    component = _insert(app, assembly, spec["path"],
+                                        spec["x"], 0.0, spec["z"])
                 except Exception as exc:                 # noqa: BLE001
                     last_error = exc
                     component = None
@@ -1126,7 +1139,7 @@ def reducer_assembly_drawing(args: dict) -> dict:
                 _time.sleep(1.5 * (attempt + 1))
             if component is None:
                 raise RuntimeError("AddComponent5 失败（%s）：%s"
-                                   % (path, str(last_error)[:120]))
+                                   % (spec["path"], str(last_error)[:120]))
 
         asm_path = _os.path.join(folder, "reducer_asm_%d.SLDASM" % stamp)
         try:
@@ -1138,17 +1151,18 @@ def reducer_assembly_drawing(args: dict) -> dict:
 
         count = _component_count(assembly)
         reads["components"] = count
-        checks.append(_check("components_inserted", count, len(part_paths), count == len(part_paths)))
+        checks.append(_check("components_inserted", count, len(part_specs),
+                             count == len(part_specs)))
 
-        # ③ 国标图纸：优先 gb_a3 模板（图纸格式里自带 GB/T 10609.1 标题栏）
-        sheet_size = str(args.get("sheet_size") or "a3")
+        # ③ 国标图纸（gb_a3 的图纸格式自带 GB/T 10609.1 标题栏）
         try:
             drw_template = dgb.find_gb_template(sheet_size)
-        except Exception:                            # noqa: BLE001
+        except Exception:                                # noqa: BLE001
             drw_template = _template(app, 10, "drwdot")
         drawing = app.NewDocument(drw_template, 0, 0, 0)
         if drawing is None:
             raise RuntimeError("新建工程图失败")
+        reads["template"] = _os.path.basename(drw_template)
 
         placed = []
         for names, (vx, vy) in ((["*前视", "*Front"], (0.14, 0.17)),
@@ -1164,50 +1178,30 @@ def reducer_assembly_drawing(args: dict) -> dict:
         reads["views"] = placed
         checks.append(_check("views_placed", len(placed), ">= 1", bool(placed)))
 
-        bom = None
-        sheet = dn._val(drawing, "GetFirstView")
-        first_view = dn._val(sheet, "GetNextView") if sheet is not None else None
-        bom_attempts = []
-        if first_view is not None:
-            try:
-                drawing.ActivateView(dn._val(first_view, "Name"))
-            except Exception:                            # noqa: BLE001
-                pass
-            for bom_type in (2, 1, 3):
-                for anchor in (1, 0):
-                    try:
-                        bom = first_view.InsertBomTable2(True, 0.32, 0.10, anchor,
-                                                         bom_type, "", "")
-                    except Exception as exc:             # noqa: BLE001
-                        bom_attempts.append({"bom_type": bom_type, "anchor": anchor,
-                                             "error": str(exc)[:60]})
-                        continue
-                    if bom is not None:
-                        break
-                if bom is not None:
-                    break
-        reads["bom_attempts"] = bom_attempts[-4:]
-        rows = None
-        if bom is not None:
-            value = dn._val(bom, "RowCount")
-            rows = value if isinstance(value, int) else None
-        reads["bom_rows"] = rows
-        checks.append(_check("sw_bom_table_present", rows, ">= 1", bool(rows)))
+        # ① 六列 BOM 表（代号按规则生成，名称中文，备注带参数）
+        bom_names = [_os.path.splitext(_os.path.basename(spec["path"]))[0]
+                     for spec in part_specs]
+        codes: list[str] = []
+        for index, spec in enumerate(part_specs, start=1):
+            if code_rule == "type_code":
+                if spec["kind"] == "gear":
+                    codes.append("G%gx%d-%02d" % (module, spec["teeth"], index))
+                else:
+                    codes.append("S%g-%02d" % (spec["diameter"], index))
+            elif code_rule == "filename":
+                codes.append(bom_names[index - 1])
+            else:
+                codes.append("%s-%02d" % (number, index))
+        reads["bom_codes"] = {"rule": code_rule, "codes": codes}
 
-        # ① 明细表：用**设计过的原生表格**（6 列 + 列标题 + 列宽 + 行高 + 标题行）
-        bom_names = [_os.path.splitext(_os.path.basename(path))[0]
-                     for path, _gx, _gz in part_paths]
-        rows_data = []
-        for index, name in enumerate(bom_names, start=1):
-            rows_data.append([str(index), "NSA-%02d" % index, name, "1", "45", ""])
-        table_state = {"rows": 0, "cols": 0, "cells_written": 0,
-                       "readback": [], "titles": []}
+        rows_data = [[str(index), codes[index - 1], spec["name"], "1",
+                      material_value, spec["remark"]]
+                     for index, spec in enumerate(part_specs, start=1)]
         try:
             built = dgb.designed_bom_table(drawing, rows_data, 0.30, 0.055)
             flat = " ".join(" ".join(cells) for cells in built["readback"])
-            present = [name in flat for name in bom_names]
-            reads["bom_table"] = {"kind": "sw_table",
-                                  "rows": built["rows"],
+            present = [code in flat for code in codes]
+            reads["bom_table"] = {"kind": "sw_table", "rows": built["rows"],
                                   "cols": built["cols"],
                                   "cells_written": built["cells_written"],
                                   "titles": built["titles"],
@@ -1220,92 +1214,63 @@ def reducer_assembly_drawing(args: dict) -> dict:
                                  built["cols"] >= len(dgb.BOM_COLUMNS)))
             checks.append(_check("bom_table_cells_written", built["cells_written"],
                                  len(rows_data) * len(dgb.BOM_COLUMNS),
-                                 built["cells_written"]
-                                 == len(rows_data) * len(dgb.BOM_COLUMNS)))
+                                 built["cells_written"] == len(rows_data) * len(dgb.BOM_COLUMNS)))
             checks.append(_check("bom_table_lists_all_parts",
-                                 sum(1 for flag in present if flag), len(bom_names),
+                                 sum(1 for flag in present if flag), len(codes),
                                  all(present)))
-        except Exception as exc:                     # noqa: BLE001
+        except Exception as exc:                         # noqa: BLE001
             reads["bom_table"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
             checks.append(_check("bom_table_rows", 0, len(rows_data), False))
 
-        # ③ 国标标题栏：填模板里的占位属性（Number/Description/Material/设计者…）
-        material_value = str(args.get("material") or "45")
-        properties = {"Number": number, "Description": title, "Material": material_value,
-                      "设计者": "NSA", "公司名称": "NSA"}
-        prop_state = {"written": {}, "readback": {}}
+        # ③ 标题栏：把值落到模板的空白栏位
+        field_values = [title, number, material_value, scale_value, "NSA"]
+        tb_state = {"blanks": 0, "filled": [], "matched": 0}
         try:
-            prop_state = dgb.set_properties(drawing, properties)
-            # 标题栏里是静态格子，所以把值直接落到**空白栏位**上（按模板给的坐标）
-            scale_value = str(args.get("scale") or "1:1")
-            field_values = [title, number, material_value, scale_value, "NSA"]
-            slot_state = dgb.fill_gb_title_block(drawing, field_values)
-            tb_state = slot_state
-            reads["title_block"] = {"properties_written": sorted(prop_state["written"]),
-                                    "blanks": slot_state["blanks"],
-                                    "filled": slot_state["filled"],
-                                    "matched": slot_state["matched"]}
-            checks.append(_check("title_block_filled", slot_state["matched"],
-                                 len(field_values),
-                                 slot_state["matched"] >= 3))
-        except Exception as exc:                     # noqa: BLE001
-            reads["title_block"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
-            checks.append(_check("title_block_properties", 0, len(properties), False))
-        try:
+            tb_state = dgb.fill_gb_title_block(drawing, field_values)
+            reads["title_block"] = {"blanks": tb_state["blanks"],
+                                    "matched": tb_state["matched"],
+                                    "filled": tb_state["filled"]}
+            checks.append(_check("title_block_filled", tb_state["matched"],
+                                 len(field_values), tb_state["matched"] >= 3))
             note_texts = dgb.sheet_note_texts(drawing)
             reads["sheet_notes"] = len(note_texts)
             checks.append(_check("gb_sheet_notes_present", len(note_texts), ">= 20",
                                  len(note_texts) >= 20))
-            filled_values = [item["value"] for item in (tb_state.get("filled") or [])
-                             if item["ok"] and item["readback"] == item["value"]]
-            checks.append(_check("title_block_values_written", len(filled_values),
-                                 len(field_values), len(filled_values) >= 3))
-        except Exception as exc:                     # noqa: BLE001
-            reads["sheet_notes"] = "error: %s" % str(exc)[:60]
-            checks.append(_check("gb_sheet_notes_present", 0, ">= 20", False))
+        except Exception as exc:                         # noqa: BLE001
+            reads["title_block"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
+            checks.append(_check("title_block_filled", 0, len(field_values), False))
 
-        # ② 装配图的视图尺寸（单实体尺寸，读回数值）
-        assembly_targets = {"shaft_length_mm": shaft_length,
-                            "gear_width_mm": thickness,
-                            "bore_mm": bores[0]}
-        eng = {"dimensions": {}, "reference_notes": {}}
+        # ② 装配视图尺寸（单实体尺寸，未命中给参考尺寸）
+        targets = {"shaft_length_mm": shaft_length, "gear_width_mm": thickness,
+                   "bore_mm": bores[0]}
         try:
-            eng = _engineering_dimensions(drawing, first_view,
-                                          assembly_targets, 0.45, 0.20, 40)
+            sheet_view = dn._val(drawing, "GetFirstView")
+            first_view = dn._val(sheet_view, "GetNextView") if sheet_view is not None else None
+            eng = _engineering_dimensions(drawing, first_view, targets, 0.45, 0.20, 40)
             covered = len(eng.get("dimensions") or {}) + len(eng.get("reference_notes") or {})
             reads["assembly_dimensions"] = eng
-            checks.append(_check("assembly_dimensions_covered", covered,
-                                 len(assembly_targets), covered >= 1))
-        except Exception as exc:                     # noqa: BLE001
+            checks.append(_check("assembly_dimensions_covered", covered, len(targets),
+                                 covered >= 1))
+        except Exception as exc:                         # noqa: BLE001
             reads["assembly_dimensions"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
             checks.append(_check("assembly_dimensions_covered", 0, ">= 1", False))
 
-        # ③ 球标：AutoBalloon2 依赖 BOM 项号，失败则退化为带圈序号注释
-        balloon_state = {"kind": "none", "added": 0}
+        # ③ 球标
         try:
-            balloon_view = dn._val(drawing, "GetFirstView")
-            balloon_view = (dn._val(balloon_view, "GetNextView")
-                            if balloon_view is not None else None)
-            if balloon_view is not None:
-                balloon_state = _balloons(drawing, balloon_view, len(bom_names))
-            reads["balloons"] = balloon_state
-            checks.append(_check("balloons_added", balloon_state.get("added"), ">= 1",
-                                 (balloon_state.get("added") or 0) >= 1))
-        except Exception as exc:                     # noqa: BLE001
+            if first_view is not None:
+                reads["balloons"] = _balloons(drawing, first_view, len(part_specs))
+                checks.append(_check("balloons_added",
+                                     reads["balloons"].get("added"), ">= 1",
+                                     (reads["balloons"].get("added") or 0) >= 1))
+        except Exception as exc:                         # noqa: BLE001
             reads["balloons"] = {"error": "%s: %s" % (type(exc).__name__, exc)}
-            checks.append(_check("balloons_added", 0, ">= 1", False))
-
-        block = dn.insert_note(
-            drawing, "\n".join(dn.title_block_lines(title, number)), 0.10, 0.30)
-        reads["notes"] = [block.get("text") or ""]
-        checks.append(_check("title_block_readback", number in (block.get("text") or ""),
-                             True, number in (block.get("text") or "")))
     except Exception as exc:                            # noqa: BLE001
         errors.append("%s: %s" % (type(exc).__name__, exc))
 
     ok = bool(checks) and all(c.get("ok") for c in checks) and not errors
     return normalize(KIT_KEY, "reducer_assembly_drawing", ok=ok, reads=reads,
                      checks=checks, errors=errors)
+
 
 def create_tools() -> list:
     def spec(name, description, properties, handler):
@@ -1413,7 +1378,9 @@ def create_tools() -> list:
              "插入 BOM 表 + 标题栏。判据：组件数=7、BOM 行数>=组件数、视图>=1、标题栏含图号。",
              {"module_mm": _TYPE_NUM, "gear_thickness_mm": _TYPE_NUM,
               "axial_gap_mm": _TYPE_NUM, "title": _TYPE_STR,
-              "drawing_number": _TYPE_STR,
+              "drawing_number": _TYPE_STR, "code_rule": _TYPE_STR,
+              "sheet_size": _TYPE_STR, "material": _TYPE_STR,
+              "scale": _TYPE_STR, "reuse_existing": _TYPE_BOOL,
               "stage1_teeth": {"type": "array"}, "stage2_teeth": {"type": "array"},
               "bore_diameters_mm": {"type": "array"}},
              reducer_assembly_drawing),
