@@ -1,0 +1,7 @@
+_runs/
+_diag/
+_recon/
+__pycache__/
+*.pyc
+*.pyc-tmp
+.pytest_cache/
