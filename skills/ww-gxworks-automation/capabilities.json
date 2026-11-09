@@ -1,0 +1,739 @@
+{
+  "skill": "ww-gxworks-automation",
+  "kernel": "gxkit",
+  "kernel_version": "0.16.0",
+  "kernel_commit": "0a03946",
+  "engine": "GX Works3 1.117.0.1",
+  "cpu": "FX5U",
+  "lang": "ST",
+  "scope": "offline",
+  "counts": {
+    "verified": 42,
+    "families": 8,
+    "pending": 5
+  },
+  "verified": {
+    "project.new": {
+      "family": "project",
+      "level": "L1",
+      "title": "新建 FX5U + ST 工程",
+      "action": "project_new",
+      "expect": {
+        "has_window": true,
+        "is_st": true
+      },
+      "reopen": false
+    },
+    "project.new_rcpu": {
+      "family": "project",
+      "level": "L1",
+      "title": "新建 iQ-R（RCPU/R00）+ ST 工程",
+      "action": "project_new_cpu",
+      "expect": {
+        "unit": "R00",
+        "unit_id": "4609",
+        "is_st": true,
+        "exists": true
+      },
+      "reopen": false
+    },
+    "project.new_fx5s": {
+      "family": "project",
+      "level": "L1",
+      "title": "新建 FX5S + ST 工程",
+      "action": "project_new_cpu",
+      "expect": {
+        "unit": "FX5S",
+        "is_st": true,
+        "exists": true
+      },
+      "reopen": false
+    },
+    "program.rcpu_roundtrip": {
+      "family": "program",
+      "level": "L1–L3",
+      "title": "iQ-R 上粘贴 ST 并读回",
+      "action": "program_roundtrip_cpu",
+      "expect": {
+        "unit": "R00",
+        "source_matches": true,
+        "steps": {
+          "min": 2.0,
+          "max": 500.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "project.save": {
+      "family": "project",
+      "level": "L1–L2",
+      "title": "另存为 .gx3（含读回校验）",
+      "action": "project_save",
+      "expect": {
+        "exists": true,
+        "bytes": {
+          "min": 300000.0,
+          "max": 5000000.0
+        },
+        "unit": "FX5U"
+      },
+      "reopen": false
+    },
+    "project.meta": {
+      "family": "inspect",
+      "level": "L1–L2",
+      "title": "解包 .gx3：Config.xml + 条目数",
+      "action": "project_meta",
+      "expect": {
+        "unit": "FX5U",
+        "zip_entries": {
+          "min": 50.0,
+          "max": 500.0
+        },
+        "has_config": true
+      },
+      "reopen": false
+    },
+    "program.paste_st": {
+      "family": "program",
+      "level": "L1–L3",
+      "title": "把 ST 代码粘进编辑器并转换",
+      "action": "program_paste_st",
+      "expect": {
+        "steps": {
+          "min": 2.0,
+          "max": 200.0
+        }
+      },
+      "reopen": false
+    },
+    "program.read_st": {
+      "family": "program",
+      "level": "L1–L2",
+      "title": "从 .gx3 读回 ST 源码（逐字比对）",
+      "action": "program_read_st",
+      "expect": {
+        "matches": true,
+        "readback_chars": {
+          "min": 10.0,
+          "max": 20000.0
+        },
+        "lines": {
+          "min": 2.0,
+          "max": 500.0
+        }
+      },
+      "reopen": false
+    },
+    "program.import_xml": {
+      "family": "program",
+      "level": "L2–L3",
+      "title": "用 XML 新建程序（另起一个 PrgGen）",
+      "action": "program_import_xml",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "body_found": true,
+        "program_count": {
+          "min": 2.0,
+          "max": 50.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.import_fb": {
+      "family": "program",
+      "level": "L3",
+      "title": "用 XML 建程序+功能块（带局部标签）",
+      "action": "program_import_fb",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "body_found": true,
+        "fb_body_found": true,
+        "locals_found": 2,
+        "fb_vars_found": 2,
+        "new_sources": {
+          "min": 1.0,
+          "max": 10.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.import_fb_instance": {
+      "family": "program",
+      "level": "L3",
+      "title": "用 XML 建功能块实例并调用",
+      "action": "program_import_fb_instance",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "body_found": true,
+        "fb_body_found": true,
+        "instance_type_seen": true,
+        "new_sources": {
+          "min": 1.0,
+          "max": 10.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.import_fb_params": {
+      "family": "program",
+      "level": "L3",
+      "title": "功能块带参数（IN/OUT/IN_OUT）+ 调用传参",
+      "action": "program_import_fb_params",
+      "expect": {
+        "program_created": true,
+        "fb_created": true,
+        "call_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "datatype.import": {
+      "family": "datatype",
+      "level": "L3",
+      "title": "用 XML 建结构体（并用变量读回）",
+      "action": "datatype_import",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "struct_node_seen": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "datatype.member_var": {
+      "family": "datatype",
+      "level": "L3",
+      "title": "结构体类型的变量（成员级软元件分配）",
+      "action": "datatype_member_var",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "errors": 0,
+        "define_stage_seen": true,
+        "define_stage_errors": 0,
+        "struct_node_seen": true,
+        "member_rows_seen": {
+          "min": 7.0,
+          "max": 7.0
+        }
+      },
+      "reopen": false
+    },
+    "datatype.custom_members": {
+      "family": "datatype",
+      "level": "L3",
+      "title": "自定义结构体成员",
+      "action": "datatype_custom_members",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "errors": 0,
+        "member_rows_seen": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "struct_node_seen": true
+      },
+      "reopen": false
+    },
+    "datatype.member_access": {
+      "family": "datatype",
+      "level": "L3",
+      "title": "正文按成员名访问结构体（全局标签）",
+      "action": "datatype_member_access",
+      "expect": {
+        "imported": true,
+        "program_created": true,
+        "errors": 0,
+        "struct_define_stage_seen": true,
+        "struct_define_stage_errors": 0,
+        "member_access_in_source": true,
+        "global_label_seen": true,
+        "struct_type_in_labels": true
+      },
+      "reopen": false
+    },
+    "label.multi_type": {
+      "family": "label",
+      "level": "L2–L3",
+      "title": "BOOL/WORD/DWORD 全局标签",
+      "action": "label_multi_type",
+      "expect": {
+        "labels_landed": 3,
+        "labels_wanted": 3,
+        "program_created": true,
+        "word_used_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "datatype.struct_array": {
+      "family": "datatype",
+      "level": "L3",
+      "title": "结构体数组成员 + 元素访问",
+      "action": "datatype_struct_array",
+      "expect": {
+        "program_created": true,
+        "struct_stage_seen": true,
+        "struct_stage_errors": 0,
+        "array_access_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.multi_programs": {
+      "family": "program",
+      "level": "L2–L3",
+      "title": "一个工程里两个程序",
+      "action": "program_multi_programs",
+      "expect": {
+        "both_created": true,
+        "one_in_source": true,
+        "two_in_source": true,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "inspect.devices_rcpu": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "iQ-R 软元件模板（与 FX5U 不同）",
+      "action": "inspect_devices_cpu",
+      "expect": {
+        "unit": "R00",
+        "rows": {
+          "min": 3000.0,
+          "max": 9000.0
+        },
+        "has_type_35": true
+      },
+      "reopen": false
+    },
+    "xmlgen.manual_template": {
+      "family": "xmlgen",
+      "level": "L3",
+      "title": "手写骨架也能导入（不依赖 MELSOFT 样例）",
+      "action": "xmlgen_manual_template",
+      "expect": {
+        "uses_manual": true,
+        "program_created": true,
+        "locals_found": 2,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "inspect.source_map": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "步→源码坐标（Row/Col/StrLen）",
+      "action": "inspect_source_map",
+      "expect": {
+        "steps": {
+          "min": 2.0,
+          "max": 500.0
+        },
+        "rows": {
+          "min": 2.0,
+          "max": 500.0
+        },
+        "snippets": {
+          "min": 2.0,
+          "max": 500.0
+        }
+      },
+      "reopen": false
+    },
+    "inspect.programs": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "列程序清单（步数/源码行数）",
+      "action": "inspect_programs",
+      "expect": {
+        "program_count": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "source_count": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "matched_blocks": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "total_steps": {
+          "min": 2.0,
+          "max": 1000.0
+        },
+        "body_found": true
+      },
+      "reopen": false
+    },
+    "project.diff": {
+      "family": "inspect",
+      "level": "L2–L3",
+      "title": "两个工程的源码级差异",
+      "action": "project_diff",
+      "expect": {
+        "identical_self": true,
+        "blocks_changed": {
+          "min": 1.0,
+          "max": 50.0
+        },
+        "changed_added": {
+          "min": 1.0,
+          "max": 100.0
+        }
+      },
+      "reopen": false
+    },
+    "inspect.devices": {
+      "family": "inspect",
+      "level": "L1–L2",
+      "title": "读 FX5U 系统软元件模板",
+      "action": "inspect_devices",
+      "expect": {
+        "device_rows": {
+          "min": 2900.0,
+          "max": 3000.0
+        },
+        "device_types": {
+          "min": 2.0,
+          "max": 20.0
+        },
+        "commented": {
+          "min": 100.0,
+          "max": 5000.0
+        }
+      },
+      "reopen": false
+    },
+    "inspect.mil": {
+      "family": "inspect",
+      "level": "L2",
+      "title": "读编译后的 IL 文本",
+      "action": "inspect_mil",
+      "expect": {
+        "mil_rows": {
+          "min": 1.0,
+          "max": 20.0
+        },
+        "op_count": {
+          "min": 3.0,
+          "max": 1000.0
+        },
+        "mil_chars": {
+          "min": 50.0,
+          "max": 100000.0
+        }
+      },
+      "reopen": false
+    },
+    "label.import_xml": {
+      "family": "label",
+      "level": "L2–L3",
+      "title": "导入全局标签 XML 并读回",
+      "action": "label_import_xml",
+      "expect": {
+        "imported": true,
+        "labels_found": 3,
+        "errors": 0,
+        "labels_after": {
+          "min": 60.0,
+          "max": 200.0
+        }
+      },
+      "reopen": false
+    },
+    "build.convert_all": {
+      "family": "build",
+      "level": "L1–L3",
+      "title": "全部转换：从 Progress.txt 读错误数",
+      "action": "build_convert_all",
+      "expect": {
+        "errors": 0,
+        "warnings": 0,
+        "stages": {
+          "min": 3.0,
+          "max": 100.0
+        }
+      },
+      "reopen": false
+    },
+    "build.program_check": {
+      "family": "build",
+      "level": "L2–L3",
+      "title": "程序检查：读「无错误」判定文本",
+      "action": "build_program_check",
+      "expect": {
+        "opened": true,
+        "clean": true,
+        "check_errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder_multi": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画两个梯级**（X0→(Y0)、X1-X2→(Y1)）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 2,
+        "contacts_read": 3,
+        "terminals_read": 2,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder_parallel": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画并联支路**（X0 ∥ X2 → (Y0)）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 2,
+        "terminals_read": 1,
+        "verticals": {
+          "min": 1.0,
+          "max": 8.0
+        },
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder_appl": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画应用指令**（X0 → MOV K1 D0）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 1,
+        "terminals_read": 1,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "inspect.ladder": {
+      "family": "inspect",
+      "level": "L1",
+      "title": "**离线读梯形图**（LadderBlocks → 结构/摘要）",
+      "action": "inspect_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 2,
+        "terminals_read": 1,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "program.write_ladder": {
+      "family": "program",
+      "level": "L3",
+      "title": "**画梯级**（触点/并联/线圈/应用指令）",
+      "action": "program_write_ladder",
+      "expect": {
+        "bodies": 1,
+        "contacts_read": 2,
+        "terminals_read": 1,
+        "errors": 0
+      },
+      "reopen": false
+    },
+    "build.error_messages": {
+      "family": "build",
+      "level": "L2",
+      "title": "**编译器原话**（输出面板的表格）",
+      "action": "build_error_messages",
+      "expect": {
+        "pane_found": true,
+        "rows": {
+          "min": 1.0,
+          "max": 30.0
+        },
+        "errors": 1
+      },
+      "reopen": false
+    },
+    "build.error_detail": {
+      "family": "build",
+      "level": "L2–L3",
+      "title": "故意写错：定位错在哪个编译阶段",
+      "action": "build_error_detail",
+      "expect": {
+        "errors": {
+          "min": 1.0,
+          "max": 999.0
+        },
+        "failed_stage_count": {
+          "min": 1.0,
+          "max": 6.0
+        }
+      },
+      "reopen": false
+    },
+    "build.locate_error_line": {
+      "family": "build",
+      "level": "L3",
+      "title": "二分法定位坏行（前缀问编译器）",
+      "action": "build_locate_error_line",
+      "expect": {
+        "found_line": 5,
+        "iterations": {
+          "min": 1.0,
+          "max": 6.0
+        }
+      },
+      "reopen": false
+    },
+    "batch.new_projects": {
+      "family": "batch",
+      "level": "L3",
+      "title": "同会话连新建 3 个工程（关闭后重建）",
+      "action": "batch_new_projects",
+      "expect": {
+        "made": 3,
+        "all_exist": true,
+        "all_src": true,
+        "all_clean": true
+      },
+      "reopen": false
+    },
+    "batch.projects": {
+      "family": "build",
+      "level": "L3",
+      "title": "同会话批量出 3 个工程（各自 0 错）",
+      "action": "batch_projects",
+      "expect": {
+        "items": 3,
+        "clean_items": 3,
+        "distinct_sources": 3,
+        "content_match": 3
+      },
+      "reopen": false
+    },
+    "project.new_language": {
+      "family": "project",
+      "level": "L1",
+      "title": "**换程序语言建工程**（ST / SFC / FBD）",
+      "action": "project_new_language",
+      "expect": {
+        "made": 3,
+        "all_marks": true,
+        "all_exist": true,
+        "all_fx5u": true
+      },
+      "reopen": false
+    },
+    "project.check": {
+      "family": "project",
+      "level": "L3",
+      "title": "**工程校验**（与另一个 .gx3 比对）",
+      "action": "project_check",
+      "expect": {
+        "opened": true,
+        "result_doc": true,
+        "rows": {
+          "min": 1.0,
+          "max": 60.0
+        },
+        "status_count": 2,
+        "grid_diff": {
+          "min": 1.0,
+          "max": 60.0
+        }
+      },
+      "reopen": false
+    },
+    "project.reopen": {
+      "family": "project",
+      "level": "L4",
+      "title": "存盘→重开→步数仍在（L4）",
+      "action": "project_reopen",
+      "expect": {
+        "reopened": true,
+        "steps": {
+          "min": 2.0,
+          "max": 200.0
+        }
+      },
+      "reopen": true
+    }
+  },
+  "families": {
+    "project": [
+      "project.new",
+      "project.new_rcpu",
+      "project.new_fx5s",
+      "project.save",
+      "project.new_language",
+      "project.check",
+      "project.reopen"
+    ],
+    "program": [
+      "program.rcpu_roundtrip",
+      "program.paste_st",
+      "program.read_st",
+      "program.import_xml",
+      "program.import_fb",
+      "program.import_fb_instance",
+      "program.import_fb_params",
+      "program.multi_programs",
+      "program.write_ladder_multi",
+      "program.write_ladder_parallel",
+      "program.write_ladder_appl",
+      "program.write_ladder"
+    ],
+    "inspect": [
+      "project.meta",
+      "inspect.devices_rcpu",
+      "inspect.source_map",
+      "inspect.programs",
+      "project.diff",
+      "inspect.devices",
+      "inspect.mil",
+      "inspect.ladder"
+    ],
+    "datatype": [
+      "datatype.import",
+      "datatype.member_var",
+      "datatype.custom_members",
+      "datatype.member_access",
+      "datatype.struct_array"
+    ],
+    "label": [
+      "label.multi_type",
+      "label.import_xml"
+    ],
+    "xmlgen": [
+      "xmlgen.manual_template"
+    ],
+    "build": [
+      "build.convert_all",
+      "build.program_check",
+      "build.error_messages",
+      "build.error_detail",
+      "build.locate_error_line",
+      "batch.projects"
+    ],
+    "batch": [
+      "batch.new_projects"
+    ]
+  },
+  "pending": {
+    "label.non_bool": "WORD/DINT 标签导入未验证（只验证了 BOOL）",
+    "datatype.local_member_access": "局部结构体变量按成员名访问不可行（七条路都试过；全局标签已通）",
+    "sfc.body": "SFC 正文：`*_SFCDB.db` 编码未解析（工程能建、内容画不了）",
+    "fbd.body": "FBD 正文：`*_FBDDB.db` 编码未解析（工程能建、内容画不了）",
+    "online.write": "需要真实 PLC 或 GX Simulator3；用户口径只做离线"
+  }
+}

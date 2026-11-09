@@ -1,0 +1,58 @@
+# 能力索引（由 tools/sync_capabilities.py 生成，勿手改）
+
+共 **42** 条已验证能力（内核 `gxkit 0.16.0`，commit `0a03946`，引擎 GX Works3 1.117.0.1，机型 FX5U，语言 ST，仅离线）。
+
+| id | family | level | 说明 |
+|---|---|---|---|
+| `project.new` | project | L1 | 新建 FX5U + ST 工程 |
+| `project.new_rcpu` | project | L1 | 新建 iQ-R（RCPU/R00）+ ST 工程 |
+| `project.new_fx5s` | project | L1 | 新建 FX5S + ST 工程 |
+| `program.rcpu_roundtrip` | program | L1–L3 | iQ-R 上粘贴 ST 并读回 |
+| `project.save` | project | L1–L2 | 另存为 .gx3（含读回校验） |
+| `project.meta` | inspect | L1–L2 | 解包 .gx3：Config.xml + 条目数 |
+| `program.paste_st` | program | L1–L3 | 把 ST 代码粘进编辑器并转换 |
+| `program.read_st` | program | L1–L2 | 从 .gx3 读回 ST 源码（逐字比对） |
+| `program.import_xml` | program | L2–L3 | 用 XML 新建程序（另起一个 PrgGen） |
+| `program.import_fb` | program | L3 | 用 XML 建程序+功能块（带局部标签） |
+| `program.import_fb_instance` | program | L3 | 用 XML 建功能块实例并调用 |
+| `program.import_fb_params` | program | L3 | 功能块带参数（IN/OUT/IN_OUT）+ 调用传参 |
+| `datatype.import` | datatype | L3 | 用 XML 建结构体（并用变量读回） |
+| `datatype.member_var` | datatype | L3 | 结构体类型的变量（成员级软元件分配） |
+| `datatype.custom_members` | datatype | L3 | 自定义结构体成员 |
+| `datatype.member_access` | datatype | L3 | 正文按成员名访问结构体（全局标签） |
+| `label.multi_type` | label | L2–L3 | BOOL/WORD/DWORD 全局标签 |
+| `datatype.struct_array` | datatype | L3 | 结构体数组成员 + 元素访问 |
+| `program.multi_programs` | program | L2–L3 | 一个工程里两个程序 |
+| `inspect.devices_rcpu` | inspect | L2 | iQ-R 软元件模板（与 FX5U 不同） |
+| `xmlgen.manual_template` | xmlgen | L3 | 手写骨架也能导入（不依赖 MELSOFT 样例） |
+| `inspect.source_map` | inspect | L2 | 步→源码坐标（Row/Col/StrLen） |
+| `inspect.programs` | inspect | L2 | 列程序清单（步数/源码行数） |
+| `project.diff` | inspect | L2–L3 | 两个工程的源码级差异 |
+| `inspect.devices` | inspect | L1–L2 | 读 FX5U 系统软元件模板 |
+| `inspect.mil` | inspect | L2 | 读编译后的 IL 文本 |
+| `label.import_xml` | label | L2–L3 | 导入全局标签 XML 并读回 |
+| `build.convert_all` | build | L1–L3 | 全部转换：从 Progress.txt 读错误数 |
+| `build.program_check` | build | L2–L3 | 程序检查：读「无错误」判定文本 |
+| `program.write_ladder_multi` | program | L3 | **画两个梯级**（X0→(Y0)、X1-X2→(Y1)） |
+| `program.write_ladder_parallel` | program | L3 | **画并联支路**（X0 ∥ X2 → (Y0)） |
+| `program.write_ladder_appl` | program | L3 | **画应用指令**（X0 → MOV K1 D0） |
+| `inspect.ladder` | inspect | L1 | **离线读梯形图**（LadderBlocks → 结构/摘要） |
+| `program.write_ladder` | program | L3 | **画梯级**（触点/并联/线圈/应用指令） |
+| `build.error_messages` | build | L2 | **编译器原话**（输出面板的表格） |
+| `build.error_detail` | build | L2–L3 | 故意写错：定位错在哪个编译阶段 |
+| `build.locate_error_line` | build | L3 | 二分法定位坏行（前缀问编译器） |
+| `batch.new_projects` | batch | L3 | 同会话连新建 3 个工程（关闭后重建） |
+| `batch.projects` | build | L3 | 同会话批量出 3 个工程（各自 0 错） |
+| `project.new_language` | project | L1 | **换程序语言建工程**（ST / SFC / FBD） |
+| `project.check` | project | L3 | **工程校验**（与另一个 .gx3 比对） |
+| `project.reopen` | project | L4 | 存盘→重开→步数仍在（L4） |
+
+## 未打通
+
+| 项 | 卡在哪 |
+|---|---|
+| `label.non_bool` | WORD/DINT 标签导入未验证（只验证了 BOOL） |
+| `datatype.local_member_access` | 局部结构体变量按成员名访问不可行（七条路都试过；全局标签已通） |
+| `sfc.body` | SFC 正文：`*_SFCDB.db` 编码未解析（工程能建、内容画不了） |
+| `fbd.body` | FBD 正文：`*_FBDDB.db` 编码未解析（工程能建、内容画不了） |
+| `online.write` | 需要真实 PLC 或 GX Simulator3；用户口径只做离线 |
