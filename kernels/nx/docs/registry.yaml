@@ -1,0 +1,1615 @@
+# 能力登记表（唯一事实来源）
+version: 1
+kernel: nxkit 0.1.0
+engine: NX 2512 (DesigncenterNX2512)
+verified_at: 2026-10-22
+counts:
+  verified: 146
+  L4: 54
+capabilities:
+  - id: solid.move_body
+    family: solid
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: solid_move_body
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 100000.0, 'centroid_x': {'min': 149.5, 'max': 150.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, centroid_x, volume_mm3]
+  - id: feature.text
+    family: feature
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: feature_text
+    params: {}
+    expect: {'entity_count': 6, 'body_count': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, entity_count]
+  - id: curve.bridge
+    family: curve
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: curve_bridge
+    params: {}
+    expect: {'entity_count': 1, 'start_xy': [0.0, 0.0], 'end_xy': [60.0, 20.0], 'length': {'min': 63.0, 'max': 63.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [end_xy, entity_count, length, start_xy]
+  - id: curve.intersection
+    family: curve
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: curve_intersection
+    params: {}
+    expect: {'entity_count': 1, 'start_x': 0.0, 'start_y': 0.0, 'end_x': {'min': 99.5, 'max': 100.5}, 'length': {'min': 99.5, 'max': 100.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [end_x, entity_count, length, start_x, start_y]
+  - id: export.dwg
+    family: export
+    level: L1–L3
+    status: verified
+    license: gateway
+    action: export_dwg
+    params: {}
+    expect: {'dwg_head_ok': True, 'log_wrote': True, 'dwg_bytes': {'min': 8000.0, 'max': 5000000.0}, 'dwg_lines': {'min': 1.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [dwg_bytes, dwg_head_ok, dwg_lines, log_wrote]
+  - id: export.dxf
+    family: export
+    level: L1–L3
+    status: verified
+    license: gateway
+    action: export_dxf
+    params: {}
+    expect: {'dxf_head_ok': True, 'log_wrote': True, 'dxf_bytes': {'min': 50000.0, 'max': 5000000.0}, 'dxf_lines': {'min': 1.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [dxf_bytes, dxf_head_ok, dxf_lines, log_wrote]
+  - id: surface.midsurface
+    family: surface
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: surface_midsurface
+    params: {}
+    expect: {'sheet_count': 3, 'gap': {'min': 4.9, 'max': 5.1}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [gap, sheet_count]
+  - id: drawing.dimension
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_dimension
+    params: {}
+    expect: {'dimension_created': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [dimension_created]
+  - id: drawing.projected_view
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_projected_view
+    params: {}
+    expect: {'view_count': 2, 'projected_ok': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [projected_ok, view_count]
+  - id: solid.delete_face
+    family: solid
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: solid_delete_face
+    params: {}
+    expect: {'hole_ok': True, 'body_count': 1, 'faces': 6, 'volume_mm3': {'min': 99990.0, 'max': 100010.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, hole_ok, volume_mm3]
+  - id: curve.combined_projection
+    family: curve
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: curve_combined_projection
+    params: {}
+    expect: {'entity_count': 1, 'start_x': 0.0, 'start_y': 0.0, 'start_z': 0.0, 'end_z': {'min': 49.5, 'max': 50.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [end_z, entity_count, start_x, start_y, start_z]
+  - id: surface.offset
+    family: surface
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: surface_offset
+    params: {}
+    expect: {'sheet_count': 2, 'gap': {'min': 4.9, 'max': 5.1}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [gap, sheet_count]
+  - id: feature.hole
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_hole
+    params: {}
+    expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 93710.0, 'max': 93725.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: solid.trim_body
+    family: solid
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: solid_trim_body
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 49000.0, 'max': 51000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.rib
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_rib
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 114800.0, 'max': 115200.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.sweep_guide
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_sweep_guide
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 31300.0, 'max': 31550.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: inspect.face_area_list
+    family: inspect
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: inspect_face_area_list
+    params: {}
+    expect: {'face_count': 6, 'area_total': {'min': 15990.0, 'max': 16010.0}, 'area_min': {'min': 999.5, 'max': 1000.5}, 'area_max': {'min': 4999.5, 'max': 5000.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [area_max, area_min, area_total, face_count]
+  - id: inspect.edge_count
+    family: inspect
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: inspect_edge_count
+    params: {}
+    expect: {'block_edges': 12, 'block_faces': 6, 'cyl_edges': 2, 'cyl_faces': 3}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [block_edges, block_faces, cyl_edges, cyl_faces]
+  - id: inspect.body_state
+    family: inspect
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: inspect_body_state
+    params: {}
+    expect: {'body_count': 2, 'solid_count': 1, 'sheet_count': 1, 'total_ok': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, sheet_count, solid_count, total_ok]
+  - id: inspect.face_types
+    family: inspect
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: inspect_face_types
+    params: {}
+    expect: {'face_total': 3, 'planar': 2, 'cylindrical': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [cylindrical, face_total, planar]
+  - id: measure.perimeter
+    family: measure
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: measure_face_perimeter
+    params: {}
+    expect: {'perimeter_mm': {'min': 299.5, 'max': 300.5}, 'area_mm2': {'min': 4990.0, 'max': 5010.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [area_mm2, perimeter_mm]
+  - id: surface.sew
+    family: surface
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: surface_sew
+    params: {}
+    expect: {'sheet_count': 1, 'sheet_area': {'min': 4990.0, 'max': 5010.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_area, sheet_count]
+  - id: surface.through_curves
+    family: surface
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: surface_through_curves
+    params: {}
+    expect: {'sheet_count': 1, 'sheet_area': {'min': 4990.0, 'max': 5010.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_area, sheet_count]
+  - id: part.new
+    family: part
+    level: L1
+    status: verified
+    license: gateway
+    action: part_new
+    params: {'name': 'nxkit_part'}
+    expect: {'part_name_ok': True, 'body_count': 0, 'units_mm': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, part_name_ok, units_mm]
+  - id: datum.plane
+    family: part
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: datum_plane_at
+    params: {}
+    expect: {'plane_ok': True, 'origin_z': 10.0, 'normal_z': 1.0, 'normal_x': 0.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [normal_x, normal_z, origin_z, plane_ok]
+  - id: datum.axis
+    family: part
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: datum_axis_at
+    params: {}
+    expect: {'axis_ok': True, 'origin_x': 0.0, 'dir_x': 1.0, 'dir_y': 0.0, 'dir_z': 0.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [axis_ok, dir_x, dir_y, dir_z, origin_x]
+  - id: block.create
+    family: solid
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: block_create
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 100000.0, 'area_mm2': 16000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [area_mm2, body_count, edges, faces, volume_mm3]
+  - id: block.two_bodies
+    family: solid
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: block_two
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 2, 'volume_mm3': 108000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: boolean.subtract_retain
+    family: boolean
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: boolean_subtract_retain
+    params: {}
+    expect: {'body_count': 2, 'volume_mm3': {'min': 105000.0, 'max': 107500.0}, 'body_count_reopened': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: boolean.subtract
+    family: boolean
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: boolean_subtract
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 1, 'volume_mm3': 92000.0, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: boolean.union
+    family: boolean
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: boolean_union
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 1, 'volume_mm3': 100000.0, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: boolean.intersect
+    family: boolean
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: boolean_intersect
+    params: {'offset_x': 50.0}
+    expect: {'body_count': 1, 'volume_mm3': 8000.0, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: cylinder.create
+    family: solid
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: cylinder_create
+    params: {'diameter': 40.0, 'height': 30.0}
+    expect: {'body_count': 1, 'faces': 3, 'volume_mm3': 37699.11184307752}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: measure.mass
+    family: measure
+    level: L3
+    status: verified
+    license: gateway
+    action: measure_mass
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'volume_mm3': 100000.0, 'area_mm2': 16000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [area_mm2, volume_mm3]
+  - id: body.topo
+    family: inspect
+    level: L1–L3
+    status: verified
+    license: gateway
+    action: body_topo
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'faces': 6, 'edges': 12}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [edges, faces]
+  - id: file.roundtrip
+    family: file
+    level: L4
+    status: verified
+    license: gateway
+    action: file_roundtrip
+    params: {'length': 100.0, 'width': 50.0, 'height': 20.0}
+    expect: {'volume_mm3': 100000.0, 'volume_reopened': 100000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [volume_mm3, volume_reopened]
+  - id: curve.line
+    family: curve
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: curve_line
+    params: {'dx': 100.0, 'dy': 0.0, 'dz': 0.0}
+    expect: {'length': 100.0, 'start': [0.0, 0.0, 0.0], 'end': [100.0, 0.0, 0.0]}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [end, length, start]
+  - id: curve.arc
+    family: curve
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: curve_arc
+    params: {'radius': 25.0}
+    expect: {'radius': 25.0, 'circumference': 157.07963267948966}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [circumference, radius]
+  - id: attr.string
+    family: attr
+    level: L2–L4
+    status: verified
+    license: gateway
+    action: attr_string
+    params: {'title': 'NXKIT_STR', 'value': 'hello-nx'}
+    expect: {'attr_str': 'hello-nx', 'attr_after_reopen': 'hello-nx'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [attr_after_reopen, attr_str]
+  - id: attr.int
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_int
+    params: {'title': 'NXKIT_INT', 'value': 42}
+    expect: {'attr_int': 42}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [attr_int]
+  - id: extrude.rect
+    family: feature
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: extrude_rect
+    params: {'length': 100.0, 'width': 50.0, 'distance': 10.0}
+    expect: {'body_count': 1, 'faces': 6, 'edges': 12, 'volume_mm3': 50000.0, 'area_mm2': 13000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [area_mm2, body_count, edges, faces, volume_mm3]
+  - id: asm.add_component
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_add_component
+    params: {}
+    expect: {'components': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [components]
+  - id: asm.two_components
+    family: assembly
+    level: L1–L4
+    status: verified
+    license: assemblies
+    action: asm_two_components
+    params: {}
+    expect: {'components': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [components]
+  - id: export.step
+    family: export
+    level: L1–L3
+    status: verified
+    license: gateway
+    action: export_step
+    params: {}
+    expect: {'export_head': 'ISO-10303-21'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [export_head]
+  - id: export.iges
+    family: export
+    level: L1–L3
+    status: verified
+    license: gateway
+    action: export_iges
+    params: {}
+    expect: {'igs': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [igs]
+  - id: drawing.sheet
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet
+    params: {'name': 'S1'}
+    expect: {'sheet_created': True, 'sheet_height': 297.0, 'sheet_width': 420.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_created, sheet_height, sheet_width]
+  - id: drawing.base_view
+    family: drawing
+    level: L1–L3
+    status: verified
+    license: drafting
+    action: drawing_base_view
+    params: {'model_view': 'Front'}
+    expect: {'view_created': True, 'model_view_used': 'Front'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [model_view_used, view_created]
+  - id: extrude.ring
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: extrude_ring
+    params: {}
+    expect: {'sections': 1, 'body_count': 1, 'volume_mm3': 42000.0, 'faces': 10}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, sections, volume_mm3]
+  - id: feature.chamfer
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: chamfer_one
+    params: {}
+    expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: feature.edge_blend
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: edge_blend_one
+    params: {}
+    expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98000.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: feature.pattern_linear
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: pattern_linear
+    params: {}
+    expect: {'body_count': 3, 'volume_mm3': 300000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.pocket
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_pocket
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 84000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.hole_cyl
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_hole_cyl
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 93716.81495770694}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: export.acis
+    family: export
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: export_acis
+    params: {}
+    expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [export_bytes, export_ok]
+  - id: curve.ellipse
+    family: curve
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: curve_ellipse
+    params: {}
+    expect: {'ellipse_major': 50.0, 'ellipse_minor': 25.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [ellipse_major, ellipse_minor]
+  - id: attr.on_body
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_on_body
+    params: {}
+    expect: {'body_attr': 'v1', 'body_count': 1, 'body_attr_reopened': 'v1'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_attr, body_attr_reopened, body_count]
+  - id: measure.face_area
+    family: measure
+    level: L3
+    status: verified
+    license: gateway
+    action: measure_face_area
+    params: {}
+    expect: {'faces': 6, 'total_face_area': 16000.0, 'total_face_area_reopened': {'min': 15990.0, 'max': 16010.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [faces, total_face_area, total_face_area_reopened]
+  - id: solid.cone
+    family: solid
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: solid_cone
+    params: {'diameter': 40.0, 'height': 30.0}
+    expect: {'body_count': 1, 'volume_mm3': 12566.370614359172}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: solid.sphere
+    family: solid
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: solid_sphere
+    params: {'diameter': 40.0}
+    expect: {'body_count': 1, 'volume_mm3': 33510.32163829112}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.pattern_grid
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: pattern_grid
+    params: {}
+    expect: {'body_count': 4, 'volume_mm3': 400000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.pattern_circular
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: pattern_circular
+    params: {}
+    expect: {'body_count': 4, 'volume_mm3': 400000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: export.step_ap203
+    family: export
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: export_step_ap203
+    params: {}
+    expect: {'export_ok': True, 'export_head': 'ISO-10303-21'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [export_head, export_ok]
+  - id: attr.on_feature
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_on_feature
+    params: {}
+    expect: {'feature_attr': 'f1', 'feature_name': 'Block(0)'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [feature_attr, feature_name]
+  - id: feature.chamfer_angle
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: chamfer_angle
+    params: {}
+    expect: {'body_count': 1, 'faces': 7, 'option': 'OffsetAndAngle', 'angle': '30.0', 'volume_mm3': {'min': 98500.0, 'max': 99900.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [angle, body_count, faces, option, volume_mm3]
+  - id: feature.chamfer_multi
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: chamfer_multi
+    params: {}
+    expect: {'body_count': 1, 'faces': {'min': 10.0, 'max': 12.0}, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: boolean.two_tools
+    family: boolean
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: boolean_two_tools
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 84000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.hole_array
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: hole_array
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 74867.25849365017}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.shell
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_shell
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 28000.0, 'max': 30000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: sketch.rect
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_rect
+    params: {}
+    expect: {'sketches': 1, 'activated': True, 'lines_added': 4, 'curves': {'min': 4.0, 'max': 8.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [activated, curves, lines_added, sketches]
+  - id: sketch.extrude
+    family: sketch
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: sketch_extrude
+    params: {}
+    expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 50000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, sketches, volume_mm3]
+  - id: sketch.circle_extrude
+    family: sketch
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: sketch_circle_extrude
+    params: {}
+    expect: {'sketches': 1, 'body_count': 1, 'volume_mm3': 37699.11184307752}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, sketches, volume_mm3]
+  - id: feature.pocket_blind
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_pocket_blind
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 92000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.hole_blind
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_hole_blind
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 96858.40734641021}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: drawing.view_scale
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_view_scale
+    params: {}
+    expect: {'view_created': True, 'ratio_ok': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [ratio_ok, view_created]
+  - id: drawing.second_sheet
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_second_sheet
+    params: {}
+    expect: {'current': 'S2', 'current_height': 210.0, 'current_width': 297.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [current, current_height, current_width]
+  - id: drawing.sheet_a4
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'A4'}
+    expect: {'sheet_created': True, 'sheet_height': 210.0, 'sheet_width': 297.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_created, sheet_height, sheet_width]
+  - id: drawing.view_isometric
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_view_named
+    params: {'model_view': 'Isometric'}
+    expect: {'view_created': True, 'view_name': 'Isometric@1'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [view_created, view_name]
+  - id: asm.three_components
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_three_components
+    params: {}
+    expect: {'components': 3}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [components]
+  - id: export.stl
+    family: export
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: export_stl
+    params: {}
+    expect: {'export_ok': True, 'export_bytes': {'min': 100.0, 'max': 100000000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [export_bytes, export_ok]
+  - id: feature.revolve
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_revolve
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 37600.0, 'max': 37800.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.edge_blend_all
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: edge_blend_all
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 94000.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: measure.face_single
+    family: measure
+    level: L3
+    status: verified
+    license: gateway
+    action: measure_face_single
+    params: {}
+    expect: {'face_area_max': 5000.0, 'face_perimeter_max': 300.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [face_area_max, face_perimeter_max]
+  - id: feature.chamfer_edge
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: chamfer_edge
+    params: {}
+    expect: {'body_count': 1, 'faces': 7, 'volume_mm3': {'min': 98500.0, 'max': 100000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: surface.ruled
+    family: surface
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: surface_ruled
+    params: {}
+    expect: {'sheet_count': 1, 'sheet_area': {'min': 5800.0, 'max': 5860.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_area, sheet_count]
+  - id: surface.bounded_plane
+    family: surface
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: surface_bounded_plane
+    params: {}
+    expect: {'body_count': 1, 'faces': 1, 'sheet_count_reopened': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, sheet_count_reopened]
+  - id: feature.spring
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_spring
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 28000.0, 'max': 33000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.sweep
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_sweep_arc
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 29000.0, 'max': 30200.0}, 'body_count_reopened': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: feature.tube
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_tube
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 30000.0, 'max': 33000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: curve.project
+    family: curve
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: curve_project_to_plane
+    params: {}
+    expect: {'curve_ok': True, 'entity_count': 1, 'proj_z': {'min': 39.5, 'max': 40.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [curve_ok, entity_count, proj_z]
+  - id: curve.offset
+    family: curve
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: curve_offset_line
+    params: {}
+    expect: {'curve_ok': True, 'entity_count': 1, 'offset_dist': {'min': 9.5, 'max': 10.5}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [curve_ok, entity_count, offset_dist]
+  - id: curve.helix
+    family: curve
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: curve_helix
+    params: {}
+    expect: {'helix_ok': True, 'entity_count': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [entity_count, helix_ok]
+  - id: curve.hyperbola
+    family: curve
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: curve_hyperbola
+    params: {}
+    expect: {'semi_transverse': 50.0, 'semi_conjugate': 25.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [semi_conjugate, semi_transverse]
+  - id: curve.parabola
+    family: curve
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: curve_parabola
+    params: {}
+    expect: {'focal_length': 20.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [focal_length]
+  - id: boolean.intersect_two
+    family: boolean
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: boolean_intersect_two
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': 12000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: inspect.body_type
+    family: inspect
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: inspect_body_type
+    params: {}
+    expect: {'solid_is_solid': True, 'solid_is_sheet': False, 'sheet_is_sheet': True, 'sheet_is_solid': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_is_sheet, sheet_is_solid, solid_is_sheet, solid_is_solid]
+  - id: feature.hole_csk
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_hole_csk
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 91700.0, 'max': 91800.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: solid.cone_frustum
+    family: solid
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: solid_cone_frustum
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 21900.0, 'max': 22100.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: asm.four_components
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_four_components
+    params: {}
+    expect: {'components': 4}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [components]
+  - id: asm.nested
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_nested
+    params: {}
+    expect: {'components': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [components]
+  - id: feature.boss
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_boss
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 103000.0, 'max': 103300.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.extrude_taper
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_extrude_taper
+    params: {}
+    expect: {'body_count': 1, 'faces': 6, 'volume_mm3': {'min': 48600.0, 'max': 48800.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, faces, volume_mm3]
+  - id: feature.cross_hole
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_cross_hole
+    params: {}
+    expect: {'volume_mm3': {'min': 68500.0, 'max': 68700.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [volume_mm3]
+  - id: feature.offset_face
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_offset_face
+    params: {}
+    expect: {'volume_mm3': {'min': 197000.0, 'max': 199000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [volume_mm3]
+  - id: feature.stack_blocks
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_stack_blocks
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 114500.0, 'max': 115500.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: attr.double
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_double
+    params: {}
+    expect: {'double_attr': 3.25}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [double_attr]
+  - id: attr.logical
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_logical
+    params: {}
+    expect: {'logical_attr': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [logical_attr]
+  - id: sketch.constraint
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint
+    params: {}
+    expect: {'coincidence_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [coincidence_ok, inferred]
+  - id: sketch.horizontal
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_kind
+    params: {'kind': 'horizontal'}
+    expect: {'con_ok': True, 'inferred': False, 'geom_count': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, geom_count, inferred]
+  - id: sketch.vertical
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_kind
+    params: {'kind': 'vertical'}
+    expect: {'con_ok': True, 'inferred': False, 'geom_count': 1}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, geom_count, inferred]
+  - id: sketch.equal_length
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_kind
+    params: {'kind': 'equal'}
+    expect: {'con_ok': True, 'geom_count': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, geom_count]
+  - id: sketch.perpendicular
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_kind
+    params: {'kind': 'perpendicular'}
+    expect: {'con_ok': True, 'geom_count': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, geom_count]
+  - id: sketch.dimension
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_dimension
+    params: {}
+    expect: {'dim_ok': True, 'expr_value': 50.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [dim_ok, expr_value]
+  - id: sketch.fixed
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_fixed
+    params: {}
+    expect: {'con_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, inferred]
+  - id: sketch.collinear
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_extra
+    params: {'kind': 'collinear'}
+    expect: {'con_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, inferred]
+  - id: sketch.concentric
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_extra
+    params: {'kind': 'concentric'}
+    expect: {'con_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, inferred]
+  - id: sketch.midpoint
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_extra
+    params: {'kind': 'midpoint'}
+    expect: {'con_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, inferred]
+  - id: sketch.parallel
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_pair
+    params: {'kind': 'parallel'}
+    expect: {'con_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, inferred]
+  - id: sketch.equal_radius
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_pair
+    params: {'kind': 'equal_radius'}
+    expect: {'con_ok': True, 'inferred': False}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, inferred]
+  - id: drawing.sheet_a2
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'A2'}
+    expect: {'sheet_height': 420.0, 'sheet_width': 594.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_height, sheet_width]
+  - id: drawing.sheet_a1
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'A1'}
+    expect: {'sheet_height': 594.0, 'sheet_width': 841.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_height, sheet_width]
+  - id: drawing.sheet_a0
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'A0'}
+    expect: {'sheet_height': 841.0, 'sheet_width': 1189.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_height, sheet_width]
+  - id: sketch.normal
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_constraint_more
+    params: {'kind': 'normal'}
+    expect: {'con_ok': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok]
+  - id: sketch.tangent
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_tangent
+    params: {}
+    expect: {'con_ok': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok]
+  - id: drawing.sheet_ansi_a
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'A'}
+    expect: {'sheet_height': 8.5, 'sheet_width': 11.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_height, sheet_width]
+  - id: drawing.sheet_ansi_b
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'B'}
+    expect: {'sheet_height': 11.0, 'sheet_width': 17.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_height, sheet_width]
+  - id: drawing.sheet_ansi_c
+    family: drawing
+    level: L1–L2
+    status: verified
+    license: drafting
+    action: drawing_sheet_size
+    params: {'size': 'C'}
+    expect: {'sheet_height': 17.0, 'sheet_width': 22.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [sheet_height, sheet_width]
+  - id: attr.delete
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_delete
+    params: {}
+    expect: {'before': 'abc', 'deleted': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [before, deleted]
+  - id: attr.update
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_update
+    params: {}
+    expect: {'value': 'new'}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [value]
+  - id: part.inch
+    family: part
+    level: L1–L3
+    status: verified
+    license: gateway
+    action: part_inch
+    params: {}
+    expect: {'units_inch': True, 'body_count': 1, 'volume_mm3': {'min': 7.9, 'max': 8.1}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, units_inch, volume_mm3]
+  - id: export.step_ap214
+    family: export
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: export_step_ap214
+    params: {}
+    expect: {'export_ok': True, 'has_iso_header': True, 'has_automotive_schema': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [export_ok, has_automotive_schema, has_iso_header]
+  - id: export.parasolid
+    family: export
+    level: L1–L2
+    status: verified
+    license: gateway
+    action: export_parasolid
+    params: {}
+    expect: {'export_ok': True, 'head_ok': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [export_ok, head_ok]
+  - id: measure.faces_two
+    family: measure
+    level: L2–L3
+    status: verified
+    license: gateway
+    action: measure_faces_two
+    params: {}
+    expect: {'picked': 2, 'two_face_area': {'min': 9990.0, 'max': 10010.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [picked, two_face_area]
+  - id: measure.distance
+    family: measure
+    level: L2–L3
+    status: verified
+    license: gateway
+    action: measure_distance
+    params: {}
+    expect: {'measured': 20.0, 'faces_used': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [faces_used, measured]
+  - id: feature.thicken
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_thicken2
+    params: {}
+    expect: {'solid_count': 1, 'volume_mm3': {'min': 24800.0, 'max': 25200.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [solid_count, volume_mm3]
+  - id: solid.split_body
+    family: solid
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: solid_split_by_face
+    params: {}
+    expect: {'body_count': 3, 'volume_mm3': {'min': 139000.0, 'max': 141000.0}, 'body_count_reopened': 3}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, body_count_reopened, volume_mm3]
+  - id: solid.scale
+    family: solid
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: solid_scale
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 790000.0, 'max': 810000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.mirror
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_mirror_face
+    params: {}
+    expect: {'body_count': 2, 'volume_mm3': {'min': 199000.0, 'max': 201000.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: asm.five_components
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_five_components
+    params: {}
+    expect: {'components': 5}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [components]
+  - id: asm.component_names
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_component_names
+    params: {}
+    expect: {'names': 'AAA,BBB,CCC', 'name_count': 3}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [name_count, names]
+  - id: file.save_copy
+    family: file
+    level: L1–L4
+    status: verified
+    license: gateway
+    action: file_save_copy
+    params: {}
+    expect: {'copy_exists': True, 'copy_body_count': 1, 'copy_volume': 100000.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [copy_body_count, copy_exists, copy_volume]
+  - id: attr.count
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_count
+    params: {}
+    expect: {'title_count': 3}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [title_count]
+  - id: boolean.unite_three
+    family: boolean
+    level: L1–L4
+    status: verified
+    license: solid_modeling
+    action: boolean_unite_three
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 114500.0, 'max': 115500.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: feature.shell_volume
+    family: feature
+    level: L1–L3
+    status: verified
+    license: solid_modeling
+    action: feature_shell_volume
+    params: {}
+    expect: {'body_count': 1, 'volume_mm3': {'min': 29200.0, 'max': 29500.0}}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_count, volume_mm3]
+  - id: attr.on_face
+    family: attr
+    level: L2
+    status: verified
+    license: gateway
+    action: attr_on_face
+    params: {}
+    expect: {'face_attr': 'x1', 'body_attr_empty': True}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [body_attr_empty, face_attr]
+  - id: sketch.linear_dim
+    family: sketch
+    level: L1–L2
+    status: verified
+    license: solid_modeling
+    action: sketch_linear_dim
+    params: {}
+    expect: {'dim_ok': True, 'expr_value': 40.0}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [dim_ok, expr_value]
+  - id: asm.constraint_refs
+    family: assembly
+    level: L1–L2
+    status: verified
+    license: assemblies
+    action: asm_constraint_touch
+    params: {}
+    expect: {'con_ok': True, 'ref_count': 2}
+    evidence:
+      run: _runs/p94-full1 (146/146)
+      checks: [con_ok, ref_count]
