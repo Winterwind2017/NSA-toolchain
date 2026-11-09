@@ -101,3 +101,31 @@ report = app.project_check()          # 需要编译
 print(report["counts"])               # {"errors":0,"warnings":3,...}
 print(report["findings"][:5])         # 每条带 code/program/line/message
 ```
+
+## 11. 批量写符号表（>19 行）：走「导入Excel」
+
+网格默认只有 19 个数据行，逐格 `add_symbol` 建不出新行（见 pitfalls「符号表只有 19 行」）。
+一次性的做法：
+
+```bash
+python scripts/import_symbol_table.py --csv out\symbols.csv --hcp D:\work\demo\demo.hcp
+```
+
+手工等价：
+
+```python
+import autoshopkit.app as A
+
+# 1) 按导出模板生成 .xls：r0 = (空)|符号|地址|注释；数据行 = 序号|符号|地址|注释
+#    （BIFF8，用 xlwt 写；符号名先规范到 <=8 字符并去重）
+# 2) 打开 符号表 文档，命令投给 frame
+A.w.post(app.frame, A.w.WM_COMMAND, 33183)        # 导入Excel
+# 3) 「打开」对话框里文件名框是 cid=1148（另存为才是 1001），要递归找 Edit
+#    填路径 -> 回车 -> 确认框点「确定」-> cmd("save_project")
+rows = app.symbols(source="file")                  # 秒级，读 VarList.gdt
+assert len(rows) == 74
+```
+
+判据：`symbols(source="file")` 的行数与内容逐条一致；再写一个引用这些符号的程序并
+`compile()` 到 `(0)错误`——回读 IL 会看到符号被解析成地址（`SB_START → X61`），
+这是符号表真正生效的独立证据。

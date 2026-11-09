@@ -154,6 +154,11 @@ Python 侧同名能力：`app.open_program` / `app.program_il` / `app.apply_prog
 - 配方：[`references/recipes.md`](references/recipes.md)
 - 坑：[`references/pitfalls.md`](references/pitfalls.md)
 - 开工清单：[`references/checklists.md`](references/checklists.md)
+- **符号表超过 19 行只有一条路：`导入Excel`(33183)**。网格默认就 19 个数据行，`add_symbol`
+  写不进去会**折回第 1 行反复改**（返回值仍是 True，最难发现的一类假成功）；整块粘贴也进不去。
+  做法见 [`references/pitfalls.md`](references/pitfalls.md) 的「符号表只有 19 行」，
+  现成脚本 [`scripts/import_symbol_table.py`](scripts/import_symbol_table.py)（含符号名
+  ≤8 字符规范化、`打开`/`另存为` 对话框 cid 差异、导入后 `symbols(source="file")` 核对）。
 
 ## 什么别试
 
