@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+/build/
+/dist/
+*.egg-info/
+
+# 运行产物（AutoCAD 会在当前目录写 plot.log / 自动保存的图）
+*.log
+_scratch/
+out/
+/*.dwg
+/*.dxf
+/*.pdf

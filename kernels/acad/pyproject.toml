@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acadkit"
+version = "0.1.0"
+description = "AutoCAD 2025 自动化内核：能力登记表 + 四级判据 + 环境自检（库 / CLI / MCP）"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Winterwind2017" }]
+keywords = ["autocad", "cad", "com", "automation", "mcp", "agent", "judge"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: Microsoft :: Windows",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Computer Aided Design",
+]
+dependencies = ["pywin32>=306; sys_platform == 'win32'"]
+
+[project.optional-dependencies]
+yaml = ["PyYAML>=6"]
+dxf = ["ezdxf>=1.0"]
+pdf = ["pypdf>=4"]
+mcp = ["mcp>=1.0.0"]
+dev = ["pytest>=8", "ezdxf>=1.0", "PyYAML>=6"]
+
+[project.scripts]
+acadkit = "acadkit.cli.main:main"
+acadkit-mcp = "acadkit.mcp.server:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+  "live: 需要本机 AutoCAD 的验收测试（默认不跑，见 tests/run_all.py）",
+]
+

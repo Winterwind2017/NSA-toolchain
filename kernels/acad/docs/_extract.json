@@ -1,0 +1,402 @@
+{
+  "autocad_mcp": [
+    {
+      "tool": "drawing",
+      "operations": [
+        "create",
+        "create_circle",
+        "create_line",
+        "get_variables",
+        "info",
+        "open",
+        "plot_pdf",
+        "purge",
+        "redo",
+        "save",
+        "save_as_dxf",
+        "undo"
+      ]
+    },
+    {
+      "tool": "entity",
+      "operations": [
+        "array",
+        "copy",
+        "count",
+        "create_arc",
+        "create_circle",
+        "create_ellipse",
+        "create_hatch",
+        "create_line",
+        "create_mtext",
+        "create_polyline",
+        "create_rectangle",
+        "fillet",
+        "get",
+        "list",
+        "mirror",
+        "move",
+        "offset",
+        "rotate",
+        "scale"
+      ]
+    },
+    {
+      "tool": "layer",
+      "operations": [
+        "create",
+        "define",
+        "freeze",
+        "get_attributes",
+        "insert",
+        "insert_with_attributes",
+        "list",
+        "lock",
+        "set_current",
+        "set_properties",
+        "thaw",
+        "unlock",
+        "update_attribute"
+      ]
+    },
+    {
+      "tool": "block",
+      "operations": [
+        "create_dimension_aligned",
+        "create_dimension_angular",
+        "create_dimension_linear",
+        "create_dimension_radius",
+        "create_leader",
+        "create_text",
+        "define",
+        "get_attributes",
+        "insert",
+        "insert_with_attributes",
+        "list",
+        "update_attribute"
+      ]
+    },
+    {
+      "tool": "annotation",
+      "operations": [
+        "add_flow_arrow",
+        "connect_equipment",
+        "create_dimension_aligned",
+        "create_dimension_angular",
+        "create_dimension_linear",
+        "create_dimension_radius",
+        "create_leader",
+        "create_text",
+        "draw_process_line",
+        "insert_symbol",
+        "list_symbols",
+        "setup_layers"
+      ]
+    },
+    {
+      "tool": "pid",
+      "operations": [
+        "add_equipment_tag",
+        "add_flow_arrow",
+        "add_line_number",
+        "connect_equipment",
+        "draw_process_line",
+        "insert_instrument",
+        "insert_pump",
+        "insert_symbol",
+        "insert_tank",
+        "insert_valve",
+        "list_symbols",
+        "setup_layers",
+        "zoom_extents"
+      ]
+    },
+    {
+      "tool": "view",
+      "operations": [
+        "execute_lisp",
+        "get_backend",
+        "get_screenshot",
+        "health",
+        "init",
+        "runtime",
+        "status",
+        "zoom_extents",
+        "zoom_window"
+      ]
+    },
+    {
+      "tool": "system",
+      "operations": [
+        "execute_lisp",
+        "get_backend",
+        "health",
+        "init",
+        "runtime",
+        "status"
+      ]
+    }
+  ],
+  "acad_ext_tools": [
+    "annotation_scale",
+    "assoc_expression",
+    "assoc_network",
+    "block_deep",
+    "const",
+    "constraint_create",
+    "constraint_survey",
+    "custom_linetype",
+    "database_events",
+    "datalink",
+    "deep10",
+    "deep11",
+    "deep12",
+    "deep13",
+    "deep14",
+    "deep2",
+    "deep4",
+    "deep5",
+    "deep6",
+    "deep7",
+    "deep8",
+    "deep9",
+    "deep_clone",
+    "deep_edit",
+    "dim_assoc",
+    "dim_deep",
+    "dim_override",
+    "dimension_assoc",
+    "dimstyle",
+    "entity_advanced",
+    "field",
+    "geolocation",
+    "group",
+    "hatch_deep",
+    "hyperlink",
+    "layer_extended",
+    "layer_filter",
+    "layer_state",
+    "layer_state_restore",
+    "material",
+    "material_appearance",
+    "members",
+    "mleader_edit",
+    "mleader_programmatic",
+    "mleader_style",
+    "mledit",
+    "mlinestyle",
+    "mtext_deep",
+    "named_view",
+    "netapi",
+    "netapi_probe",
+    "plot",
+    "plot_list",
+    "plot_setup",
+    "point_cloud",
+    "raster_image",
+    "section_settings",
+    "summary_info",
+    "surface_family",
+    "table_deep",
+    "table_grid",
+    "tablestyle",
+    "text_editor",
+    "textstyle",
+    "ucs",
+    "underlay",
+    "viewport",
+    "viewporttablerecord",
+    "wblock_insert",
+    "wipeout",
+    "xdata",
+    "xrecord",
+    "xref_graph"
+  ],
+  "acad_mech_functions": [
+    {
+      "name": "psy",
+      "lines": 5,
+      "doc": ""
+    },
+    {
+      "name": "info",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "die",
+      "lines": 3,
+      "doc": ""
+    },
+    {
+      "name": "n_acad",
+      "lines": 5,
+      "doc": ""
+    },
+    {
+      "name": "kill_all",
+      "lines": 24,
+      "doc": "收尾：先 COM 关文档 + Quit（干净退出，不留 .sv$），超时才强杀。"
+    },
+    {
+      "name": "f3",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "lisp_str",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "lisp_ascii",
+      "lines": 13,
+      "doc": "将非 ASCII 字符转为 AutoCAD 的 \\U+XXXX 转义，保证 LISP 文件纯 ASCII"
+    },
+    {
+      "name": "lisp_balance",
+      "lines": 34,
+      "doc": "返回 (depth, first_negative_index)。depth==0 才是合法 LISP。"
+    },
+    {
+      "name": "_fit_index",
+      "lines": 5,
+      "doc": ""
+    },
+    {
+      "name": "fit_deviation",
+      "lines": 30,
+      "doc": "读配合代号（如 H7 / h6 / g6 / f7 / H8）→ 上下偏差（mm）"
+    },
+    {
+      "name": "_pt",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "_sub",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "_add",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "_mul",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "_len",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "_unit",
+      "lines": 5,
+      "doc": ""
+    },
+    {
+      "name": "iso_media_name",
+      "lines": 8,
+      "doc": "按图纸尺寸（mm）选 ISO 媒体名，不区分横竖"
+    },
+    {
+      "name": "pdf_stats",
+      "lines": 45,
+      "doc": "用标准库解开 PDF 流层，数真实的绘图操作符（判定是否空白）"
+    },
+    {
+      "name": "_fresh_pdf_path",
+      "lines": 19,
+      "doc": "返回一个当前**不存在**的 PDF 路径（必要时加时间戳）。"
+    },
+    {
+      "name": "choose_solver",
+      "lines": 10,
+      "doc": "选择约束求解器。acad 已实测不可用；auto 自动回退 python。"
+    },
+    {
+      "name": "solve_constraints",
+      "lines": 175,
+      "doc": "对几何列表做参数化约束求解（迭代投影法）"
+    },
+    {
+      "name": "_solid_box",
+      "lines": 13,
+      "doc": "取 box 的 (x1,x2,y1,y2,z1,z2)；支持 [a,b] 或 a1/a2 两种写法"
+    },
+    {
+      "name": "_solid_cyl",
+      "lines": 15,
+      "doc": "取 cyl 的 (axis_idx, c1, c2, a1, a2, r)；axis in {x,y,z}"
+    },
+    {
+      "name": "_sx",
+      "lines": 13,
+      "doc": "将实体转成 6 个坐标范围 (x1,x2,y1,y2,z1,z2)"
+    },
+    {
+      "name": "_footprint",
+      "lines": 6,
+      "doc": "包围盒在视图平面上的足迹 (u1,u2,v1,v2) 与深度范围 (d1,d2)"
+    },
+    {
+      "name": "_inside_uv",
+      "lines": 3,
+      "doc": ""
+    },
+    {
+      "name": "project_solids",
+      "lines": 102,
+      "doc": "对轴对齐 CSG 做正交投影，返回图元描述列表"
+    },
+    {
+      "name": "an_order",
+      "lines": 2,
+      "doc": ""
+    },
+    {
+      "name": "_cyl_uv",
+      "lines": 5,
+      "doc": "圆柱的两个非轴向坐标，按视图的 (u,v) 轴顺序映射到平面坐标"
+    },
+    {
+      "name": "split_rect_by_holes",
+      "lines": 58,
+      "doc": "把矩形 rect 按“贯穿孔”切开，返回剩余子矩形列表"
+    },
+    {
+      "name": "section_profile",
+      "lines": 67,
+      "doc": "剖切面与 CSG 的交集，返回被剖切的截面形状列表（用于画剖面线）"
+    },
+    {
+      "name": "run_spec",
+      "lines": 319,
+      "doc": "按一份规格画完一张图（环境 → 图框 → 几何 → 3D/布尔 → 视图/剖视"
+    },
+    {
+      "name": "aggregate_bom",
+      "lines": 39,
+      "doc": "把多个规格的 BOM 行按代号汇总（数量相加）"
+    },
+    {
+      "name": "_plot_pdf_retry",
+      "lines": 14,
+      "doc": "出 PDF 带重试；每次都会过 plot_pdf 里的“非空白”闸门"
+    },
+    {
+      "name": "run_batch",
+      "lines": 97,
+      "doc": ""
+    },
+    {
+      "name": "main",
+      "lines": 233,
+      "doc": ""
+    }
+  ]
+}
