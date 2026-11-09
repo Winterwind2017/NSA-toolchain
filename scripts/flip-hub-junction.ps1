@@ -1,4 +1,4 @@
-# 把 hub 的联接方向翻正：nsa-mcp-hub（真实目录） → nsa-toolchain\hub（真实目录）
+﻿# 把 hub 的联接方向翻正：nsa-mcp-hub（真实目录） → nsa-toolchain\hub（真实目录）
 #
 # 背景见 docs/MIGRATION.md。迁移当时 D:\bililive\nsa-mcp-hub 被进程占用，
 # 只能反过来让 nsa-toolchain\hub 指向它。占用释放后跑本脚本即可翻正：

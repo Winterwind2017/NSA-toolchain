@@ -1,5 +1,10 @@
 # 仓库地图
 
+> **2026-11-09 起：软件自动化相关的 13 个仓已合并成一个 monorepo**
+> [`nsa-toolchain`](https://github.com/Winterwind2017/nsa-toolchain)（6 内核 + 网关 + 6 技能），
+> 旧的单仓全部**归档**（只读保留历史）。本文件保留"分层为什么这么分"的说明，
+> 目录级索引见 monorepo 根 `README.md` 与 `docs/MIGRATION.md`。
+
 这条工具链不是一个大仓，而是**按“内核 / 技能 / 工作台 / 其它”分层的多仓结构**。
 为什么拆开：每个内核都要跟一款具体软件的版本、许可证、装机目录绑定（AutoCAD 2025、SolidWorks 2025、
 NX 2512、GX Works3、CODESYS 3.5、AutoShop V4.11），混在一个仓里既没法独立发版，也没法各自跑验收；

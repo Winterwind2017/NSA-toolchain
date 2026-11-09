@@ -2,6 +2,8 @@
 
 > 这份文档回答三个问题：**这套东西现在是什么状态**、**怎么把它跑起来**、**哪些能力明确不可用**。
 > 日期：2026-11-09 ｜ 代码版本：`nsa_mcp_hub.__version__ = 0.2.0` ｜ 里程碑 tag：`v1.0-acceptance`
+> **仓库形态**：2026-11-09 起本网关与 6 个内核、6 个技能同处一个 monorepo `nsa-toolchain`（`hub/` + `kernels/` + `skills/`）；
+> 老路径 `D:\bililive\nsa-mcp-hub` 等仍是可用联接，见 `docs/MIGRATION.md`。
 > 数字口径全部来自实测（`docs/acceptance-coverage.md`、各 kit 的 `docs/UNSUPPORTED.md`），不引用旧结论。
 
 ---
