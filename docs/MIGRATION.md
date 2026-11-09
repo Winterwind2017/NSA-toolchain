@@ -46,8 +46,15 @@ nsa-toolchain/                    ← 新仓（私有）
 ### 为什么 hub 是反的
 
 切换时 `D:\bililive\nsa-mcp-hub` 被一个进程占着（句柄没释放：`rmdir` 一直报
-`The process cannot access the file`，连 `openfiles` / Restart Manager 都拿不到属主，
-后者需要管理员权限）。为了不让 hub 的 MCP 端点在迁移期间不可用，改成**反向联接**：
+`The process cannot access the file`）。排查结论（2026-11-09 实测）：
+
+- 把 **10 个 hub MCP 子进程全杀掉**后仍然占用 → 占用者**不是** MCP 子进程；
+- `openfiles` 查不到，Restart Manager（`RmGetList`）返回 `ERROR_ACCESS_DENIED`
+  —— 需要管理员权限才能列出属主；
+- 推断是 **DSH 本体**（宿主进程曾把工作目录切到该路径，Windows 进程的 cwd 就是一个目录句柄）。
+
+所以这一项只能在 **DSH 重启之后**（或重启机器后）完成。为了不让 hub 的 MCP 端点在迁移期间不可用，
+改成**反向联接**：
 
 - 内容实体仍在 `D:\bililive\nsa-mcp-hub`（旧路径，DSH 配置不用动）；
 - `nsa-toolchain\hub` 是指向它的联接，`git status` 依然干净、文件依然被本仓跟踪。
@@ -55,8 +62,11 @@ nsa-toolchain/                    ← 新仓（私有）
 等占用释放（重启 DSH 或重启机器后），跑一次下面的脚本就能把方向翻正：
 
 ```powershell
-.\scripts\flip-hub-junction.ps1
+.\scripts\flip-hub-junction.ps1            # 试运行：只检查占用是否释放
+.\scripts\flip-hub-junction.ps1 -Apply     # 真翻：老路径变联接，实体回到 monorepo
 ```
+
+脚本自带保护：先探测能否改名，不能就退出码 2 并提示；`-Apply` 时才动联接。
 
 ## 验证
 
