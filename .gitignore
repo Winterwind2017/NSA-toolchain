@@ -1,0 +1,36 @@
+# Python / 编辑器杂项
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+
+# 运行时产物（各内核自己的 .gitignore 也会管，这里兜底）
+_runs/
+_diag/
+_scratch/
+_archive/
+sandbox/
+recon/
+*.log
+
+# 大件二进制（若要进 git 请显式 git add -f）
+*.prt
+*.sldprt
+*.sldasm
+*.SLDPRT
+*.SLDASM
+*.gx3
+*.hcp
+*.project
+*.archive
+*.mtk
+*.dll
+*.exe
+
+# OS
+Thumbs.db
+desktop.ini
