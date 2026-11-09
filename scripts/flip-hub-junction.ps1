@@ -18,8 +18,14 @@ $stage = Join-Path $root "hub.new"
 Write-Host "=== 现状 ===" -ForegroundColor Cyan
 $oldItem = Get-Item $old -Force
 $newItem = Get-Item $new -Force
-Write-Host ("  老路径 {0}: 联接={1} 指向={2}" -f $old, $oldItem.LinkType, $oldItem.Target)
-Write-Host ("  新路径 {0}: 联接={1} 指向={2}" -f $new, $newItem.LinkType, $newItem.Target)
+function Show-Link($path, $item) {
+    $t = $item.Target
+    if ($t -is [array]) { $t = $t -join ", " }
+    if (-not $t) { $t = "(真实目录)" }
+    Write-Host ("  {0}: 联接={1} 指向={2}" -f $path, $item.LinkType, $t)
+}
+Show-Link $old $oldItem
+Show-Link $new $newItem
 
 if ($oldItem.LinkType) {
     Write-Host "老路径已经是联接（可能已翻正过），无需操作。" -ForegroundColor Green
