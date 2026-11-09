@@ -77,14 +77,51 @@ nsa-toolchain/                    ← 新仓（私有）
 ## 验证
 
 ```powershell
-.\scripts\verify-migration.ps1     # 检查 13 个联接 + 内容一致性 + git 干净
+.\scripts\verify-migration.ps1     # 检查 13 个联接 + hub 方向 + 内容一致性 + git 干净
 ```
 
 实测（2026-11-09）：
 
-- monorepo：**521 个提交 / 563 个 tracked 文件**，`git status` 干净；
+- monorepo：**566 个 tracked 文件 / 525 个提交**，`git status` 干净；
 - 老路径全部可读：`nsa-mcp-hub` 导入正常、codesys kit 报 **60 个工具**；
 - `hub` 的 `KITS` 仍是 9 个（acad/autoshop/catia/codesys/eplan/gx/nx/sw/ug）。
+
+## GitHub 上的旧仓：归档 → 删除
+
+归档后这 13 个仓在账号里仍然各占一行、内容也与 monorepo 重复，所以按"整理后没有意义"处理：
+
+| 旧仓 | 内容去处 | 校验 |
+|---|---|---|
+| `solidworks-agent-kit` | `kernels/sw` | HEAD `6d6f1962` 已是 monorepo 祖先 |
+| `autocad-agent-kit` | `kernels/acad` | `62e70f63` |
+| `nxkit` | `kernels/nx` | `b33cb883` |
+| `gxkit` | `kernels/gx` | `0a039466` |
+| `codesyskit` | `kernels/codesys` | `cc7c05fa` |
+| `autoshopkit` | `kernels/autoshop` | `8392c540` |
+| `ww-solidworks-automation` | `skills/…` | `f269d6b4` |
+| `ww-autocad-automation` | `skills/…` | `5908b2c2` |
+| `ww-nx-automation` | `skills/…` | `b9e1b0c4` |
+| `ww-gxworks-automation` | `skills/…` | `091a214c` |
+| `ww-codesys-automation` | `skills/…` | `a1b942bf` |
+| `ww-autoshop-automation` | `skills/…` | `14887f7e` |
+| `nsa-mcp-hub` | `hub` | `1b817d2a`；**另一条独立历史**已存为分支 `archive/hub-remote-20261106`（`26428fc`，21 提交） |
+
+删除需要一个 `delete_repo` 权限（当前 `gh` 的 OAuth token 只有
+`gist / read:org / repo / user / workflow`，直接调 API 返回 403）：
+
+```powershell
+gh auth refresh -h github.com -s delete_repo     # 浏览器里授权一次
+# 然后逐个删除（或按脚本批量）
+gh repo delete Winterwind2017/<旧仓名> --yes
+```
+
+**保留的仓库**（不属于这条工具链，各有用途，不要删）：
+
+- `Non-standard-automation-design` —— 设计工作台（流程、规则、案例）
+- `workspace-assets` / `global-assets` —— 工作区级 / 全局资产与配置
+- `ww-obsidian`（obsidiankit 技能）与 `ww-obsidian-agent`（Obsidian 内的对话插件，**不是同一层**）
+- `dsh-sidebar-edge`（DSH 侧边栏插件）
+- `skill-nonstandard-project-manager` / `skill-management-advisor` / `value-investing-skills`
 
 ## 发版约定
 
