@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+# 运行产物（验收报告 json 保留，但日志/临时目录不入库）
+_runs/
+_scratch/
+plot.log
+*.log
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# 迁移进来的历史产物（recon 证据 / AutoCAD 导出 / 旧脚本），只在本机保留
+_archive/

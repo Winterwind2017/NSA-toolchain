@@ -1,0 +1,286 @@
+diff --git a/MCP/UG/nx_remote_ops.py b/MCP/UG/nx_remote_ops.py
+index 73b22fc..1c4b763 100644
+--- a/MCP/UG/nx_remote_ops.py
++++ b/MCP/UG/nx_remote_ops.py
+@@ -428,6 +428,39 @@ def _resolve_topology_object(work, params, kind, selector):
+     matches = []
+     if stable_id:
+         matches = [record for record in records if record["stable_id"] == stable_id]
++        if not matches:
++            # Stable ids are part-scoped, not body-scoped: a caller that inspected
++            # body 1 and then reused the id without repeating body_index must still
++            # resolve.  Search the remaining bodies before failing.
++            for candidate in list(work.Bodies):
++                if int(candidate.Tag) == int(body.Tag):
++                    continue
++                candidate_faces, candidate_edges = _topology_records(candidate)
++                candidate_records = (
++                    candidate_faces if kind == "face" else candidate_edges
++                )
++                if any(
++                    record["stable_id"] == stable_id
++                    for record in candidate_records
++                ):
++                    body = candidate
++                    body_index = [
++                        index
++                        for index, item in enumerate(work.Bodies)
++                        if int(item.Tag) == int(candidate.Tag)
++                    ][0]
++                    records = candidate_records
++                    objects = (
++                        list(candidate.GetFaces())
++                        if kind == "face"
++                        else list(candidate.GetEdges())
++                    )
++                    matches = [
++                        record
++                        for record in records
++                        if record["stable_id"] == stable_id
++                    ]
++                    break
+     if not matches:
+         fallback_selector = dict(selector)
+         fallback_selector.pop("stable_id", None)
+@@ -10180,6 +10213,10 @@ def _cam_append_geometry(builder, property_name, objects):
+             "this operation template does not expose %s" % property_name
+         )
+     geometry = getattr(builder, property_name)
++    if geometry is None:
++        raise ValueError(
++            "this operation template does not expose %s" % property_name
++        )
+     before = int(geometry.GeometryList.Length)
+     existing_sets = [
+         item for item in geometry.GeometryList.GetContents() if item is not None
+@@ -10211,6 +10248,116 @@ def _cam_append_geometry(builder, property_name, objects):
+     }
+ 
+ 
++def _cam_blank_top_faces(builder):
++    """Top faces (+Z) of the blank bodies already assigned to this operation.
++
++    NX only produces a floor/volume toolpath when the cut region carries both the
++    part face and the coincident stock face; a cut region built from the part face
++    alone generates nothing and reports "工序无任何刀轨".
++    """
++    if not hasattr(builder, "BlankGeometry"):
++        return []
++    try:
++        blank = builder.BlankGeometry
++        contents = blank.GeometryList.GetContents()
++    except Exception:
++        return []
++    bodies = []
++    for item in contents:
++        if item is None:
++            continue
++        try:
++            members = list(item.GetItems())
++        except Exception:
++            continue
++        for member in members:
++            if member is not None and hasattr(member, "GetFaces"):
++                bodies.append(member)
++    if not bodies:
++        return []
++    uf_modeling = NXOpen.UF.UFSession.GetUFSession().Modeling
++    faces = []
++    for body in bodies:
++        best = None
++        best_z = None
++        for face in body.GetFaces():
++            try:
++                data = uf_modeling.AskFaceData(int(face.Tag))
++                if abs(float(data[2][2]) - 1.0) > 1e-6:
++                    continue
++                z_value = float(data[1][2])
++            except Exception:
++                continue
++            if best_z is None or z_value > best_z:
++                best = face
++                best_z = z_value
++        if best is not None:
++            faces.append(best)
++    return faces
++
++
++def _cam_planar_boundary_curves(builder, faces):
++    """平面铣（PlanarMilling）没有 CutAreaGeometry：边界要按曲线追加，
++    而且必须显式给边界平面与底面，否则 NX 只报“未指定底面”或不生成刀路。"""
++    if not hasattr(builder, "PartBoundary"):
++        return None
++    boundary = builder.PartBoundary
++    existing = [
++        item for item in boundary.BoundaryList.GetContents() if item is not None
++    ]
++    if existing:
++        boundary_set = existing[0]
++    else:
++        boundary_set = boundary.CreateBoundarySetPlanarMill()
++    identity = NXOpen.Matrix3x3()
++    identity.Xx = 1.0
++    identity.Yy = 1.0
++    identity.Zz = 1.0
++    uf_modeling = NXOpen.UF.UFSession.GetUFSession().Modeling
++    added = 0
++    boundary_z = None
++    for face in faces:
++        try:
++            edges = list(face.GetEdges())
++        except Exception:
++            continue
++        if not edges:
++            continue
++        try:
++            data = uf_modeling.AskFaceData(int(face.Tag))
++            start = NXOpen.Point3d(
++                float(data[1][0]), float(data[1][1]), float(data[1][2])
++            )
++            if boundary_z is None:
++                boundary_z = float(data[1][2])
++        except Exception:
++            start = NXOpen.Point3d(0.0, 0.0, 0.0)
++        boundary_set.AppendCurves(edges, start, identity)
++        added += len(edges)
++    if boundary_set.Plane is None and boundary_z is not None:
++        boundary_set.Plane = _work_part().Planes.CreatePlane(
++            NXOpen.Point3d(0.0, 0.0, boundary_z),
++            NXOpen.Vector3d(0.0, 0.0, 1.0),
++            NXOpen.SmartObject.UpdateOption.AfterModeling,
++        )
++    return {"boundary_sets": len(existing) or 1, "curves_added": added}
++
++
++def _cam_set_planar_floor(builder, floor_z):
++    if not hasattr(builder, "Geometry"):
++        return None
++    geometry = builder.Geometry
++    if not hasattr(geometry, "FloorPlane"):
++        return None
++    plane = _work_part().Planes.CreatePlane(
++        NXOpen.Point3d(0.0, 0.0, float(floor_z)),
++        NXOpen.Vector3d(0.0, 0.0, 1.0),
++        NXOpen.SmartObject.UpdateOption.AfterModeling,
++    )
++    geometry.FloorPlane = plane
++    return float(floor_z)
++
++
+ def _cam_set_builder_real(builder, property_name, value):
+     if value is None:
+         return None
+@@ -10294,20 +10441,55 @@ def _op_set_cam_operation_geometry(params):
+                 if index < 0 or index >= len(all_bodies):
+                     raise ValueError("part body index is out of range: %s" % index)
+                 part_bodies.append(all_bodies[index])
+-            assignments["part_geometry"] = _cam_append_geometry(
+-                builder, "PartGeometry", part_bodies
+-            )
++            if getattr(builder, "PartGeometry", None) is not None:
++                assignments["part_geometry"] = _cam_append_geometry(
++                    builder, "PartGeometry", part_bodies
++                )
+         geometry_inputs = (
+             ("cut_area", "CutAreaGeometry", "cut_area_face_selectors"),
+             ("wall", "WallGeometry", "wall_face_selectors"),
+             ("check", "CheckGeometry", "check_face_selectors"),
+         )
++        blank_indices = params.get("blank_body_indices")
++        if blank_indices is not None:
++            if not isinstance(blank_indices, list) or not blank_indices:
++                raise ValueError("blank_body_indices must be a non-empty list")
++            all_bodies = list(work.Bodies)
++            blank_bodies = []
++            for raw_index in blank_indices:
++                index = int(raw_index)
++                if index < 0 or index >= len(all_bodies):
++                    raise ValueError("blank body index is out of range: %s" % index)
++                blank_bodies.append(all_bodies[index])
++            if getattr(builder, "BlankGeometry", None) is not None:
++                assignments["blank_geometry"] = _cam_append_geometry(
++                    builder, "BlankGeometry", blank_bodies
++                )
++        cut_area_value = getattr(builder, "CutAreaGeometry", None)
++        planar_mill = hasattr(builder, "PartBoundary") and cut_area_value is None
+         for result_name, property_name, parameter_name in geometry_inputs:
+             faces = _cam_face_objects(work, params, params.get(parameter_name))
+-            if faces:
++            if not faces:
++                continue
++            if planar_mill and result_name == "cut_area":
++                assignments["boundary"] = _cam_planar_boundary_curves(builder, faces)
++            elif hasattr(builder, property_name):
+                 assignments[result_name] = _cam_append_geometry(
+                     builder, property_name, faces
+                 )
++        if bool(params.get("auto_add_blank_faces")):
++            blank_faces = _cam_blank_top_faces(builder)
++            if blank_faces and hasattr(builder, "CutAreaGeometry"):
++                assignments["blank_faces"] = _cam_append_geometry(
++                    builder, "CutAreaGeometry", blank_faces
++                )
++        if params.get("floor_z") is not None:
++            try:
++                assignments["floor_z"] = _cam_set_planar_floor(
++                    builder, params.get("floor_z")
++                )
++            except Exception as exc:
++                assignments["floor_z"] = "ERR " + str(exc)[:120]
+         parameters = {
+             "depth_per_cut": _cam_set_builder_real(
+                 builder, "DepthPerCut", params.get("depth_per_cut")
+@@ -10352,6 +10534,9 @@ def _op_configure_cam_milling_operation(params):
+             "cut_feed",
+             "approach_feed",
+             "retract_feed",
++            "auto_add_blank_faces",
++            "blank_body_indices",
++            "floor_z",
+         )
+     ):
+         raise ValueError("at least one milling geometry or cutting parameter is required")
+diff --git a/MCP/UG/server.py b/MCP/UG/server.py
+index 30b5bd3..34e08f7 100644
+--- a/MCP/UG/server.py
++++ b/MCP/UG/server.py
+@@ -1100,6 +1100,9 @@ async def set_cam_operation_geometry(
+     cut_feed: float | None = None,
+     approach_feed: float | None = None,
+     retract_feed: float | None = None,
++    auto_add_blank_faces: bool = False,
++    blank_body_indices: list[int] | None = None,
++    floor_z: float | None = None,
+ ) -> dict[str, Any]:
+     """Assign stable face selections and core cutting depths to a CAM operation."""
+     return await _bridge(
+@@ -1120,6 +1123,9 @@ async def set_cam_operation_geometry(
+             "cut_feed": cut_feed,
+             "approach_feed": approach_feed,
+             "retract_feed": retract_feed,
++            "auto_add_blank_faces": auto_add_blank_faces,
++            "blank_body_indices": blank_body_indices,
++            "floor_z": floor_z,
+         },
+         timeout=240.0,
+     )
+@@ -1142,6 +1148,9 @@ async def configure_cam_milling_operation(
+     cut_feed: float | None = None,
+     approach_feed: float | None = None,
+     retract_feed: float | None = None,
++    auto_add_blank_faces: bool = False,
++    blank_body_indices: list[int] | None = None,
++    floor_z: float | None = None,
+ ) -> dict[str, Any]:
+     """Configure NX 2412 face/cavity milling geometry, depths, speeds, and feeds."""
+     return await _bridge(
+@@ -1162,6 +1171,9 @@ async def configure_cam_milling_operation(
+             "cut_feed": cut_feed,
+             "approach_feed": approach_feed,
+             "retract_feed": retract_feed,
++            "auto_add_blank_faces": auto_add_blank_faces,
++            "blank_body_indices": blank_body_indices,
++            "floor_z": floor_z,
+         },
+         timeout=300.0,
+     )
