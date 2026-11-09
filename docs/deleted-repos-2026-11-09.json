@@ -1,0 +1,132 @@
+{
+  "solidworks-agent-kit": {
+    "repo": "Winterwind2017/solidworks-agent-kit",
+    "size_kb": 663,
+    "default_branch": "main",
+    "pushed_at": "2026-11-09T07:16:01Z",
+    "created_at": "2026-10-20T04:56:10Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "SolidWorks 自动化工具内核：库 + CLI + MCP + agent skill；NSA（非标自动化）工具链的 SolidWorks 端（35 verified / 2 unstable / 4 broken，逐条附判据）"
+  },
+  "autocad-agent-kit": {
+    "repo": "Winterwind2017/autocad-agent-kit",
+    "size_kb": 300,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:22:53Z",
+    "created_at": "2026-10-21T07:10:05Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "AutoCAD 2025 自动化内核：二维绘图/标注/表格/图框/三维实体/出图，带几何判据｜NSA（非标自动化）工具链一员"
+  },
+  "nxkit": {
+    "repo": "Winterwind2017/nxkit",
+    "size_kb": 388,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:21:23Z",
+    "created_at": "2026-10-21T12:18:30Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "UG NX 2512 自动化内核：Python journal + 几何判据｜NSA（非标自动化）工具链一员"
+  },
+  "gxkit": {
+    "repo": "Winterwind2017/gxkit",
+    "size_kb": 241,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:21:17Z",
+    "created_at": "2026-10-22T03:23:35Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "三菱 GX Works3 离线工程自动化内核（新建/写 ST/编译诊断/标签/另存）｜NSA（非标自动化）工具链一员"
+  },
+  "codesyskit": {
+    "repo": "Winterwind2017/codesyskit",
+    "size_kb": 292,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:20:57Z",
+    "created_at": "2026-10-26T06:15:08Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "CODESYS 3.5 无界面自动化内核（常驻、token 鉴权、免 COM 注册）｜NSA（非标自动化）工具链一员"
+  },
+  "autoshopkit": {
+    "repo": "Winterwind2017/autoshopkit",
+    "size_kb": 150,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:21:04Z",
+    "created_at": "2026-10-26T04:11:08Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "汇川 AutoShop V4.11 自动化内核：.hcp 编解码、.LD 图解码、H5U IL、UI 自动化、带判据｜NSA（非标自动化）工具链一员"
+  },
+  "ww-solidworks-automation": {
+    "repo": "Winterwind2017/ww-solidworks-automation",
+    "size_kb": 24,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:22:17Z",
+    "created_at": "2026-10-21T06:39:21Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": null
+  },
+  "ww-autocad-automation": {
+    "repo": "Winterwind2017/ww-autocad-automation",
+    "size_kb": 26,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:22:09Z",
+    "created_at": "2026-10-21T11:12:20Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "AutoCAD 2025 自动化技能：配方 + 判据 + 证伪清单（执行内核 acadkit）"
+  },
+  "ww-nx-automation": {
+    "repo": "Winterwind2017/ww-nx-automation",
+    "size_kb": 324,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:22:03Z",
+    "created_at": "2026-10-21T12:18:49Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "UG NX 2512 automation skill: recipes, judges, and what not to try (kernel: nxkit)"
+  },
+  "ww-gxworks-automation": {
+    "repo": "Winterwind2017/ww-gxworks-automation",
+    "size_kb": 79,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:23:06Z",
+    "created_at": "2026-10-22T03:29:27Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": null
+  },
+  "ww-codesys-automation": {
+    "repo": "Winterwind2017/ww-codesys-automation",
+    "size_kb": 93,
+    "default_branch": "main",
+    "pushed_at": "2026-11-06T16:21:40Z",
+    "created_at": "2026-10-26T06:17:30Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "CODESYS 3.5 headless automation skill for agents (kernel: codesyskit)"
+  },
+  "ww-autoshop-automation": {
+    "repo": "Winterwind2017/ww-autoshop-automation",
+    "size_kb": 40,
+    "default_branch": "main",
+    "pushed_at": "2026-11-09T09:23:16Z",
+    "created_at": "2026-10-26T04:13:25Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "Inovance AutoShop V4.11 automation skill: recipes, verified capabilities, pitfalls, checklists for autoshopkit"
+  },
+  "nsa-mcp-hub": {
+    "repo": "Winterwind2017/nsa-mcp-hub",
+    "size_kb": 1057,
+    "default_branch": "main",
+    "pushed_at": "2026-11-09T09:22:27Z",
+    "created_at": "2026-11-06T12:07:15Z",
+    "is_archived": true,
+    "visibility": "private",
+    "description": "NSA（Non-standard automation，非标自动化）工具链：把 AutoCAD / SolidWorks / NX / EPLAN / CODESYS / GX Works3 / AutoShop / CATIA 接成一个 MCP 端点，判据优先于功能数量"
+  }
+}

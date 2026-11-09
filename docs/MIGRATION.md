@@ -106,14 +106,16 @@ nsa-toolchain/                    ← 新仓（私有）
 | `ww-autoshop-automation` | `skills/…` | `14887f7e` |
 | `nsa-mcp-hub` | `hub` | `1b817d2a`；**另一条独立历史**已存为分支 `archive/hub-remote-20261106`（`26428fc`，21 提交） |
 
-删除需要一个 `delete_repo` 权限（当前 `gh` 的 OAuth token 只有
-`gist / read:org / repo / user / workflow`，直接调 API 返回 403）：
+**已执行（2026-11-09 20:10，13/13 全部删除，逐个确认 API 返回 404）**。
+删除前对每个仓做了一次元数据快照（体积、默认分支、推送时间、描述），留档在
+`docs/deleted-repos-2026-11-09.json`；历史与内容在 monorepo 里可查：
+`git log -- kernels/sw` 等。
 
-```powershell
-gh auth refresh -h github.com -s delete_repo     # 浏览器里授权一次
-# 然后逐个删除（或按脚本批量）
-gh repo delete Winterwind2017/<旧仓名> --yes
-```
+过程备注：`gh` 的默认 OAuth token 只有 `gist / read:org / repo / user / workflow`，
+删仓需要 `delete_repo`（直接调 API 返回 403）。用设备码流程额外申请了一个临时 token
+（`repo, delete_repo`），只用于这 13 次删除，用完即删、未写进 gh 配置。
+
+账号仓库数：**23 → 10**（13 个归档旧仓已删）。
 
 **保留的仓库**（不属于这条工具链，各有用途，不要删）：
 
