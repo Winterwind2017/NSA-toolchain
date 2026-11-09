@@ -1,0 +1,42 @@
+# 变更记录
+
+> 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
+
+## v1.0-acceptance —— 2026-11-09（收官里程碑）
+
+**口径**：9 个 kit、**639 个工具**（638 kit 内 + 1 个 `nsa_hub_status`），统一契约
+`{ok, kit, capability, reads, checks, errors, seconds}`，`ok` 只由 `checks` + `errors` 决定。
+
+新增：
+
+- `docs/RELEASE.md` —— 收官说明：各 kit 现状 / 已知限制 / 怎么跑 / 环境坑 / 收官清单。
+- `scripts/run_all.ps1` —— 一键收官：探测已开应用 → 只跑能跑的 kit（未开就 SKIP 并写原因）→
+  逐 kit 报告 → 汇总表 → 重算覆盖表 → 把本次报告归档到 `_archive/acceptance-<时间戳>/`。
+  参数：`-IncludeHeavy`（连 nx/ug/gx/autoshop）、`-Kits`、`-SkipUnit`、`-NoCoverage`、`-NoKeepEvidence`。
+- `docs/acceptance-coverage.md` 增加**口径提醒**：表格统计的是 `_runs/` 现存报告的证据，
+  报告被轮转后数字会掉，属"证据缺失"而非能力回退；历史 100% 基线需重跑复现。
+
+修复：
+
+- `codesys.flow.ops` 改成**自给自足**：原来它依赖"上一个剧本留下的工程里存在 `AccPlay`"，
+  用例顺序一变（`codesys.flow.objects` 会新建自己的工程）就 `E_STATE: path segment 'AccPlay'
+  not found`。现在自己建工程 + 建 POU + 写实现。实测 codesys **17/17 通过（28.1 s）**。
+
+验收基线（本机、2026-11-09）：
+
+| kit | 结果 | 说明 |
+|---|---|---|
+| codesys | **17/17 PASS**（28.1 s） | headless，无需 GUI |
+| 其余 8 个 kit | SKIP | 对应应用未运行（收官脚本如实跳过，不假装通过） |
+
+> 历史基线：2026-11-06 曾在 626 个工具时跑出 **626/626 = 100%**（含 ug 21/22+1SKIP、
+> sw/acad/nx/gx/codesys/autoshop 全绿）。之后 sw 增加 12 个工具、hub 层 +1，
+> 覆盖证据需要重跑才有同等效力。
+
+## 之前的主要版本（摘）
+
+- **v0.15.x** —— 装配图国标 A3 图框 + 六列 BOM 表 + 标题栏填充；BOM 代号规则（图号优先/类型编码）；
+  工程尺寸两段扫描 + 轴孔目标；可见性守卫（私有仓断言）。
+- **v0.14.x** —— BOM 表与标题栏栏位填充落地。
+- **更早** —— 六 kit 合并进单内核（统一契约/单飞锁/超时守卫/幂等 `request_id`/`kit_runtime`），
+  随后补入 `ug`（NX MCP 代理，CAM/机床/钣金）与 `catia`（V5 MCP 代理）、`eplan`（只读）。

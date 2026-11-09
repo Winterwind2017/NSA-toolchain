@@ -1860,9 +1860,19 @@ def _codesys_ops_flow(client, context):
     if isinstance(context, dict):
         context["workdir"] = work
     app = "/PLC/Plc Logic/Application"
+    project = os.path.join(work, "ac_ops.project")
     archive = os.path.join(work, "ac.archive")
     saved = os.path.join(work, "ac_saved.project")
+    # 自给自足：不能依赖"上一个剧本留下的工程/对象"。
+    # 2026-11-09 实测：用例顺序里 codesys.flow.objects 先跑，它会新建自己的工程，
+    # 于是这里原来的 "/Application/AccPlay" 就 E_STATE（path segment not found）。
     steps = [
+        ("codesys_project_create", {"path": project,
+                                    "device": "CODESYS Control Win V3"}),
+        ("codesys_pou_create", {"name": "AccPlay", "kind": "program",
+                                "language": "ST", "parent": app}),
+        ("codesys_pou_write", {"path": app + "/AccPlay", "part": "implementation",
+                               "text": "x := x + 1;\n"}),
         ("codesys_tasks", {}),
         ("codesys_task_create", {"name": "AccTask", "pous": [app + "/AccPlay"],
                                  "interval": 10, "priority": 5, "unit": "ms"}),
