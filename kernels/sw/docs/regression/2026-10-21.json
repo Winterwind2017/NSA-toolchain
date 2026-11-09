@@ -1,0 +1,277 @@
+{
+  "when": "2026-10-21T08:22:40",
+  "passed": 30,
+  "total": 30,
+  "results": [
+    {
+      "suite": "selftest",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 0.4,
+      "summary": "",
+      "tail": "  },\n  \"com\": {\n    \"ok\": true,\n    \"revision\": \"33.4.1\"\n  }\n}",
+      "stderr_tail": []
+    },
+    {
+      "suite": "mcp_smoke",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 0.7,
+      "summary": "",
+      "tail": "OK：serverInfo={'name': 'swkit', 'version': '1.28.0'} protocolVersion='2024-11-05'",
+      "stderr_tail": []
+    },
+    {
+      "suite": "live",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 21.9,
+      "summary": "判定：PASS",
+      "tail": "      \"box_hole-1\",\n      \"box_hole-2\"\n    ]\n  }\n}\n判定：PASS",
+      "stderr_tail": []
+    },
+    {
+      "suite": "part",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 125.5,
+      "summary": "合计 8 项，通过 8",
+      "tail": "   {\"features_before\": 22, \"path\": \"project\", \"features_after\": 23}\n== offset_surface     ok=True  checks={'surface_added': True}\n   {\"surfaces_before\": 1, \"surfaces_after\": 2, \"attempts\": [{\"mark\": 1, \"flip\": false, \"returned\": \"0\", \"surfaces_after\": 2}]}\n== thicken_surface    ok=True  checks={'thicken_feature_present': True}\n   {\"before\": {\"features\": 24, \"solids\": 1, \"surfaces\": 1, \"faces\": 8, \"edges\": 18}, \"after\": {\"features\": 25, \"solids\": 1, \"surfaces\": 0, \"faces\": 8, \"edges\": 14}, \"attempts\": [{\"mark\": 1, \"dir\": 0, \"returned\": \"0\", \"thicken_features\": 1, \"surfaces_after\": 0}]}\n合计 8 项，通过 8",
+      "stderr_tail": []
+    },
+    {
+      "suite": "sketch",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 11.9,
+      "summary": "合计 5 项（另有 0 项 SKIP），通过 5",
+      "tail": "   {\"constraints_before\": 0, \"constraints_after\": 1, \"end_y_before\": 0.002, \"end_y_after\": 0.0}\n== activate_display_state   ok=True  checks={'has_display_states': True, 'apply_returned_true': True}\n   {\"names\": [\"<默认>_显示状态 1\"], \"applied\": \"<默认>_显示状态 1\"}\n== list_materials           ok=True  checks={'materials_found': True}\n   {\"categories\": 29, \"materials\": 474, \"files_total\": 3}\n合计 5 项（另有 0 项 SKIP），通过 5",
+      "stderr_tail": []
+    },
+    {
+      "suite": "sketch_ops",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 38.5,
+      "summary": "建草图 12/12 成功；实体类 14 项通过 14",
+      "tail": "   {\"selected\": 4, \"segments_before\": 4, \"segments_after\": 7}\n== edit_sketch      ok=True  checks={'reentered': True}\n   {\"target\": \"草图3\", \"active\": \"草图3\"}\n== convert_entities ok=True  checks={'segments_increased': True, 'returned_true': True}\n   {\"segments_before\": 0, \"segments_after\": 1}\n建草图 12/12 成功；实体类 14 项通过 14",
+      "stderr_tail": []
+    },
+    {
+      "suite": "inspect",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 27.2,
+      "summary": "合计 18 项，通过 18",
+      "tail": "   {\"value_mm\": 20.0}\n== set_dimension        ok=True  checks={'readback_matches': True}\n   {\"target_mm\": 21.0, \"after_mm\": 21.0}\n== restore_dimension    ok=True  checks={'readback_matches': True}\n   {\"target_mm\": 20.0, \"after_mm\": 20.0}\n合计 18 项，通过 18",
+      "stderr_tail": []
+    },
+    {
+      "suite": "asm_state",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 7.9,
+      "summary": "合计 11 项，通过 11",
+      "tail": "   {\"component\": \"box_off-1\", \"before_path\": \"D:\\\\bililive\\\\acad_out\\\\SW_ADV\\\\sim\\\\box_off.SLDPRT\", \"target\": \"box_off.SLDPRT\", \"after_path\": \"D:\\\\bililive\\\\acad_out\\\\SW_ADV\\\\sim\\\\box_off.SLDPRT\"}\n== suppress_feature     ok=True  checks={'suppressed': True}\n   {\"feature\": \"切除-拉伸1\", \"before\": false, \"after\": true}\n== unsuppress_feature   ok=True  checks={'unsuppressed': True}\n   {\"feature\": \"切除-拉伸1\", \"after\": false}\n合计 11 项，通过 11",
+      "stderr_tail": []
+    },
+    {
+      "suite": "features",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 88.6,
+      "summary": "合计 5 项，通过 5",
+      "tail": "== chamfer          ok=True  checks={'feature_added': True, 'faces_increased': True, 'volume_dropped': True}\n   {\"edges_selected\": 4, \"faces_before\": 6, \"features_after\": 21, \"faces_after\": 10, \"volume_before_mm3\": 20000.0, \"volume_after_mm3\": 19041.66666666667}\n== mirror_feature   ok=True  checks={'feature_added': True, 'volume_doubled': True}\n   {\"features_before\": 20, \"features_after\": 21, \"solids_after\": 1, \"volume_before_mm3\": 20000.0, \"volume_after_mm3\": 40000.0}\n手算对照：拉伸体积 期望 20000.0 / 实测 20000.0（相对误差 0.0）\n合计 5 项，通过 5",
+      "stderr_tail": []
+    },
+    {
+      "suite": "io",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 13.3,
+      "summary": "合计 4 项，通过 4（输出目录 C:\\Users\\yuche\\.swkit\\export）",
+      "tail": "   {\"path\": \"C:\\\\Users\\\\yuche\\\\.swkit\\\\export\\\\block.stl\", \"bytes\": 684, \"head\": \"stlbn block                                     \", \"format_ok\": true}\n== pdf    ok=True  checks={'file_exists': True, 'size_ok': True, 'signature_ok': True}\n   {\"path\": \"C:\\\\Users\\\\yuche\\\\.swkit\\\\export\\\\block.pdf\", \"bytes\": 172217, \"head\": \"%PDF-1.4\\r%âãÏÓ\\r\\\\n4 0 obj\\r<</Linearized 1/L 172217\", \"format_ok\": true}\n== save   ok=True  checks={'file_exists': True, 'size_positive': True, 'updated': True}\n   {\"path\": \"C:\\\\Users\\\\yuche\\\\.swkit\\\\export\\\\block.SLDPRT\", \"bytes_before\": 74131, \"bytes_after\": 73603}\n合计 4 项，通过 4（输出目录 C:\\Users\\yuche\\.swkit\\export）",
+      "stderr_tail": []
+    },
+    {
+      "suite": "doc_ops",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 24.1,
+      "summary": "合计 7 项，通过 7",
+      "tail": "== screenshot       ok=True  checks={'file_exists': True, 'is_png': True, 'size_ok': True}\n   {\"bytes\": 124989, \"head\": \"89504e47\"}\n== delete_feature   ok=True  checks={'feature_removed': True}\n   {\"feature\": \"基准面1\", \"features_before\": 19, \"features_after\": 18}\n-- add_equation     (unverified/待解) AttributeError: <unknown>.AddEquation\n合计 7 项，通过 7",
+      "stderr_tail": []
+    },
+    {
+      "suite": "drawing_extra",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 7.3,
+      "summary": "合计 3 项，通过 3（输出 C:\\Users\\yuche\\.swkit\\export）",
+      "tail": "   {\"bytes\": 109515, \"head\": \"%PDF-1.4\", \"format_ok\": true}\n== dwg              ok=True  checks={'file_exists': True, 'signature_ok': True}\n   {\"bytes\": 36574, \"head\": \"AC1015\\u0000\\u0000\", \"format_ok\": true}\n-- revision_table   (unverified/待解) no error\n-- detail_view      (unverified/待解) no error\n合计 3 项，通过 3（输出 C:\\Users\\yuche\\.swkit\\export）",
+      "stderr_tail": []
+    },
+    {
+      "suite": "sheet_metal",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 158.5,
+      "summary": "合计 4 项，通过 4",
+      "tail": "== insert_bends   ok=True  checks={'sheet_metal_added': True, 'process_bends_added': True, 'flat_pattern_added': True}\n   {\"bend_state_before\": 0, \"bend_state_after\": 3}\n-- flat_export    (unverified/待解) state=None feats=None\n-- unfold         (unverified/待解) state=None feats=22\n-- fold           (unverified/待解) state=None feats=22\n合计 4 项，通过 4",
+      "stderr_tail": []
+    },
+    {
+      "suite": "config_io",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 6.7,
+      "summary": "合计 9 项，通过 9",
+      "tail": "   {\"count\": 2, \"documents\": [\"box_hole\", \"D:\\\\bililive\\\\acad_out\\\\SW_ADV\\\\sim\\\\box_hole.SLDPRT\"]}\n== close_one   ok=True  checks={'count_decreased': True}\n   {\"title\": \"工程图2 - 图纸1\", \"documents_before\": 2, \"documents_after\": 1}\n== close_all   ok=True  checks={'all_closed': True}\n   {\"documents_before\": 1, \"documents_after\": 0}\n合计 9 项，通过 9",
+      "stderr_tail": []
+    },
+    {
+      "suite": "view_measure",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 8.6,
+      "summary": "合计 3 项，通过 3",
+      "tail": "   {\"scale_before\": 4.497562731166197, \"scale_after\": 4.497562731166197}\n== orient   ok=True  checks={'orientation_readable': True, 'orientation_changed': True}\n   {\"requested\": \"isometric\", \"orientation_before\": [0.884418, -0.240366, 0.400036, 0.0, 0.857167, 0.515038, -0.466695, -0.455509, 0.758094], \"orientation_after\": [0.707107, -0.408204, 0.577382, 0.0, 0.816541, 0.577288, -0.707107, -0.408204, 0.577382]}\n== measure  ok=True  checks={'measured': True, 'matches_expected': True}\n   {\"p1\": [20.0, 12.5, 0.0], \"p2\": [20.0, 12.5, 20.0], \"expected_mm\": 20.0, \"selected\": 2, \"distance_mm\": 20.0}\n合计 3 项，通过 3",
+      "stderr_tail": []
+    },
+    {
+      "suite": "equations",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 16.4,
+      "summary": "合计 4 项，通过 4",
+      "tail": "   {\"expression\": \"\\\"myvar\\\" = 5.0\", \"count_before\": 0, \"returned_index\": 0, \"count_after\": 1, \"readback_value\": 5.0, \"readback_equation\": \"\\\"myvar\\\" = 5.0\"}\n== list_after   ok=True  checks={'count_readable': True, 'entries_readable': True}\n   {\"count\": 1, \"equations\": [{\"index\": 0, \"equation\": \"\\\"myvar\\\" = 5.0\", \"value\": 5.0}]}\n== ref_axis     ok=True  checks={'axis_added': True}\n   {\"axis_before\": 0, \"selected\": 2, \"axis_after\": 1, \"returned\": true}\n合计 4 项，通过 4",
+      "stderr_tail": []
+    },
+    {
+      "suite": "sketch_edit",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 22.1,
+      "summary": "合计 4 项，通过 4",
+      "tail": "   {\"distance_mm\": 5.0, \"selected\": 2, \"before\": [4, 130.0], \"after\": [5, 127.0711]}\n== start_3d ok=True  checks={'sketch_active': True, 'is_3d': True}\n   {\"sketch_active\": true, \"is_3d\": true}\n-- extend   (unverified/待解) {'length_increased': False} / \n-- convert  (unverified/待解) {'segment_added': False} / \n合计 4 项，通过 4",
+      "stderr_tail": []
+    },
+    {
+      "suite": "bodies",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 38.0,
+      "summary": "合计 2 项，通过 2",
+      "tail": "   {\"factor\": 2.0, \"selected\": true, \"size_before_mm\": [40.0, 25.0, 20.0], \"size_after_mm\": [80.0, 50.0, 40.0]}\n== delete   ok=True  checks={'body_removed': True}\n   {\"bodies_before\": 2, \"bodies_after\": 1}\n-- move     (unverified/待解) 选中实体后 InsertMoveCopyBody2 的三种参数解释都无位移（dx=0）\n-- combine  (unverified/待解) 两次相交拉伸自动合并为 1 体，需先关闭 merge 才能造出可组合的两个体\n合计 2 项，通过 2",
+      "stderr_tail": []
+    },
+    {
+      "suite": "surfaces",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 8.7,
+      "summary": "合计 3 项，通过 3",
+      "tail": "   {\"before\": {\"solids\": 0, \"surfaces\": 0}, \"after\": {\"solids\": 0, \"surfaces\": 1}}\n== revolved  ok=True  checks={'surface_added': True}\n   {\"angle_deg\": 360.0, \"before\": {\"solids\": 0, \"surfaces\": 0}, \"after\": {\"solids\": 0, \"surfaces\": 1}}\n== extruded  ok=True  checks={'surface_added': True}\n   {\"depth_mm\": 20.0, \"before\": {\"solids\": 0, \"surfaces\": 0}, \"after\": {\"solids\": 0, \"surfaces\": 1}, \"feature\": null}\n合计 3 项，通过 3",
+      "stderr_tail": []
+    },
+    {
+      "suite": "cut",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 100.5,
+      "summary": "合计 3 项，通过 3",
+      "tail": "   {\"v0\": 48000.0, \"v2\": 46115.044, \"deltas\": [-942.478, -942.478], \"expected_final\": 46115.04}\n== through_all        ok=True  {\"feature_added\": true, \"volume_dropped\": true}\n   {\"v0\": 48000.0, \"v1\": 47057.522, \"delta\": -942.478}\n== negative_no_sketch ok=True  {\"refused\": true}\n   {\"error\": \"切除未生效：查 UseAutoSelect=True 与 Dir=False（见模块文档）\"}\n合计 3 项，通过 3",
+      "stderr_tail": []
+    },
+    {
+      "suite": "analysis",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 18.8,
+      "summary": "合计 4 项，通过 4",
+      "tail": "   {\"treat_coincidence\": false, \"include_multibody\": true, \"interference_count\": 1, \"array_length\": 1, \"expected\": 1, \"x2_mm\": 80.0}\n== coincident         ok=True  {\"count_readable\": true, \"array_matches_count\": true, \"matches_expected\": true}\n   {\"treat_coincidence\": false, \"include_multibody\": true, \"interference_count\": 1, \"array_length\": 1, \"expected\": 1, \"x2_mm\": 0.0}\n== api_availability   ok=True  {\"geometry_check_marked_unavailable\": true, \"draft_analysis_marked_unavailable\": true}\n   {\"check_geometry\": \"sldworks.tlb 无 CheckGeometry 类方法（只有 IModelDoc2.DebugCheckBody）\", \"draft_analysis\": \"MoldDraftAnalysis 是 Sub(void)，只着色；TLB 无读回面集的方法\"}\n合计 4 项，通过 4",
+      "stderr_tail": []
+    },
+    {
+      "suite": "dimxpert",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 6.0,
+      "summary": "合计 2 项，通过 2（可区分性 True）",
+      "tail": "   {\"configuration\": \"(活动配置)\", \"create_schema\": false, \"schema_name\": \"\", \"part_available\": false}\n== with_schema  ok=True  checks={'manager_ok': True, 'feature_count_readable': True, 'annotation_count_readable': True}\n   {\"configuration\": \"(活动配置)\", \"create_schema\": true, \"schema_name\": \"模式2\", \"part_available\": true, \"feature_count\": 0, \"annotation_count\": 0}\n-- autodim      (未打通) returned=False ann=0\n可区分性: True\n合计 2 项，通过 2（可区分性 True）",
+      "stderr_tail": []
+    },
+    {
+      "suite": "flow",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 7.2,
+      "summary": "合计 2 项，通过 2（可区分性 True）",
+      "tail": "== with_document  ok=True  checks={'attached': True, 'has_document': True, 'version_readable': True, 'projects_count_readable': True, 'cad_document_available': True}\n   {\"version\": \"Flow Simulation 2025 SP3.0. Build: 6784\", \"silent\": true, \"flow_document\": true, \"title\": \"\", \"projects_count\": 0, \"active_project\": null, \"cad_document\": true}\n== create_project ok=True  checks={'project_object_returned': True}\n   {\"projects_before\": 0, \"projects_after\": 0, \"project_name\": \"\", \"project_object\": \"POINTER(IProject)\"}\n可区分性: True\n合计 2 项，通过 2（可区分性 True）",
+      "stderr_tail": []
+    },
+    {
+      "suite": "draft",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 4.7,
+      "summary": "合计 1 项，通过 1（结论：判据存在、入口堵）",
+      "tail": "  \"face_color_changes\": 0,\n  \"faces\": 6,\n  \"note\": \"判据接口在 IPartingLineFeatureData，但分型线特征拿不到\"\n}\nchecks: {'parting_line_unavailable': True, 'mold_draft_analysis_all_false': True, 'no_face_color_change': True}\n合计 1 项，通过 1（结论：判据存在、入口堵）",
+      "stderr_tail": []
+    },
+    {
+      "suite": "flange_probe",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 17.2,
+      "summary": "合计 1 项，通过 1（结论：能建特征、不能建几何）",
+      "tail": "  \"faces_after\": 6,\n  \"edges_before\": 12,\n  \"edges_after\": 12\n}\nchecks: {'profile_sketch_empty': True, 'feature_created': True, 'geometry_unchanged': True}\n合计 1 项，通过 1（结论：能建特征、不能建几何）",
+      "stderr_tail": []
+    },
+    {
+      "suite": "draft_read",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 8.5,
+      "summary": "合计 1 项，通过 1",
+      "tail": "== with_parting_line  ok=True  checks={'analysis_performed': True, 'counts_readable': True, 'sum_matches_solid_faces': True}\n   {\"feature\": \"分型线1\", \"feature_type\": \"MoldPartingLine\", \"angle_deg\": 1.0, \"access_selections\": true, \"draft_analysis_returned\": true, \"faces_by_type\": {\"正拔模\": 1, \"负拔模\": 1, \"无拔模\": 4, \"跨面\": 0}, \"faces_total\": 6, \"faces_sum\": 6}\n合计 1 项，通过 1",
+      "stderr_tail": []
+    },
+    {
+      "suite": "drawing_views",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 8.8,
+      "summary": "合计 2 项，通过 2",
+      "tail": "== add_view   ok=True  checks={'view_added': True}\n   {\"view_name\": \"top\", \"views_before\": 2, \"views_after\": 3, \"view\": \"工程图视图2\"}\n== bom        ok=True  checks={'bom_table_created': True}\n   {\"attempts\": [{\"bom_type\": 1, \"returned\": \"CDispatch\"}], \"bom_present\": true}\n-- section    (unverified/待解) 图纸里没有\"前视基准面\"：剖视需在视图上画剖切线\n合计 2 项，通过 2",
+      "stderr_tail": []
+    },
+    {
+      "suite": "asm_ops",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 28.5,
+      "summary": "其余 4 项，通过 4",
+      "tail": "   {\"components\": 2, \"is_hidden\": [false, false]}\n== explode_assembly           ok=True  checks={'exploded_view_created': True}\n   {\"views_before\": 0, \"views_after\": 1}\n== move_component             ok=True  checks={'dx_matches': True, 'dy_zero': True, 'dz_zero': True, 'components_unchanged': True}\n干涉 A/B：分开=0 重叠=1 → PASS\n其余 4 项，通过 4",
+      "stderr_tail": []
+    },
+    {
+      "suite": "drawing",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 10.3,
+      "summary": "合计 13 项，通过 13",
+      "tail": "== hole_table       ok=True  checks={'table_added': True}\n   {\"entities\": 5, \"circles\": 1, \"attempts\": [{\"pick\": true, \"anchor\": 1, \"returned\": \"CDispatch\", \"tables_after\": 1}]}\n== broken_view      ok=True  checks={'break_lines_increased': True}\n== aux_view         ok=True  checks={'view_added': True}\n   {\"entities\": 5, \"attempts\": [{\"idx\": 0, \"mark\": 1, \"returned\": null, \"views_after\": 2}, {\"idx\": 0, \"mark\": 0, \"returned\": null, \"views_after\": 2}, {\"idx\": 1, \"mark\": 1, \"returned\": null, \"views_after\": 3}]}\n合计 13 项，通过 13",
+      "stderr_tail": []
+    },
+    {
+      "suite": "balloon",
+      "rc": 0,
+      "ok": true,
+      "elapsed_s": 6.1,
+      "summary": "balloon ok=True checks={'bom_available': True, 'balloons_created': True}",
+      "tail": "装配已存：D:\\bililive\\acad_out\\SW_ADV\\sim\\check_balloon.SLDASM（69284 B）\n夹具：ok=True views=2\nballoon ok=True checks={'bom_available': True, 'balloons_created': True}\n{\"view\": \"工程图视图1\", \"bom_present\": true, \"bom_created\": true, \"notes_before\": 0, \"bom_attempts\": [{\"bom_type\": 1, \"anchor\": 1, \"returned\": \"CDispatch\"}], \"view_selected\": true, \"balloons\": 2, \"notes_after\": 2}",
+      "stderr_tail": []
+    }
+  ]
+}

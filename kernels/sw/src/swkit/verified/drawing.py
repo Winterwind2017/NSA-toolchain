@@ -1,0 +1,941 @@
+"""swkit.verified.drawing —— 出图侧实测通过的实现
+
+**图纸夹具**（其余出图工具都依赖它）：
+
+    d = new_drawing(part_path, template=A3, view="front")
+    view = first_model_view(doc)      # 图纸里 Type != 1 的那个视图
+
+出图类 API 的通用套路：**先在视图里选中实体（辅助实体 mark=1），再调零参/少参插入**，
+判据一律用"符号计数"或"读回文本"——返回值不可信。
+
+| 工具 | 真实 API | 判据 |
+|---|---|---|
+| `new_drawing` | `NewDocument(drwdot)` + `CreateDrawViewFromModelView3` | 视图数 ≥ 2 |
+| `center_mark` | `IDrawingDoc.AddCenterMark(x, False)` | `IView.GetCenterMarks` 计数 +1 |
+| `centerline` | `IDrawingDoc.InsertCenterLine()` | `IView.GetCenterLines` 计数 +1 |
+| `symbol(kind)` | `InsertDatumTag2()` / `InsertGtol()` / `InsertWeldSymbol3()` | 返回对象非空且能读回文本 |
+| `surface_finish` | `InsertSurfaceFinishSymbol2(15 参)` | 符号计数 +1 或对象非空 |
+| `note` | `IModelDoc2.InsertNote(text)` + `GetAnnotation.SetPosition2` | 文本读回 + 位置读回 |
+
+注意（实测）：中文版 `CreateDrawViewFromModelView3` **只认本地化视图名**（`*前视`），
+传 `*Front` 返回 None；`IModelDocExtension` 不能直接 QI，要从 `md.Extension` 取。
+"""
+
+from __future__ import annotations
+
+import os
+from typing import Any, Dict, List, Optional
+
+from ..core.com import none_dispatch, val
+from ._common import com_app, com_doc, wrap
+
+__all__ = ["new_drawing", "first_model_view", "center_mark", "centerline", "symbol",
+           "surface_finish", "note", "aux_view", "section_view", "broken_view",
+           "drawing_dimension", "hole_table", "balloon", "VIEW_MAP", "DEFAULT_TEMPLATE"]
+
+DEFAULT_TEMPLATE = (r"C:\ProgramData\SolidWorks\SOLIDWORKS 2025\templates"
+                    r"\gb_a3.drwdot")
+
+VIEW_MAP = {
+    "front": "*前视", "back": "*后视", "left": "*左视", "right": "*右视",
+    "top": "*上视", "bottom": "*下视", "isometric": "*等轴测",
+    "trimetric": "*三轴测", "current": "*当前",
+}
+
+
+def _result(tool: str, api: str) -> Dict[str, Any]:
+    return {"ok": False, "tool": tool, "api": api, "detail": {}, "checks": {}}
+
+
+def new_drawing(part_path: str, template: str = "", view: str = "front",
+                x: float = 0.15, y: float = 0.15) -> Dict[str, Any]:
+    """从零件新建 A3 图纸并插入一个模型视图。返回证据字典（`detail["title"]` 供后续用）。"""
+    out = _result("sw_new_drawing", "IModelDocExtension.CreateDrawViewFromModelView3")
+    tpl = template or DEFAULT_TEMPLATE
+    if not os.path.isfile(tpl):
+        out["detail"]["error"] = "图纸模板不存在：%s" % tpl
+        return out
+    if not os.path.isfile(part_path):
+        out["detail"]["error"] = "模型不存在：%s" % part_path
+        return out
+    _sw, app_ct = com_app()
+    doc = app_ct.NewDocument(tpl, 0, 0.0, 0.0)
+    if isinstance(doc, tuple):
+        doc = doc[-1]
+    if doc is None:
+        out["detail"]["error"] = "NewDocument 失败"
+        return out
+    doc_w = wrap(app_ct.ActiveDoc)
+    name = view if str(view).startswith("*") else VIEW_MAP.get(str(view).lower(), view)
+    view_obj = doc_w.CreateDrawViewFromModelView3(os.path.abspath(part_path),
+                                                  name, float(x), float(y), 0.0)
+    count = val(doc_w, "GetViewCount", 0)
+    out["detail"].update({"title": val(doc_w, "GetTitle"),
+                          "view_name_arg": name,
+                          "views": count,
+                          "view_created": view_obj is not None})
+    out["checks"] = {"view_created": view_obj is not None, "views_at_least_two": (count or 0) >= 2}
+    out["ok"] = all(out["checks"].values())
+    return out
+
+
+def first_model_view(doc_w: Any) -> Optional[Any]:
+    """返回图纸里第一个模型视图（`Type != 1`；Type==1 是图纸本身）。"""
+    v = val(doc_w, "GetFirstView")
+    guard = 0
+    while v is not None and guard < 30:
+        guard += 1
+        vw = wrap(v)
+        if val(vw, "Type", 1) != 1:
+            return vw
+        v = val(vw, "GetNextView")
+    return None
+
+
+def _view_entities(view: Any, limit: int = 12) -> List[Any]:
+    try:
+        ents = view.GetVisibleEntities2(none_dispatch(), 1)
+        return [wrap(e) for e in (ents or [])][:limit]
+    except Exception:
+        return []
+
+
+def center_mark(doc_w: Any, x: float = 0.05) -> Dict[str, Any]:
+    """在圆边上加中心标记。判据：`InsertCenterMark2` 返回了 ICenterMark。
+
+    **两条实测事实**（2026-11-05）：
+
+    * 选边必须用 `entity.Select4(True, VARIANT(VT_DISPATCH, NULL))`；
+      `Select2(False, mark)` 在这条路径上**选不上**（静默 False），旧实现就卡在这。
+    * 建出来之后 `IView.GetCenterMarks` **仍然是 0**（跟孔表一个毛病），
+      所以判据不能看计数，要看返回值是不是真的 COM 对象（ICenterMark）。
+    """
+    out = _result("sw_add_center_mark", "IDrawingDoc.InsertCenterMark2")
+    out["detail"]["doc_type"] = val(doc_w, "GetType", 0)
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+
+    edges = _view_edges(view)
+    circles = _circular_edges(edges)
+    out["detail"].update({"view": val(view, "Name"), "entities": len(edges),
+                          "circles": len(circles)})
+    pool = circles or edges
+    if not pool:
+        out["detail"]["error"] = "视图里没有可选实体"
+        out["checks"] = {"center_mark_created": False}
+        return out
+
+    _sw, drawing = _drawing_doc()
+    attempts = []
+    for entity in pool[:4]:
+        if not _select_entity(doc_w, entity):
+            attempts.append({"select": "failed"})
+            continue
+        for style in (1, 0, 2):
+            try:
+                result = drawing.InsertCenterMark2(style, True)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"style": style, "error": str(exc)[:70]})
+                continue
+            created = _is_com(result)
+            attempts.append({"style": style,
+                             "returned": type(result).__name__ if result is not None else None,
+                             "created": created})
+            if created:
+                out["detail"].update({"attempts": attempts[-4:], "style": style})
+                out["checks"] = {"center_mark_created": True}
+                out["ok"] = True
+                return out
+            _select_entity(doc_w, entity)
+    doc_w.ClearSelection2(True)
+    out["detail"]["attempts"] = attempts[-6:]
+    out["checks"] = {"center_mark_created": False}
+    out["ok"] = False
+    return out
+
+
+def centerline(doc_w: Any) -> Dict[str, Any]:
+    """在两实体间加中心线。判据：`GetCenterLines` 计数增加。"""
+    out = _result("sw_add_centerline", "IDrawingDoc.InsertCenterLine")
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+
+    def n_lines() -> int:
+        try:
+            lines = val(view, "GetCenterLines") or []
+            return len(list(lines))
+        except Exception:
+            return -1
+
+    before = n_lines()
+    pool = _view_entities(view, limit=8)
+    out["detail"].update({"view": val(view, "Name"), "entities": len(pool),
+                          "lines_before": before})
+    if len(pool) < 2:
+        out["detail"]["error"] = "可用实体不足两条"
+        return out
+    hit = None
+    tried = 0
+    for m1, m2 in ((1, 1), (1, 2), (4, 4), (2, 2), (0, 0)):
+        for i in range(len(pool)):
+            for j in range(i + 1, len(pool)):
+                tried += 1
+                try:
+                    doc_w.ClearSelection2(True)
+                    pool[i].Select2(False, m1)
+                    pool[j].Select2(True, m2)
+                    doc_w.InsertCenterLine()
+                except Exception:
+                    continue
+                if n_lines() > before:
+                    hit = {"marks": (m1, m2), "pair": (i, j)}
+                    break
+            if hit:
+                break
+        if hit:
+            break
+    after = n_lines()
+    out["detail"].update({"tried": tried, "hit": hit, "lines_after": after})
+    out["checks"] = {"lines_increased": after > before}
+    out["ok"] = out["checks"]["lines_increased"]
+    return out
+
+
+def symbol(doc_w: Any, kind: str = "datum") -> Dict[str, Any]:
+    """基准标记 / 形位公差 / 焊接符号（零参插入，先选实体）。
+
+    **选边方式决定成败**（2026-11-05 实测）：必须
+    `entity.Select4(True, VARIANT(VT_DISPATCH, NULL))`；
+    旧的 `Select2(False, mark)` 选不上，于是 `InsertDatumTag2` 之类静默返回 None。
+
+    判据：`IView.GetDatumTagCount / GetGTolCount / GetWeldSymbolCount` **+1**
+    （这三个计数器实测是准的，和孔表不同）。
+    """
+    api_map = {"datum": "InsertDatumTag2", "gtol": "InsertGtol",
+               "weld": "InsertWeldSymbol3"}
+    tool_map = {"datum": "sw_add_datum_feature", "gtol": "sw_add_gtol",
+                "weld": "sw_add_weld_symbol"}
+    kind = (kind or "datum").lower()
+    if kind not in api_map:
+        out = _result("sw_add_%s" % kind, "?")
+        out["detail"]["error"] = "kind 只能是 datum / gtol / weld"
+        return out
+    out = _result(tool_map[kind], api_map[kind])
+    view = first_model_view(doc_w)
+    counter = {"datum": "GetDatumTagCount", "gtol": "GetGTolCount",
+               "weld": "GetWeldSymbolCount"}[kind]
+    before = _int_or_none(val(view, counter, None)) if view is not None else None
+    edges = _view_edges(view) if view is not None else []
+    out["detail"].update({"kind": kind, "entities": len(edges),
+                          "counter": counter, "count_before": before})
+    if not edges:
+        out["detail"]["error"] = "需要视图实体才能插入符号"
+        out["checks"] = {"count_increased": False}
+        return out
+    _sw, md = com_doc()
+    attempts = []
+    for entity in edges[:4]:
+        if not _select_entity(doc_w, entity):
+            attempts.append({"select": "failed"})
+            continue
+        try:
+            obj = getattr(md, api_map[kind])()
+        except Exception as exc:                    # noqa: BLE001
+            attempts.append({"call": "error", "message": str(exc)[:70]})
+            continue
+        count_after = _int_or_none(val(view, counter, None))
+        text = _as_text(val(obj, "GetText") if obj is not None else None)
+        created = _is_com(obj)
+        increased = (count_after is not None and before is not None
+                     and count_after > before)
+        attempts.append({"returned": type(obj).__name__ if obj is not None else None,
+                         "created": created, "count_after": count_after,
+                         "text": text})
+        if created or increased:
+            doc_w.ClearSelection2(True)
+            out["detail"].update({"attempts": attempts[-3:], "count_after": count_after,
+                                  "text": text})
+            out["checks"] = {"count_increased": increased,
+                             "object_created": created}
+            out["ok"] = True
+            return out
+    doc_w.ClearSelection2(True)
+    out["detail"]["attempts"] = attempts[-5:]
+    out["checks"] = {"count_increased": False, "object_created": False}
+    out["ok"] = False
+    return out
+
+
+def _int_or_none(raw: Any) -> Optional[int]:
+    """把 GetXCount 的返回值（int / array / None）统一成 int 或 None。"""
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return int(raw)
+    if isinstance(raw, int):
+        return raw
+    try:
+        return len(list(raw))
+    except TypeError:
+        return None
+
+
+def _select_entity(doc_w: Any, entity: Any) -> bool:
+    """选中一个视图实体。必须带 VT_DISPATCH NULL 的 Callout，否则静默 False。"""
+    from ..core.com import none_dispatch
+    try:
+        doc_w.ClearSelection2(True)
+    except Exception:                               # noqa: BLE001
+        pass
+    try:
+        return bool(entity.Select4(True, none_dispatch()))
+    except Exception:                               # noqa: BLE001
+        return False
+
+
+def _view_edges(view: Any) -> List[Any]:
+    """视图里的可见边（EntityType=1）。第一个参数必须是 VT_DISPATCH NULL。"""
+    from ..core.com import none_dispatch
+    if view is None:
+        return []
+    try:
+        raw = view.GetVisibleEntities2(none_dispatch(), 1)
+    except Exception:                               # noqa: BLE001
+        return []
+    try:
+        return list(raw) if raw else []
+    except TypeError:
+        return []
+
+
+def _circular_edges(edges: List[Any]) -> List[Any]:
+    """挑出起终点重合的边（=圆边）。"""
+    circles = []
+    for entity in edges:
+        try:
+            params = list(val(entity, "GetCurveParams2") or [])
+        except Exception:                           # noqa: BLE001
+            continue
+        if len(params) >= 6:
+            span = sum((params[3 + i] - params[i]) ** 2 for i in range(3)) ** 0.5
+            if span < 1e-9:
+                circles.append(entity)
+    return circles
+
+
+def _drawing_doc() -> Tuple[Any, Any]:
+    """返回 `(sw_module, IDrawingDoc)`（中心标记等 API 只在 IDrawingDoc 上）。"""
+    sw, app = com_app()
+    return sw, app.ActiveDoc.QueryInterface(sw.IDrawingDoc)
+
+
+def _is_com(obj: Any) -> bool:
+    """是不是真的 COM 对象（插入类 API 有时只返回 True，那不算证据）。"""
+    return obj is not None and not isinstance(obj, (bool, int, str, bytes))
+
+
+def _as_text(v: Any) -> Optional[str]:
+    """只在确实是字符串时才当文本；MethodCaller 之类一律返回 None。"""
+    if isinstance(v, str):
+        return v
+    if v is None:
+        return None
+    try:
+        if callable(v):
+            r = v()
+            return r if isinstance(r, str) else None
+    except Exception:
+        return None
+    return None
+
+
+def surface_finish(doc_w: Any, x: float = 0.05, y: float = 0.05) -> Dict[str, Any]:
+    """表面粗糙度符号。判据：符号计数 +1 或返回对象非空。"""
+    out = _result("sw_add_surface_finish", "InsertSurfaceFinishSymbol2/3")
+    view = first_model_view(doc_w)
+
+    def n_symbols() -> int:
+        """-1 = 本机拿不到计数（而不是 0 个）。"""
+        if view is None:
+            return -1
+        # 实测：`GetSFSymbols` 在没有符号时返回 **None**（不是缺方法），有符号时返回数组。
+        # 所以 None 要当成 0，而不是 -1（上一轮误判"判据不可得"就是栽在这里）。
+        for name in ("GetSurfaceFinishSymbols", "GetSFSymbols"):
+            try:
+                v = getattr(view, name)
+            except Exception:
+                continue                      # 真·不存在才跳过
+            if v is None:
+                return 0
+            try:
+                return len(list(v))
+            except TypeError:
+                return 0
+        return -1
+
+    # 必须先激活视图（实测：未激活时 getter 返回 None，会误判成"没有判据"）
+    activated = False
+    try:
+        doc_w.ActivateView(val(view, "Name"))
+        activated = True
+    except Exception:
+        pass
+    before = n_symbols()
+    _sw, md = com_doc()
+    try:
+        ext = md.Extension.QueryInterface(_sw.IModelDocExtension)
+    except Exception:
+        ext = md.Extension
+    made, attempts = None, []
+    shapes = [
+        (1, 0, float(x), float(y), 0.0, 0, 0, "", "", "", "", "", "", ""),
+        (0, 0, float(x), float(y), 0.0, 0, 0, "", "", "", "", "", "", ""),
+    ]
+    for shape in shapes:
+        for api_name, obj in (("InsertSurfaceFinishSymbol2", md),
+                              ("InsertSurfaceFinishSymbol3", ext)):
+            try:
+                res = getattr(obj, api_name)(*shape)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"api": api_name, "error": str(exc)[:70]})
+                continue
+            attempts.append({"api": api_name, "returned": str(res)})
+            if res is not None:
+                made = res
+                break
+        if made is not None:
+            break
+    after = n_symbols()
+    out["detail"].update({"view": val(view, "Name") if view is not None else None,
+                          "activated": activated,
+                          "symbols_before": before, "symbols_after": after,
+                          "attempts": attempts})
+    out["checks"] = {
+        "call_returned_true": any(a.get("returned") == "True" for a in attempts),
+        "count_available": after >= 0,
+        "symbols_increased": after > before,
+    }
+    # 只有拿到"计数确实 +1"才算验证通过；只返回 True 不算证据
+    out["ok"] = out["checks"]["symbols_increased"]
+    return out
+
+
+def note(doc_w: Any, text: str = "swkit", x: float = 0.05, y: float = 0.05) -> Dict[str, Any]:
+    """插入注释并设位置。判据：文本读回 + 位置读回。"""
+    out = _result("sw_note", "IModelDoc2.InsertNote")
+    _sw, md = com_doc()
+    try:
+        obj = md.InsertNote(text)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    if obj is None:
+        out["detail"]["error"] = "InsertNote 返回 None"
+        return out
+    read_text = val(obj, "GetText")
+    pos = None
+    try:
+        ann = val(obj, "GetAnnotation")
+        if ann is not None:
+            ann.SetPosition2(float(x), float(y), 0.0)
+            pos = list(val(ann, "GetPosition") or [])
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["position_error"] = str(exc)[:80]
+    out["detail"].update({"text": read_text, "position": [round(v, 6) for v in pos] if pos else None})
+    out["checks"] = {"text_read_back": bool(read_text),
+                     "position_set": bool(pos) and abs(pos[0] - float(x)) < 1e-6}
+    out["ok"] = all(out["checks"].values())
+    return out
+
+def _com_val(obj: Any, name: str) -> Any:
+    """comtypes 下属性/方法双形态：能调就调，调不动就当属性。"""
+    try:
+        v = getattr(obj, name)
+    except Exception:
+        return None
+    if not callable(v):
+        return v
+    try:
+        return v()
+    except Exception:
+        return v
+
+
+def _count(obj: Any, prop: str) -> int:
+    """读某个集合属性的数量；拿不到返回 -1。"""
+    v = val(obj, prop)
+    if v is None:
+        return -1
+    try:
+        return len(list(v))
+    except TypeError:
+        return -1
+
+
+def aux_view(doc_w: Any) -> Dict[str, Any]:
+    """辅助视图：`CreateAuxiliaryView()` 是**零参**，靠选择集驱动。
+
+    判据：图纸视图数 +1。
+    """
+    out = _result("sw_add_auxiliary_view", "IDrawingDoc.CreateAuxiliaryView")
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+    try:
+        doc_w.ActivateView(val(view, "Name"))
+    except Exception:
+        pass
+    ents = _view_entities(view, limit=6)
+    before = val(doc_w, "GetViewCount", 0)
+    out["detail"].update({"view": val(view, "Name"), "entities": len(ents),
+                          "views_before": before})
+    if not ents:
+        out["detail"]["error"] = "视图里没有可用实体"
+        return out
+    attempts = []
+    for idx in range(min(4, len(ents))):
+        for mark in (1, 0):
+            doc_w.ClearSelection2(True)
+            try:
+                ents[idx].Select2(False, mark)
+            except Exception:
+                continue
+            try:
+                res = doc_w.CreateAuxiliaryView()
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"idx": idx, "mark": mark, "error": str(exc)[:70]})
+                continue
+            after = val(doc_w, "GetViewCount", 0)
+            attempts.append({"idx": idx, "mark": mark,
+                             "returned": type(res).__name__ if res is not None else None,
+                             "views_after": after})
+            if (after or 0) > (before or 0):
+                out["detail"].update({"views_after": after, "attempts": attempts[-4:]})
+                out["checks"] = {"view_added": True}
+                out["ok"] = True
+                return out
+    out["detail"].update({"views_after": val(doc_w, "GetViewCount", 0),
+                          "attempts": attempts[-6:]})
+    out["checks"] = {"view_added": False}
+    return out
+
+
+def section_view(doc_w: Any, plane_name: str = "前视基准面",
+                 offset: float = 0.0) -> Dict[str, Any]:
+    """剖视图：`ModelViewManager.CreateSectionViewData()` → 设 FirstPlane/FirstOffset
+    → `CreateSectionView(data)`，成功后用 `RemoveSectionView()` 复位。
+
+    判据：`CreateSectionView` 返回 True（并确认已复位）。
+    """
+    out = _result("sw_create_section_view", "IModelViewManager.CreateSectionView")
+    sw, md = com_doc()
+    try:
+        mvm = md.ModelViewManager
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "ModelViewManager: %s" % str(exc)[:80]
+        return out
+    # 找基准面：**必须**用 comtypes 的 IFeature。pywin32 的 _Dispatch 没有可用的
+    # QueryInterface（实测报 `<unknown>.QueryInterface`），传进 FirstPlane 会失败。
+    plane_ct, plane_name_found = None, None
+    feat = _com_val(md, "FirstFeature")
+    guard = 0
+    while feat is not None and guard < 500:
+        guard += 1
+        try:
+            fc = feat.QueryInterface(sw.IFeature)
+        except Exception:
+            fc = feat
+        try:
+            type_name = _com_val(fc, "GetTypeName2")
+            name = _com_val(fc, "Name")
+            if type_name == "RefPlane" and plane_name in (name or ""):
+                plane_ct, plane_name_found = fc, name
+                break
+        except Exception:
+            pass
+        try:
+            feat = _com_val(fc, "GetNextFeature")
+        except Exception:
+            break
+    if plane_ct is None:
+        out["detail"]["error"] = "找不到基准面：%s（只用 comtypes IFeature 匹配）" % plane_name
+        return out
+    try:
+        data = mvm.CreateSectionViewData()
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "CreateSectionViewData: %s" % str(exc)[:80]
+        return out
+    if data is None:
+        out["detail"]["error"] = "CreateSectionViewData 返回 None"
+        return out
+    sd = data.QueryInterface(sw.ISectionViewData)
+    try:
+        sd.FirstPlane = plane_ct
+        sd.FirstOffset = float(offset)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["set_error"] = str(exc)[:90]
+    try:
+        ok = bool(mvm.CreateSectionView(sd))
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["error"] = "CreateSectionView: %s" % str(exc)[:90]
+        return out
+    removed = None
+    if ok:
+        try:
+            mvm.RemoveSectionView()
+            removed = True
+        except Exception:
+            removed = False
+    out["detail"].update({"plane": plane_name_found, "offset": float(offset),
+                          "returned": ok, "removed": removed})
+    out["checks"] = {"section_view_created": ok}
+    out["ok"] = ok
+    return out
+
+
+def broken_view(view: Any, orientation: int = 0, position: float = 0.05,
+                size: float = 0.01) -> Dict[str, Any]:
+    """断裂视图：`IView.InsertBreak2(Orientation, Position1, Position2, Style, ShapeIntensity)`。
+
+    **参数名取自类型库**（不是猜的）：Position1/Position2 是两条断裂线的位置（米），
+    Style/ShapeIntensity 是枚举。旧实现只传一个 position、把 size 当 Position2，
+    SW 就静默不建（断线计数永远 0）。
+
+    判据：`GetBreakLines` 计数 +1（断裂视图**不新增视图**）。
+    """
+    out = _result("sw_add_broken_view", "IView.InsertBreak2")
+    if view is None:
+        out["detail"]["error"] = "没有模型视图"
+        return out
+    before = _count(view, "GetBreakLines")
+    half = max(float(size), 0.002) / 2.0
+    center = float(position)
+    attempts = []
+    for style in (2, 1, 0, 3, 4):
+        for intensity in (0, 1, 2):
+            p1, p2 = center - half, center + half
+            try:
+                res = view.InsertBreak2(int(orientation), p1, p2, style, intensity)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"style": style, "intensity": intensity,
+                                 "error": str(exc)[:70]})
+                continue
+            after = _count(view, "GetBreakLines")
+            attempts.append({"style": style, "intensity": intensity,
+                             "returned": type(res).__name__ if res is not None else None,
+                             "lines_after": after})
+            if after > before:
+                out["detail"].update({"view": val(view, "Name"),
+                                      "break_lines_before": before,
+                                      "break_lines_after": after,
+                                      "style": style, "shape_intensity": intensity,
+                                      "attempts": attempts[-4:]})
+                out["checks"] = {"break_lines_increased": True}
+                out["ok"] = True
+                return out
+    out["detail"].update({"view": val(view, "Name"), "break_lines_before": before,
+                          "break_lines_after": _count(view, "GetBreakLines"),
+                          "attempts": attempts[-10:]})
+    out["checks"] = {"break_lines_increased": False}
+    out["ok"] = False
+    return out
+
+def drawing_dimension(doc_w: Any, x: float = 0.12, y: float = 0.12) -> Dict[str, Any]:
+    """图纸尺寸：选视图里两条边（mark=1）→ `AddDimension2(x,y,0)`。
+
+    判据：`IView.GetDisplayDimensions` 计数 +1。
+    """
+    out = _result("sw_add_drawing_dimension", "IModelDoc2.AddDimension2")
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+    ents = _view_entities(view, limit=5)
+    before = _count(view, "GetDisplayDimensions")
+    out["detail"].update({"view": val(view, "Name"), "entities": len(ents),
+                          "dimensions_before": before})
+    if len(ents) < 2:
+        out["detail"]["error"] = "可用实体不足两条"
+        return out
+    _sw, md = com_doc()
+    attempts = []
+    for i in range(min(4, len(ents))):
+        for j in range(i + 1, min(5, len(ents))):
+            for mark in (1, 0):
+                doc_w.ClearSelection2(True)
+                try:
+                    ents[i].Select2(False, mark)
+                    ents[j].Select2(True, mark)
+                except Exception:
+                    continue
+                try:
+                    res = md.AddDimension2(float(x), float(y), 0.0)
+                except Exception as exc:            # noqa: BLE001
+                    attempts.append({"pair": [i, j], "mark": mark,
+                                     "error": str(exc)[:60]})
+                    continue
+                after = _count(view, "GetDisplayDimensions")
+                attempts.append({"pair": [i, j], "mark": mark,
+                                 "returned": type(res).__name__ if res is not None else None,
+                                 "dimensions_after": after})
+                if after > before:
+                    out["detail"].update({"dimensions_after": after,
+                                          "attempts": attempts[-6:]})
+                    out["checks"] = {"dimensions_increased": True}
+                    out["ok"] = True
+                    return out
+    out["detail"].update({"dimensions_after": _count(view, "GetDisplayDimensions"),
+                          "attempts": attempts[-8:]})
+    out["checks"] = {"dimensions_increased": False}
+    return out
+
+
+def _hole_table_templates() -> list:
+    """找本机可用的孔表模板（`.sldholtbt`）。
+
+    为什么必须给模板：`InsertHoleTable2/3` 的 Template 传空串时 SW 静默返回 None
+    （不是"用默认模板"）。先找用户模板目录，再找安装目录语言包。
+    """
+    import glob
+    import os
+    program_data = os.environ.get("PROGRAMDATA") or ""
+    # SolidWorks 可能装在 D:\Program Files 而不是 %PROGRAMFILES%（本机就是 D:），
+    # 只扫 C: 会得到空列表，所以三个盘的 Program Files 都扫一遍。
+    roots = [os.path.join(drive + os.sep, "Program Files") for drive in ("C:", "D:", "E:")]
+    program_files = os.environ.get("PROGRAMFILES") or ""
+    if program_files:
+        roots.append(program_files)
+    patterns = [
+        os.path.join(program_data, "SolidWorks", "SOLIDWORKS *", "templates", "*.sldholtbt"),
+        os.path.join(program_data, "SolidWorks", "templates", "*.sldholtbt"),
+    ]
+    for root in roots:
+        patterns.append(os.path.join(root, "SOLIDWORKS Corp", "SOLIDWORKS", "lang", "*",
+                                     "*hole table*.sldholtbt"))
+    found = []
+    for pattern in patterns:
+        for path in glob.glob(pattern):
+            if os.path.isfile(path):
+                found.append(path)
+    preferred = [p for p in found if "standard" in os.path.basename(p).lower()]
+    return (preferred + found)[:6]
+
+
+def hole_table(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """孔表：`IView.InsertHoleTable2(UseAnchorPoint, X, Y, AnchorType,
+    StartValue, Template)`。
+
+    这个工具踩了四道坎，全部实测确认过：
+
+    1. **参数顺序**：第 5 个是起始标记 `"A"`，**第 6 个才是模板路径**
+       （从用户录的宏里逐字读出来的：`InsertHoleTable2(False, x, y, 1, "A", tpl)`）。
+       把模板放第 5 个、第 6 个传空串 → 12 组参数全静默返回 None。
+    2. **必须先选中视图里的孔边**。`IView.GetVisibleEntities2` 的第一个参数
+       必须是 `VARIANT(VT_DISPATCH, NULL)`，用 `None` 会报"类型不匹配"；
+       拿到边之后要 `edge.Select4(True, VARIANT(VT_DISPATCH, NULL))` ——
+       `Select4(False, None)` 静默返回 False，一条都选不上。
+    3. **Template 必须是真实的 `.sldholtbt` 路径**，空串同样静默失败。
+    4. **判据不能用 `IView.GetTableAnnotationCount`**：孔表建出来它还是 0
+       （实测 `InsertHoleTable2` 已返回 CDispatch、`GetAnnotation().GetType == 14`
+       = 孔表注解，而视图表计数仍是 0）。所以判据改成"返回值非空 + 注解类型 14"。
+    """
+    from ..core.com import none_dispatch, val as _val
+    import os as _os
+    out = _result("sw_add_hole_table", "IView.InsertHoleTable2")
+
+    # 护栏：**零件里**草图编辑中插孔表会把 SW 拽进"命令未结束"状态，之后整个界面
+    # 点不动、窗口都切不了（2026-11-05 在用户会话里踩过）。
+    # 注意：工程图上 `GetActiveSketch` **永远非空**（它返回视图里模型的草图），
+    # 所以只在非工程图文档上拦。
+    active_sketch = _val(doc_w, "GetActiveSketch")
+    doc_type = _val(doc_w, "GetType")
+    if active_sketch is not None and doc_type != 3:
+        out["detail"]["error"] = "文档正在编辑草图，先退出草图再插孔表"
+        out["detail"]["active_sketch"] = _val(active_sketch, "Name")
+        out["checks"] = {"table_added": False}
+        out["ok"] = False
+        return out
+
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+
+    view_name = _val(view, "Name")
+    try:
+        doc_w.ActivateView(view_name)
+        activated = True
+    except Exception:                               # noqa: BLE001
+        activated = False
+    templates = _hole_table_templates()
+    out["detail"].update({"view": view_name, "activated": activated,
+                          "templates": [_os.path.basename(t) for t in templates]})
+
+    # 视图里的可见边（EntityType=1）；第一条参数必须给 VT_DISPATCH NULL
+    null_dispatch = none_dispatch()
+    edges = []
+    try:
+        raw = view.GetVisibleEntities2(null_dispatch, 1)
+        edges = list(raw) if raw else []
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["entities_error"] = "%s: %s" % (type(exc).__name__,
+                                                      str(exc)[:70])
+    out["detail"]["view_edges"] = len(edges)
+
+    attempts = []
+    for template in (templates or [""]):
+        for anchor in (1, 0):
+            doc_w.ClearSelection2(True)
+            picked = 0
+            for entity in edges[:12]:
+                try:
+                    if entity.Select4(True, null_dispatch):
+                        picked += 1
+                except Exception:                   # noqa: BLE001
+                    continue
+            result = None
+            try:
+                result = view.InsertHoleTable2(
+                    False, float(x), float(y), anchor, "A", template)
+            except Exception as exc:                # noqa: BLE001
+                attempts.append({"tpl": _os.path.basename(template)[:26],
+                                 "anchor": anchor, "edges_selected": picked,
+                                 "error": str(exc)[:60]})
+                continue
+            annotation = None
+            annotation_type = None
+            try:
+                annotation = _val(result, "GetAnnotation") if result is not None else None
+                annotation_type = _val(annotation, "GetType") if annotation is not None else None
+            except Exception:                       # noqa: BLE001
+                pass
+            created = result is not None and annotation_type == 14
+            attempts.append({"tpl": _os.path.basename(template)[:26],
+                             "anchor": anchor, "edges_selected": picked,
+                             "returned": type(result).__name__ if result is not None else None,
+                             "annotation_type": annotation_type,
+                             "created": created})
+            if created:
+                out["detail"].update({"attempts": attempts[-3:],
+                                      "table_template": _os.path.basename(template)})
+                out["checks"] = {"table_added": True}
+                out["ok"] = True
+                return out
+    doc_w.ClearSelection2(True)
+    out["detail"]["attempts"] = attempts[-6:]
+    out["checks"] = {"table_added": False}
+    out["ok"] = False
+    return out
+
+def balloon(doc_w: Any, x: float = 0.10, y: float = 0.16) -> Dict[str, Any]:
+    """自动零件序号（球标）。**依赖 BOM 表**——序号来自 BOM 项号，所以先建 BOM。
+
+    两步都是"返回值不可信"，判据用计数：
+
+    1. `IView.InsertBomTable2(UseAnchorPoint, X, Y, AnchorType, BomType,
+       Configuration, TableTemplate)` —— **7 个参数**（少传会直接被拒）；
+    2. `IDrawingDoc.AutoBalloon2(Layout, IgnoreMultiple)` —— 返回气球数组，
+       人工计数用 `IView.GetNoteCount` 兜底。
+
+    前提：图纸来自**装配**（零件图没有 BOM 项）。
+    """
+    out = _result("sw_add_balloon", "IDrawingDoc.AutoBalloon2")
+    view = first_model_view(doc_w)
+    if view is None:
+        out["detail"]["error"] = "图纸里没有模型视图"
+        return out
+    try:
+        doc_w.ActivateView(_val_safe(view, "Name"))
+    except Exception:
+        pass
+
+    def n_notes() -> int:
+        v = val(view, "GetNoteCount")
+        if isinstance(v, int):
+            return v
+        notes = val(view, "GetNotes")
+        try:
+            return len(list(notes))
+        except TypeError:
+            return -1
+
+    before_notes = n_notes()
+    bom = None
+    try:
+        bom = view.GetBomTable()
+        if callable(bom):
+            bom = bom()
+    except Exception:
+        bom = None
+    bom_created = False
+    attempts = []
+    if bom is None:
+        # BomType=0 是无效值（实测直接返回 None）；1/2/3 才能建表。
+        for bom_type in (1, 2, 3):
+            for anchor in (1, 0):
+                try:
+                    bom = view.InsertBomTable2(True, float(x), float(y), anchor,
+                                               bom_type, "", "")
+                except Exception as exc:            # noqa: BLE001
+                    attempts.append({"bom_type": bom_type, "anchor": anchor,
+                                     "error": str(exc)[:70]})
+                    continue
+                attempts.append({"bom_type": bom_type, "anchor": anchor,
+                                 "returned": type(bom).__name__ if bom is not None else None})
+                if bom is not None:
+                    bom_created = True
+                    break
+            if bom is not None:
+                break
+    out["detail"].update({"view": _val_safe(view, "Name"),
+                          "bom_present": bom is not None,
+                          "bom_created": bom_created,
+                          "notes_before": before_notes,
+                          "bom_attempts": attempts})
+    if bom is None:
+        out["detail"]["error"] = ("没有 BOM 表，且 InsertBomTable2 未能创建"
+                                  "（球标依赖 BOM 项号；需装配图）")
+        out["checks"] = {"bom_available": False}
+        return out
+    # 必须**先选中视图**（pywin32 的 view.Select2 不可用，只能 SelectByID2 + DRAWINGVIEW），
+    # 否则 AutoBalloon2 返回空数组（实测：选中后返回 2 个气球）。
+    selected = False
+    try:
+        doc_w.ClearSelection2(True)
+        selected = bool(doc_w.Extension.SelectByID2(_val_safe(view, "Name"), "DRAWINGVIEW",
+                                                    0, 0, 0, False, 0,
+                                                    none_dispatch(), 0))
+    except Exception:
+        selected = False
+    balloons = None
+    try:
+        balloons = doc_w.AutoBalloon2(1, True)
+    except Exception as exc:                        # noqa: BLE001
+        out["detail"]["auto_error"] = str(exc)[:90]
+    n_balloons = -1
+    try:
+        n_balloons = len(list(balloons)) if balloons is not None else 0
+    except TypeError:
+        n_balloons = 1 if balloons is not None else 0
+    after_notes = n_notes()
+    out["detail"].update({"view_selected": selected, "balloons": n_balloons,
+                          "notes_after": after_notes})
+    out["checks"] = {
+        "bom_available": True,
+        "balloons_created": n_balloons > 0 or after_notes > before_notes,
+    }
+    out["ok"] = out["checks"]["balloons_created"]
+    return out
+
+
+def _val_safe(obj: Any, name: str) -> Any:
+    try:
+        v = getattr(obj, name)
+        return v() if callable(v) else v
+    except Exception:
+        return None
