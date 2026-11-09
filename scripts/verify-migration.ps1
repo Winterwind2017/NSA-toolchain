@@ -55,6 +55,12 @@ function Show-Link($path, $item) {
 }
 Show-Link $hubOld $o
 Show-Link $hubNew $n
+if ($o.LinkType -or -not $n.LinkType) {
+    Write-Host "  WARN hub 联接方向反了（应为：老路径=联接，新路径=真实目录）" -ForegroundColor Yellow
+}
+else {
+    Write-Host "  OK   hub 方向正确（老路径=联接，新路径=真实目录）" -ForegroundColor Green
+}
 $hubPy = Join-Path $hubOld "nsa_mcp_hub\__init__.py"
 if (Test-Path $hubPy) { Write-Host "  OK   hub 包可读" -ForegroundColor Green }
 else { Write-Host "  FAIL hub 包读不到：$hubPy" -ForegroundColor Red; $fail++ }

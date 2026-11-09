@@ -41,32 +41,38 @@ nsa-toolchain/                    ← 新仓（私有）
 | `D:\bililive\autoshopkit` | Junction | `nsa-toolchain\kernels\autoshop` |
 | `D:\bililive\ww-*-automation`（6 个） | Junction | `nsa-toolchain\skills\ww-*` |
 | `D:\bililive\nsa-mcp-hub` | **真实目录**（见下） | — |
-| `D:\bililive\nsa-toolchain\hub` | Junction | `D:\bililive\nsa-mcp-hub` |
+| `D:\bililive\nsa-mcp-hub` | Junction | `nsa-toolchain\hub` |
 
-### 为什么 hub 是反的
+### hub 的反向联接是怎么翻正的（2026-11-09 晚间，已完成）
 
-切换时 `D:\bililive\nsa-mcp-hub` 被一个进程占着（句柄没释放：`rmdir` 一直报
-`The process cannot access the file`）。排查结论（2026-11-09 实测）：
+**现状：13 个老路径全部是联接，`nsa-toolchain\hub` 是真实目录。** 下面是踩坑记录，留作以后参考。
 
-- 把 **10 个 hub MCP 子进程全杀掉**后仍然占用 → 占用者**不是** MCP 子进程；
-- `openfiles` 查不到，Restart Manager（`RmGetList`）返回 `ERROR_ACCESS_DENIED`
-  —— 需要管理员权限才能列出属主；
-- 推断是 **DSH 本体**（宿主进程曾把工作目录切到该路径，Windows 进程的 cwd 就是一个目录句柄）。
+一开始删不掉 `D:\bililive\nsa-mcp-hub`（`rmdir` 一直报 `The process cannot access the file`），
+于是临时做成反向联接（`nsa-toolchain\hub` → 老路径），保证 hub 的 MCP 端点不断。
 
-所以这一项只能在 **DSH 重启之后**（或重启机器后）完成。为了不让 hub 的 MCP 端点在迁移期间不可用，
-改成**反向联接**：
+排查过程与结论：
 
-- 内容实体仍在 `D:\bililive\nsa-mcp-hub`（旧路径，DSH 配置不用动）；
-- `nsa-toolchain\hub` 是指向它的联接，`git status` 依然干净、文件依然被本仓跟踪。
+1. **杀掉 10 个 hub MCP 子进程也没用**——因为 DSH 会立刻把它们重新拉起来（子进程的 **cwd 就是
+   `D:\bililive\nsa-mcp-hub`**，Windows 里进程的当前目录就是一个目录句柄，**目录里有进程以它为 cwd
+   就改不了名/删不掉**）；
+2. `openfiles` 查不到属主，Restart Manager（`RmGetList`）返回 `ERROR_ACCESS_DENIED`（要管理员）；
+3. 真正定位靠 **读 PEB**：`NtQueryInformationProcess` → `PEB.ProcessParameters.CurrentDirectory.DosPath`，
+   扫全部进程，发现 **11 个进程**（9 个 kit 子进程 + hub 父进程 + 1 个服务）的 cwd 都在该目录；
+4. 最终做法是**在同一个进程里**完成：枚举并 `TerminateProcess` 所有 cwd 持有者 →（DSH 可能会重新拉起，
+   所以循环重试最多 20 次）→ `os.rename` 把整个目录搬进 `nsa-toolchain\hub` → `mklink /J` 把老路径
+   指回来。第 1 次就成功（杀了 11 个进程）。
 
-等占用释放（重启 DSH 或重启机器后），跑一次下面的脚本就能把方向翻正：
+> 关键教训：**光"杀进程"不够，必须在同一个动作里杀掉 + 改名**；分开两步的话，DSH 的按需重启会
+> 在两步之间把句柄重新装上。
 
-```powershell
-.\scripts\flip-hub-junction.ps1            # 试运行：只检查占用是否释放
-.\scripts\flip-hub-junction.ps1 -Apply     # 真翻：老路径变联接，实体回到 monorepo
-```
+`scripts\flip-hub-junction.ps1` 保留下来备查（也能在将来万一又出现反向联接时用），
+但它只做"探测 + 改名"，**不做杀进程**——真正可靠的做法是上面那个"杀+改名"一条龙。
 
-脚本自带保护：先探测能否改名，不能就退出码 2 并提示；`-Apply` 时才动联接。
+翻正后复核：
+
+- `nsa-toolchain\hub`：真实目录；`D:\bililive\nsa-mcp-hub`：Junction → 它；
+- hub 端点照常工作：`nsa_hub_status` 9 kit、`codesys_ping` OK（经联接 spawn 正常）；
+- monorepo `git status` 仍干净（`_runs` / `_archive` 等运行产物被 .gitignore 忽略）。
 
 ## 验证
 
