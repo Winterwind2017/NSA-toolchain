@@ -53,6 +53,8 @@ items:
     mode: port
     value: 5
     hours: 24
+    status: done
+    evidence: 'src/acadkit/solve/constraints.py（LM + 数值雅可比 + 秩算自由度）；tests/test_solver.py 8 例（收敛/欠约束/矩形/冲突必失败/垂直等长/定点/表达式）'
     batch: 3
     note: 纯数值算法，与 Rust 无关；AutoCAD 完整版没有几何约束，这条能补上"改尺寸重算"的能力
 
@@ -63,6 +65,8 @@ items:
     mode: port
     value: 3
     hours: 6
+    status: done
+    evidence: 'src/acadkit/solve/constraints.py::evaluate_expr（只允许四则与括号；拒任意代码，测试有用例）'
     batch: 3
     note: 求解器的前置；也可单独用于"参数表驱动"
 
