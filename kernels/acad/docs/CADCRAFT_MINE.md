@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **23 / 40 项**（185h / 325h = 57%）。
+**进度**：已完成 **25 / 40 项**（193h / 325h = 59%）。
 
 ## 二、按域
 
@@ -123,7 +123,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
 | 3 | 算法组（纯数学） | 9 / 10 | 92h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 3 / 5 | 34h / 66h |
-| 5 | 模型组（AutoCAD 行为细节） | 1 / 11 | 6h / 74h |
+| 5 | 模型组（AutoCAD 行为细节） | 3 / 11 | 14h / 74h |
 | 6 | Agent 接口 | 0 / 2 | 0h / 16h |
 
 已落地的条目与证据：
@@ -151,6 +151,8 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.dxf.writer` —— src/acadkit/dxf/document.py::write/add_entity（逐对重放，未知实体原样保留；往返逐对比对一致）
 - `cc.io.dispatch` —— src/acadkit/dxf/io.py::sniff（DWG/DXF/PDF/STEP/STL/PNG/ZIP 文件头探测 + 缺失文件报错）
 - `cc.audit` —— src/acadkit/dxf/audit.py（重复句柄/非有限坐标/零长度线/非正半径/未知图层/多段线顶点不一致或重复/文字高度非正；error>warn>info）+ tools/audit_dxf.py CLI；tests/test_audit.py 10 例
+- `cc.overkill` —— src/acadkit/dxf/cleanup.py::find_duplicates/geo_key（几何指纹；直线方向无关；未知类型不去重）+ tests/test_cleanup.py
+- `cc.purge` —— src/acadkit/dxf/cleanup.py::find_unused（未用图层/线型/块；保留 0 与 *Paper_Space）+ tests/test_cleanup.py
 
 
 ## 怎么用这份清单

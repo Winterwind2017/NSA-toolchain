@@ -338,6 +338,8 @@ items:
     mode: design
     value: 2
     hours: 4
+    status: done
+    evidence: 'src/acadkit/dxf/cleanup.py::find_duplicates/geo_key（几何指纹；直线方向无关；未知类型不去重）+ tests/test_cleanup.py'
     batch: 5
     note: 清理类能力我们没有；判定规则简单但边界多
 
@@ -348,6 +350,8 @@ items:
     mode: design
     value: 2
     hours: 4
+    status: done
+    evidence: 'src/acadkit/dxf/cleanup.py::find_unused（未用图层/线型/块；保留 0 与 *Paper_Space）+ tests/test_cleanup.py'
     batch: 5
     note: 交付前瘦身常用
 
