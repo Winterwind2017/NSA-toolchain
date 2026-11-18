@@ -29,6 +29,7 @@ audiences:
       layer: 6
       block: 5
       frame: 6        # 图框 + 标题栏 + 布局
+      plot: 4         # 打印样式 / 线宽
       export: 8       # DWG/DXF/PDF
       view: 3         # 三视图投影
       solid: 6        # 少量 3D 验证
@@ -48,6 +49,7 @@ audiences:
       text: 6
       table: 5
       frame: 4
+      plot: 3
       export: 4
       dim: 2
       geom: 2
@@ -64,6 +66,7 @@ audiences:
       block: 10
       export: 10
       frame: 8
+      plot: 4
       view: 5
       table: 8
       env: 4

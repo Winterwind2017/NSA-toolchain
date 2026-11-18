@@ -41,9 +41,11 @@ PROSE_MEASURED = """
 | `Solid3D.Boolean(1, other)` 并集 | 两个 8000 的盒子（重叠 2000）算出 **4000**；`Boolean(3, …)` 报"参数 Operation 无效" | ActiveX 布尔不可用，改走命令行 `_.UNION/SUBTRACT/INTERSECT`（按句柄选择） |
 | `Plot.PlotToFile` | 返回 True，文件 **0 字节**（默认 `BACKGROUNDPLOT=2`，要等文档关闭才落盘） | 出图前临时置 `BACKGROUNDPLOT=0`，用完还原并读回校验 |
 | `MLeader.TextString` | 赋值不报错、读回**空串** | 序号气泡改用圆 + 引线 + 文字拼 |
-| `-LAYERSTATE` | 只要动过图层表（COM 建层 / entmake / SaveAs 之后），Save **永久卡在命令提示符**；`SendCommand`、LISP `command`、`vl-cmdf` 全试过 | 放弃命名图层状态，改"属性级快照"（`layer.snapshot`） |
+| `-LAYERSTATE` | 只要动过图层表（COM 建层 / entmake / SaveAs 之后），Save **永久卡在命令提示符**；`SendCommand`、LISP `command`、`vl-cmdf` 全试过 | **已用 .NET 通道解决**：`layer.state` 走 `LayerStateManager`（进程内），见 `dotnet/`。ActiveX 侧仍不可用，故保留本条 |
 | `(command "…")` in `SendCommand` | 双文档（基线 + 用例）下偶发挂起 | 改用 `(vl-cmdf "…")`（非交互），并给每例加看门狗 |
-| `AddRevolvedSolid` | XY 矩形 / 圆 / 3D 多段线三种轮廓都报"输入无效"；命令行 `_.REVOLVE` 也没生成实体 | 旋转未交付，见下表 |
+| `_.NETLOAD`（命令行 / `vl-cmdf`） | **弹模态文件对话框，SendCommand 永久阻塞**（FILEDIA=0 无效） | 不要用 NETLOAD。改注册表 `LOADCTRLS=2` + 把 DLL 放进 **AutoCAD 安装目录**（`SECURELOAD=1` 会拒绝未信任路径） |
+| Autoloader bundle | bundle 放进 `%APPDATA%\Autodesk\ApplicationPlugins\` 后命令仍"未知命令" | 同上，走安装目录 + 注册表；`tools/netload.py --deploy` 已封装 |
+| `AddRevolvedSolid` | XY 矩形 / 圆 / 3D 多段线三种轮廓都报"输入无效"；命令行 `_.REVOLVE` 也没生成实体 | **已用 .NET 通道解决**：`solid.revolve` 走进程内 `Solid3d.CreateRevolvedSolid`，实测体积误差 0.0；ActiveX 侧仍不可用 |
 | `LWPOLYLINE.NumberOfVertices` | 只有旧 `POLYLINE` 有这个属性 | 顶点用 `Coordinates` 的坐标对读 |
 | 标注 `TextPosition` | 传 (30,10) 读回 (30,11.875)（自动避让） | 只判"文字在尺寸线哪一侧"，不判相等 |
 | `ACDBTABLE` 第 0 行 | 是**合并标题行**，往它的第 1..n 列 `SetText`：内存读得到、落盘重开变空串（ASCII 也一样） | 表头放第 1 行，BOM 用 5 行排法 |

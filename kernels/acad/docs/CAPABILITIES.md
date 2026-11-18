@@ -6,25 +6,26 @@
 
 ## 总览
 
-registry 66 条 = verified 58 + usable_unjudged 0 + pending 0 + dead 8 + external 0；内核实现 60 条，覆盖 58 个 registry id。
+registry 67 条 = verified 62 + usable_unjudged 0 + pending 0 + dead 5 + external 0；内核实现 64 条，覆盖 62 个 registry id。
 
 ## 按族
 
 - `ae`（1）：`ae.db`
 - `block`（3）：`block.define`、`block.insert_with_attributes`、`block.short_attributes`
 - `boolean`（4）：`boolean.union`、`boolean.subtract`、`boolean.intersect`、`boolean.section_slice`
-- `dim`（12）：`dim.linear`、`dim.aligned`、`dim.diametric`、`dim.radial`、`dim.angular`、`dim.ordinate`、`dim.arc`、`dim.baseline`、`dim.continuous`、`dim.tolerance`、`dim.fit_code`、`dim.api_missing`
+- `dim`（13）：`dim.linear`、`dim.aligned`、`dim.diametric`、`dim.radial`、`dim.angular`、`dim.ordinate`、`dim.arc`、`dim.baseline`、`dim.continuous`、`dim.tolerance`、`dim.update`、`dim.fit_code`、`dim.api_missing`
 - `doc`（2）：`doc.new`、`doc.close`
 - `env`（2）：`env.sysvar`、`env.dimstyle`
 - `export`（4）：`export.dwg`、`export.dxf`、`export.pdf`、`export.pdf_multipage`
 - `frame`（2）：`frame.titleblock`、`layout.multipage`
 - `gdt`（1）：`gdt.tolerance`
 - `geom`（8）：`geom.line`、`geom.circle`、`geom.arc`、`geom.polyline`、`geom.rect`、`geom.ellipse`、`geom.spline`、`geom.hatch`
-- `layer`（3）：`layer.create`、`layer.set_current`、`layer.snapshot`
+- `layer`（4）：`layer.create`、`layer.set_current`、`layer.state`、`layer.snapshot`
 - `lisp`（1）：`lisp.execute`
 - `pid`（1）：`pid.symbol`
 - `plc`（1）：`plc.build`
-- `solid`（2）：`solid.primitive`、`solid.extrude`
+- `plot`（1）：`plot.style`
+- `solid`（3）：`solid.primitive`、`solid.revolve`、`solid.extrude`
 - `symbol`（5）：`symbol.roughness`、`symbol.weld`、`symbol.centerline`、`symbol.centermark`、`symbol.balloon`
 - `table`（3）：`table.bom`、`table.grid`、`table.chinese`
 - `text`（3）：`text.single`、`text.mtext`、`text.style`
@@ -54,6 +55,7 @@ registry 66 条 = verified 58 + usable_unjudged 0 + pending 0 + dead 8 + externa
 | `dim.ordinate` | dim | L1–L4 | verified | 坐标标注：Measurement=X |
 | `dim.radial` | dim | L1–L4 | verified | 半径标注：Measurement=R |
 | `dim.tolerance` | dim | L2–L4 | verified | 尺寸公差：DIMTOL+TextOverride 读回 |
+| `dim.update` | dim | L2–L4 | verified | 标注更新：定义点只读 → 读旧值/删旧/按新点重建 |
 | `doc.close` | doc | L1–L3 | verified | 关闭图纸：文档数回到原位 / 无模态 / 活动文档回退 |
 | `doc.new` | doc | L1–L3 | verified | 新建图纸：文档数 +1 / 名称 / 空模型空间 / 用完即关 |
 | `env.dimstyle` | env | L2 | verified | 标注样式：ActiveDimStyle + DIMTXT |
@@ -76,11 +78,14 @@ registry 66 条 = verified 58 + usable_unjudged 0 + pending 0 + dead 8 + externa
 | `layer.create` | layer | L2–L4 | verified | 建图层：Name/Color 读回 |
 | `layer.set_current` | layer | L2–L4 | verified | 设当前层 + 新实体落层 |
 | `layer.snapshot` | layer | L3–L4 | verified | 图层状态快照：属性级保存→改→恢复 |
+| `layer.state` | layer | L2–L3 | verified | 命名图层状态（.NET 通道）：保存→改色→恢复，颜色读回校验 |
 | `lisp.execute` | lisp | L1–L4 | verified | 命令行执行 LISP（不加载文件） |
 | `pid.symbol` | pid | L1–L4 | verified | P&ID 符号：闸阀/泵/仪表气泡（程序化画） |
 | `plc.build` | plc | L1–L4 | verified | PLC 模块图：规格取自 ace_plc.mdb + 程序化绘制 |
+| `plot.style` | plot | L2–L3 | verified | 打印样式/线宽：样式表挂载 + 线宽真的出到纸上（墨量比） |
 | `solid.extrude` | solid | L1–L4 | verified | 拉伸：体积 = 轮廓面积 × 高度 |
 | `solid.primitive` | solid | L1–L4 | verified | 基本体：box/cylinder/sphere 体积 |
+| `solid.revolve` | solid | L1–L4 | verified | 旋转体（.NET 通道）：CreateRevolvedSolid，体积=π(R²−r²)h |
 | `symbol.balloon` | symbol | L1–L4 | verified | 序号气泡：MULTILEADER + 序号 |
 | `symbol.centerline` | symbol | L1–L4 | verified | 中心线：线型 + 两端超出 |
 | `symbol.centermark` | symbol | L1–L4 | verified | 中心标记：十字过圆心 |

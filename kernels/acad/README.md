@@ -48,15 +48,15 @@ python tests/run_all.py --skip-live
 <!-- gen:counts:BEGIN -->
 | 指标 | 数字 |
 |---|---|
-| registry 能力总数 | 66 |
-| verified（有判据、真机通过） | 58 |
+| registry 能力总数 | 67 |
+| verified（有判据、真机通过） | 62 |
 | usable_unjudged | 0 |
 | pending | 0 |
-| dead（本机无官方路径） | 8 |
+| dead（本机无官方路径） | 5 |
 | external（外部资产 / 未移植） | 0 |
-| 内核实现能力（`caps`） | 60 |
-| caps 覆盖的 registry id | 58 / 66 |
-| 真机用例 | 60 条（含负例 2 条） |
+| 内核实现能力（`caps`） | 64 |
+| caps 覆盖的 registry id | 62 / 67 |
+| 真机用例 | 64 条（含负例 2 条） |
 <!-- gen:counts:END -->
 
 ## 快速开始
@@ -127,6 +127,21 @@ src/acadkit/
 - [`docs/ALPHA_GATE.md`](docs/ALPHA_GATE.md) —— 5 条端到端工作流真机结果；
 - [`docs/registry.yaml`](docs/registry.yaml) —— 唯一事实来源；
 - [`docs/P1_PROGRESS.md`](docs/P1_PROGRESS.md) —— 分步真机验证记录。
+
+### 进程内通道（.NET 插件）
+
+ActiveX/命令行够不着的能力（`solid.revolve` / `layer.state`，以及待实现的
+`dim.associative` / `block.edit_inplace`）走 [`dotnet/`](dotnet/README.md)：
+一个 `net8.0-windows` 插件，命令结果写成图面 `AKRESULT <TAG>: ...`，判据仍走读回。
+
+```bash
+python dotnet/build.py            # 构建
+python tools/netload.py --deploy  # 装到 AutoCAD 安装目录 + 写注册表（先关 AutoCAD）
+python tools/netload.py           # 启动并验收 4 条命令
+```
+
+**NETLOAD 不能用**（弹模态对话框，SendCommand 挂死）；`SECURELOAD=1` 也要求
+DLL 在信任路径。细节与三条路的实测结论见 [`dotnet/README.md`](dotnet/README.md)。
 
 ## 已知边界
 

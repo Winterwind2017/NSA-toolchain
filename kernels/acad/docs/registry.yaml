@@ -167,7 +167,7 @@ capabilities:
     backend: []
     status: dead
     source: ""
-    judge: "**外部进程不可达**：ActiveX AddDimRotated 建的标注天然非关联（IAcadDimension 无 assoc API）；DIMLINEAR 点选/选对象/预选、DIMREASSOCIATE、OSMODE+REGEN 六种输入都在提示符卡死或 Measurement 不跟随。替代=.NET 插件 NETLOAD 用 DimensionAssociation（进程内），或保持非关联+显式重建"
+    judge: "**外部进程不可达**：ActiveX AddDimRotated 建的标注天然非关联（IAcadDimension 无 assoc API）；DIMLINEAR 点选/选对象/预选、DIMREASSOCIATE、OSMODE+REGEN 六种输入都在提示符卡死或 Measurement 不跟随。替代=.NET 通道已打通（dotnet/AcadKit.Plugin，安装目录+注册表加载）用 DimensionAssociation；当前仍用「重建式更新」=dim.update"
     evidence: "P1 探针 2026-10-21（_scratch/probe_assoc*.py）"
   - id: dim.baseline
     family: dim
@@ -317,11 +317,11 @@ capabilities:
     evidence: "P1 真机 2026-10-21（acadkit caps）"
   - id: layer.state
     family: layer
-    backend: []
-    status: dead
-    source: ""
-    judge: "**本机不可用**：-LAYERSTATE 只要动过图层表（COM 建层/entmake/SaveAs 之后）Save 就永久卡在命令提示符；SendCommand、LISP command、vl-cmdf 全试过。替代=layer.snapshot（属性级快照→改→恢复）"
-    evidence: "P1 探针 2026-10-21（_scratch/probe_ls*.py）"
+    backend: [dotnet]
+    status: verified
+    source: "dotnet/AcadKit.Plugin.dll 命令 ACADKITLAYERSTATE（进程内 LayerStateManager）"
+    judge: "插件自述 restored=1 且 改前≠改后 且 states>0；交叉校验：COM 读回的图层颜色 == 插件声称恢复到的颜色"
+    evidence: "P1 探针 2026-10-21 证 -LAYERSTATE 卡死；2026-11-18 改走 .NET 通道实测 before=7 changed=30 after=7 restored=1"
   - id: env.sysvar
     family: env
     backend: [com, lisp, headless]
@@ -347,11 +347,11 @@ capabilities:
 
   - id: solid.revolve
     family: solid
-    backend: []
-    status: dead
-    source: ""
-    judge: "**本机不可用**：AddRevolvedSolid 对 XY 矩形/圆/3D 多段线三种轮廓都报「输入无效」，命令行 _.REVOLVE 也不生成实体。替代=拉伸+布尔逼近，或换 CAD 做旋转体"
-    evidence: "P1 探针 2026-10-21（_scratch/probe_rev*.py）"
+    backend: [dotnet]
+    status: verified
+    source: "dotnet/AcadKit.Plugin.dll 命令 ACADKITREVOLVE（进程内 Solid3d.CreateRevolvedSolid）"
+    judge: "读回恰好 1 个 3DSOLID 且 Volume = pi(R^2-r^2)h（相对误差 ≤1%）；插件先把结果写成图面 AKRESULT；重开后 Volume 一致"
+    evidence: "P1 探针 2026-10-21 证 ActiveX/命令行不可用；2026-11-18 改走 .NET 通道实测 volume=18849.6 / 理论 18849.6（ratio 1.0000）"
   - id: solid.extrude
     family: solid
     backend: [com]
@@ -480,18 +480,18 @@ capabilities:
 
   - id: dim.update
     family: dim
-    backend: []
-    status: dead
-    source: ""
-    judge: "DIMUPDATE 命令不存在。替代：重建标注（删除后按新尺寸重画）或改标注属性（TextOverride/Measurement）"
-    evidence: "matrix #2.2"
+    backend: [com]
+    status: verified
+    source: "acadkit build.dim.update_rotated：读旧 Measurement/StyleName → Delete → AddDimRotated 重建 → 抄回样式"
+    judge: "旧 handle 查不到（真删）+ 恰好 1 条新标注且 handle 变新 + Measurement=新值且≠旧值 + StyleName 沿用 + 重开一致"
+    evidence: "matrix #2.2；P1 真机 2026-11-18（定义点 ExtLine1Point/DimLineLocation 实测只读、DIMUPDATE 不存在，故走重建）"
 
   - id: block.edit_inplace
     family: block
     backend: []
     status: dead
     source: ""
-    judge: "BEDIT/ATTSYNC/ATTREDEF/BATTMAN 均不存在。替代：重定义块（Block 表里改定义）+ 重插全部引用"
+    judge: "BEDIT/ATTSYNC/ATTREDEF/BATTMAN 均不存在。替代：重定义块 + 重插全部引用；.NET 通道已打通，BlockEditor 待实现（插件里 ACADKITEDITBLOCK 先占位）"
     evidence: "matrix #2.2"
 
   - id: interfere
@@ -517,3 +517,12 @@ capabilities:
     source: "acadkit build/doc.py:build_close_drawing"
     judge: "开一张临时图再关；文档数回到原位、ActiveDocument 回退到用例文档、关文档耗时 ≤5 s（弹模态会超时）"
     evidence: "P1 真机 2026-11-04：临时图开→关、文档数 4→5→4、关闭 0.38 s、ActiveDocument 回退到用例文档"
+
+  # ── 打印样式 / 线宽 ───────────────────────────────────────────────
+  - id: plot.style
+    family: plot
+    backend: [com]
+    status: verified
+    source: "acadkit build.plot_style：layout.StyleSheet + PlotWithLineweights + Layer.Lineweight，出三张 PDF 对照"
+    judge: "样式表读回==请求名 + 两图层 Lineweight 读回==请求值(100/13) + 有线宽版 PDF 墨量 ≥ 无线宽版×1.2 + 三张都有墨"
+    evidence: "P1 真机 2026-11-18（AcadLayout.StyleSheet / GetPlotStyleTableNames 可用；PlotWithLineweights 可写；PSTYLEMODE=1）"
