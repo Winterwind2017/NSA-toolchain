@@ -233,6 +233,8 @@ items:
     mode: design
     value: 4
     hours: 10
+    status: done
+    evidence: 'src/acadkit/model/assoc.py（锚点=实体+子元素；值由锚点算出；stale 检测与 unresolved 报告）+ tests/test_assoc.py 10 例'
     batch: 5
     note: 我们 dim.associative 卡在"不知道 AutoLISP/COM 怎么建关联"；它的数据模型能反推需要哪些字段
 
@@ -330,6 +332,8 @@ items:
     mode: read
     value: 2
     hours: 4
+    status: done
+    evidence: 'src/acadkit/session.py（快照复制+sha256 清单、校验、按清单还原；拒绝损坏快照）+ tests/test_session_runlog.py'
     batch: 5
     note: 我们靠"用完即关"，恢复策略可借鉴
 
@@ -473,6 +477,8 @@ items:
     mode: design
     value: 3
     hours: 4
+    status: done
+    evidence: 'src/acadkit/core/runlog.py（JSONL 事件 + 按 level/kind 汇总，坏行不炸）+ tests/test_session_runlog.py'
     batch: 1
     note: 与我们 backlog 的 error.diagnostics 对应
 
