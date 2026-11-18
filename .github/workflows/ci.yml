@@ -1,0 +1,62 @@
+name: kernels/acad ci
+
+# 离线质量门：不需要 AutoCAD。
+# 真机用例（tests/live_judges.py / tools/alpha_gate.py / tools/netload.py）跑不了，
+# 它们在本地由人/agent 跑并把结果写进 docs/ALPHA_GATE.md——CI 只守住"不需要 CAD"的那部分。
+
+on:
+  push:
+    paths:
+      - "kernels/acad/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "kernels/acad/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: kernels/acad
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml pytest
+          pip install -e . || echo "::warning::pip install -e . 失败，继续（离线测试不依赖安装）"
+
+      - name: registry 自检 + 文档新鲜度 + 离线能力测试
+        run: python -m pytest tests/test_docs.py tests/test_reports.py tests/test_offline.py -q
+
+      - name: 生成物一致性（生成了却没提交 = 失败）
+        run: |
+          python tools/gen_readme_counts.py
+          python tools/gen_unsupported.py
+          python tools/gen_parity.py
+          python tools/gen_gaps.py
+          python tools/gen_backlog.py
+          python tools/gen_cadcraft_mine.py
+          python tools/fix_registry_quoting.py --check
+          git diff --exit-code -- docs README.md \
+            || (echo "::error::生成物过期：请跑 tools/gen_*.py 并提交" && exit 1)
+
+      - name: parity 扫描（实现/registry 一致 + 程序化路径不许弹框）
+        run: python tools/parity_scan.py
+
+      - name: 署名文件存在
+        run: test -f ATTRIBUTION.md && test -f docs/CADCRAFT_MINE.md

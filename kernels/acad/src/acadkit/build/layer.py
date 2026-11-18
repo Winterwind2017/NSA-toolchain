@@ -43,42 +43,6 @@ def build_layer_set_current(doc: Any, ctx: Dict[str, Any]) -> None:
     add(ms, "AddCircle", pt(0, 0, 0), 10.0, label="AddCircle")
 
 
-def build_layer_state(doc: Any, ctx: Dict[str, Any]) -> None:
-    """图层状态：保存 → 删图层 → 恢复。
-
-    ★ 本机实测（2026-10-21）：`-LAYERSTATE` 在 COM 下不可交付 ——
-    只要**动过图层表**（COM 建层、entmake 建层、甚至 SaveAs 之后），
-    Save 就永久卡在命令提示符（SendCommand / LISP `command` / `vl-cmdf` 全试过）；
-    没动过图层表时能返回，但本用例必然要动图层表。所以内核改用
-    :func:`build_layer_snapshot`（属性级快照），本函数保留作证据复现。
-    """
-    name = str(_p(ctx, "name", "03_STATE"))
-    color = int(_p(ctx, "color", 5))
-    state = str(_p(ctx, "state", "ACADKIT_STATE"))
-    _ensure_layer(doc, name, color)
-    _trace("layer created")
-    send(doc, '(vl-cmdf "_.-LAYERSTATE" "_Save" "%s")' % state, settle=0.8)
-    _trace("state saved")
-    count_before = int(doc.Layers.Count)
-    deleted = False
-    try:
-        doc.Layers.Item(name).Delete()
-        deleted = True
-        _trace("layer deleted")
-    except Exception as exc:                        # noqa: BLE001
-        ctx["notes"].append("删图层失败：%s: %s" % (type(exc).__name__, exc))
-    count_after_delete = int(doc.Layers.Count)
-    send(doc, '(vl-cmdf "_.-LAYERSTATE" "_Restore" "%s")' % state, settle=1.0)
-    _trace("state restored")
-    count_after_restore = int(doc.Layers.Count)
-    ctx.setdefault("artifacts", {})["layer_state"] = {
-        "name": name, "color": color, "state": state, "deleted": deleted,
-        "count_before": count_before,
-        "count_after_delete": count_after_delete,
-        "count_after_restore": count_after_restore,
-    }
-
-
 # 图层状态（属性级快照）：AutoCAD 的命名图层状态（`-LAYERSTATE`）在 COM 下
 # 只要动过图层表就**永久卡在命令提示符**（SaveAs 之后也一样），所以本内核
 # 不提供命名图层状态，改为"属性级快照 → 改 → 恢复"，同样可判、可交付。

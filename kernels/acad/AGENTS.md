@@ -2,6 +2,27 @@
 
 > 任何 agent 打开这个仓库，先读完这一页，再动手。人类同样适用。
 
+## 5. 程序化路径不许弹对话框（吸收自 CADCraft）
+
+`NETLOAD` 会弹模态文件对话框、`-LAYERSTATE` 会卡在命令提示符、`-PUBLISH` 会阻塞——
+**凡是"程序化调用"，一律不许碰这类命令**。要走界面驱动的功能，就换实现路径
+（例：`layer.state` 改走 .NET 通道；`layer.snapshot` 改属性级快照）。
+
+判据在 `tools/parity_scan.py`：build 层出现黑名单命令即 CI 失败；豁免必须写理由。
+上游原话：*"Programmatic calls never open dialogs."*（CADCraft `AGENTS.md`）
+
+## 6. 输入即敌意（吸收自 CADCraft）
+
+来自图档、命令行文本、MCP 参数的数字都是**不可信的**：
+越界索引要用安全取值、算术要防溢出、不做 NaN/Inf 隐式转换、按输入规模设上限。
+我们已经踩过的实例：坏句柄、非有限坐标、超长文本。**新能力必须自带一条这类用例。**
+
+## 7. 每次修复都要带回归测试（吸收自 CADCraft）
+
+上游原话：*"every crash fix lands with a regression test."*
+我们的等价要求：**任何判据从 FAIL 转 PASS 的修复，必须留下一条能复现原问题的用例**，
+否则下次会以同样方式退化。
+
 ## 0. 挖掘类任务：先出全量清单，再动手
 
 用户明确要求（2026-11-18）：**不要做完一步才建议下一步**。

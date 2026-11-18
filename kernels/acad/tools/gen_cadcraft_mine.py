@@ -26,6 +26,14 @@ MODE_LABEL = {
     "never": "不挖",
 }
 MODE_ORDER = ("port", "spec", "design", "read")
+BATCH_LABEL = {
+    1: "记分与合规",
+    2: "规格组（测试变判据）",
+    3: "算法组（纯数学）",
+    4: "格式组（读别人的图/不丢数据）",
+    5: "模型组（AutoCAD 行为细节）",
+    6: "Agent 接口",
+}
 
 PROSE_HEAD = """# 从 CADCraft 能挖什么（全量清单）
 
@@ -128,7 +136,13 @@ def render() -> str:
                             "read": "只为了解，不产出代码",
                         }[m]))
     lines.append("| **合计** | **%d** | **%gh** | 100%% | — |" % (len(items), total))
-    lines.append("")
+    done = [i for i in items if i.get("status") == "done"]
+    done_h = sum(i["hours"] for i in done)
+    lines += ["",
+              "**进度**：已完成 **%d / %d 项**（%gh / %gh = %.0f%%）。"
+              % (len(done), len(items), done_h, total,
+                 100.0 * done_h / total if total else 0),
+              ""]
 
     lines += ["## 二、按域", "",
               "| 域 | 项数 | 工时 | 为什么值得挖 |", "|---|---:|---:|---|"]
@@ -139,7 +153,36 @@ def render() -> str:
                         sum(i["hours"] for i in mine), area.get("why", "")))
     lines.append("")
 
-    lines += ["## 三、全量明细", "",
+    from collections import defaultdict
+    by_batch = defaultdict(list)
+    for it in items:
+        by_batch[it.get("batch")].append(it)
+    lines += ["## 三、执行批次（按这个顺序做）", "",
+              "排序依据：先做**零风险且后续都要用**的（合规/CI），再做**不写实现就能产出判据**的（规格），",
+              "然后才是移植（算法→格式→模型）。批内按价值降序。", "",
+              "| 批次 | 主题 | 项数 | 工时 | 累计 |", "|---|---|---:|---:|---:|"]
+    acc = 0
+    for b in sorted(by_batch, key=lambda x: (x is None, x)):
+        group = by_batch[b]
+        h = sum(i["hours"] for i in group)
+        acc += h
+        lines.append("| %s | %s | %d | %gh | %gh |"
+                     % (b if b is not None else "—",
+                        BATCH_LABEL.get(b, "未分批"), len(group), h, acc))
+    lines.append("")
+    for b in sorted(by_batch, key=lambda x: (x is None, x)):
+        group = sorted(by_batch[b], key=lambda i: (-i["value"], i["hours"], i["id"]))
+        deps = {i["id"]: (i.get("depends_on") or []) for i in group}
+        lines.append("**批次 %s · %s**（%gh）：%s"
+                     % (b, BATCH_LABEL.get(b, "—"),
+                        sum(i["hours"] for i in group),
+                        "、".join("`%s`%s" % (i["id"],
+                                              ("（依赖 %s）" % "、".join(deps[i["id"]]))
+                                              if deps[i["id"]] else "")
+                                 for i in group)))
+    lines.append("")
+
+    lines += ["## 四、全量明细", "",
               "排序：价值分降序 → 工时升序。`src` 是对应仓库路径（可直接去看）。", "",
               "| # | 资产 | 能拿什么 | 方式 | 价值 | 工时 | 源路径 | 说明 |",
               "|---|---|---|---|---:|---:|---|---|"]
@@ -151,6 +194,22 @@ def render() -> str:
                         str(it.get("src", "")).replace("|", "/"),
                         str(it.get("note", "")).replace("|", "/")))
     lines.append("")
+
+    lines += ["## 五、进度台账（每批做完就更新）", "",
+              "| 批次 | 主题 | 已完成 / 总项 | 完成工时 / 总工时 |", "|---|---|---:|---:|"]
+    for b in sorted(by_batch, key=lambda x: (x is None, x)):
+        group = by_batch[b]
+        d = [i for i in group if i.get("status") == "done"]
+        lines.append("| %s | %s | %d / %d | %gh / %gh |"
+                     % (b, BATCH_LABEL.get(b, "—"), len(d), len(group),
+                        sum(i["hours"] for i in d),
+                        sum(i["hours"] for i in group)))
+    lines.append("")
+    if done:
+        lines += ["已落地的条目与证据：", ""]
+        for it in sorted(done, key=lambda i: (i.get("batch") or 99, i["id"])):
+            lines.append("- `%s` —— %s" % (it["id"], it.get("evidence", "（未写证据）")))
+        lines.append("")
 
     never = data.get("not_doing") or []
     lines += [PROSE_TAIL % {

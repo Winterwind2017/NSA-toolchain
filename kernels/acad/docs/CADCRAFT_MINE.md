@@ -34,6 +34,8 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
+**进度**：已完成 **4 / 40 项**（15h / 325h = 5%）。
+
 ## 二、按域
 
 | 域 | 项数 | 工时 | 为什么值得挖 |
@@ -45,7 +47,28 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 工具链与流程（`tooling`） | 5 | 19h | CI、日志、署名合规、parity 统计，成本低收益直接 |
 | Agent 接口（`agent`） | 3 | 20h | 它的 MCP 工具 schema 与参数校验契约可直接对照 |
 
-## 三、全量明细
+## 三、执行批次（按这个顺序做）
+
+排序依据：先做**零风险且后续都要用**的（合规/CI），再做**不写实现就能产出判据**的（规格），
+然后才是移植（算法→格式→模型）。批内按价值降序。
+
+| 批次 | 主题 | 项数 | 工时 | 累计 |
+|---|---|---:|---:|---:|
+| 1 | 记分与合规 | 5 | 19h | 19h |
+| 2 | 规格组（测试变判据） | 7 | 50h | 69h |
+| 3 | 算法组（纯数学） | 10 | 100h | 169h |
+| 4 | 格式组（读别人的图/不丢数据） | 5 | 66h | 235h |
+| 5 | 模型组（AutoCAD 行为细节） | 11 | 74h | 309h |
+| 6 | Agent 接口 | 2 | 16h | 325h |
+
+**批次 1 · 记分与合规**（19h）：`cc.agents_md`、`cc.ci`、`cc.logging`、`cc.xtask_parity`、`cc.attribution`
+**批次 2 · 规格组（测试变判据）**（50h）：`cc.spec.robustness`、`cc.mcp.params`、`cc.spec.files`、`cc.dimvars`、`cc.spec.annotation`、`cc.spec.draw_modify`（依赖 cc.dimvars）、`cc.spec.lisp`
+**批次 3 · 算法组（纯数学）**（100h）：`cc.constraints.solver`、`cc.curves.offset`、`cc.constraints.expr`、`cc.constraints.infer`（依赖 cc.constraints.solver）、`cc.curves.fillet_chamfer`、`cc.geom.hatch_boundary`、`cc.geom.intersect`、`cc.curves.trim_extend`（依赖 cc.geom.intersect）、`cc.color.aci`、`cc.fonts.shx`
+**批次 4 · 格式组（读别人的图/不丢数据）**（66h）：`cc.dxf.reader`、`cc.dwg.write_safety`（依赖 cc.dxf.reader）、`cc.dxf.writer`（依赖 cc.dxf.reader）、`cc.dwg.reader`、`cc.io.dispatch`
+**批次 5 · 模型组（AutoCAD 行为细节）**（74h）：`cc.assoc.dim`、`cc.block.dyngrip`、`cc.array`、`cc.audit`、`cc.qdim`、`cc.block.refedit`（依赖 cc.assoc.dim）、`cc.compare`、`cc.plot.pipeline`、`cc.autosave`、`cc.overkill`、`cc.purge`
+**批次 6 · Agent 接口**（16h）：`cc.mcp.tools`（依赖 cc.mcp.params）、`cc.control_server`
+
+## 四、全量明细
 
 排序：价值分降序 → 工时升序。`src` 是对应仓库路径（可直接去看）。
 
@@ -91,6 +114,24 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 38 | `cc.overkill` | 重叠/重复对象删除的判定规则 | 读设计做参考 | 2 | 4h | crates/engine/tests/overkill.rs | 清理类能力我们没有；判定规则简单但边界多 |
 | 39 | `cc.purge` | 未用对象清理（块/图层/样式）的依赖判定 | 读设计做参考 | 2 | 4h | crates/engine/src/cmd/blocks/purge.rs + tests/purge_* | 交付前瘦身常用 |
 | 40 | `cc.fonts.shx` | SHX 字形解析（算文字宽度、避免文字重叠） | 只读了解 | 2 | 8h | crates/fonts | 只想知道它如何估字宽；完整移植性价比低 |
+
+## 五、进度台账（每批做完就更新）
+
+| 批次 | 主题 | 已完成 / 总项 | 完成工时 / 总工时 |
+|---|---|---:|---:|
+| 1 | 记分与合规 | 4 / 5 | 15h / 19h |
+| 2 | 规格组（测试变判据） | 0 / 7 | 0h / 50h |
+| 3 | 算法组（纯数学） | 0 / 10 | 0h / 100h |
+| 4 | 格式组（读别人的图/不丢数据） | 0 / 5 | 0h / 66h |
+| 5 | 模型组（AutoCAD 行为细节） | 0 / 11 | 0h / 74h |
+| 6 | Agent 接口 | 0 / 2 | 0h / 16h |
+
+已落地的条目与证据：
+
+- `cc.agents_md` —— AGENTS.md §5/§6/§7（三条规则，注明上游来源）
+- `cc.attribution` —— ATTRIBUTION.md + AGENTS §5–§7 + parity_scan
+- `cc.ci` —— .github/workflows/ci.yml（离线门 + 生成物一致性 + parity 扫描）
+- `cc.xtask_parity` —— tools/parity_scan.py（实现↔registry 一致 + 弹框命令扫描）
 
 
 ## 怎么用这份清单
