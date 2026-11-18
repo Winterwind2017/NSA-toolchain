@@ -266,6 +266,8 @@ items:
     mode: design
     value: 3
     hours: 6
+    status: done
+    evidence: 'src/acadkit/model/array.py（矩形/环形/沿路径三种阵列的变换生成 + 参数校验：行列0、间距0、路径退化都报错）+ tests/test_array_qdim.py'
     batch: 5
     note: ARRAY 的选项组合坑多，读它的模型省试错
 
@@ -276,6 +278,8 @@ items:
     mode: design
     value: 3
     hours: 6
+    status: done
+    evidence: 'src/acadkit/model/array.py::plan_qdim（按方向分组→首尾相接成连续、同起点成基线；斜边不参与；偏移必须>0）+ 同一测试文件'
     batch: 5
     note: 我们 dim.continuous/baseline 要手动给点；QDIM 能自动分组
 

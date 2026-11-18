@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **31 / 40 项**（235h / 325h = 72%）。
+**进度**：已完成 **33 / 40 项**（247h / 325h = 76%）。
 
 ## 二、按域
 
@@ -123,7 +123,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
 | 3 | 算法组（纯数学） | 9 / 10 | 92h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 3 / 5 | 34h / 66h |
-| 5 | 模型组（AutoCAD 行为细节） | 6 / 11 | 36h / 74h |
+| 5 | 模型组（AutoCAD 行为细节） | 8 / 11 | 48h / 74h |
 | 6 | Agent 接口 | 2 / 2 | 16h / 16h |
 
 已落地的条目与证据：
@@ -151,12 +151,14 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.dxf.reader` —— src/acadkit/dxf/document.py::read（组码对/SECTION 分段/实体索引/图层表/ACADVER；畸形必抛错）+ tests/test_dxf.py
 - `cc.dxf.writer` —— src/acadkit/dxf/document.py::write/add_entity（逐对重放，未知实体原样保留；往返逐对比对一致）
 - `cc.io.dispatch` —— src/acadkit/dxf/io.py::sniff（DWG/DXF/PDF/STEP/STL/PNG/ZIP 文件头探测 + 缺失文件报错）
+- `cc.array` —— src/acadkit/model/array.py（矩形/环形/沿路径三种阵列的变换生成 + 参数校验：行列0、间距0、路径退化都报错）+ tests/test_array_qdim.py
 - `cc.assoc.dim` —— src/acadkit/model/assoc.py（锚点=实体+子元素；值由锚点算出；stale 检测与 unresolved 报告）+ tests/test_assoc.py 10 例
 - `cc.audit` —— src/acadkit/dxf/audit.py（重复句柄/非有限坐标/零长度线/非正半径/未知图层/多段线顶点不一致或重复/文字高度非正；error>warn>info）+ tools/audit_dxf.py CLI；tests/test_audit.py 10 例
 - `cc.autosave` —— src/acadkit/session.py（快照复制+sha256 清单、校验、按清单还原；拒绝损坏快照）+ tests/test_session_runlog.py
 - `cc.compare` —— src/acadkit/dxf/compare.py（按句柄逐实体增/删/改，字段级差异，容差 1e-6）+ tests/test_compare_diag.py
 - `cc.overkill` —— src/acadkit/dxf/cleanup.py::find_duplicates/geo_key（几何指纹；直线方向无关；未知类型不去重）+ tests/test_cleanup.py
 - `cc.purge` —— src/acadkit/dxf/cleanup.py::find_unused（未用图层/线型/块；保留 0 与 *Paper_Space）+ tests/test_cleanup.py
+- `cc.qdim` —— src/acadkit/model/array.py::plan_qdim（按方向分组→首尾相接成连续、同起点成基线；斜边不参与；偏移必须>0）+ 同一测试文件
 - `cc.control_server` —— src/acadkit/agent/queue.py（按行 JSON 协议、错误不中断连接、Queue 统计与错误分类）+ 同一测试文件
 - `cc.mcp.tools` —— src/acadkit/agent/tools.py（只暴露 verified；从能力默认参数生成 JSON Schema；参数先校验后动图；返回判据信封）+ 15 例测试
 
