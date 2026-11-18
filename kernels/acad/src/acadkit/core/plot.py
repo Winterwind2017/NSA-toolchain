@@ -152,7 +152,7 @@ def save_as(doc: Any, path: str, fmt: Optional[int] = None,
             make_dirs: bool = False) -> Dict[str, Any]:
     """`SaveAs` 的判据友好封装：等文件真的落盘，返回大小/耗时。"""
     out: Dict[str, Any] = {"path": path, "ok": False, "bytes": 0,
-                           "error": None, "elapsed_s": None}
+                           "error": None, "elapsed_s": None, "fmt": fmt}
     # 2026-11-18：默认**不再自动建目录**。实测把"父目录不存在"悄悄变成成功，
     # 等于把用户的错路径藏起来（同类病：静默成功）。要建目录请显式 make_dirs=True。
     d = os.path.dirname(path)
@@ -193,4 +193,12 @@ def save_as(doc: Any, path: str, fmt: Optional[int] = None,
     out["elapsed_s"] = round(time.time() - t0, 2)
     out["bytes"] = os.path.getsize(path) if os.path.exists(path) else 0
     out["ok"] = out["bytes"] > 0
+    if not out["ok"] and out["error"] is None:
+        # 实测（2026-11-18）：SaveAs 在"格式码与扩展名不匹配"（如 fmt=65 存 .dwg）
+        # 或扩展名不认识时**既不写文件也不抛错**，返回成功。这时必须由我们给出结论，
+        # 否则调用方只看到 ok=False、不知道原因，等于静默失败。
+        out["error"] = ("SaveAs 未产出文件：fmt=%r 与扩展名 %s 可能不匹配，"
+                        "或路径不可写（AutoCAD 未报错，文件 %d 字节）"
+                        % (fmt, os.path.splitext(path)[1] or "(无)",
+                           out["bytes"]))
     return out

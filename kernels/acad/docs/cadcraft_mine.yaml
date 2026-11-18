@@ -366,6 +366,8 @@ items:
     mode: spec
     value: 4
     hours: 6
+    status: done
+    evidence: 'tests/live_spec_files.py F1–F6（版本/往返/DXF/坏扩展名/缺目录），6/6 通过；顺带修 save_as 静默失败'
     batch: 2
     note: 与我们 export.lossless、dwg.version 直接对应
 

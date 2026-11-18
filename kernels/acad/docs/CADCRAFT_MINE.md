@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **8 / 40 项**（37h / 325h = 11%）。
+**进度**：已完成 **9 / 40 项**（43h / 325h = 13%）。
 
 ## 二、按域
 
@@ -120,7 +120,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 批次 | 主题 | 已完成 / 总项 | 完成工时 / 总工时 |
 |---|---|---:|---:|
 | 1 | 记分与合规 | 4 / 5 | 15h / 19h |
-| 2 | 规格组（测试变判据） | 4 / 7 | 22h / 50h |
+| 2 | 规格组（测试变判据） | 5 / 7 | 28h / 50h |
 | 3 | 算法组（纯数学） | 0 / 10 | 0h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 0 / 5 | 0h / 66h |
 | 5 | 模型组（AutoCAD 行为细节） | 0 / 11 | 0h / 74h |
@@ -134,6 +134,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.xtask_parity` —— tools/parity_scan.py（实现↔registry 一致 + 弹框命令扫描）
 - `cc.dimvars` —— tests/live_robustness.py E 组（6 个 DIM* 变量读回一致 + 非法负字高被拒）
 - `cc.mcp.params` —— tests/live_robustness.py F 组（坏参数/缺参必须抛明确异常，不得静默画出错东西）
+- `cc.spec.files` —— tests/live_spec_files.py F1–F6（版本/往返/DXF/坏扩展名/缺目录），6/6 通过；顺带修 save_as 静默失败
 - `cc.spec.lisp` —— tests/live_robustness.py G 组（合法 LISP 能画、非法 LISP 报错不挂）
 - `cc.spec.robustness` —— tests/live_robustness.py A/B/C/D 组（非有限、坏句柄、坏参数、保存失败），15/15 通过
 
