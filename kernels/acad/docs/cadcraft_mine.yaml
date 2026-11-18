@@ -318,6 +318,8 @@ items:
     mode: design
     value: 3
     hours: 8
+    status: done
+    evidence: 'src/acadkit/dxf/compare.py（按句柄逐实体增/删/改，字段级差异，容差 1e-6）+ tests/test_compare_diag.py'
     batch: 5
     note: 我们完全没有"图纸比对"；对"改图后重跑是否变形"的场景很有用
 
@@ -482,6 +484,8 @@ items:
     mode: design
     value: 4
     hours: 10
+    status: done
+    evidence: 'src/acadkit/agent/tools.py（只暴露 verified；从能力默认参数生成 JSON Schema；参数先校验后动图；返回判据信封）+ 15 例测试'
     batch: 6
     depends_on: [cc.mcp.params]
     note: 我们 backlog 有 mcp.tools；它的 schema 组织方式可直接对照
@@ -505,6 +509,8 @@ items:
     mode: design
     value: 3
     hours: 6
+    status: done
+    evidence: 'src/acadkit/agent/queue.py（按行 JSON 协议、错误不中断连接、Queue 统计与错误分类）+ 同一测试文件'
     batch: 6
     note: 对应我们 backlog 的 perf.batch（避免每次启动 AutoCAD）
 
