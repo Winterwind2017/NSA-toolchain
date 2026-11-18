@@ -69,6 +69,36 @@ def _A(ctx: Dict[str, Any], key: str, default: Any = None) -> Any:
     return (ctx.get("artifacts") or {}).get(key, default)
 
 
+MAX_ABS_COORD = 1.0e7          # 10 km：远超任何真实图纸；再大 AutoCAD 会算成 inf
+
+
+def _reject_non_finite(obj: Any, path: str = "params") -> None:
+    """输入即敌意（AGENTS §6）：能力参数里不许有 NaN/Inf。
+
+    为什么放在能力入口而不是各 builder：实测 AutoCAD COM 对 NaN/Inf **不报错**
+    （`AddCircle` 半径 Inf 会建出 Area=inf 的圆），builder 里逐个 float() 转换
+    挡不住标量参数。统一在入口扫一遍 ctx["params"]，一处覆盖全部能力。
+    """
+    if isinstance(obj, bool):
+        return
+    if isinstance(obj, float):
+        if obj != obj or obj in (float("inf"), float("-inf")):
+            raise ValueError("%s 含非有限数值（NaN/Inf）：%r" % (path, obj))
+        # 实测：1e308 这种"有限但荒谬"的值 AutoCAD 会接受，读回却变成 inf
+        # （CIRCLE.Center 非有限）。真实图纸不会超过 10 km，超过就当我们不接受。
+        if abs(obj) > MAX_ABS_COORD:
+            raise ValueError("%s 超出合理范围（|v| > %g）：%r"
+                             % (path, MAX_ABS_COORD, obj))
+        return
+    if isinstance(obj, (list, tuple)):
+        for i, item in enumerate(obj):
+            _reject_non_finite(item, "%s[%d]" % (path, i))
+        return
+    if isinstance(obj, dict):
+        for key, item in obj.items():
+            _reject_non_finite(item, "%s.%s" % (path, key))
+
+
 @dataclass
 class Cap:
     id: str
@@ -581,7 +611,9 @@ def get(cap_id: str) -> Cap:
 def build(cap_id: str, doc: Any, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """只跑动作（给需要"建图但不判"的脚本用）。返回 ctx['artifacts']。"""
     cap = get(cap_id)
-    ctx: Dict[str, Any] = {"params": {**cap.params, **(params or {})},
+    merged = {**cap.params, **(params or {})}
+    _reject_non_finite(merged)
+    ctx: Dict[str, Any] = {"params": merged,
                            "artifacts": {}, "notes": []}
     cap.build(doc, ctx)
     return ctx

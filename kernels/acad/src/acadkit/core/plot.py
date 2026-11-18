@@ -148,12 +148,18 @@ def plot_model_to_pdf(doc: Any, path: str, *,
 
 
 def save_as(doc: Any, path: str, fmt: Optional[int] = None,
-            *, exists_wait_s: float = 15.0) -> Dict[str, Any]:
+            *, exists_wait_s: float = 15.0,
+            make_dirs: bool = False) -> Dict[str, Any]:
     """`SaveAs` 的判据友好封装：等文件真的落盘，返回大小/耗时。"""
     out: Dict[str, Any] = {"path": path, "ok": False, "bytes": 0,
                            "error": None, "elapsed_s": None}
+    # 2026-11-18：默认**不再自动建目录**。实测把"父目录不存在"悄悄变成成功，
+    # 等于把用户的错路径藏起来（同类病：静默成功）。要建目录请显式 make_dirs=True。
     d = os.path.dirname(path)
     if d and not os.path.isdir(d):
+        if not make_dirs:
+            out["error"] = "父目录不存在：%s" % d
+            return out
         os.makedirs(d, exist_ok=True)
     if os.path.exists(path):
         os.remove(path)

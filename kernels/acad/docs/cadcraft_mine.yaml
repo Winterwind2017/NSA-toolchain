@@ -260,6 +260,8 @@ items:
     mode: spec
     value: 4
     hours: 8
+    status: done
+    evidence: 'tests/live_robustness.py E 组（6 个 DIM* 变量读回一致 + 非法负字高被拒）'
     batch: 2
     note: 我们 env.dimstyle 只碰了 2 个变量；这张表能直接变成判据
 
@@ -331,6 +333,8 @@ items:
     mode: spec
     value: 5
     hours: 6
+    status: done
+    evidence: 'tests/live_robustness.py A/B/C/D 组（非有限、坏句柄、坏参数、保存失败），15/15 通过'
     batch: 2
     note: '**我们完全没测过这一类**；这正是"零静默失败"的具体条目'
 
@@ -372,6 +376,8 @@ items:
     mode: spec
     value: 3
     hours: 4
+    status: done
+    evidence: 'tests/live_robustness.py G 组（合法 LISP 能画、非法 LISP 报错不挂）'
     batch: 2
     note: 我们有 lisp.execute 但没有语料；它给了拒绝集
 
@@ -453,6 +459,8 @@ items:
     mode: spec
     value: 4
     hours: 4
+    status: done
+    evidence: 'tests/live_robustness.py F 组（坏参数/缺参必须抛明确异常，不得静默画出错东西）'
     batch: 2
     note: agent 调用失败时"能不能看懂错误"决定可用性
 

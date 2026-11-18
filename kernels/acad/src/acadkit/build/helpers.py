@@ -35,14 +35,34 @@ def _require_com() -> None:
             "本包在非 Windows 上只能做离线判据（judges/）")
 
 
+def _finite(values, what: str):
+    """输入即敌意：来自图档/调用方的数字不许是 NaN/Inf。
+
+    实测（2026-11-18，AutoCAD 2025 COM）：`AddLine` 传 NaN 坐标**不报错**，
+    会在图里留下 Length=nan 的实体；`AddCircle` 传 Inf 半径同样成功，
+    得到 Area=inf 的圆。图一旦被这种实体育坏，后续出图/保存都会坏。
+    所以在**进入 COM 之前**拦住，而不是指望 AutoCAD 拒绝。
+    """
+    out = []
+    for v in values:
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            raise ValueError("%s 不是数值：%r" % (what, v)) from None
+        if f != f or f in (float("inf"), float("-inf")):
+            raise ValueError("%s 是非有限数值（NaN/Inf）：%r" % (what, v))
+        out.append(f)
+    return out
+
+
 def pt(x: float, y: float, z: float = 0.0):
     _require_com()
-    return w.VARIANT(VT_ARRAY | VT_R8, (float(x), float(y), float(z)))
+    return w.VARIANT(VT_ARRAY | VT_R8, tuple(_finite((x, y, z), "点坐标")))
 
 
 def dbl(vals):
     _require_com()
-    return w.VARIANT(VT_ARRAY | VT_R8, [float(v) for v in vals])
+    return w.VARIANT(VT_ARRAY | VT_R8, _finite(vals, "坐标数组"))
 
 
 def objs(lst: Iterable[Any]):
