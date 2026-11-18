@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    acadkit .NET 插件骨架（进程内通道）。
+
+    AutoCAD 2025 的托管 API 跑在 .NET 8 上，所以 TargetFramework=net8.0-windows。
+    引用三个托管程序集，全部 `Private=false`（绝不把 Autodesk 的 DLL 复制进仓库）。
+
+    构建：
+        dotnet build -c Release -p:AcadDir="D:\Program Files\Autodesk\AutoCAD 2025"
+
+    产物：bin/Release/AcadKit.Plugin.dll —— 用 NETLOAD 加载（见 README.md）。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>AcadKit.Plugin</AssemblyName>
+    <RootNamespace>AcadKit.Plugin</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>CS0618</NoWarn>
+    <!-- 没有 AutoCAD 也要能先看说明；引用缺失时由 build.py 提前报错 -->
+    <AcadDir Condition="'$(AcadDir)' == ''">D:\Program Files\Autodesk\AutoCAD 2025</AcadDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="acdbmgd">
+      <HintPath>$(AcadDir)\acdbmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="acmgd">
+      <HintPath>$(AcadDir)\acmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="accoremgd">
+      <HintPath>$(AcadDir)\accoremgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

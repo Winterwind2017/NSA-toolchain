@@ -13,3 +13,7 @@ out/
 /*.dwg
 /*.dxf
 /*.pdf
+
+# .NET 插件构建产物（不提交二进制）
+dotnet/bin/
+dotnet/obj/

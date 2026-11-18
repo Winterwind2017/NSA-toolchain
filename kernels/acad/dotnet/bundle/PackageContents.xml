@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  acadkit .NET 插件的 Autoloader 包描述。
+
+  为什么用 bundle 而不是 NETLOAD：实测 NETLOAD 会弹模态文件对话框，
+  SendCommand 直接挂死（FILEDIA=0 也不行）。Autoloader 是官方支持的无界面路径：
+  把本包放进 %APPDATA%\Autodesk\ApplicationPlugins\ 后，AutoCAD **启动时**按
+  LoadOnAutoCADStartup 自动加载。
+
+  部署/卸载：python tools/netload.py --deploy / --undeploy
+-->
+<ApplicationPackage SchemaVersion="1.0"
+                    AutodeskProduct="AutoCAD"
+                    Name="acadkit plugin"
+                    Description="acadkit 的进程内托管通道（solid.revolve / layer.state 等死角的第二条路）"
+                    AppVersion="1.0.0"
+                    ProductCode="{6B1B7C2E-9A4B-4B7E-9C0E-7C3A1F2D5E01}"
+                    UpgradeCode="{6B1B7C2E-9A4B-4B7E-9C0E-7C3A1F2D5E02}"
+                    Author="acadkit">
+
+  <CompanyDetails Name="acadkit" />
+
+  <Components Description="acadkit 托管命令">
+    <!-- R25.0 = AutoCAD 2025；AutoCAD* 表示不限产品变体（完整版/机械版等） -->
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R25.0" SeriesMax="R25.9" />
+
+    <ComponentEntry AppName="AcadKit.Plugin"
+                    ModuleName="./Contents/Windows/AcadKit.Plugin.dll"
+                    AppDescription="ACADKITVERSION / ACADKITREVOLVE / ACADKITLAYERSTATE / ACADKITEDITBLOCK / ACADKITASSOC"
+                    LoadOnAutoCADStartup="True"
+                    LoadOnCommandInvocation="True" />
+  </Components>
+
+</ApplicationPackage>

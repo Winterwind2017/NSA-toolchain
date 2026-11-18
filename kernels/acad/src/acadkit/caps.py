@@ -25,6 +25,8 @@ from .build import doc as b_doc
 from .build import dim as b_dim
 from .build import envvars as b_env
 from .build import export as b_export
+from .build import netchannel as b_net
+from .build import plot_style as b_plotsty
 from .build import frame as b_frame
 from .build import gdt as b_gdt
 from .build import geom as b_geom
@@ -44,6 +46,8 @@ from .judges import dim_extra as j_dx
 from .judges import doc as j_doc
 from .judges import env as j_env
 from .judges import export as j_export
+from .judges import netchannel as j_net
+from .judges import plot_style as j_plotsty
 from .judges import fit as j_fit
 from .judges import frame as j_frame
 from .judges import generic as j_g
@@ -267,6 +271,11 @@ def _cap_dim() -> List[Cap]:
                 recorded={**_A(ctx, "tolerance", {}),
                           "upper": _P(ctx, "upper"), "lower": _P(ctx, "lower")}),
             {"upper": 0.02, "lower": 0.01, "override": "60 +0.02/-0.01"}),
+        Cap("dim.update", "dim",
+            "标注更新：定义点只读 → 读旧值/删旧/按新点重建", "L2–L4",
+            b_dim.build_update,
+            lambda rb, ctx: j_dim.judge_update(rb, info=_A(ctx, "update")),
+            {"expected_old": 40.0, "expected_new": 60.0}),
         Cap("dim.fit_code", "dim", "配合代号查表（纯 Python）", "L3",
             b_dim.build_fit_code,
             lambda rb, ctx: j_fit.judge_fit_code(),
@@ -389,6 +398,11 @@ def _cap_layer_env() -> List[Cap]:
             lambda rb, ctx: j_layer.judge_layer_current(
                 rb, name=_P(ctx, "name")),
             {"name": "02_CENTER", "color": 4}),
+        Cap("layer.state", "layer",
+            "命名图层状态（.NET 通道）：保存→改色→恢复，颜色读回校验", "L2–L3",
+            b_net.build_layer_state,
+            lambda rb, ctx: j_net.judge_layer_state(rb),
+            {}),
         Cap("layer.snapshot", "layer", "图层状态快照：属性级保存→改→恢复", "L3–L4",
             b_layer.build_layer_snapshot,
             lambda rb, ctx: j_layer.judge_layer_snapshot(
@@ -418,6 +432,11 @@ def _cap_solid() -> List[Cap]:
             lambda rb, ctx: j_solid.judge_solids(
                 rb, expected=[40.0 * 20.0 * 10.0, math.pi * 10 ** 2 * 20.0,
                               sphere]),
+            {}),
+        Cap("solid.revolve", "solid",
+            "旋转体（.NET 通道）：CreateRevolvedSolid，体积=π(R²−r²)h", "L1–L4",
+            b_net.build_revolve,
+            lambda rb, ctx: j_net.judge_revolve(rb),
             {}),
         Cap("solid.extrude", "solid", "拉伸：体积 = 轮廓面积 × 高度", "L1–L4",
             b_solid.build_extrude,
@@ -519,10 +538,23 @@ def _cap_doc() -> List[Cap]:
     ]
 
 
+def _cap_plot() -> List[Cap]:
+    return [
+        Cap("plot.style", "plot",
+            "打印样式/线宽：样式表挂载 + 线宽真的出到纸上（墨量比）", "L2–L3",
+            b_plotsty.build_plot_style,
+            lambda rb, ctx: j_plotsty.judge_plot_style(
+                rb, info=_A(ctx, "plot_style"),
+                expect_table=str(_P(ctx, "style_table", "monochrome.ctb"))),
+            {"style_table": "monochrome.ctb", "thick_lineweight": 100,
+             "thin_lineweight": 13}, wants_reopen=False),
+    ]
+
+
 def _all() -> List[Cap]:
     return (_cap_geom() + _cap_text() + _cap_dim() + _cap_gdt_symbol()
             + _cap_table_block_frame() + _cap_layer_env() + _cap_solid()
-            + _cap_view_lisp() + _cap_export() + _cap_doc())
+            + _cap_view_lisp() + _cap_export() + _cap_plot() + _cap_doc())
 
 
 CAPS: List[Cap] = _all()

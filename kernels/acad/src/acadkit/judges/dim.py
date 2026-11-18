@@ -157,3 +157,48 @@ def _mm(v: Optional[float], rb: Readback) -> Optional[float]:
     if v is None or scale is None:
         return None
     return round(v * scale, 6)
+
+
+def judge_update(rb: Readback, *, info: Dict[str, Any],
+                 expected_old: float = 40.0, expected_new: float = 60.0,
+                 tol: float = 1e-6) -> Dict[str, Any]:
+    """`dim.update` 的判据：旧标注真的没了、新标注真的换了值、样式没丢、重开还在。
+
+    注意这里**不用** `_count_ok`：重建是"删一个 + 加一个"，条数不变，
+    数数区分不了"更新成功"和"什么都没做"。所以判 4 件更硬的事：
+      1. 内存里恰好 1 条新标注；
+      2. 旧 handle 已经查不到（真的删了，而不是叠了一条）；
+      3. Measurement = 新值，且 != 旧值（证明确实改了，不是恰好相等）；
+      4. 样式沿用旧标注的，重开后 Measurement/StyleName 一致。
+    """
+    ent = _new_one(rb, "ROTATEDDIMENSION")
+    old_handle = str((info or {}).get("old_handle") or "")
+    new_handle = str((info or {}).get("new_handle") or "")
+    meas = num(ent.get("Measurement")) if ent else None
+    style = str(ent.get("StyleName")) if ent else None
+    want_style = str((info or {}).get("old_style") or "")
+    old_gone = bool(old_handle) and rb.memory.by_handle(old_handle) is None
+    handle_fresh = bool(new_handle) and new_handle != old_handle
+    re_ok, re_detail = (reopen_check(rb, ent, ("Measurement", "StyleName"))
+                        if ent else (False, {"mismatch": {"entity": "没有唯一定位到新标注"}}))
+    checks = {
+        "only_one": ent is not None,
+        "old_deleted": old_gone,
+        "handle_fresh": handle_fresh,
+        "measurement_new": close(meas, expected_new, tol),
+        "measurement_changed": not close(meas, expected_old, tol),
+        "style_kept": bool(style) and style == want_style,
+        "reopen": re_ok,
+    }
+    detail: Dict[str, Any] = {
+        "old_handle": old_handle,
+        "new_handle": ent.handle if ent else None,
+        "measurement_du": meas,
+        "measurement_expected_du": float(expected_new),
+        "measurement_before_du": float(expected_old),
+        "measurement_mm": _mm(meas, rb),
+        "style": style,
+        "style_expected": want_style,
+        "reopen": re_detail,
+    }
+    return verdict(checks, detail, {"update_info": info})

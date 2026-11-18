@@ -82,7 +82,9 @@ PROPS = {
     "WIPEOUT": (),
 }
 for _t in _DIM_TYPES:
-    PROPS[_t] = ("Measurement", "TextPosition", "TextOverride")
+    # StyleName 是 `dim.update` 的判据需要（"更新后样式沿用"）；不读它就只能拿
+    # 建图时的返回值当结论，违反"判据只吃读回"的约定。
+    PROPS[_t] = ("Measurement", "TextPosition", "TextOverride", "StyleName")
 
 
 def _get(e: Any, prop: str, attempts: int = 2, delay: float = 0.2) -> Any:

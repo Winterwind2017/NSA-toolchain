@@ -58,7 +58,8 @@ def _try(fn, warnings: List[str], label: str) -> Any:
 
 def plot_model_to_pdf(doc: Any, path: str, *,
                       media: str = A3_MEDIA,
-                      timeout_s: float = 60.0) -> Dict[str, Any]:
+                      timeout_s: float = 60.0,
+                      with_plot_styles: bool = True) -> Dict[str, Any]:
     """出一页 A3 PDF。返回过程记录（设备/介质/耗时/背景出图还原情况）。"""
     info: Dict[str, Any] = {
         "path": path, "ok": False, "device": None, "media": None,
@@ -100,8 +101,10 @@ def plot_model_to_pdf(doc: Any, path: str, *,
                          info["warnings"], "read CanonicalMediaName")
     info["media_available"] = len(medias)
 
+    # with_plot_styles=False 时不要强制打开打印样式表：否则 CTB/STB 会盖掉
+    # 对象线宽，"按线宽出图"与"按样式表出图"就没法分开验证（plot.style 需要）。
     for attr, val in (("PlotType", 1), ("CenterPlot", True),
-                      ("PlotRotation", 1), ("PlotWithPlotStyles", True)):
+                      ("PlotRotation", 1), ("PlotWithPlotStyles", bool(with_plot_styles))):
         _try(lambda a=attr, v=val: setattr(lay, a, v),
              info["warnings"], attr)
 
