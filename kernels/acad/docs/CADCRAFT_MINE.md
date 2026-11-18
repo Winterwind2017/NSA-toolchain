@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **19 / 40 项**（145h / 325h = 45%）。
+**进度**：已完成 **22 / 40 项**（179h / 325h = 55%）。
 
 ## 二、按域
 
@@ -122,7 +122,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 1 | 记分与合规 | 4 / 5 | 15h / 19h |
 | 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
 | 3 | 算法组（纯数学） | 9 / 10 | 92h / 100h |
-| 4 | 格式组（读别人的图/不丢数据） | 0 / 5 | 0h / 66h |
+| 4 | 格式组（读别人的图/不丢数据） | 3 / 5 | 34h / 66h |
 | 5 | 模型组（AutoCAD 行为细节） | 0 / 11 | 0h / 74h |
 | 6 | Agent 接口 | 0 / 2 | 0h / 16h |
 
@@ -147,6 +147,9 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.curves.trim_extend` —— src/acadkit/geom2d/trim.py（cut_params/trim_segment 三种保留侧/extend_segment 双向延长，含圆剪刀与无交点必抛错）；13 例测试
 - `cc.geom.hatch_boundary` —— src/acadkit/geom2d/polygon.py（point_in_polygon/classify_islands/hatch_area 净面积）
 - `cc.geom.intersect` —— src/acadkit/geom2d/curves.py（线线/线圆/圆圆/椭圆线）；tests/test_curves.py 覆盖相切/相离/越界
+- `cc.dxf.reader` —— src/acadkit/dxf/document.py::read（组码对/SECTION 分段/实体索引/图层表/ACADVER；畸形必抛错）+ tests/test_dxf.py
+- `cc.dxf.writer` —— src/acadkit/dxf/document.py::write/add_entity（逐对重放，未知实体原样保留；往返逐对比对一致）
+- `cc.io.dispatch` —— src/acadkit/dxf/io.py::sniff（DWG/DXF/PDF/STEP/STL/PNG/ZIP 文件头探测 + 缺失文件报错）
 
 
 ## 怎么用这份清单

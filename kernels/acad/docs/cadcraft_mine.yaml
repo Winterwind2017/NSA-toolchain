@@ -174,6 +174,8 @@ items:
     mode: port
     value: 5
     hours: 16
+    status: done
+    evidence: 'src/acadkit/dxf/document.py::read（组码对/SECTION 分段/实体索引/图层表/ACADVER；畸形必抛错）+ tests/test_dxf.py'
     batch: 4
     note: 直接替代"用 ezdxf 只读子集"；未知实体保留是承接旧项目的前提
 
@@ -184,6 +186,8 @@ items:
     mode: port
     value: 4
     hours: 14
+    status: done
+    evidence: 'src/acadkit/dxf/document.py::write/add_entity（逐对重放，未知实体原样保留；往返逐对比对一致）'
     batch: 4
     depends_on: [cc.dxf.reader]
     note: 与 reader 配套；我们现在的 DXF 导出靠 AutoCAD，缺"离线改文件"能力
@@ -216,6 +220,8 @@ items:
     mode: read
     value: 2
     hours: 4
+    status: done
+    evidence: 'src/acadkit/dxf/io.py::sniff（DWG/DXF/PDF/STEP/STL/PNG/ZIP 文件头探测 + 缺失文件报错）'
     batch: 4
     note: 结构参考，规模小
 
