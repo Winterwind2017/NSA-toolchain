@@ -306,6 +306,8 @@ items:
     mode: spec
     value: 3
     hours: 6
+    status: done
+    evidence: 'src/acadkit/dxf/audit.py（重复句柄/非有限坐标/零长度线/非正半径/未知图层/多段线顶点不一致或重复/文字高度非正；error>warn>info）+ tools/audit_dxf.py CLI；tests/test_audit.py 10 例'
     batch: 5
     note: 我们没有任何"图纸自检"能力，这个清单能直接变成 acadkit 的检查器
 
