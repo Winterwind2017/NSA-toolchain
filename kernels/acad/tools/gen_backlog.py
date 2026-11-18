@@ -29,6 +29,15 @@ SRC = os.path.join(ROOT, "docs", "backlog.yaml")
 GAPS = os.path.join(ROOT, "docs", "gaps_meta.yaml")
 
 TIER_ORDER = ("T1", "T2", "T3")
+SOURCE_LABEL = {
+    "cc": "CADCraft 启发",
+    "cc/pain": "CADCraft 启发 + 自家踩坑",
+    "ax": "AutoCAD 能力面",
+    "pain": "自家踩坑",
+    "dom": "行业/领域需求",
+    "eng": "工程化常识",
+}
+SOURCE_ORDER = ("cc", "cc/pain", "pain", "ax", "dom", "eng")
 TIER_LABEL = {
     "T1": "T1 必做 —— 缺了不能叫「能用」",
     "T2": "T2 应该做 —— 专业交付质量",
@@ -164,7 +173,41 @@ def render() -> str:
                         area.get("why", "")))
     lines.append("")
 
-    lines += ["## 三、全量明细", "",
+    from collections import Counter, defaultdict
+    by_src = defaultdict(list)
+    for it in items:
+        by_src[it.get("source") or "ax"].append(it)
+    lines += ["## 三、来源：到底多少是「跟 CADCraft 学的」", "",
+              "这一节回答一个常见误解：**这份清单不是 CADCraft 的待办表**。", "",
+              "| 来源 | 项数 | 工时 | 占比 | 说明 |",
+              "|---|---:|---:|---:|---|"]
+    for key in SOURCE_ORDER:
+        group = by_src.get(key) or []
+        if not group:
+            continue
+        h = sum(i["hours"] for i in group)
+        note = {
+            "cc": "真正从 CADCraft 的方法/教训里来的（含它踩过的坑）",
+            "cc/pain": "两边都撞上的同一类问题",
+            "pain": "我们在真 AutoCAD 上自己踩的（CADCraft 不用 COM，教不了）",
+            "ax": "AutoCAD 自身能力面（驱动真机才需要，CADCraft 那套没有）",
+            "dom": "机械/电气行业需求（CADCraft 完全没有）",
+            "eng": "工程化常识（与 CAD 无关）",
+        }.get(key, "")
+        lines.append("| %s | %d | %gh | %.0f%% | %s |"
+                     % (SOURCE_LABEL.get(key, key), len(group), h,
+                        100.0 * h / total if total else 0, note))
+    lines.append("")
+    cc_share = sum(i["hours"] for i in (by_src.get("cc") or [])
+                   + (by_src.get("cc/pain") or []))
+    lines += ["> 结论：CADCraft 直接贡献 **%gh / %.0f%%**；剩下 %.0f%% 与它无关。"
+              % (cc_share, 100.0 * cc_share / total if total else 0,
+                 100.0 - (100.0 * cc_share / total if total else 0)),
+              "> 能学的主要是**方法与教训**，不是代码：它的几何内核/DXF 读写对我们是无用的",
+              "> （我们把几何交给 AutoCAD），而它的「真实语料」「无损存盘」两条教训恰好补上了我们的盲区。",
+              ""]
+
+    lines += ["## 四、全量明细", "",
               "排序：门槛（T1→T3）→ 影响分降序 → 工时升序。",
               ""]
     for t in TIER_ORDER:
@@ -172,12 +215,14 @@ def render() -> str:
         if not group:
             continue
         lines += ["### %s（%d 项 / %gh）" % (TIER_LABEL[t], len(group), tier_hours[t]), "",
-                  "| # | 能力 | 干什么 | 影响 | 工时 | 关键风险 / 说明 | 在 GAPS 里 |",
-                  "|---|---|---|---:|---:|---|---|"]
+                  "| # | 能力 | 干什么 | 来源 | 影响 | 工时 | 关键风险 / 说明 | 在 GAPS 里 |",
+                  "|---|---|---|---|---:|---:|---|---|"]
         for n, it in enumerate(group, 1):
-            lines.append("| %d | `%s` | %s | %d | %gh | %s | %s |"
-                         % (n, it["id"], it.get("title", ""), it["impact"],
-                            it["hours"], str(it.get("note", "")).replace("|", "/"),
+            lines.append("| %d | `%s` | %s | %s | %d | %gh | %s | %s |"
+                         % (n, it["id"], it.get("title", ""),
+                            SOURCE_LABEL.get(it.get("source"), it.get("source") or "—"),
+                            it["impact"], it["hours"],
+                            str(it.get("note", "")).replace("|", "/"),
                             "是" if it["id"] in gaps else "—"))
         lines.append("")
 
