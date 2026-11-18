@@ -356,6 +356,8 @@ items:
     mode: spec
     value: 4
     hours: 10
+    status: done
+    evidence: 'tests/live_spec_annotation.py 8 例（文字高度/替代/位置/基线间距/MTEXT 宽度/长文本），8/8 通过'
     batch: 2
     note: 我们对文字避让、标注间距只有零星经验，这里成体系
 
