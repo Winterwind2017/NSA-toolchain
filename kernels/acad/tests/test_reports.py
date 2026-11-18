@@ -18,6 +18,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
+import gen_backlog                                 # noqa: E402
 import gen_gaps                                    # noqa: E402
 import gen_parity                                  # noqa: E402
 import fix_registry_quoting as fixq                # noqa: E402
@@ -72,3 +73,30 @@ def test_registry_has_no_writer_damage() -> None:
         bad_backend, bad_quoted = fixq.count_damage(fh.read())
     assert bad_backend == 0, "registry.yaml 出现 %d 处 backend 字符数组" % bad_backend
     assert bad_quoted == 0, "registry.yaml 出现 %d 处双重引号" % bad_quoted
+
+
+def test_backlog_doc_is_fresh() -> None:
+    path = os.path.join(ROOT, "docs", "BACKLOG.md")
+    assert os.path.isfile(path), "缺 docs/BACKLOG.md（跑 tools/gen_backlog.py）"
+    with open(path, encoding="utf-8") as fh:
+        assert fh.read() == gen_backlog.render(), "BACKLOG.md 过期"
+
+
+def test_backlog_matches_gaps_hours() -> None:
+    """同一 id 在两份账里工时必须一致（防止两份预算对不上）。"""
+    built = gen_backlog.build()
+    gaps = built["gaps"]
+    for it in built["items"]:
+        if it["id"] in gaps:
+            assert it["hours"] == gaps[it["id"]], \
+                "%s 工时不一致：backlog=%s gaps=%s" % (it["id"], it["hours"], gaps[it["id"]])
+
+
+def test_backlog_never_lists_verified_caps() -> None:
+    """已 verified 的能力不该再出现在待挖清单里（防虚报进度）。"""
+    from acadkit import registry
+    verified = {c["id"] for c in registry.load()["capabilities"]
+                if c.get("status") == "verified"}
+    items = {i["id"] for i in gen_backlog.build()["items"]}
+    overlap = sorted(verified & items)
+    assert not overlap, "这些已经 verified 却还在 backlog：%r" % overlap

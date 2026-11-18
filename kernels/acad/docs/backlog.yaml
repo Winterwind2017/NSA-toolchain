@@ -1,0 +1,587 @@
+# 挖掘全量清单（backlog）：达到"理想效果"一共要挖多少
+#
+# 和另外两份文档的分工：
+#   GAPS.md      当前 8 周内要动的子集（7 条 / 70h），带"现在怎么绕"
+#   BACKLOG.md   全量地图（本文件生成）：所有可挖项、工时、门槛、明确不做的
+#
+# 规则（2026-11-18 与用户约定）：
+#   **挖掘类任务先出全量清单，再动手；不要做完一步才建议下一步。**
+#   所以这份清单必须在任何一条能力动工之前就存在，且要能回答"总共多少"。
+#
+# 字段：
+#   id       稳定标识（能力将以此命名；已存在的能力不要再列）
+#   area     域（对应下面的 areas）
+#   title    一句话说清"挖出来能干什么"
+#   tier     T1 必做（缺了不能叫能用）/ T2 应该做（专业交付质量）/ T3 可以做（差异化）
+#   impact   1–5，对交付的影响
+#   hours    预估 agent-hours（±50%，用于排序与预算，不用于承诺）
+#   note     关键技术风险 / 为什么这个估法 / 已知卡点
+#
+# 工时口径与 GAPS.md 一致；两边同 id 的工时**必须相等**（测试会校验）。
+
+schema: 1
+updated_at: "2026-11-18"
+ideal_state: |
+  给定一张零件图/装配图/电气图的需求描述，agent 在真 AutoCAD 2025 上从零做到**可交付**：
+  标准图框 + 完整标注 + BOM + 打印样式，出 PDF/DWG 且重开一致；改图后重跑不变形；
+  能读别人的图（DXF/DWG 解析）；批量图纸一次出完；全程零静默失败（失败必须给出原因）。
+  判定方式：ALPHA_GATE 的 5 条工作流全过 **且** 2D 自动化面覆盖 ≥95%，
+  且每个"不能做"都有带证据的说明。
+
+areas:
+  - key: annotation
+    title: 标注与注释
+    have: 22
+    why: 机械图的语言；缺一条客户就发现"这图不专业"
+  - key: geometry
+    title: 几何与编辑
+    have: 8
+    why: 只会画不会改，等于只能出一次图
+  - key: block
+    title: 块与外部引用
+    have: 3
+    why: 真实图纸 80% 的内容是块与外部引用
+  - key: layer
+    title: 图层与特性
+    have: 4
+    why: 出图质量与交接规范
+  - key: layout
+    title: 布局与出图
+    have: 3
+    why: 交付物就是这几张纸
+  - key: solid3d
+    title: 三维与实体
+    have: 3
+    why: 零件校核、干涉、投影出三视图
+  - key: data
+    title: 数据交换
+    have: 3
+    why: 与别人的图、BOM、工艺表对接
+  - key: domain
+    title: 专业领域库
+    have: 4
+    why: 电气/PLC/标准件——差异化的地方
+  - key: engine
+    title: 工程化
+    have: 0
+    why: 不稳、不可重复、没 CI，就等于不能交付
+  - key: agent
+    title: Agent 接口
+    have: 0
+    why: 让人/AI 真正能用的那一层
+
+items:
+
+  # ── T1 必做：缺了不能叫"能用" ────────────────────────────────────
+  - id: dim.associative
+    area: annotation
+    title: 关联标注（.NET 通道，改几何标注跟着变）
+    tier: T1
+    impact: 5
+    hours: 16
+    note: 插件通道已打通（dotnet/ + 安装目录 + LOADCTRLS=2）；需 DimAssoc + 几何关联表
+
+  - id: geom.modify
+    area: geometry
+    title: 编辑命令自动化（MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET/TRIM/EXTEND/FILLET/CHAMFER/ARRAY）
+    tier: T1
+    impact: 5
+    hours: 40
+    note: 必须按句柄选择 + 判据读几何量；命令行为主，少数靠 COM
+
+  - id: block.edit_inplace
+    area: block
+    title: 块就地编辑（改一个定义，所有引用一起变）
+    tier: T1
+    impact: 4
+    hours: 20
+    note: BlockEditor 需 UI 模式；保底方案 = 重定义块 + 重插引用 + 属性迁移
+
+  - id: block.dynamic
+    area: block
+    title: 动态块参数与可见性（读 + 改）
+    tier: T1
+    impact: 4
+    hours: 24
+    note: 先做"读可见性状态"（覆盖多数看图场景），再做参数写入
+
+  - id: plot.publish
+    area: layout
+    title: 批量出图（一套十几张一次出完）
+    tier: T1
+    impact: 3
+    hours: 8
+    note: -PUBLISH 会阻塞；走"逐布局出图 + 合并"的既有路径
+
+  - id: interfere
+    area: solid3d
+    title: 干涉检查（布尔求交后看体积）
+    tier: T1
+    impact: 2
+    hours: 2
+    note: 替代方案已证可行；只需封装成能力 + 判据
+
+  - id: dxf.parse_full
+    area: data
+    title: DXF 全量解析（实体/块/表/扩展数据），能读别人的图
+    tier: T1
+    impact: 5
+    hours: 24
+    note: 现有 ezdxf/最小解析器只覆盖子集；"读别人的图"是承接旧项目的前提
+
+  - id: transaction.undo
+    area: engine
+    title: 能力级事务 + 失败回滚（UNDO 分组）
+    tier: T1
+    impact: 4
+    hours: 12
+    note: 一条能力失败不能污染整张图；现在靠"用完即关文档"规避
+
+  - id: stability.watchdog
+    area: engine
+    title: 全局看门狗 + 自动恢复（COM 卡死/模态框/文档泄漏）
+    tier: T1
+    impact: 4
+    hours: 10
+    note: 已有 per-case 看门狗；缺"失败后自动重建会话继续跑"
+
+  - id: ci.github
+    area: engine
+    title: CI 跑离线测试 + 文档新鲜度（真机用例跳过）
+    tier: T1
+    impact: 3
+    hours: 6
+    note: 现在靠人记得跑 tools/gen_*.py；PR 上没有门
+
+  - id: mcp.tools
+    area: agent
+    title: MCP 工具面（67+ 条能力暴露成工具，附判据回传）
+    tier: T1
+    impact: 5
+    hours: 16
+    note: 与 ww-autocad-automation skill 的现有工具面对齐，避免两套
+
+  # ── T2 应该做：专业交付质量 ──────────────────────────────────────
+  - id: dim.style_full
+    area: annotation
+    title: 标注样式全量（常用 25 个 DIM* 变量可写可读）
+    tier: T2
+    impact: 4
+    hours: 12
+    note: 客户图框带自己的箭头/文字样式；读写都要判据
+
+  - id: dim.leader
+    area: annotation
+    title: 引线标注（多段引线 + 文字 + 箭头）
+    tier: T2
+    impact: 3
+    hours: 8
+    note: MLeader.TextString 赋值读回空串 → 用组装式（已有 balloon 经验）
+
+  - id: dim.style_presets
+    area: annotation
+    title: 图纸规范预设（GB/ISO 标注样式一键套）
+    tier: T2
+    impact: 3
+    hours: 6
+    note: 纯 Python 数据 + 建样式；风险低
+
+  - id: geom.offset
+    area: geometry
+    title: 多段线偏移（含 bulge 圆弧）
+    tier: T2
+    impact: 3
+    hours: 8
+    note: bulge 处理是坑；先只做直线段偏移并明说限制
+
+  - id: geom.region
+    area: geometry
+    title: 面域/边界（BOUNDARY / REGION）
+    tier: T2
+    impact: 3
+    hours: 6
+    note: 面域是 3D 操作的前置（拉伸/旋转都要闭合轮廓）
+
+  - id: geom.param_rebuild
+    area: geometry
+    title: 参数驱动重建（参数表 → 重画全套）
+    tier: T2
+    impact: 4
+    hours: 12
+    note: 几何约束不可用时的替代路线（完整版 AutoCAD 也没有）
+
+  - id: block.attribute_sync
+    area: block
+    title: 属性批量同步/改写（ATTSYNC/BATTMAN 替代）
+    tier: T2
+    impact: 3
+    hours: 10
+    note: 重定义块 + 逐引用改属性；属性顺序要保
+
+  - id: block.count_extract
+    area: block
+    title: 块计数与属性导出（DATAEXTRACTION 替代）
+    tier: T2
+    impact: 3
+    hours: 8
+    note: 遍历 ModelSpace + 块表；大图性能要测
+
+  - id: block.library
+    area: block
+    title: 标准件/图框库（表驱动批量插块 + 属性）
+    tier: T2
+    impact: 3
+    hours: 10
+    note: 依赖 block.insert_with_attributes（已有）
+
+  - id: xref.attach
+    area: block
+    title: 外部引用（附着/绑定/重载/路径修复）
+    tier: T2
+    impact: 3
+    hours: 12
+    note: 相对路径与绑定是坑；判据看"引用数 + 解析状态"
+
+  - id: layer.filter
+    area: layer
+    title: 图层过滤器与批量开关（按前缀/颜色）
+    tier: T2
+    impact: 2
+    hours: 6
+    note: 出图前切层是高频动作
+
+  - id: prop.match
+    area: layer
+    title: 特性匹配（MATCHPROP）自动化
+    tier: T2
+    impact: 2
+    hours: 6
+    note: 命令行 + 源/目标选择
+
+  - id: prop.bulk_set
+    area: layer
+    title: 批量改实体特性（层/颜色/线宽/线型）
+    tier: T2
+    impact: 3
+    hours: 8
+    note: 与 layer.set_current 配合；要能按选择集过滤
+
+  - id: plot.pagesetup
+    area: layout
+    title: 页面设置批量（图幅/比例/居中/打印样式）
+    tier: T2
+    impact: 4
+    hours: 10
+    note: 与 plot.style 同族，AcadLayout 可写项已探明
+
+  - id: frame.std
+    area: layout
+    title: 国标图框（GB/T 14689 A0–A4 横竖 + GB/T 10609.1 标题栏）
+    tier: T2
+    impact: 4
+    hours: 12
+    note: 纯几何 + 属性块；关键是尺寸表要准
+
+  - id: view.viewport
+    area: layout
+    title: 视口布置（比例/锁定/居中/多视口）
+    tier: T2
+    impact: 3
+    hours: 10
+    note: 图纸空间视口 API 部分可用，需探针确认锁定与比例
+
+  - id: solid.sweep
+    area: solid3d
+    title: 扫掠（含对齐/扭曲）
+    tier: T2
+    impact: 3
+    hours: 12
+    note: .NET 通道 CreateSweptSolid；轮廓/路径要求闭合
+
+  - id: solid.loft
+    area: solid3d
+    title: 放样
+    tier: T2
+    impact: 3
+    hours: 12
+    note: .NET 通道 CreateLoftedSolid；截面数与对应关系是坑
+
+  - id: solid.shell
+    area: solid3d
+    title: 抽壳
+    tier: T2
+    impact: 2
+    hours: 6
+    note: 薄壁件常用
+
+  - id: solid.fillet3d
+    area: solid3d
+    title: 3D 圆角/倒角
+    tier: T2
+    impact: 3
+    hours: 10
+    note: 边选择要稳定 ID；失败率可能高，判据要能识别
+
+  - id: solid.massprop
+    area: solid3d
+    title: 质量属性（体积/重心/惯性矩）
+    tier: T2
+    impact: 3
+    hours: 6
+    note: 读回即可判；校核场景必需
+
+  - id: dwg.version
+    area: data
+    title: 多版本 DWG 保存/降版（2013/2018/2025）
+    tier: T2
+    impact: 3
+    hours: 6
+    note: SaveAs 带版本码；判据看文件头 AC10xx
+
+  - id: table.csv_excel
+    area: data
+    title: 表 ↔ CSV/Excel 双向
+    tier: T2
+    impact: 3
+    hours: 10
+    note: BOM/明细表与人对接的实际形态
+
+  - id: bom.link
+    area: data
+    title: BOM 与块属性联动（改属性 → BOM 自动更新）
+    tier: T2
+    impact: 4
+    hours: 12
+    note: 需要"重算 BOM"能力，而不是一次性画表
+
+  - id: elec.symbols
+    area: domain
+    title: 电气符号库扩展（断路器/接触器/端子/线号）
+    tier: T2
+    impact: 3
+    hours: 20
+    note: 符号是程序化画，不需要外部资产
+
+  - id: elec.wire_numbers
+    area: domain
+    title: 线号自动编号 + 交叉引用
+    tier: T2
+    impact: 4
+    hours: 16
+    note: P&ID/电气图的核心；编号规则可配置
+
+  - id: plc.io_table
+    area: domain
+    title: PLC I/O 表 ↔ 模块图 ↔ 地址联动
+    tier: T2
+    impact: 3
+    hours: 14
+    note: 现有 plc.build 只画模块；缺地址映射
+
+  - id: mech.bom_from_drawing
+    area: domain
+    title: 从图纸自动生成 BOM（块计数 + 属性汇总）
+    tier: T2
+    impact: 4
+    hours: 12
+    note: 与 block.count_extract、bom.link 有重叠，可合并实现
+
+  - id: error.diagnostics
+    area: engine
+    title: 统一错误分类（忙/拒收/模态/权限）与可操作建议
+    tier: T2
+    impact: 3
+    hours: 8
+    note: 现在靠人读 traceback；要变成结构化诊断
+
+  - id: perf.batch
+    area: engine
+    title: 批量执行（一会话跑 N 个零件，省重复启动）
+    tier: T2
+    impact: 3
+    hours: 12
+    note: 每次启动 AutoCAD 约 15–20s；批量场景收益大
+
+  - id: cli.run
+    area: agent
+    title: CLI 子命令（acadkit run <cap> --params）
+    tier: T2
+    impact: 3
+    hours: 8
+    note: 已有 caps.build 雏形
+
+  - id: batch.plan
+    area: agent
+    title: 批量计划（JSON 多步 → 一次执行 + 汇总）
+    tier: T2
+    impact: 3
+    hours: 12
+    note: 与 alpha_gate 的工作流模型可复用
+
+  # ── T3 可以做：差异化 ───────────────────────────────────────────
+  - id: symbol.datum
+    area: annotation
+    title: 基准符号（A/B/C 基准目标）
+    tier: T3
+    impact: 2
+    hours: 4
+    note: 与 gdt.tolerance 配套
+
+  - id: symbol.roughness_full
+    area: annotation
+    title: 粗糙度完整（Ra/Rz/Rmax + 纹理方向 + 加工余量）
+    tier: T3
+    impact: 2
+    hours: 6
+    note: 现有 roughness 是 3 线 + Ra
+
+  - id: symbol.weld_full
+    area: annotation
+    title: 焊接符号完整（GB/T 324 全字段）
+    tier: T3
+    impact: 2
+    hours: 10
+    note: 坡口/辅助符号/焊缝尺寸；字段多但纯画
+
+  - id: text.field
+    area: annotation
+    title: 字段（图框日期/图号自动更新）
+    tier: T3
+    impact: 2
+    hours: 8
+    note: FIELDEVAL 相关坑；可能只能"写死 + 重算"
+
+  - id: text.stack
+    area: annotation
+    title: 堆叠文字（分数/上下标/公差）
+    tier: T3
+    impact: 2
+    hours: 4
+    note: MTEXT 的 \S 语法，判据要读回字面
+
+  - id: geom.hatch_full
+    area: geometry
+    title: 填充完整（渐变/多段线边界/比例/关联）
+    tier: T3
+    impact: 2
+    hours: 8
+    note: 现有 hatch 只支持矩形边界 + ANSI31
+
+  - id: xref.clip
+    area: block
+    title: 外部引用裁剪（XCLIP）
+    tier: T3
+    impact: 2
+    hours: 10
+    note: 无 API，需探针；可能只能"按边界重画"
+
+  - id: layer.transparency
+    area: layer
+    title: 透明度
+    tier: T3
+    impact: 1
+    hours: 4
+    note: 出图影响小
+
+  - id: linetype.load
+    area: layer
+    title: 线型加载与自定义线型
+    tier: T3
+    impact: 2
+    hours: 4
+    note: 已有 centerline 用现成线型
+
+  - id: plot.export_extra
+    area: layout
+    title: 出图格式扩展（SVG/PNG/DWF）
+    tier: T3
+    impact: 2
+    hours: 6
+    note: PDF/DWG/DXF 已够主流程
+
+  - id: plot.precheck
+    area: layout
+    title: 出图前校验（空图/超界/线宽/字体缺失）
+    tier: T3
+    impact: 3
+    hours: 8
+    note: 交付前自检，能省客户退回
+
+  - id: solid.section_profile
+    area: solid3d
+    title: 剖切轮廓（SECTION 生成剖面几何）
+    tier: T3
+    impact: 2
+    hours: 8
+    note: 与三视图投影配套
+
+  - id: solid.assembly_align
+    area: solid3d
+    title: 装配对位（变换矩阵对齐，无约束 API）
+    tier: T3
+    impact: 3
+    hours: 16
+    note: 完整版无装配约束 API；靠矩阵算
+
+  - id: projection.detail
+    area: solid3d
+    title: 剖视图/局部放大视图
+    tier: T3
+    impact: 3
+    hours: 14
+    note: 现有投影只有 front/top/left
+
+  - id: export.step
+    area: data
+    title: 3D 导出 STEP/IGES
+    tier: T3
+    impact: 2
+    hours: 8
+    note: 走 ACAD 的 3D 输出；单位与精度要判
+
+  - id: mech.standard_parts
+    area: domain
+    title: 标准件库（螺栓/轴承/型材）图块 + 规格表
+    tier: T3
+    impact: 3
+    hours: 16
+    note: 数据量大但机械；可先做 5 类常用
+
+  - id: docs.recipe
+    area: engine
+    title: 配方库（每个常见图纸任务一条 recipe）
+    tier: T3
+    impact: 3
+    hours: 10
+    note: 现有 RECIPES.md 只有 3 条
+
+  - id: packaging
+    area: engine
+    title: 打包与入口（pip 安装 / acadkit 命令）
+    tier: T3
+    impact: 2
+    hours: 8
+    note: 目前靠仓库内跑
+
+  - id: agent.recipes
+    area: agent
+    title: 面向 agent 的任务模板（零件图/装配图/BOM/出图）
+    tier: T3
+    impact: 3
+    hours: 10
+    note: 与 docs.recipe 复用
+
+# 明确不做（写出来是为了防止反复讨论）
+not_doing:
+  - what: 交互式 UI / 动态输入 / 对象捕捉的交互行为
+    why: 本仓库是 headless 自动化，不做人机界面
+  - what: 几何约束（GEOMCONSTRAINT / DIMCONSTRAINT / PARAMETRIC）
+    why: 完整版 AutoCAD 本身没有，属 Mechanical 专有能力
+  - what: 渲染 / 材质 / 动画 / 真实感出图
+    why: 与"出工程图"无关
+  - what: Sheet Set Manager / 云协作 / 许可证管理
+    why: 项目协同范畴，不属于单机出图
+  - what: 重写几何内核（复刻 AutoCAD）
+    why: 走驱动真机路线；内核由 AutoCAD 提供，这是本仓库的根本取舍
+  - what: 光栅图矢量化（Raster→Vector）
+    why: 需要专门算法与外部资产，另立项目更合适
