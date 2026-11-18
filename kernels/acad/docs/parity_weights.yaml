@@ -1,0 +1,75 @@
+# 受众权重：PARITY.md 的"按受众就绪度"由它决定
+#
+# 为什么要权重：能力不是等价的。"机械制图"用户画一百张零件图用不上 PLC，
+# "电气"用户也用不上粗糙度符号。只报一个总覆盖率会两个人都骗。
+#
+# 权重是**相对重要性**（内部归一化，绝对值无意义），可随时调；
+# 调整后跑 `python tools/gen_parity.py` 重新生成 docs/PARITY.md。
+#
+# 口径说明（重要）：本仓库的覆盖率分母是**自己声明的能力面**（registry 66 条），
+# 不是 AutoCAD 的全部功能。所以不能拿这里的 9x% 去和"复刻 AutoCAD"类项目比。
+# 详见 docs/PARITY.md 的"口径差异"一节。
+
+schema: 1
+updated_at: "2026-11-18"
+note: "权重按'该族在对应受众日常工作量里的占比'估；族名与 registry 的 family 一致"
+
+audiences:
+
+  mech:
+    label: 机械制图（零件图 / 装配图）
+    why: 以零件图为主，标注和符号是刚需；出图与图框必须齐
+    families:
+      geom: 15        # 线/圆/弧/多段线/矩形/椭圆/样条/填充
+      dim: 20         # 12 种标注 + 公差
+      symbol: 15      # 粗糙度/焊接/中心线/中心标记/序号
+      gdt: 8          # 形位公差
+      text: 8
+      table: 6        # BOM / 网格表 / 中文表
+      layer: 6
+      block: 5
+      frame: 6        # 图框 + 标题栏 + 布局
+      export: 8       # DWG/DXF/PDF
+      view: 3         # 三视图投影
+      solid: 6        # 少量 3D 验证
+      boolean: 4
+      env: 3
+      doc: 1
+      lisp: 2
+
+  elec:
+    label: 电气 / PLC / P&ID
+    why: 主体是元件库读库 + 模块图 + 符号，几何与标注用得少
+    families:
+      ae: 40          # Electrical 元件库
+      plc: 20         # PLC 模块图
+      pid: 15         # P&ID 符号
+      symbol: 8
+      text: 6
+      table: 5
+      frame: 4
+      export: 4
+      dim: 2
+      geom: 2
+      layer: 2
+
+  general:
+    label: 通用 2D 制图
+    why: 什么都画一点，权重摊平；更看重几何、图层、块、出图
+    families:
+      geom: 20
+      dim: 15
+      text: 10
+      layer: 10
+      block: 10
+      export: 10
+      frame: 8
+      view: 5
+      table: 8
+      env: 4
+      doc: 2
+      lisp: 4
+      symbol: 4
+      solid: 6
+      boolean: 4
+      gdt: 4

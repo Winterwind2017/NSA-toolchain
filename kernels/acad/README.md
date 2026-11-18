@@ -122,6 +122,9 @@ src/acadkit/
 - [`docs/PITFALLS.md`](docs/PITFALLS.md) —— 12 类"看着能用其实不能用"的坑；
 - [`docs/UNSUPPORTED.md`](docs/UNSUPPORTED.md) —— dead / external 两张表；
 - [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md) —— 全部能力（自动生成）；
+- [`docs/PARITY.md`](docs/PARITY.md) —— 覆盖率四个口径 + 按受众就绪度（自动生成）；
+- [`docs/GAPS.md`](docs/GAPS.md) —— 缺口账本：影响分、工时、解锁条件（自动生成）；
+- [`docs/ALPHA_GATE.md`](docs/ALPHA_GATE.md) —— 5 条端到端工作流真机结果；
 - [`docs/registry.yaml`](docs/registry.yaml) —— 唯一事实来源；
 - [`docs/P1_PROGRESS.md`](docs/P1_PROGRESS.md) —— 分步真机验证记录。
 
