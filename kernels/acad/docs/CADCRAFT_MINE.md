@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **12 / 40 项**（83h / 325h = 26%）。
+**进度**：已完成 **17 / 40 项**（125h / 325h = 38%）。
 
 ## 二、按域
 
@@ -121,7 +121,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 |---|---|---:|---:|
 | 1 | 记分与合规 | 4 / 5 | 15h / 19h |
 | 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
-| 3 | 算法组（纯数学） | 2 / 10 | 30h / 100h |
+| 3 | 算法组（纯数学） | 7 / 10 | 72h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 0 / 5 | 0h / 66h |
 | 5 | 模型组（AutoCAD 行为细节） | 0 / 11 | 0h / 74h |
 | 6 | Agent 接口 | 0 / 2 | 0h / 16h |
@@ -138,8 +138,13 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.spec.files` —— tests/live_spec_files.py F1–F6（版本/往返/DXF/坏扩展名/缺目录），6/6 通过；顺带修 save_as 静默失败
 - `cc.spec.lisp` —— tests/live_robustness.py G 组（合法 LISP 能画、非法 LISP 报错不挂）
 - `cc.spec.robustness` —— tests/live_robustness.py A/B/C/D 组（非有限、坏句柄、坏参数、保存失败），15/15 通过
+- `cc.color.aci` —— src/acadkit/geom2d/colors.py（ACI↔RGB、灰度阶梯、rgb_to_aci 最近邻）
 - `cc.constraints.expr` —— src/acadkit/solve/constraints.py::evaluate_expr（只允许四则与括号；拒任意代码，测试有用例）
 - `cc.constraints.solver` —— src/acadkit/solve/constraints.py（LM + 数值雅可比 + 秩算自由度）；tests/test_solver.py 8 例（收敛/欠约束/矩形/冲突必失败/垂直等长/定点/表达式）
+- `cc.curves.fillet_chamfer` —— src/acadkit/geom2d/curves.py::fillet/chamfer（含半径过大、平行、越界必抛错）
+- `cc.curves.offset` —— src/acadkit/geom2d/polygon.py::offset_polygon（miter + 外/内 + 自交/翻转/内接圆三重拦截）
+- `cc.geom.hatch_boundary` —— src/acadkit/geom2d/polygon.py（point_in_polygon/classify_islands/hatch_area 净面积）
+- `cc.geom.intersect` —— src/acadkit/geom2d/curves.py（线线/线圆/圆圆/椭圆线）；tests/test_curves.py 覆盖相切/相离/越界
 
 
 ## 怎么用这份清单

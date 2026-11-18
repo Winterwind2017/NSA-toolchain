@@ -88,6 +88,8 @@ items:
     mode: port
     value: 4
     hours: 10
+    status: done
+    evidence: 'src/acadkit/geom2d/polygon.py::offset_polygon（miter + 外/内 + 自交/翻转/内接圆三重拦截）'
     batch: 3
     note: 我们 geom.offset 只有直线段；bulge 与自交是主要坑，它已有测试覆盖
 
@@ -109,6 +111,8 @@ items:
     mode: port
     value: 3
     hours: 8
+    status: done
+    evidence: 'src/acadkit/geom2d/curves.py::fillet/chamfer（含半径过大、平行、越界必抛错）'
     batch: 3
     note: 退化情形是判据来源，直接抄测试更快
 
@@ -119,6 +123,8 @@ items:
     mode: port
     value: 3
     hours: 10
+    status: done
+    evidence: 'src/acadkit/geom2d/curves.py（线线/线圆/圆圆/椭圆线）；tests/test_curves.py 覆盖相切/相离/越界'
     batch: 3
     note: 我们的椭圆/样条相交目前靠 AutoCAD 命令，离线几何校验时要自己算
 
@@ -129,6 +135,8 @@ items:
     mode: port
     value: 3
     hours: 10
+    status: done
+    evidence: 'src/acadkit/geom2d/polygon.py（point_in_polygon/classify_islands/hatch_area 净面积）'
     batch: 3
     note: geom.hatch 目前只支持矩形边界
 
@@ -139,6 +147,8 @@ items:
     mode: port
     value: 2
     hours: 4
+    status: done
+    evidence: 'src/acadkit/geom2d/colors.py（ACI↔RGB、灰度阶梯、rgb_to_aci 最近邻）'
     batch: 3
     note: 出图配色与 CTB 映射要查表，纯数据
 
