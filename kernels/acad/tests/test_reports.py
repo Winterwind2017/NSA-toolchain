@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
 import gen_backlog                                 # noqa: E402
+import gen_cadcraft_mine                           # noqa: E402
 import gen_gaps                                    # noqa: E402
 import gen_parity                                  # noqa: E402
 import fix_registry_quoting as fixq                # noqa: E402
@@ -100,3 +101,18 @@ def test_backlog_never_lists_verified_caps() -> None:
     items = {i["id"] for i in gen_backlog.build()["items"]}
     overlap = sorted(verified & items)
     assert not overlap, "这些已经 verified 却还在 backlog：%r" % overlap
+
+
+def test_cadcraft_mine_doc_is_fresh() -> None:
+    path = os.path.join(ROOT, "docs", "CADCRAFT_MINE.md")
+    assert os.path.isfile(path), "缺 docs/CADCRAFT_MINE.md（跑 tools/gen_cadcraft_mine.py）"
+    with open(path, encoding="utf-8") as fh:
+        assert fh.read() == gen_cadcraft_mine.render(), "CADCRAFT_MINE.md 过期"
+
+
+def test_cadcraft_mine_fields_complete() -> None:
+    built = gen_cadcraft_mine.build()
+    for it in built["items"]:
+        assert it.get("src"), "%s 没写源路径" % it["id"]
+        assert 1 <= it["value"] <= 5, "%s 价值分越界" % it["id"]
+        assert it["hours"] > 0, "%s 工时应为正" % it["id"]

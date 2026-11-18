@@ -124,6 +124,7 @@ src/acadkit/
 - [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md) —— 全部能力（自动生成）；
 - [`docs/PARITY.md`](docs/PARITY.md) —— 覆盖率四个口径 + 按受众就绪度（自动生成）；
 - [`docs/BACKLOG.md`](docs/BACKLOG.md) —— **挖掘全量清单**：还能挖什么、总量多少、明确不做（自动生成）；
+- [`docs/CADCRAFT_MINE.md`](docs/CADCRAFT_MINE.md) —— **从 CADCraft 能吸收什么**：40 项 / 325h，按移植/规格/参考分类（自动生成）；
 - [`docs/GAPS.md`](docs/GAPS.md) —— 缺口账本：影响分、工时、解锁条件（自动生成）；
 - [`docs/ALPHA_GATE.md`](docs/ALPHA_GATE.md) —— 5 条端到端工作流真机结果；
 - [`docs/registry.yaml`](docs/registry.yaml) —— 唯一事实来源；

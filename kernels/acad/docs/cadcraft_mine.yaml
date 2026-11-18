@@ -1,0 +1,425 @@
+# CADCraft 可挖掘资产清单（mining inventory）
+#
+# 目的：回答"CADCraft 里到底有多少东西值得吸收进 nsa-toolchain、一共多少工时"。
+# 规则（用户 2026-11-18）：**先出全量清单再动手**，不要做完一步才建议下一步。
+#
+# 许可证前提：CADCraft 是 MIT OR Apache-2.0 —— 允许移植/改写/商用，但**必须署名**。
+# 真移植的项（mode=port）落地时要往 NOTICE.md / ATTRIBUTION.md 里加条目。
+#
+# 吸收方式（mode）：
+#   port    真把算法/代码改写进 nsa-toolchain（Python）
+#   spec    把它的测试当"AutoCAD 行为规格"，转成我们的判据
+#   design  读它的数据模型/状态机，指导我们自己的实现（不搬代码）
+#   read    只为了解对方怎么做，不产出代码
+#   never   明确不挖（写出来防止反复讨论）
+#
+# 字段：id / area / src(仓库路径) / title / mode / value(1-5) / hours / note
+
+schema: 1
+updated_at: "2026-11-18"
+upstream:
+  repo: https://github.com/beclab/cadcraft
+  license: MIT OR Apache-2.0
+  crates: '[color, constraints, doc, dwg, dxf, engine, fonts, geom, io, mcp, render, ui-egui]'
+  scale: "12 crate；engine 133 个源文件；engine/tests 110 个测试文件"
+
+areas:
+  - key: algo
+    title: 算法与几何
+    why: 我们的弱点在"算得准"（偏移/求交/圆角），这些是纯数学，可移植
+  - key: format
+    title: 文件格式
+    why: 「读别人的图」与「存盘不丢数据」是我们的两个盲区
+  - key: command
+    title: 命令语义与数据模型
+    why: AutoCAD 的行为细节（关联/夹点/阵列/快速标注）没有公开规格
+  - key: spec
+    title: 测试当规格（110 个）
+    why: 每个测试都是一条 AutoCAD 行为的可执行描述，免费的真机判据
+  - key: tooling
+    title: 工具链与流程
+    why: CI、日志、署名合规、parity 统计，成本低收益直接
+  - key: agent
+    title: Agent 接口
+    why: 它的 MCP 工具 schema 与参数校验契约可直接对照
+
+items:
+
+  # ── 算法与几何 ──────────────────────────────────────────────────
+  - id: cc.constraints.solver
+    area: algo
+    src: crates/constraints (lm.rs / residual.rs / dof.rs / model.rs)
+    title: LM 约束求解器 + 自由度分析（可做"参数驱动重建"）
+    mode: port
+    value: 5
+    hours: 24
+    note: 纯数值算法，与 Rust 无关；AutoCAD 完整版没有几何约束，这条能补上"改尺寸重算"的能力
+
+  - id: cc.constraints.expr
+    area: algo
+    src: crates/constraints/expr.rs
+    title: 参数表达式求值（d1 = d2/2 + 5 这类）
+    mode: port
+    value: 3
+    hours: 6
+    note: 求解器的前置；也可单独用于"参数表驱动"
+
+  - id: cc.constraints.infer
+    area: algo
+    src: crates/constraints/auto.rs
+    title: 自动约束推断（从几何猜水平/相切/共线）
+    mode: design
+    value: 3
+    hours: 8
+    note: 没有它，用户要手动标注每条约束；可后置
+
+  - id: cc.curves.offset
+    area: algo
+    src: crates/geom（offset 相关）+ engine/tests/offset_*
+    title: bulge 感知的多段线偏移 + 椭圆/样条偏移 + 自交清理
+    mode: port
+    value: 4
+    hours: 10
+    note: 我们 geom.offset 只有直线段；bulge 与自交是主要坑，它已有测试覆盖
+
+  - id: cc.curves.trim_extend
+    area: algo
+    src: crates/geom + engine/tests/modify_curves.rs
+    title: 修剪/延伸的边界求交、最近点、多边界选择
+    mode: port
+    value: 3
+    hours: 12
+    note: 我们走 AutoCAD 命令，但"选哪条边/切哪一段"的判定逻辑仍要自己写
+
+  - id: cc.curves.fillet_chamfer
+    area: algo
+    src: crates/geom + engine/tests/fillet_chamfer.rs
+    title: 圆角/倒角的解析解（含不相切、退化半径）
+    mode: port
+    value: 3
+    hours: 8
+    note: 退化情形是判据来源，直接抄测试更快
+
+  - id: cc.geom.intersect
+    area: algo
+    src: crates/geom
+    title: 椭圆/样条与直线/圆的交点（解析 + 细分混合）
+    mode: port
+    value: 3
+    hours: 10
+    note: 我们的椭圆/样条相交目前靠 AutoCAD 命令，离线几何校验时要自己算
+
+  - id: cc.geom.hatch_boundary
+    area: algo
+    src: crates/geom + engine/tests/hatch_assoc.rs
+    title: 填充边界探测（射线法 + 孤岛嵌套）
+    mode: port
+    value: 3
+    hours: 10
+    note: geom.hatch 目前只支持矩形边界
+
+  - id: cc.color.aci
+    area: algo
+    src: crates/color
+    title: ACI 调色板 / 真彩 / 打印样式色映射表
+    mode: port
+    value: 2
+    hours: 4
+    note: 出图配色与 CTB 映射要查表，纯数据
+
+  - id: cc.fonts.shx
+    area: algo
+    src: crates/fonts
+    title: SHX 字形解析（算文字宽度、避免文字重叠）
+    mode: read
+    value: 2
+    hours: 8
+    note: 只想知道它如何估字宽；完整移植性价比低
+
+  # ── 文件格式 ────────────────────────────────────────────────────
+  - id: cc.dxf.reader
+    area: format
+    src: crates/dxf
+    title: DXF 组码解析 + 未知实体保留（读别人的图）
+    mode: port
+    value: 5
+    hours: 16
+    note: 直接替代"用 ezdxf 只读子集"；未知实体保留是承接旧项目的前提
+
+  - id: cc.dxf.writer
+    area: format
+    src: crates/dxf
+    title: DXF 回写（含未建模数据、句柄/扩展字典）
+    mode: port
+    value: 4
+    hours: 14
+    note: 与 reader 配套；我们现在的 DXF 导出靠 AutoCAD，缺"离线改文件"能力
+
+  - id: cc.dwg.reader
+    area: format
+    src: crates/dwg
+    title: DWG 位级读取（不启 AutoCAD 也能查图）
+    mode: design
+    value: 3
+    hours: 24
+    note: 我们已有 AutoCAD 可读 DWG；价值在"批量扫描不占许可证/不启窗口"
+
+  - id: cc.dwg.write_safety
+    area: format
+    src: crates/dwg + docs/gaps.md（头号 blocker）
+    title: 保存不丢数据的差异报告机制
+    mode: design
+    value: 4
+    hours: 8
+    note: '它的 #1 blocker 反过来教我们：导出后要能证明"什么都没丢"'
+
+  - id: cc.io.dispatch
+    area: format
+    src: crates/io
+    title: 格式探测与读写分派
+    mode: read
+    value: 2
+    hours: 4
+    note: 结构参考，规模小
+
+  # ── 命令语义与数据模型 ──────────────────────────────────────────
+  - id: cc.assoc.dim
+    area: command
+    src: crates/engine/src/assoc.rs
+    title: 关联标注的几何关联表（哪条边、哪个子实体、参数化距离）
+    mode: design
+    value: 4
+    hours: 10
+    note: 我们 dim.associative 卡在"不知道 AutoLISP/COM 怎么建关联"；它的数据模型能反推需要哪些字段
+
+  - id: cc.block.dyngrip
+    area: command
+    src: crates/engine/src/cmd/blocks/dyngrip.rs + tests/dynamic_block_data.rs
+    title: 动态块夹点与参数模型（可见性/拉伸/翻转）
+    mode: design
+    value: 4
+    hours: 10
+    note: 我们的 block.dynamic 只做"读可见性"，它的模型能告诉我们还要读哪些
+
+  - id: cc.block.refedit
+    area: command
+    src: crates/engine/src/cmd/blocks/refedit.rs + bedit.rs
+    title: 就地编辑的状态机（REFEDIT/BEDIT 的进入-修改-保存原子性）
+    mode: design
+    value: 3
+    hours: 8
+    note: 我们走"重定义块+重插"，但状态机值得对照
+
+  - id: cc.array
+    area: command
+    src: crates/engine/src/cmd/array.rs + array/edit.rs
+    title: 阵列语义（矩形/极轴/路径 + 阵列编辑）
+    mode: design
+    value: 3
+    hours: 6
+    note: ARRAY 的选项组合坑多，读它的模型省试错
+
+  - id: cc.qdim
+    area: command
+    src: crates/engine/src/cmd/annotate_qdim.rs + tests/qdim_modes.rs
+    title: 快速标注的判定（何时串成连续/基线/并列）
+    mode: design
+    value: 3
+    hours: 6
+    note: 我们 dim.continuous/baseline 要手动给点；QDIM 能自动分组
+
+  - id: cc.dimvars
+    area: command
+    src: crates/engine/src/cmd/annotate* + tests/dim_vars.rs
+    title: DIM* 变量的语义表（哪些互相覆盖、哪些要 REGEN）
+    mode: spec
+    value: 4
+    hours: 8
+    note: 我们 env.dimstyle 只碰了 2 个变量；这张表能直接变成判据
+
+  - id: cc.plot.pipeline
+    area: command
+    src: crates/engine（plot_* 测试、plotters.rs）
+    title: 打印样式/透明度/多图纸的管线设计
+    mode: design
+    value: 3
+    hours: 8
+    note: 我们 plot.style 刚打通；它把"样式表→线宽→透明"分层的做法可对照
+
+  - id: cc.audit
+    area: command
+    src: crates/engine/src/audit.rs + cmd/audit.rs
+    title: AUDIT 的检查项清单（重复句柄/坏块/悬空引用）
+    mode: spec
+    value: 3
+    hours: 6
+    note: 我们没有任何"图纸自检"能力，这个清单能直接变成 acadkit 的检查器
+
+  - id: cc.compare
+    area: command
+    src: crates/engine/src/cmd/file/compare.rs + tests/compare.rs
+    title: 两张图的差异比对（新增/删除/改动）
+    mode: design
+    value: 3
+    hours: 8
+    note: 我们完全没有"图纸比对"；对"改图后重跑是否变形"的场景很有用
+
+  - id: cc.autosave
+    area: command
+    src: crates/engine/src/autosave.rs + tests/autosave.rs
+    title: 自动保存与崩溃恢复语义
+    mode: read
+    value: 2
+    hours: 4
+    note: 我们靠"用完即关"，恢复策略可借鉴
+
+  - id: cc.overkill
+    area: command
+    src: crates/engine/tests/overkill.rs
+    title: 重叠/重复对象删除的判定规则
+    mode: design
+    value: 2
+    hours: 4
+    note: 清理类能力我们没有；判定规则简单但边界多
+
+  - id: cc.purge
+    area: command
+    src: crates/engine/src/cmd/blocks/purge.rs + tests/purge_*
+    title: 未用对象清理（块/图层/样式）的依赖判定
+    mode: design
+    value: 2
+    hours: 4
+    note: 交付前瘦身常用
+
+  # ── 测试当规格（110 个测试文件）────────────────────────────────
+  - id: cc.spec.robustness
+    area: spec
+    src: crates/engine/tests（malformed_handles / non_finite_edits / save_reports_not_saved / props_bad_lineweight）
+    title: 畸形输入的鲁棒性规格（坏句柄/NaN/保存失败要报告）
+    mode: spec
+    value: 5
+    hours: 6
+    note: '**我们完全没测过这一类**；这正是"零静默失败"的具体条目'
+
+  - id: cc.spec.draw_modify
+    area: spec
+    src: crates/engine/tests（modify_curves / fillet_chamfer / offset_* / pline_arc_xline_options / pedit_splinedit）
+    title: 绘制与编辑的边界行为规格
+    mode: spec
+    value: 4
+    hours: 12
+    note: 每条都能翻译成一个 acadkit 判据（真机跑 + 读几何量）
+
+  - id: cc.spec.annotation
+    area: spec
+    src: crates/engine/tests（dim_* / mleader_* / mtext_* / qdim* / dimtedit_prompts）
+    title: 标注与文字的渲染/定位行为规格
+    mode: spec
+    value: 4
+    hours: 10
+    note: 我们对文字避让、标注间距只有零星经验，这里成体系
+
+  - id: cc.spec.files
+    area: spec
+    src: crates/engine/tests（save_version / save_as_export / open_svg / lin_pat_files / save_reports_not_saved）
+    title: 文件读写与版本的行为规格
+    mode: spec
+    value: 4
+    hours: 6
+    note: 与我们 export.lossless、dwg.version 直接对应
+
+  - id: cc.spec.lisp
+    area: spec
+    src: crates/engine/tests/lisp_corpus.rs
+    title: LISP 语料（哪些写法必须支持/必须拒绝）
+    mode: spec
+    value: 3
+    hours: 4
+    note: 我们有 lisp.execute 但没有语料；它给了拒绝集
+
+  # ── 工具链与流程 ────────────────────────────────────────────────
+  - id: cc.ci
+    area: tooling
+    src: .github/workflows（packaging-lint.yml / release.yml）
+    title: 打包 lint 与发布流水线
+    mode: port
+    value: 3
+    hours: 4
+    note: 我们 backlog 里有 ci.github；它的 workflow 可直接改写
+
+  - id: cc.agents_md
+    area: tooling
+    src: AGENTS.md（9.4KB）/ CLAUDE.md（8.1KB）
+    title: agent 工作规则（分层、everything-is-a-command、never-crash）
+    mode: read
+    value: 3
+    hours: 3
+    note: 低成本；对照我们 AGENTS.md 的缺口（例如"不许静默失败"的写法）
+
+  - id: cc.attribution
+    area: tooling
+    src: ATTRIBUTION.md / NOTICE
+    title: 移植署名与合规做法
+    mode: read
+    value: 2
+    hours: 2
+    note: 一旦真 port 代码必须做；MIT/Apache 双许可的写法可直接照抄格式
+
+  - id: cc.xtask_parity
+    area: tooling
+    src: xtask（cargo xtask parity）+ docs/parity-checklist.md
+    title: 源码扫描式覆盖统计
+    mode: design
+    value: 3
+    hours: 6
+    note: 我们的 PARITY 是自评分母；它的"从源码扫命令"能减少自说自话
+
+  - id: cc.logging
+    area: tooling
+    src: apps/cadcraft/src/logging.rs（24KB）
+    title: 结构化日志与诊断输出
+    mode: design
+    value: 3
+    hours: 4
+    note: 与我们 backlog 的 error.diagnostics 对应
+
+  # ── Agent 接口 ──────────────────────────────────────────────────
+  - id: cc.mcp.tools
+    area: agent
+    src: crates/mcp
+    title: MCP 工具 schema 与错误契约（命令/检查/渲染三分）
+    mode: design
+    value: 4
+    hours: 10
+    note: 我们 backlog 有 mcp.tools；它的 schema 组织方式可直接对照
+
+  - id: cc.mcp.params
+    area: agent
+    src: crates/engine/tests/json_param_validation.rs
+    title: JSON 参数校验与错误信息规格
+    mode: spec
+    value: 4
+    hours: 4
+    note: agent 调用失败时"能不能看懂错误"决定可用性
+
+  - id: cc.control_server
+    area: agent
+    src: apps/cadcraft/src/control_server.rs
+    title: 外部控制协议（长驻进程 + 命令队列）
+    mode: design
+    value: 3
+    hours: 6
+    note: 对应我们 backlog 的 perf.batch（避免每次启动 AutoCAD）
+
+# 明确不挖（写出来防止反复讨论）
+not_doing:
+  - what: crates/render + crates/ui-egui + apps/cadcraft 的窗口/主题/动画/spacemouse
+    why: 我们是 headless 自动化，界面与渲染交给 AutoCAD
+  - what: apps/cadcraft-web（WASM/Trunk/上传下载）
+    why: 目标平台是 Windows 桌面 + AutoCAD，Web 版无收益
+  - what: 几何内核的整体移植（crates/geom 全套）
+    why: 几何由 AutoCAD 提供；只挑具体算法（偏移/求交/圆角），不搬内核
+  - what: 打包/图标/本地化/Homebrew/flatpak 等分发细节
+    why: 我们不分发给终端用户
+  - what: clean-room 法律隔离流程（法律文档本身）
+    why: 我们不是复刻项目；只需遵守 MIT/Apache 的署名义务
