@@ -77,6 +77,8 @@ items:
     mode: design
     value: 3
     hours: 8
+    status: done
+    evidence: 'src/acadkit/solve/infer.py（水平/垂直/重合/平行推断 + 置信度；低置信度默认不落地）；测试覆盖容差与误判'
     batch: 3
     depends_on: [cc.constraints.solver]
     note: 没有它，用户要手动标注每条约束；可后置
@@ -100,6 +102,8 @@ items:
     mode: port
     value: 3
     hours: 12
+    status: done
+    evidence: 'src/acadkit/geom2d/trim.py（cut_params/trim_segment 三种保留侧/extend_segment 双向延长，含圆剪刀与无交点必抛错）；13 例测试'
     batch: 3
     depends_on: [cc.geom.intersect]
     note: 我们走 AutoCAD 命令，但"选哪条边/切哪一段"的判定逻辑仍要自己写
