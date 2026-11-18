@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any, Dict
 
 from ..core import com, plot as plotmod
@@ -36,6 +37,31 @@ def build_pdf(doc: Any, ctx: Dict[str, Any]) -> None:
     ctx["artifacts"]["plot"] = info
 
 
+def _add_paper_circle(doc: Any, radius: float, attempts: int = 6) -> None:
+    """在活动布局的图纸空间画圆；切换布局后 COM 句柄偶发失效，重试。
+
+    实测（2026-11-18，alpha gate W4）：先跑过 `layout.multipage` 再切两次布局，
+    `doc.PaperSpace.AddCircle` 偶发抛 `AttributeError: <unknown>.AddCircle`
+    （拿到的是旧句柄）。这里每次重试都重新取 `PaperSpace`，并把 `ActiveLayout`
+    触碰一次促使 COM 重绑；6 次仍失败才抛。
+    """
+    last: Any = None
+    for i in range(attempts):
+        try:
+            ps = doc.PaperSpace
+            ps.AddCircle(pt(100, 100, 0), radius)
+            return
+        except Exception as exc:                    # noqa: BLE001
+            last = exc
+            time.sleep(0.25 * (i + 1))
+            try:
+                doc.ActiveLayout = doc.ActiveLayout  # 触碰，促使 COM 重绑
+            except Exception:                        # noqa: BLE001
+                pass
+    raise RuntimeError("PaperSpace.AddCircle 失败：%s: %s"
+                       % (type(last).__name__, last))
+
+
 def build_pdf_multipage(doc: Any, ctx: Dict[str, Any]) -> None:
     """多布局出图：每个布局单独出 PDF，再用 pypdf 合并成多页。
 
@@ -58,9 +84,7 @@ def build_pdf_multipage(doc: Any, ctx: Dict[str, Any]) -> None:
             com.retry(lambda n=name: layouts.Add(n), label="Layouts.Add")
         doc.ActiveLayout = com.retry(lambda n=name: layouts.Item(n),
                                      label="Layouts.Item")
-        ps = com.retry(lambda: doc.PaperSpace, label="PaperSpace")
-        com.retry(lambda r=radius: ps.AddCircle(pt(100, 100, 0), r),
-                  label="AddCircle")
+        _add_paper_circle(doc, radius)
         page_path = os.path.join(ctx["workdir"], "page_%s.pdf" % name)
         info = plotmod.plot_model_to_pdf(doc, page_path)
         pages.append({"layout": name, "path": page_path, "plot": info})
