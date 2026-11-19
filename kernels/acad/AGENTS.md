@@ -95,3 +95,16 @@ python scripts/install_hooks.py   # 装 pre-push：HTTPS 远端 / 无 SSH key �
 `docs/UNSUPPORTED.md` 的状态章节由 `python tools/gen_unsupported.py` 生成；
 两者都挂在 `pre-push` 钩子上——**文档与代码不一致时推送会被拒绝**。
 离线测试 `tests/test_docs.py` 也会核对（防文档漂移）。
+
+---
+
+## 8. 估算纪律（2026-11-19 加，起因：账本虚报约 130 倍）
+
+* **不许用「工时」暗示 agent 的速度。** `docs/backlog.yaml` / `docs/cadcraft_mine.yaml`
+  里的 `hours` 是**上游人日口径**（≈ 人-小时），只表达「这对一个人类工程师多大」。
+* 对外报进度只用三个**可测量**：活跃分钟、提交数、改动行数，
+  由 `python tools/measure_commits.py` 从 git 算出，写进 `docs/MEASUREMENTS.md`。
+* 估 agent 工作量按**可数动作**估：真机运行次数、工具调用次数、需读的上游文件数。
+  实测：39 项挖掘 = 23 次提交 / 活跃 138.8 分钟 / 净增 10435 行；账本写的是 301h。
+* 发现口径偏差就**当场改**并写进 commit，不留「以后再说」。
+* 报数字前先问自己：这个数**谁能复核**？不能复核的数不许出现在结论里。

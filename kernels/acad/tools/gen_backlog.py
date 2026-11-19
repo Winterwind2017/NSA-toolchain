@@ -64,6 +64,8 @@ PROSE_HEAD = """# 挖掘全量清单（backlog）
 ## 理想效果（Definition of Done）
 
 %(ideal)s
+
+> **工时口径**：`hours` 是上游人日 ≈ 人-小时（「对一个人类工程师多大」的粗略量级），**不是 agent 的耗时**。实测见 `docs/MEASUREMENTS.md`：一次完整挖掘记账 301h，git 实测活跃 2.31h、净增 10435 行、23 次提交。
 """
 
 PROSE_TAIL = """
