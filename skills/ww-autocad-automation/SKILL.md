@@ -87,27 +87,29 @@ L1 计数、L2 属性、L3 几何、L4 重开与环境自检；任何一项读�
 <!-- gen:capabilities:BEGIN -->
 本表由 `tools/sync_capabilities.py` 从 acadkit 生成的 `capabilities.json` 渲染，**不要手改**（`tests/test_skill.py` 会校验）。
 
-共 **56** 条 verified 能力（内核 `acadkit 0.1.0`，commit `0810d40`）。完整状态：`acadkit registry`；单条跑：`acadkit cap <id>`。
+共 **62** 条 verified 能力（内核 `acadkit 0.1.0`，commit `37cb6ac`）。完整状态：`acadkit registry`；单条跑：`acadkit cap <id>`。
 
 | 能力族 | 能力（级别） |
 |---|---|
-| **标注**（11） | `dim.aligned`（L1–L4） `dim.angular`（L1–L4） `dim.arc`（L1–L4） `dim.baseline`（L1–L4） `dim.continuous`（L1–L4） `dim.diametric`（L1–L4） `dim.fit_code`（L3） `dim.linear`（L1–L4） `dim.ordinate`（L1–L4） `dim.radial`（L1–L4） `dim.tolerance`（L2–L4） |
+| **标注**（12） | `dim.aligned`（L1–L4） `dim.angular`（L1–L4） `dim.arc`（L1–L4） `dim.baseline`（L1–L4） `dim.continuous`（L1–L4） `dim.diametric`（L1–L4） `dim.fit_code`（L3） `dim.linear`（L1–L4） `dim.ordinate`（L1–L4） `dim.radial`（L1–L4） `dim.tolerance`（L2–L4） `dim.update`（L2–L4） |
 | **几何**（8） | `geom.arc`（L1–L4） `geom.circle`（L1–L4） `geom.ellipse`（L1–L4） `geom.hatch`（L1–L4） `geom.line`（L1–L4） `geom.polyline`（L1–L4） `geom.rect`（L1–L4） `geom.spline`（L1–L4） |
 | **符号**（5） | `symbol.balloon`（L1–L4） `symbol.centerline`（L1–L4） `symbol.centermark`（L1–L4） `symbol.roughness`（L1–L4） `symbol.weld`（L1–L4） |
 | **布尔/剖切**（4） | `boolean.intersect`（L1–L4） `boolean.section_slice`（L3–L4） `boolean.subtract`（L1–L4） `boolean.union`（L1–L4） |
 | **导出**（4） | `export.dwg`（L0–L4） `export.dxf`（L0–L4） `export.pdf`（L0–L3） `export.pdf_multipage`（L0–L3） |
-| **图层**（3） | `layer.create`（L2–L4） `layer.set_current`（L2–L4） `layer.snapshot`（L3–L4） |
+| **图层**（4） | `layer.create`（L2–L4） `layer.set_current`（L2–L4） `layer.snapshot`（L3–L4） `layer.state`（L2–L3） |
+| **实体**（3） | `solid.extrude`（L1–L4） `solid.primitive`（L1–L4） `solid.revolve`（L1–L4） |
 | **表格**（3） | `table.bom`（L1–L4） `table.chinese`（L1–L4） `table.grid`（L1–L4） |
 | **文字**（3） | `text.mtext`（L1–L4） `text.single`（L1–L4） `text.style`（L2–L4） |
 | **块**（2） | `block.define`（L1–L4） `block.insert_with_attributes`（L1–L4） |
+| **doc**（2） | `doc.close`（L1–L3） `doc.new`（L1–L3） |
 | **系统变量/样式**（2） | `env.dimstyle`（L2） `env.sysvar`（L2） |
 | **图框/布局**（2） | `frame.titleblock`（L3–L4） `layout.multipage`（L2–L4） |
-| **实体**（2） | `solid.extrude`（L1–L4） `solid.primitive`（L1–L4） |
 | **电气数据**（1） | `ae.db`（L0–L2） |
 | **形位公差**（1） | `gdt.tolerance`（L1–L4） |
 | **LISP**（1） | `lisp.execute`（L1–L4） |
 | **P&ID**（1） | `pid.symbol`（L1–L4） |
 | **PLC**（1） | `plc.build`（L1–L4） |
+| **plot**（1） | `plot.style`（L2–L3） |
 | **投影**（1） | `projection.orthographic`（L1–L4） |
 | **视图**（1） | `view.zoom`（L3） |
 <!-- gen:capabilities:END -->
@@ -132,6 +134,72 @@ L1 计数、L2 属性、L3 几何、L4 重开与环境自检；任何一项读�
 
 逐条证据与最小复现见内核仓库
 [`docs/PITFALLS.md`](https://github.com/Winterwind2017/autocad-agent-kit/blob/main/docs/PITFALLS.md)。
+
+## 实测踩过的坑（2026-11 挖掘新增，全是"不报错但不对"）
+
+> 每条按「现象 → 正确做法 → 判据」写。判据是**你能核对的证据**，不是"看起来好了"。
+
+### 1. `NETLOAD` 会挂死，Autoloader bundle 也不管用
+
+- 现象：命令行 `_.NETLOAD`、`(vl-cmdf "_.NETLOAD" …)` 都弹模态框并卡住；`FILEDIA=0` 无效。
+  把 bundle 放进 `%APPDATA%\Autodesk\ApplicationPlugins\` 也不加载。
+- 原因：`SECURELOAD=1` 且 `TRUSTEDPATHS` 为空 → 受信任路径外的 DLL 一律不加载。
+- 做法：注册表 `LOADCTRLS=2` + `MANAGED=1`，DLL 放进安装目录 `Plugins\AcadKit\`；
+  内核已封装成 `tools/netload.py --deploy`（含 4 项活验证）与 `--undeploy`。
+- 判据：部署后 .NET 通道的能力能跑通并读回几何；只看"命令返回"不算。
+
+### 2. `SetVariable("DIMTXT")` 不传导到新建标注
+
+- 现象：设 `DIMTXT=3.5`，变量读回 3.5，但新建 `AddDimRotated` 的文字高度仍是 2.5；`Regen` 也无效。
+- 原因：`DIM*` 是标注样式变量，`SetVariable` 只改当前值，不改样式对象里存的量。
+- 做法：改单条标注直接写它的 `TextHeight`（可写可读）；改样式要动
+  `DimStyles.Item(name).DimTxt`，而它在 pywin32 下是 stale dispatch（`<unknown>.DimTxt`），需 comtypes。
+- 判据：新建标注读回的文字高度 == 目标值。**只看到变量变了不算成功。**
+
+### 3. `SaveAs` 会"成功但不写文件"
+
+- 现象：格式码与扩展名不匹配（如 DXF 码存成 `.dwg`）、或扩展名不认识时，
+  `SaveAs` 返回成功，**文件根本没生成**。
+- 做法：存完必须查文件是否存在 + 字节数是否超过阈值；失败要带诊断
+  （用了哪个格式码、什么扩展名、实际字节数）。
+- 判据：文件存在，且能重新打开读回实体数与源图一致。
+
+### 4. 别让导出器偷偷建目录
+
+- 现象：导出函数自动 `makedirs`，把"父目录不存在"这种错误变成成功——坏路径永远测不出来。
+- 做法：默认不建目录，需要时用显式开关。
+- 判据：故意给不存在的父目录 → 必须抛错，而不是生成文件。
+
+### 5. `TRIM` / `EXTEND` 无头驱动：变量组合不对就卡提示符
+
+- 现象：直接发 `_.TRIM` 会停在"选择剪切边/选择要修剪的对象"，这一停就是一整轮。
+- 做法：先设 `OSMODE=0`、`HIGHLIGHT=0`、`CMDECHO=0`、`PICKADD=1`、
+  `TRIMEXTENDMODE=1`（快速模式），再用**坐标点选**（点必须落在要剪掉的那段上）。
+  偏移 `OFFSET` 同理：先给距离，再点对象，再点要偏的那一侧。
+- 判据：读回端点/面积，与**自己算出的期望值**一致（不要问 AutoCAD 算得对不对）。
+
+### 6. 线宽只能是标准档位
+
+- 现象：随手给个数字（如 12345）要么被拒、要么静默当默认值，出图粗细完全不对。
+- 做法：只用 BYLAYER / BYBLOCK / DEFAULT，或标准档位
+  （0,5,9,13,15,18,20,25,30,35,40,50,53,60,70,80,90,100,106,120,140,158,200,211，单位 0.01mm）。
+- 判据：读回解析出的毫米值，并能说出这个值是从实体、图层还是默认值继承来的。
+
+### 7. `-LAYERSTATE` 动过图层表就永久挂起
+
+- 现象：一旦改过图层表，再走命令行图层状态保存会卡在提示符，
+  `SendCommand` / `command` / `vl-cmdf` 都救不回来。
+- 做法：别用命令行图层状态；走 ActiveX 的 `LayerStateManager`（属性级快照 → 改 → 恢复）。
+- 判据：恢复后逐个图层属性读回一致。
+
+### 8. 别自己写 DWG 解析器
+
+- 现象：按 R13 规范读 AutoCAD 2025 的 `AC1032` 文件，段表读出来是垃圾
+  （记录编号全 0、偏移是天文数字）；在文件头附近扫候选布局，一个候选都不成立。
+- 做法：要读 DWG 就让 AutoCAD 打开它；要离线分析就走 DXF（内核里的 DXF 模块是
+  **无损直通**，未知实体原样保留）。结构层只报版本与字节数，
+  解析不了就**明说解析不了**，绝不输出假段表。
+- 判据：要么给出可核对的结构，要么给出"无法按该布局解析"的明确结论（退出码非 0）。
 
 ## 典型任务配方
 

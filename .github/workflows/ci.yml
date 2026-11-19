@@ -7,11 +7,15 @@ name: kernels/acad ci
 on:
   push:
     paths:
-      - "kernels/acad/**"
+      - "kernels/**"
+      - "skills/**"
+      - "scripts/**"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
-      - "kernels/acad/**"
+      - "kernels/**"
+      - "skills/**"
+      - "scripts/**"
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
@@ -60,3 +64,23 @@ jobs:
 
       - name: 署名文件存在
         run: test -f ATTRIBUTION.md && test -f docs/CADCRAFT_MINE.md
+
+  skills:
+    # 技能一致性是**跨仓**的：快照 ↔ 内核注册表 ↔ 路由覆盖。
+    # 放在仓库根跑，不继承上面 job 的 kernels/acad 工作目录。
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装依赖
+        run: pip install pyyaml
+
+      - name: 技能一致性（路由覆盖 + 快照↔注册表 + 各技能自带检查）
+        run: python scripts/check_skills.py --check

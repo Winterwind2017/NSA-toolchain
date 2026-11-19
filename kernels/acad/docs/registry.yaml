@@ -333,7 +333,7 @@ capabilities:
     family: env
     backend: [lisp]
     status: verified
-    source: "ActiveDimStyle 设为当前 + (setvar \'DIMTXT\' …)（其余写法全失败）"
+    source: "ActiveDimStyle 设为当前 + (setvar 'DIMTXT' …)（其余写法全失败）"
     judge: "当前 DimStyle 名称一致、DIMTXT 等变量读回一致、新标注生效；**限制**：实测 SetVariable(DIMTXT) 只改系统变量，不传导到新建标注（新建 DimRotated 的 TextHeight 仍为样式值 2.5，Regen 无效，2026-11-18 探针）；要真正生效需改 DimStyles.Item(name).DimTxt（pywin32 stale dispatch，需 comtypes）"
     evidence: "matrix #2.5-2；P1 真机 2026-10-21（acadkit caps）"
   # ── 3D 建模 / 布尔 ────────────────────────────────────────

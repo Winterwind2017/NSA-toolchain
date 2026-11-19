@@ -16,7 +16,7 @@ kernels/
   codesys/     CODESYS 3.5             （原 codesyskit）
   autoshop/    汇川 AutoShop V4.11      （原 autoshopkit）
 hub/           聚合网关 nsa-mcp-hub（MCP 端点、验收 runner、覆盖报告、run_all.ps1）
-skills/        6 个 agent 技能（原 6 个 ww-* 仓，按目录分开，共享 tools/）
+skills/        6 个域技能 + 1 个路由技能 nsa-toolchain/（先看它决定加载哪个域）
 docs/          仓库级文档（仓库地图、收官说明、迁移记录）
 scripts/       仓库级脚本（迁移/校验）
 ```
@@ -49,7 +49,20 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 
 # 单 kit 验收
 & $py -m nsa_mcp_hub.acceptance --kit sw
+
+# 技能一致性（路由覆盖 + 快照↔注册表 + 每个技能自带检查）；CI 里也会跑
+& $py scripts\check_skills.py --check
 ```
+
+## 技能层（给 agent 的"脑子"）
+
+内核是**手**（能执行、有判据），技能是**脑子**（什么时候用、有什么坑、怎么算做成）：
+
+- `skills/nsa-toolchain/` —— **路由**：只回答"用哪个域、什么顺序、怎么判"，不执行任何操作；
+- `skills/ww-*/` —— 6 个域技能，各自带 `capabilities.json` 快照与 `tools/check_skill.py`；
+- `skills/*/SKILL.md` 里出现的每个能力 id 都必须存在于对应内核的注册表，
+  由 `scripts/check_skills.py` 核对：**内部矛盾（FAIL）**与**跨仓版本漂移（WARN，`--strict` 升级为 FAIL）**分开报。
+- 没有 `docs/registry.yaml` 的内核（sw / autoshop / codesys）会被明确标成"**无法核对**"，不会假装通过。
 
 ## 历史与发布
 
