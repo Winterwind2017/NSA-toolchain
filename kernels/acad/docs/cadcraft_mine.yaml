@@ -163,6 +163,8 @@ items:
     mode: read
     value: 2
     hours: 8
+    status: done
+    evidence: 'src/acadkit/textmetrics.py（不移植 SHX 二进制解析：格式未公开、收益低；改为字宽估算——ASCII 分类宽度/CJK 全角/宽度因子/多行高度/文字框重叠）+ tests/test_text_dwg.py'
     batch: 3
     note: 只想知道它如何估字宽；完整移植性价比低
 
@@ -200,7 +202,7 @@ items:
     value: 3
     hours: 24
     batch: 4
-    note: 我们已有 AutoCAD 可读 DWG；价值在"批量扫描不占许可证/不启窗口"
+    note: '结构层已实现（版本/维护版本/段表自洽性检查，tools/dwg_info.py）；**未完成**：实测 AutoCAD 2025 的 AC1032 文件头布局与 R13 假设不同，按 R13 偏移读出垃圾——工具已改为「拒绝解释」而不是给假段表；实体级解码需按真实样本反推或引 ODA 规范'
 
   - id: cc.dwg.write_safety
     area: format

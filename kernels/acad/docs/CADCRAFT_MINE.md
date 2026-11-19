@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **36 / 40 项**（273h / 325h = 84%）。
+**进度**：已完成 **37 / 40 项**（281h / 325h = 86%）。
 
 ## 二、按域
 
@@ -106,7 +106,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 30 | `cc.geom.hatch_boundary` | 填充边界探测（射线法 + 孤岛嵌套） | 移植（改写成 Python） | 3 | 10h | crates/geom + engine/tests/hatch_assoc.rs | geom.hatch 目前只支持矩形边界 |
 | 31 | `cc.geom.intersect` | 椭圆/样条与直线/圆的交点（解析 + 细分混合） | 移植（改写成 Python） | 3 | 10h | crates/geom | 我们的椭圆/样条相交目前靠 AutoCAD 命令，离线几何校验时要自己算 |
 | 32 | `cc.curves.trim_extend` | 修剪/延伸的边界求交、最近点、多边界选择 | 移植（改写成 Python） | 3 | 12h | crates/geom + engine/tests/modify_curves.rs | 我们走 AutoCAD 命令，但"选哪条边/切哪一段"的判定逻辑仍要自己写 |
-| 33 | `cc.dwg.reader` | DWG 位级读取（不启 AutoCAD 也能查图） | 读设计做参考 | 3 | 24h | crates/dwg | 我们已有 AutoCAD 可读 DWG；价值在"批量扫描不占许可证/不启窗口" |
+| 33 | `cc.dwg.reader` | DWG 位级读取（不启 AutoCAD 也能查图） | 读设计做参考 | 3 | 24h | crates/dwg | 结构层已实现（版本/维护版本/段表自洽性检查，tools/dwg_info.py）；**未完成**：实测 AutoCAD 2025 的 AC1032 文件头布局与 R13 假设不同，按 R13 偏移读出垃圾——工具已改为「拒绝解释」而不是给假段表；实体级解码需按真实样本反推或引 ODA 规范 |
 | 34 | `cc.attribution` | 移植署名与合规做法 | 只读了解 | 2 | 2h | ATTRIBUTION.md / NOTICE | 一旦真 port 代码必须做；MIT/Apache 双许可的写法可直接照抄格式 |
 | 35 | `cc.autosave` | 自动保存与崩溃恢复语义 | 只读了解 | 2 | 4h | crates/engine/src/autosave.rs + tests/autosave.rs | 我们靠"用完即关"，恢复策略可借鉴 |
 | 36 | `cc.color.aci` | ACI 调色板 / 真彩 / 打印样式色映射表 | 移植（改写成 Python） | 2 | 4h | crates/color | 出图配色与 CTB 映射要查表，纯数据 |
@@ -121,7 +121,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 |---|---|---:|---:|
 | 1 | 记分与合规 | 5 / 5 | 19h / 19h |
 | 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
-| 3 | 算法组（纯数学） | 9 / 10 | 92h / 100h |
+| 3 | 算法组（纯数学） | 10 / 10 | 100h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 3 / 5 | 34h / 66h |
 | 5 | 模型组（AutoCAD 行为细节） | 11 / 11 | 74h / 74h |
 | 6 | Agent 接口 | 2 / 2 | 16h / 16h |
@@ -146,6 +146,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.curves.fillet_chamfer` —— src/acadkit/geom2d/curves.py::fillet/chamfer（含半径过大、平行、越界必抛错）
 - `cc.curves.offset` —— src/acadkit/geom2d/polygon.py::offset_polygon（miter + 外/内 + 自交/翻转/内接圆三重拦截）
 - `cc.curves.trim_extend` —— src/acadkit/geom2d/trim.py（cut_params/trim_segment 三种保留侧/extend_segment 双向延长，含圆剪刀与无交点必抛错）；13 例测试
+- `cc.fonts.shx` —— src/acadkit/textmetrics.py（不移植 SHX 二进制解析：格式未公开、收益低；改为字宽估算——ASCII 分类宽度/CJK 全角/宽度因子/多行高度/文字框重叠）+ tests/test_text_dwg.py
 - `cc.geom.hatch_boundary` —— src/acadkit/geom2d/polygon.py（point_in_polygon/classify_islands/hatch_area 净面积）
 - `cc.geom.intersect` —— src/acadkit/geom2d/curves.py（线线/线圆/圆圆/椭圆线）；tests/test_curves.py 覆盖相切/相离/越界
 - `cc.dxf.reader` —— src/acadkit/dxf/document.py::read（组码对/SECTION 分段/实体索引/图层表/ACADVER；畸形必抛错）+ tests/test_dxf.py
