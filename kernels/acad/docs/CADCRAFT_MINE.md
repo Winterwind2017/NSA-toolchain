@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **33 / 40 项**（247h / 325h = 76%）。
+**进度**：已完成 **36 / 40 项**（273h / 325h = 84%）。
 
 ## 二、按域
 
@@ -123,7 +123,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
 | 3 | 算法组（纯数学） | 9 / 10 | 92h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 3 / 5 | 34h / 66h |
-| 5 | 模型组（AutoCAD 行为细节） | 8 / 11 | 48h / 74h |
+| 5 | 模型组（AutoCAD 行为细节） | 11 / 11 | 74h / 74h |
 | 6 | Agent 接口 | 2 / 2 | 16h / 16h |
 
 已落地的条目与证据：
@@ -155,8 +155,11 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.assoc.dim` —— src/acadkit/model/assoc.py（锚点=实体+子元素；值由锚点算出；stale 检测与 unresolved 报告）+ tests/test_assoc.py 10 例
 - `cc.audit` —— src/acadkit/dxf/audit.py（重复句柄/非有限坐标/零长度线/非正半径/未知图层/多段线顶点不一致或重复/文字高度非正；error>warn>info）+ tools/audit_dxf.py CLI；tests/test_audit.py 10 例
 - `cc.autosave` —— src/acadkit/session.py（快照复制+sha256 清单、校验、按清单还原；拒绝损坏快照）+ tests/test_session_runlog.py
+- `cc.block.dyngrip` —— src/acadkit/model/dyngrip.py（参数/可见性/夹点模型：参数上下限校验、切换可见性给 show/hide、夹点随参数算；跟踪 current）+ tests/test_models2.py
+- `cc.block.refedit` —— src/acadkit/model/refedit.py（idle→editing→committed/aborted 状态机；未进编辑不许改、放弃逐键还原、重复收尾报错；begin 深拷贝避免改调用方字典）+ 同一测试文件
 - `cc.compare` —— src/acadkit/dxf/compare.py（按句柄逐实体增/删/改，字段级差异，容差 1e-6）+ tests/test_compare_diag.py
 - `cc.overkill` —— src/acadkit/dxf/cleanup.py::find_duplicates/geo_key（几何指纹；直线方向无关；未知类型不去重）+ tests/test_cleanup.py
+- `cc.plot.pipeline` —— src/acadkit/model/plotplan.py（BYLAYER/BYBLOCK 继承、非法线宽拦截、可打印性/透明度、线宽直方图与三条交付告警）+ 同一测试文件
 - `cc.purge` —— src/acadkit/dxf/cleanup.py::find_unused（未用图层/线型/块；保留 0 与 *Paper_Space）+ tests/test_cleanup.py
 - `cc.qdim` —— src/acadkit/model/array.py::plan_qdim（按方向分组→首尾相接成连续、同起点成基线；斜边不参与；偏移必须>0）+ 同一测试文件
 - `cc.control_server` —— src/acadkit/agent/queue.py（按行 JSON 协议、错误不中断连接、Queue 统计与错误分类）+ 同一测试文件

@@ -245,6 +245,8 @@ items:
     mode: design
     value: 4
     hours: 10
+    status: done
+    evidence: 'src/acadkit/model/dyngrip.py（参数/可见性/夹点模型：参数上下限校验、切换可见性给 show/hide、夹点随参数算；跟踪 current）+ tests/test_models2.py'
     batch: 5
     note: 我们的 block.dynamic 只做"读可见性"，它的模型能告诉我们还要读哪些
 
@@ -255,6 +257,8 @@ items:
     mode: design
     value: 3
     hours: 8
+    status: done
+    evidence: 'src/acadkit/model/refedit.py（idle→editing→committed/aborted 状态机；未进编辑不许改、放弃逐键还原、重复收尾报错；begin 深拷贝避免改调用方字典）+ 同一测试文件'
     batch: 5
     depends_on: [cc.assoc.dim]
     note: 我们走"重定义块+重插"，但状态机值得对照
@@ -302,6 +306,8 @@ items:
     mode: design
     value: 3
     hours: 8
+    status: done
+    evidence: 'src/acadkit/model/plotplan.py（BYLAYER/BYBLOCK 继承、非法线宽拦截、可打印性/透明度、线宽直方图与三条交付告警）+ 同一测试文件'
     batch: 5
     note: 我们 plot.style 刚打通；它把"样式表→线宽→透明"分层的做法可对照
 
