@@ -211,6 +211,8 @@ items:
     mode: design
     value: 4
     hours: 8
+    status: done
+    evidence: 'tests/live_write_safety.py：画 6 类实体→导出 DXF 基线→存 DWG→关→重开→再导出 DXF→dxf.compare 逐实体零增零删零改 + dxf.audit 零问题（实测 9/9 通过）'
     batch: 4
     depends_on: [cc.dxf.reader]
     note: '它的 #1 blocker 反过来教我们：导出后要能证明"什么都没丢"'
