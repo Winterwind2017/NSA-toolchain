@@ -34,7 +34,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 只读了解 | 5 | 21h | 6% | 只为了解，不产出代码 |
 | **合计** | **40** | **325h** | 100% | — |
 
-**进度**：已完成 **38 / 40 项**（289h / 325h = 89%）。
+**进度**：已完成 **39 / 40 项**（301h / 325h = 93%）。
 
 ## 二、按域
 
@@ -106,7 +106,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 30 | `cc.geom.hatch_boundary` | 填充边界探测（射线法 + 孤岛嵌套） | 移植（改写成 Python） | 3 | 10h | crates/geom + engine/tests/hatch_assoc.rs | geom.hatch 目前只支持矩形边界 |
 | 31 | `cc.geom.intersect` | 椭圆/样条与直线/圆的交点（解析 + 细分混合） | 移植（改写成 Python） | 3 | 10h | crates/geom | 我们的椭圆/样条相交目前靠 AutoCAD 命令，离线几何校验时要自己算 |
 | 32 | `cc.curves.trim_extend` | 修剪/延伸的边界求交、最近点、多边界选择 | 移植（改写成 Python） | 3 | 12h | crates/geom + engine/tests/modify_curves.rs | 我们走 AutoCAD 命令，但"选哪条边/切哪一段"的判定逻辑仍要自己写 |
-| 33 | `cc.dwg.reader` | DWG 位级读取（不启 AutoCAD 也能查图） | 读设计做参考 | 3 | 24h | crates/dwg | 结构层已实现（版本/维护版本/段表自洽性检查，tools/dwg_info.py）；**未完成**：实测 AutoCAD 2025 的 AC1032 文件头布局与 R13 假设不同，按 R13 偏移读出垃圾——工具已改为「拒绝解释」而不是给假段表；实体级解码需按真实样本反推或引 ODA 规范 |
+| 33 | `cc.dwg.reader` | DWG 位级读取（不启 AutoCAD 也能查图） | 读设计做参考 | 3 | 24h | crates/dwg | 结构层已实现（版本/维护版本/段表自洽性检查，tools/dwg_info.py）；**未完成**：实测 AutoCAD 2025 的 AC1032 文件头布局与 R13 假设不同，按 R13 偏移读出垃圾——工具已改为「拒绝解释」而不是给假段表；实体级解码需按真实样本反推或引 ODA 规范结构层已实现（版本/维护版本/段表自洽性检查，tools/dwg_info.py）；**未完成**：实测 AutoCAD 2025 的 AC1032 文件头布局与 R13 假设不同，按 R13 偏移读出垃圾——工具已改为「拒绝解释」而不是给假段表；实体级解码需按真实样本反推或引 ODA 规范；已对真文件扫描 0x08–0x80（步长 9/11/13、CRC 间隔 0/2）寻找候选段表，**候选数为 0**——说明 R2004+ 不是简单移位的布局，需要 ODA 规范或完整逆向 |
 | 34 | `cc.attribution` | 移植署名与合规做法 | 只读了解 | 2 | 2h | ATTRIBUTION.md / NOTICE | 一旦真 port 代码必须做；MIT/Apache 双许可的写法可直接照抄格式 |
 | 35 | `cc.autosave` | 自动保存与崩溃恢复语义 | 只读了解 | 2 | 4h | crates/engine/src/autosave.rs + tests/autosave.rs | 我们靠"用完即关"，恢复策略可借鉴 |
 | 36 | `cc.color.aci` | ACI 调色板 / 真彩 / 打印样式色映射表 | 移植（改写成 Python） | 2 | 4h | crates/color | 出图配色与 CTB 映射要查表，纯数据 |
@@ -120,7 +120,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 | 批次 | 主题 | 已完成 / 总项 | 完成工时 / 总工时 |
 |---|---|---:|---:|
 | 1 | 记分与合规 | 5 / 5 | 19h / 19h |
-| 2 | 规格组（测试变判据） | 6 / 7 | 38h / 50h |
+| 2 | 规格组（测试变判据） | 7 / 7 | 50h / 50h |
 | 3 | 算法组（纯数学） | 10 / 10 | 100h / 100h |
 | 4 | 格式组（读别人的图/不丢数据） | 4 / 5 | 42h / 66h |
 | 5 | 模型组（AutoCAD 行为细节） | 11 / 11 | 74h / 74h |
@@ -136,6 +136,7 @@ CADCraft 的最大资产**不是**它的几何内核（那部分对我们无用�
 - `cc.dimvars` —— tests/live_robustness.py E 组（6 个 DIM* 变量读回一致 + 非法负字高被拒）
 - `cc.mcp.params` —— tests/live_robustness.py F 组（坏参数/缺参必须抛明确异常，不得静默画出错东西）
 - `cc.spec.annotation` —— tests/live_spec_annotation.py 8 例（文字高度/替代/位置/基线间距/MTEXT 宽度/长文本），8/8 通过
+- `cc.spec.draw_modify` —— tests/live_spec_modify.py：TRIM/EXTEND/OFFSET 无头驱动（OSMODE=0、HIGHLIGHT=0、TRIMEXTENDMODE=1 + 坐标点选），期望值由 geom2d.trim 独立算出，实测 3/3 通过
 - `cc.spec.files` —— tests/live_spec_files.py F1–F6（版本/往返/DXF/坏扩展名/缺目录），6/6 通过；顺带修 save_as 静默失败
 - `cc.spec.lisp` —— tests/live_robustness.py G 组（合法 LISP 能画、非法 LISP 报错不挂）
 - `cc.spec.robustness` —— tests/live_robustness.py A/B/C/D 组（非有限、坏句柄、坏参数、保存失败），15/15 通过
