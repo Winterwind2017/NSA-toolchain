@@ -33,6 +33,25 @@ class Material:
 
 MAX_PER_LINE = 16      # ccx: "there should not be more than 16 entries in a line"
 
+# gmsh tet10 的中间节点顺序与 Abaqus C3D10 不同：交换最后两个即可。
+# gmsh 边序: (0,1)(1,2)(2,0)(3,0)(3,2)(3,1)；Abaqus: (1,2)(2,3)(3,1)(1,4)(2,4)(3,4)
+GMSH_TO_ABAQUS_TET10 = (0, 1, 2, 3, 4, 5, 6, 7, 9, 8)
+ELEMENT_TYPE = {1: "C3D4", 2: "C3D10"}
+
+
+def _element_lines(mesh: "TetMesh") -> List[str]:
+    out: List[str] = []
+    if mesh.order == 2:
+        if not mesh.tets10:
+            raise FeaError("order=2 但缺少 10 节点连接")
+        for i, conn in enumerate(mesh.tets10, 1):
+            ids = [conn[k] for k in GMSH_TO_ABAQUS_TET10]
+            out.append("%d, %s" % (i, ", ".join(str(x) for x in ids)))
+    else:
+        for i, t in enumerate(mesh.tets, 1):
+            out.append("%d, %d, %d, %d, %d" % (i, t[0], t[1], t[2], t[3]))
+    return out
+
 
 def _write_id_set(add, name: str, ids: Sequence[int]) -> None:
     ids = sorted(set(int(i) for i in ids))
@@ -44,6 +63,7 @@ def write_inp(path: str, mesh: TetMesh, *, material: Material,
               fixed_nodes: Sequence[int], load_nodes: Sequence[int],
               load_vector: Vec3, heading: str = "acadkit fea",
               nodal_loads: Optional[Dict[int, Vec3]] = None,
+              measure_nodes: Sequence[int] = (),
               print_nodes: bool = True, print_stress: bool = True) -> Dict[str, object]:
     """写 .inp；返回统计（节点数/单元数/载荷合力），便于判据核对。"""
     mat = material.validate()
@@ -65,9 +85,16 @@ def write_inp(path: str, mesh: TetMesh, *, material: Material,
     for v in (fx, fy, fz):
         if v != v or abs(v) == float("inf"):
             raise FeaError("载荷含非有限值：%r" % (load_vector,))
-    total = math.sqrt(fx * fx + fy * fy + fz * fz)
-    if total <= 0:
-        raise FeaError("载荷合力为 0")
+    if nodal_loads:
+        # 纯力矩工况的合力本来就是 0，所以这里按**载荷绝对值之和**判断有没有载荷
+        total = sum(math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+                    for v in nodal_loads.values())
+        if total <= 0:
+            raise FeaError("逐节点载荷全为 0")
+    else:
+        total = math.sqrt(fx * fx + fy * fy + fz * fz)
+        if total <= 0:
+            raise FeaError("载荷合力为 0")
     per = (fx / len(load_nodes), fy / len(load_nodes), fz / len(load_nodes))
 
     lines: List[str] = []
@@ -78,9 +105,8 @@ def write_inp(path: str, mesh: TetMesh, *, material: Material,
     for nid in sorted(mesh.nodes):
         x, y, z = mesh.nodes[nid]
         add("%d, %.10g, %.10g, %.10g" % (nid, x, y, z))
-    add("*ELEMENT, TYPE=C3D4, ELSET=EALL")
-    for i, tet in enumerate(mesh.tets, 1):
-        add("%d, %d, %d, %d, %d" % (i, tet[0], tet[1], tet[2], tet[3]))
+    add("*ELEMENT, TYPE=%s, ELSET=EALL" % ELEMENT_TYPE.get(mesh.order, "C3D4"))
+    lines.extend(_element_lines(mesh))
     add("*NSET, NSET=FIX")
     _write_id_set(add, "FIX", fixed_nodes)
     add("*NSET, NSET=LOAD")
@@ -108,9 +134,15 @@ def write_inp(path: str, mesh: TetMesh, *, material: Material,
             add("%d, 1, %.10g" % (n, per[0]))
             add("%d, 2, %.10g" % (n, per[1]))
             add("%d, 3, %.10g" % (n, per[2]))
-    if print_nodes:
+    if measure_nodes:
+        add("*NSET, NSET=MEASURE")
+        _write_id_set(add, "MEASURE", measure_nodes)
+        add("*NODE PRINT, NSET=MEASURE")
+        add("U")
+    elif print_nodes:
         add("*NODE PRINT, NSET=LOAD, TOTALS=YES")
         add("U")
+    if print_nodes:
         add("*NODE PRINT, NSET=FIX")
         add("RF")
     add("*NODE FILE")

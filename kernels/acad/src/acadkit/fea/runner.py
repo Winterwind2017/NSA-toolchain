@@ -137,17 +137,20 @@ def _solve_mesh(mesh, *, workdir: str, job: str, E: float, nu: float,
         raise FeaError("没选到约束面/加载面（改 mesh_size 或检查几何）")
 
     os.makedirs(workdir, exist_ok=True)
+    measure = mesh.select(lambda p: p[axis] >= hi - tol)
     inp_path = os.path.join(workdir, "%s.inp" % job)
     info = inpmod.write_inp(inp_path, mesh, material=inpmod.Material(E=E, nu=nu),
                             fixed_nodes=fixed, load_nodes=sorted(loads),
                             load_vector=tuple(total_force if i == axis else 0.0 for i in range(3)),
-                            nodal_loads=loads, heading="axial %s" % job)
+                            nodal_loads=loads, measure_nodes=measure,
+                            heading="axial %s" % job)
     runres = run(inp_path, ccx=ccx)
     if not runres.ok:
         return {"ok": False, "stage": "solve", "mesh": mesh.summary(),
                 "inp": info, "run": runres.to_dict()}
     dat = inpmod.parse_dat(runres.files["dat"])
-    disp = dat["displacements"].get("LOAD") or {}
+    blocks = dat["displacements"]
+    disp = blocks.get("MEASURE") or blocks.get("LOAD") or {}
     peak = inpmod.max_component(disp, axis=axis)
     length = hi - lo
     volume = mesh.volume()
@@ -179,8 +182,11 @@ def solve_bar(*, length: float, width: float, height: float, mesh_size: float,
     area_eff = out["area_effective"]              # 用网格自身截面积对账（矩形时应等于 area_geo）
     expected = total_force * length / (E * area_eff)
     rel = abs(abs(out["measured"]) - expected) / expected if expected else float("inf")
-    out.update({"ok": rel <= tol, "stage": "done", "measured_uz": out.pop("measured"),
-                "expected_uz": expected, "relative_error": rel, "tol": tol,
+    measured = out.pop("measured")
+    out.update({"ok": rel <= tol, "stage": "done",
+                "measured": measured, "expected": expected,      # 统一键名（CLI 用）
+                "measured_uz": measured, "expected_uz": expected,
+                "relative_error": rel, "tol": tol,
                 "area_geometric": area_geo, "area_effective": area_eff,
                 "area_error": abs(area_eff - area_geo) / area_geo})
     return out
@@ -206,8 +212,11 @@ def solve_cylinder(*, radius: float, length: float, mesh_size: float,
     area_eff = out["area_effective"]              # 圆柱网格是内接多面体，会略小于理想圆面积
     expected = total_force * length / (E * area_eff)
     rel = abs(abs(out["measured"]) - expected) / expected if expected else float("inf")
-    out.update({"ok": rel <= tol, "stage": "done", "measured_uz": out.pop("measured"),
-                "expected_uz": expected, "relative_error": rel, "tol": tol,
+    measured = out.pop("measured")
+    out.update({"ok": rel <= tol, "stage": "done",
+                "measured": measured, "expected": expected,      # 统一键名（CLI 用）
+                "measured_uz": measured, "expected_uz": expected,
+                "relative_error": rel, "tol": tol,
                 "area_geometric": area_geo, "area_effective": area_eff,
                 "area_error": abs(area_eff - area_geo) / area_geo})
     return out

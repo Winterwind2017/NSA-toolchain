@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
-"""轴向拉伸 screening：划网格 → 写 inp → 调 ccx → 与解析解对账。
+"""FEA screening：五种标准工况，全部带闭式解判据。
 
-    python tools/fea_screen.py --length 100 --width 10 --height 10 --force 10000
-    python tools/fea_screen.py --length 300 --diameter 20 --force 5000 --json
+    python tools/fea_screen.py --case bar    --length 100 --width 10 --height 10 --force 10000
+    python tools/fea_screen.py --case cylinder --length 300 --diameter 20 --force 5000
+    python tools/fea_screen.py --case cantilever --length 200 --width 20 --height 20 --force 100
+    python tools/fea_screen.py --case torsion --length 300 --radius 10 --torque 50000
+    python tools/fea_screen.py --case plate  --side 100 --thickness 4 --pressure 0.01
 
-判据（不是"跑完就算成功"）：
-  让 ν=0 时位移必须等于 FL/(EA)（相对误差 ≤1e-6）；
-  ν≠0 时固定端限制横向收缩，位移会偏小 —— 这时只报数并标 poisson_constraint。
+判据（都可复算）：
+    bar / cylinder : uz = FL/(EA)
+    cantilever     : δ  = PL³/(3EI)
+    torsion        : θ  = TL/(GJ)
+    plate          : w  = 0.00406·q·a⁴/D
 
-退出码：0 = 解出来且（ν=0 时）与理论一致；1 = 没解出来；2 = 参数错误。
+默认二阶四面体（C3D10）。退出码：0 = 在容差内；1 = 超差或未解出；2 = 参数错误。
 """
 
 from __future__ import annotations
@@ -22,77 +27,135 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
 
-from acadkit.fea import runner as R          # noqa: E402
-from acadkit.fea.mesh import FeaError        # noqa: E402
+from acadkit.fea import cases as C          # noqa: E402
+from acadkit.fea import runner as R         # noqa: E402
+from acadkit.fea.mesh import FeaError       # noqa: E402
+
+CASES = ("bar", "cylinder", "cantilever", "torsion", "plate")
+
+
+def _workdir(args, tag: str) -> str:
+    return args.workdir or os.path.join(
+        os.environ.get("TEMP", "/tmp"), "fea_%s_%s" % (args.case, tag))
+
+
+def run_case(args) -> dict:
+    if args.case == "bar":
+        return R.solve_bar(length=args.length, width=args.width, height=args.height,
+                           mesh_size=_mesh(args, max(args.width, args.height)),
+                           E=args.E, nu=args.nu, total_force=args.force,
+                           tol=args.tol, workdir=_workdir(args, "bar"))
+    if args.case == "cylinder":
+        return R.solve_cylinder(radius=args.diameter / 2.0, length=args.length,
+                                mesh_size=_mesh(args, args.diameter),
+                                E=args.E, nu=args.nu, total_force=args.force,
+                                tol=args.tol, workdir=_workdir(args, "cyl"))
+    if args.case == "cantilever":
+        return C.cantilever_beam(length=args.length, width=args.width, height=args.height,
+                                 mesh_size=_mesh(args, args.height), E=args.E, nu=args.nu,
+                                 force=args.force, order=args.order, tol=args.tol,
+                                 workdir=_workdir(args, "cant"))
+    if args.case == "torsion":
+        return C.shaft_torsion(radius=args.radius or args.diameter / 2.0, length=args.length,
+                               mesh_size=_mesh(args, (args.radius or args.diameter / 2.0) * 2),
+                               E=args.E, nu=args.nu, torque=args.torque,
+                               order=args.order, tol=args.tol,
+                               workdir=_workdir(args, "tors"))
+    if args.case == "plate":
+        # 板默认 t/h=2（够 5% 判据，且比 t/h=3 便宜一个量级）
+        return C.simply_supported_plate(side=args.side, thickness=args.thickness,
+                                        mesh_size=_mesh(args, args.thickness * 1.5),
+                                        E=args.E, nu=args.nu, pressure=args.pressure,
+                                        order=args.order, tol=args.tol,
+                                        workdir=_workdir(args, "plate"))
+    raise FeaError("未知工况：%s（可用：%s）" % (args.case, ", ".join(CASES)))
+
+
+def _mesh(args, characteristic: float) -> float:
+    return args.mesh_size or max(characteristic / 3.0, 0.5)
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="轴向拉伸 FEA screening")
-    ap.add_argument("--length", type=float, required=True, help="轴向长度 mm")
-    ap.add_argument("--width", type=float, default=10.0, help="截面宽（矩形）mm")
-    ap.add_argument("--height", type=float, default=10.0, help="截面高（矩形）mm")
-    ap.add_argument("--diameter", type=float, default=0.0,
-                    help="给直径则按圆截面算截面积（忽略 width/height 的面积）")
-    ap.add_argument("--force", type=float, required=True, help="总拉力 N")
-    ap.add_argument("--E", type=float, default=210000.0, help="弹性模量 MPa")
-    ap.add_argument("--nu", type=float, default=0.0, help="泊松比（0 才能与一维理论严格对账）")
-    ap.add_argument("--mesh-size", type=float, default=0.0, help="目标单元尺寸 mm，默认取截面/3")
-    ap.add_argument("--workdir", default="", help="工作目录（默认建临时目录）")
+    ap = argparse.ArgumentParser(description="FEA screening（五种工况，带解析判据）")
+    ap.add_argument("--case", default="bar", choices=CASES)
+    ap.add_argument("--length", type=float, default=100.0)
+    ap.add_argument("--width", type=float, default=10.0)
+    ap.add_argument("--height", type=float, default=10.0)
+    ap.add_argument("--diameter", type=float, default=0.0)
+    ap.add_argument("--radius", type=float, default=0.0)
+    ap.add_argument("--side", type=float, default=100.0, help="板边长")
+    ap.add_argument("--thickness", type=float, default=4.0, help="板厚")
+    ap.add_argument("--force", type=float, default=0.0, help="轴向/悬臂载荷 N")
+    ap.add_argument("--torque", type=float, default=0.0, help="扭矩 N·mm")
+    ap.add_argument("--pressure", type=float, default=0.0, help="板面压力 MPa")
+    ap.add_argument("--E", type=float, default=210000.0)
+    ap.add_argument("--nu", type=float, default=0.3)
+    ap.add_argument("--mesh-size", type=float, default=0.0)
+    ap.add_argument("--order", type=int, default=2, choices=(1, 2))
+    ap.add_argument("--tol", type=float, default=0.0, help="覆盖默认容差")
+    ap.add_argument("--workdir", default="")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
+    # 每种工况的必备参数与默认容差
+    defaults = {"bar": 1e-6, "cylinder": 5e-3, "cantilever": 1e-2,
+                "torsion": 1e-2, "plate": 5e-2}
+    note = ""
+    if args.case in ("bar", "cylinder") and abs(args.nu) > 1e-12 and defaults[args.case] < 1e-2:
+        # 一维杆理论假设横向自由收缩；固定端会限制泊松收缩（ν≠0 时偏刚 ~0.5%）
+        defaults[args.case] = 5e-2
+        note = ("提示：ν=%.2f≠0 时固定端限制泊松收缩，与一维杆理论本就有偏差，"
+                "容差自动放宽到 5e-2；要严格对账请加 --nu 0" % args.nu)
+    if args.tol <= 0:
+        args.tol = defaults[args.case]
+    required = {"bar": ("force",), "cylinder": ("force",), "cantilever": ("force",),
+                "torsion": ("torque",), "plate": ("pressure",)}[args.case]
+    missing = [n for n in required if getattr(args, n) <= 0]
+    if missing:
+        print("参数错误：%s 工况需要 --%s > 0" % (args.case, ", --".join(missing)),
+              file=sys.stderr)
+        return 2
+    if args.case == "cylinder" and args.diameter <= 0:
+        print("参数错误：cylinder 需要 --diameter", file=sys.stderr)
+        return 2
+    if args.case == "torsion" and args.radius <= 0 and args.diameter <= 0:
+        print("参数错误：torsion 需要 --radius 或 --diameter", file=sys.stderr)
+        return 2
+
     try:
-        area = (math.pi * (args.diameter / 2) ** 2 if args.diameter > 0
-                else args.width * args.height)
-        mesh_size = args.mesh_size or max(args.width, args.height) / 3.0
-        workdir = args.workdir or os.path.join(
-            os.environ.get("TEMP", "/tmp"), "fea_screen_%dx%g" % (int(args.length), args.force))
-        if args.diameter > 0:
-            out = R.solve_cylinder(radius=args.diameter / 2.0, length=args.length,
-                                   mesh_size=mesh_size, E=args.E, nu=args.nu,
-                                   total_force=args.force, workdir=workdir)
-        else:
-            out = R.solve_bar(length=args.length, width=args.width, height=args.height,
-                              mesh_size=mesh_size, E=args.E, nu=args.nu,
-                              total_force=args.force, workdir=workdir)
+        out = run_case(args)
     except FeaError as exc:
         print("FEA 失败：%s" % exc, file=sys.stderr)
         return 2
 
     solved = out.get("stage") == "done"
-    if not solved:
-        verdict = "not_solved"
-    elif out.get("ok"):
-        verdict = "ok"
-    elif args.nu != 0.0:
-        verdict = "poisson_constraint"      # ν≠0 的约束效应，不是错
-    else:
-        verdict = "mismatch"
-
-    payload = {"verdict": verdict, "area": round(area, 6), "mesh_size": mesh_size,
-               **{k: out.get(k) for k in ("ok", "stage", "mesh", "inp", "run",
-                                          "measured_uz", "expected_uz", "relative_error")}}
+    payload = {"case": args.case, "order": args.order, "tol": args.tol,
+               "ok": bool(out.get("ok")), "stage": out.get("stage"),
+               "measured": out.get("measured"), "expected": out.get("expected"),
+               "relative_error": out.get("relative_error"),
+               "mesh": out.get("mesh"), "run": out.get("run")}
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
     else:
         m = out.get("mesh") or {}
-        print("网格  ：%s 节点 / %s 单元 / 倒置 %s / 体积 %s mm³"
+        if note:
+            print(note)
+        print("工况：%s（order=%d）" % (args.case, args.order))
+        print("网格：%s 节点 / %s 单元 / 倒置 %s / 体积 %s mm³"
               % (m.get("nodes"), m.get("tets"), m.get("inverted"), m.get("volume")))
-        area_eff = out.get("area_effective") or area
-        print("载荷  ：%.1f N 于 %.3g mm²（网格有效 %.4g，几何近似误差 %.3f%%）→ σ = %.3f MPa"
-              % (args.force, area, area_eff, (out.get("area_error") or 0) * 100,
-                 args.force / area_eff))
         if solved:
-            print("实测  ：uz = %.7g mm" % abs(out["measured_uz"]))
-            print("理论  ：uz = FL/(EA) = %.7g mm" % out["expected_uz"])
-            print("相对误差：%.3e（容差 %.1e）" % (out["relative_error"], out.get("tol", 1e-6)))
+            print("实测：%.7g" % abs(out["measured"]))
+            print("理论：%.7g" % abs(out["expected"]))
+            print("相对误差：%.3e（容差 %.1e）"
+                  % (out["relative_error"], args.tol))
+            print("结论：%s" % ("ok" if out.get("ok") else "超差"))
         else:
             print("未解出：%s" % (out.get("run") or {}).get("stdout_tail", [])[-4:])
-        print("结论  ：%s" % verdict)
+            print("结论：not_solved")
 
     if not solved:
         return 1
-    return 0 if verdict in ("ok", "poisson_constraint") else 1
+    return 0 if out.get("ok") else 1
 
 
 if __name__ == "__main__":

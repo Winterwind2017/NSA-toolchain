@@ -31,8 +31,10 @@ class TetMesh:
     """节点 id → 坐标；四面体 → 4 个节点 id（gmsh 编号与 C3D4 约定一致）。"""
 
     nodes: Dict[int, Vec3]
-    tets: List[Tuple[int, int, int, int]]
+    tets: List[Tuple[int, int, int, int]]          # 只用 4 个角点（体积/质量用）
     source: str = ""
+    order: int = 1                                  # 1=C3D4, 2=C3D10
+    tets10: List[Tuple[int, ...]] = field(default_factory=list)   # 10 节点连接（gmsh 序）
 
     def bbox(self) -> Dict[str, float]:
         xs = [p[0] for p in self.nodes.values()]
@@ -115,8 +117,29 @@ def _positive(v: float, name: str) -> float:
     return x
 
 
+def _collect(order: int, node_tags, coords, types, node_sets) -> Tuple[Dict[int, Vec3], List, List]:
+    nodes: Dict[int, Vec3] = {}
+    for i, tag in enumerate(node_tags):
+        nodes[int(tag)] = (float(coords[3 * i]), float(coords[3 * i + 1]),
+                           float(coords[3 * i + 2]))
+    corners: List[Tuple[int, int, int, int]] = []
+    full: List[Tuple[int, ...]] = []
+    want = 4 if order == 1 else 11            # gmsh: 4=tet4, 11=tet10
+    for etype, ntags in zip(types, node_sets):
+        if int(etype) != want:
+            raise FeaError("单元类型不符：期望 %d，得到 %s（order=%d）" % (want, etype, order))
+        flat = [int(n) for n in ntags]
+        per = 4 if order == 1 else 10
+        for k in range(0, len(flat), per):
+            chunk = tuple(flat[k:k + per])
+            corners.append(chunk[:4])
+            full.append(chunk)
+    return nodes, corners, full
+
+
 def box_mesh(sx: float, sy: float, sz: float, *, mesh_size: float,
-             origin: Vec3 = (0.0, 0.0, 0.0), name: str = "box") -> TetMesh:
+             origin: Vec3 = (0.0, 0.0, 0.0), name: str = "box",
+             order: int = 1) -> TetMesh:
     """长方体四面体网格。原点在角点，沿 +X/+Y/+Z 延伸。"""
     import gmsh
 
@@ -136,30 +159,21 @@ def box_mesh(sx: float, sy: float, sz: float, *, mesh_size: float,
         gmsh.option.setNumber("Mesh.CharacteristicLengthMin", h * 0.4)
         gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
         gmsh.option.setNumber("Mesh.Algorithm", 6)
+        gmsh.option.setNumber("Mesh.ElementOrder", 2 if order == 2 else 1)
         gmsh.model.mesh.generate(3)
-
         node_tags, coords, _ = gmsh.model.mesh.getNodes()
-        nodes: Dict[int, Vec3] = {}
-        for i, tag in enumerate(node_tags):
-            nodes[int(tag)] = (float(coords[3 * i]), float(coords[3 * i + 1]),
-                               float(coords[3 * i + 2]))
         types, _, node_sets = gmsh.model.mesh.getElements(3)
-        tets: List[Tuple[int, int, int, int]] = []
-        for etype, ntags in zip(types, node_sets):
-            if int(etype) != 4:                       # 4 = 4 节点四面体
-                raise FeaError("网格里出现非四面体体单元（type=%s）" % etype)
-            flat = [int(n) for n in ntags]
-            for k in range(0, len(flat), 4):
-                tets.append((flat[k], flat[k + 1], flat[k + 2], flat[k + 3]))
-        if not tets:
+        nodes, corners, full = _collect(order, node_tags, coords, types, node_sets)
+        if not corners:
             raise FeaError("没有生成体单元（mesh_size=%r 可能太大或几何有问题）" % mesh_size)
-        return TetMesh(nodes=nodes, tets=tets, source="gmsh box %gx%gx%g" % (sx, sy, sz))
+        return TetMesh(nodes=nodes, tets=corners, order=order, tets10=full,
+                       source="gmsh box %gx%gx%g order=%d" % (sx, sy, sz, order))
     finally:
         gmsh.finalize()
 
 
 def cylinder_mesh(radius: float, length: float, *, mesh_size: float,
-                  axis: str = "z", name: str = "cyl") -> TetMesh:
+                  axis: str = "z", name: str = "cyl", order: int = 1) -> TetMesh:
     """圆柱（沿指定轴），用于轴类件。"""
     import gmsh
 
@@ -178,20 +192,14 @@ def cylinder_mesh(radius: float, length: float, *, mesh_size: float,
             raise FeaError("axis 只支持 x / z")
         gmsh.model.occ.synchronize()
         gmsh.option.setNumber("Mesh.MeshSizeMax", h)
+        gmsh.option.setNumber("Mesh.ElementOrder", 2 if order == 2 else 1)
         gmsh.model.mesh.generate(3)
         node_tags, coords, _ = gmsh.model.mesh.getNodes()
-        nodes = {int(t): (float(coords[3 * i]), float(coords[3 * i + 1]),
-                          float(coords[3 * i + 2])) for i, t in enumerate(node_tags)}
         types, _, node_sets = gmsh.model.mesh.getElements(3)
-        tets: List[Tuple[int, int, int, int]] = []
-        for etype, ntags in zip(types, node_sets):
-            if int(etype) != 4:
-                raise FeaError("网格里出现非四面体体单元（type=%s）" % etype)
-            flat = [int(n) for n in ntags]
-            for k in range(0, len(flat), 4):
-                tets.append((flat[k], flat[k + 1], flat[k + 2], flat[k + 3]))
-        if not tets:
+        nodes, corners, full = _collect(order, node_tags, coords, types, node_sets)
+        if not corners:
             raise FeaError("没有生成体单元")
-        return TetMesh(nodes=nodes, tets=tets, source="gmsh cylinder r=%g L=%g %s" % (r, L, axis))
+        return TetMesh(nodes=nodes, tets=corners, order=order, tets10=full,
+                       source="gmsh cylinder r=%g L=%g %s order=%d" % (r, L, axis, order))
     finally:
         gmsh.finalize()

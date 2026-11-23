@@ -183,6 +183,64 @@ def test_nset_wrapped_at_16_entries() -> None:
     assert len(data_lines) >= 2, "24 个节点应拆成至少 2 行"
 
 
+# ── 三种工况（默认二阶）─────────────────────────────────────────────
+@pytest.mark.skipif(not (has_gmsh and has_ccx), reason="缺 gmsh 或 ccx")
+def test_cantilever_matches_beam_theory() -> None:
+    from acadkit.fea import cases as C
+    out = C.cantilever_beam(length=200, width=20, height=20, mesh_size=8,
+                            E=210000, nu=0.3, force=100,
+                            workdir=tempfile.mkdtemp(prefix="cz_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert out["relative_error"] <= 2e-3, out["relative_error"]
+
+
+@pytest.mark.skipif(not (has_gmsh and has_ccx), reason="缺 gmsh 或 ccx")
+def test_torsion_matches_saint_venant() -> None:
+    from acadkit.fea import cases as C
+    out = C.shaft_torsion(radius=10, length=300, mesh_size=8, E=210000, nu=0.3,
+                          torque=50000, workdir=tempfile.mkdtemp(prefix="tz_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert out["relative_error"] <= 1e-2, out["relative_error"]
+
+
+@pytest.mark.skipif(not (has_gmsh and has_ccx), reason="缺 gmsh 或 ccx")
+def test_plate_matches_thin_plate_theory() -> None:
+    from acadkit.fea import cases as C
+    out = C.simply_supported_plate(side=100, thickness=4, mesh_size=3, E=210000,
+                                   nu=0.3, pressure=0.01,
+                                   workdir=tempfile.mkdtemp(prefix="pl_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert out["relative_error"] <= 5e-2, out["relative_error"]
+
+
+@pytest.mark.skipif(not (has_gmsh and has_ccx), reason="缺 gmsh 或 ccx")
+def test_linear_tets_are_too_stiff_for_bending() -> None:
+    """留作对照：线性四面体弯曲偏刚（~16%），这就是默认要二阶的原因。"""
+    from acadkit.fea import cases as C
+    out = C.cantilever_beam(length=200, width=20, height=20, mesh_size=5,
+                            E=210000, nu=0.3, force=100, order=1,
+                            workdir=tempfile.mkdtemp(prefix="lin_"))
+    assert out["stage"] == "done", out
+    assert out["relative_error"] > 5e-2, out["relative_error"]
+    assert abs(out["measured"]) < abs(out["expected"]), "线性四面体应偏刚（位移偏小）"
+
+
+@pytest.mark.skipif(not (has_gmsh and has_ccx), reason="缺 gmsh 或 ccx")
+def test_plate_rejects_too_few_layers() -> None:
+    from acadkit.fea import cases as C
+    try:
+        C.simply_supported_plate(side=100, thickness=4, mesh_size=3.0, E=210000,
+                                 nu=0.3, pressure=0.01, order=1,
+                                 workdir=tempfile.mkdtemp(prefix="pl2_"))
+    except M.FeaError as exc:
+        assert "厚度方向" in str(exc)
+    else:
+        raise AssertionError("单层单元应被拒绝（order=1）")
+
+
 # ── 求解器定位 ──────────────────────────────────────────────────────
 def test_find_ccx_or_none() -> None:
     got = R.find_ccx()
