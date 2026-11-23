@@ -80,7 +80,10 @@ jobs:
           python-version: "3.12"
 
       - name: 安装依赖
-        run: pip install pyyaml
+        run: pip install pyyaml pytest
 
       - name: 技能一致性（路由覆盖 + 快照↔注册表 + 各技能自带检查）
         run: python scripts/check_skills.py --check
+
+      - name: 仓库级脚本单测（doctor / install_skills）
+        run: python -m pytest scripts/tests -q
