@@ -24,7 +24,10 @@ import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 
 
 @dataclass
@@ -149,8 +152,22 @@ class Probes:
         return os.path.exists(path)
 
 
+def skills_state(target: str, skills_map: Optional[dict] = None) -> Optional[dict]:
+    """读目标目录的安装清单，返回 install_skills.status 的结果。
+
+    skills_map 可注入（测试用假技能表）；默认用仓库里的 skills/。
+    任何异常都返回 None（doctor 不该因为技能状态读不出来而崩）。
+    """
+    try:
+        import install_skills as IS                    # noqa: WPS433
+        return IS.status(target, skills_map if skills_map is not None else IS.discover())
+    except Exception:                                   # noqa: BLE001
+        return None
+
+
 def diagnose(specs: List[KitSpec], probes: Optional[object] = None,
-             root: str = ROOT) -> Report:
+             root: str = ROOT, skills_target: Optional[str] = None,
+             skills_map: Optional[dict] = None) -> Report:
     pr = probes or Probes()
     rep = Report()
 
@@ -172,6 +189,39 @@ def diagnose(specs: List[KitSpec], probes: Optional[object] = None,
     rep.add("OK" if pr.exists(skills_root) else "FAIL", "skills/",
             "存在" if pr.exists(skills_root) else "缺 skills/ 目录",
             "" if pr.exists(skills_root) else "从仓库根运行本脚本")
+
+    # 技能安装状态（目标默认 ~/.dsh/skills）
+    try:
+        import install_skills as IS
+        target = skills_target or IS.default_target()
+    except Exception:                                   # noqa: BLE001
+        target = skills_target or ""
+    st = skills_state(target, skills_map) if target else None
+    if st is None:
+        rep.add("SKIP", "技能安装", "读不出技能清单（目标：%s）" % (target or "未指定"), "")
+    elif not st["has_manifest"]:
+        # 有目录但没清单：老版本装的，或手工拷进去的 —— 无法证明版本，要重装
+        present = [r["skill"] for r in st["rows"] if r["state"] != "missing"]
+        if present:
+            rep.add("WARN", "技能安装",
+                    "目标有 %d 个技能但没有安装清单（无法证明版本）：%s"
+                    % (len(present), ", ".join(present[:4])),
+                    "python scripts/nsa.py skills install（重装并写清单）")
+        else:
+            rep.add("SKIP", "技能安装", "目标还没装过技能：%s" % target,
+                    "python scripts/nsa.py skills install")
+    else:
+        c = st["counts"]
+        bad = [r["skill"] + ":" + r["state"] for r in st["rows"] if r["state"] != "fresh"]
+        if st["fresh"]:
+            rep.add("OK", "技能安装",
+                    "全部最新（%d 个，目标 %s）" % (c["fresh"], target), "")
+        else:
+            rep.add("WARN", "技能安装",
+                    "%d 个需处理（stale=%d modified=%d missing=%d）：%s"
+                    % (len(bad), c["stale"], c["modified"], c["missing"],
+                       ", ".join(bad[:4])),
+                    "python scripts/nsa.py skills update（或 install 重装）")
 
     # 每个内核
     for spec in specs:
@@ -214,6 +264,8 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="统一环境诊断")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--only", default="", help="逗号分隔，如 acad,sw")
+    ap.add_argument("--skills-target", default="",
+                    help="技能安装目标目录（默认自动探测 ~/.dsh/skills）")
     args = ap.parse_args(argv)
 
     specs = KITS
@@ -225,7 +277,7 @@ def main(argv=None) -> int:
                   % (args.only, ", ".join(k.name for k in KITS)))
             return 2
 
-    rep = diagnose(specs)
+    rep = diagnose(specs, skills_target=args.skills_target or None)
     if args.json:
         print(json.dumps(rep.to_dict(), ensure_ascii=False, indent=2))
     else:

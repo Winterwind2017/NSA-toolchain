@@ -176,3 +176,161 @@ def test_discover_only_dirs_with_skill_md() -> None:
     os.makedirs(os.path.join(tmp, "without"), exist_ok=True)
     found = installer.discover(tmp)
     assert list(found) == ["with"]
+
+
+# ── 技能安装状态（fresh / modified / stale / missing / extra）────────
+def test_status_fresh_then_modified_then_stale() -> None:
+    tmp = tempfile.mkdtemp(prefix="st_")
+    skills = _mini_skills(tmp)
+    target = os.path.join(tmp, "target")
+    installer.install(target, skills)
+
+    st = installer.status(target, skills)
+    assert st["fresh"] is True
+    assert st["counts"]["fresh"] == 2
+
+    # 目标里的文件被本地改过 → modified（不是 stale）
+    with open(os.path.join(target, "alpha", "SKILL.md"), "a", encoding="utf-8") as fh:
+        fh.write("local edit\n")
+    st2 = installer.status(target, skills)
+    assert st2["fresh"] is False
+    assert st2["counts"]["modified"] == 1
+
+    installer.install(target, skills)          # 重装回 fresh
+    assert installer.status(target, skills)["fresh"] is True
+
+    # 仓库侧改了（清单里还是旧哈希）→ stale
+    with open(os.path.join(skills["beta"], "SKILL.md"), "a", encoding="utf-8") as fh:
+        fh.write("v2\n")
+    st3 = installer.status(target, skills)
+    assert st3["counts"]["stale"] == 1
+    assert st3["fresh"] is False
+
+
+def test_status_detects_missing_and_extra() -> None:
+    import shutil
+    tmp = tempfile.mkdtemp(prefix="st2_")
+    skills = _mini_skills(tmp)
+    target = os.path.join(tmp, "target")
+    installer.install(target, skills)
+
+    shutil.rmtree(os.path.join(target, "alpha"))
+    st = installer.status(target, skills)
+    assert st["counts"]["missing"] == 1
+
+    # 目标里多出一个仓库没有的技能 → extra（不判失败，但要报出来）
+    mp = os.path.join(target, installer.MANIFEST)
+    data = json.load(open(mp, encoding="utf-8"))
+    data["skills"]["ghost"] = {"sha256": "0" * 64, "files": 1, "mode": "install"}
+    with open(mp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh)
+    st2 = installer.status(target, skills)
+    assert st2["extra_in_target"] == ["ghost"]
+    assert st2["fresh"] is False
+
+
+# ── nsa 统一入口 ──────────────────────────────────────────────────
+def _nsa(*args):
+    """跑 nsa 子进程：强制 UTF-8，否则中文输出在 GBK 控制台下解码失败（stdout 变 None）。"""
+    import subprocess
+    nsa = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "nsa.py")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    return subprocess.run([sys.executable, nsa] + list(args), capture_output=True,
+                          text=True, encoding="utf-8", errors="replace",
+                          timeout=180, env=env)
+
+
+def test_nsa_version_and_help() -> None:
+    res = _nsa("version")
+    assert res.returncode == 0, res.stderr
+    assert "nsa-toolchain" in res.stdout
+    assert "FEA" in res.stdout
+
+    res = _nsa("help")
+    assert res.returncode == 0
+    assert "nsa doctor" in res.stdout
+    assert "nsa fea" in res.stdout
+
+
+def test_nsa_rejects_bad_command() -> None:
+    assert _nsa().returncode == 2
+    res = _nsa("bogus")
+    assert res.returncode == 2
+    assert "未知命令" in res.stderr
+    assert _nsa("skills", "bogus").returncode == 2
+
+
+def test_nsa_skills_status_passthrough() -> None:
+    """nsa 转发的是真实 scripts/install_skills.py，所以这里装真实技能表。"""
+    tmp = tempfile.mkdtemp(prefix="nsa_")
+    skills = installer.discover()            # 仓库里的 7 个技能
+    assert skills, "仓库里应该有技能"
+    target = os.path.join(tmp, "target")
+    installer.install(target, skills)
+
+    res = _nsa("skills", "status", "--target", target)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "fresh=%d" % len(skills) in res.stdout
+
+    # 目标里被改一个 → 退出码变 1
+    name = sorted(skills)[0]
+    with open(os.path.join(target, name, "SKILL.md"), "a", encoding="utf-8") as fh:
+        fh.write("edited\n")
+    assert _nsa("skills", "status", "--target", target).returncode == 1
+
+    empty = os.path.join(tmp, "empty")
+    os.makedirs(empty, exist_ok=True)
+    assert _nsa("skills", "status", "--target", empty).returncode == 1
+
+
+# ── doctor 里的技能状态行 ─────────────────────────────────────────
+def test_doctor_reports_skill_install_state() -> None:
+    tmp = tempfile.mkdtemp(prefix="dr_")
+    skills = _mini_skills(tmp)
+    target = os.path.join(tmp, "target")
+    installer.install(target, skills)
+
+    rep = doctor.diagnose(doctor.KITS[:1], probes=FakeProbes(exists=True),
+                          skills_target=target, skills_map=skills)
+    rows = [c for c in rep.checks if c.area == "技能安装"]
+    assert rows and rows[0].level == "OK", [c.to_dict() for c in rows]
+
+    empty = os.path.join(tmp, "empty")
+    os.makedirs(empty, exist_ok=True)
+    rep2 = doctor.diagnose(doctor.KITS[:1], probes=FakeProbes(exists=True),
+                           skills_target=empty, skills_map=skills)
+    rows2 = [c for c in rep2.checks if c.area == "技能安装"]
+    assert rows2 and rows2[0].level == "SKIP", rows2[0].to_dict()
+
+
+def test_doctor_warns_when_dirs_exist_without_manifest() -> None:
+    """有技能目录但没有清单（老版本装的）应 WARN 而不是 SKIP。"""
+    import shutil
+    tmp = tempfile.mkdtemp(prefix="dr3_")
+    skills = _mini_skills(tmp)
+    target = os.path.join(tmp, "target")
+    installer.install(target, skills)
+    os.remove(os.path.join(target, installer.MANIFEST))     # 模拟没有清单
+
+    rep = doctor.diagnose(doctor.KITS[:1], probes=FakeProbes(exists=True),
+                          skills_target=target, skills_map=skills)
+    row = [c for c in rep.checks if c.area == "技能安装"][0]
+    assert row.level == "WARN", row.to_dict()
+    assert "没有安装清单" in row.message
+    assert "skills install" in row.next_step
+
+
+def test_doctor_warns_on_stale_skills() -> None:
+    tmp = tempfile.mkdtemp(prefix="dr2_")
+    skills = _mini_skills(tmp)
+    target = os.path.join(tmp, "target")
+    installer.install(target, skills)
+    with open(os.path.join(target, "alpha", "SKILL.md"), "a", encoding="utf-8") as fh:
+        fh.write("edited\n")
+
+    rep = doctor.diagnose(doctor.KITS[:1], probes=FakeProbes(exists=True),
+                          skills_target=target, skills_map=skills)
+    row = [c for c in rep.checks if c.area == "技能安装"][0]
+    assert row.level == "WARN"
+    assert "modified=1" in row.message
+    assert "nsa.py skills" in row.next_step

@@ -149,6 +149,44 @@ def install(target: str, skills: Dict[str, str], *, update: bool = False,
             "total_files": plan.files}
 
 
+def status(target: str, skills: Dict[str, str]) -> Dict[str, object]:
+    """对比"仓库里的技能"与"已装到 target 的技能"，给出 fresh/stale/missing。
+
+    stale = 已装但 SKILL.md 的 sha256 与仓库不同（仓库更新了、目标没跟）。
+    missing = 清单里没有，或目标目录不存在。
+    """
+    manifest = load_manifest(target)
+    entries: Dict[str, object] = dict(manifest.get("skills") or {})
+    rows: List[Dict[str, object]] = []
+    counts = {"fresh": 0, "stale": 0, "modified": 0, "missing": 0, "extra": 0}
+    for name in sorted(skills):
+        repo_sha = _sha256(os.path.join(skills[name], "SKILL.md"))
+        dst = os.path.join(target, name)
+        entry = entries.get(name) or {}
+        inst_sha = str(entry.get("sha256") or "")
+        actual_sha = _sha256(os.path.join(dst, "SKILL.md")) if os.path.isfile(
+            os.path.join(dst, "SKILL.md")) else ""
+        if not os.path.isdir(dst):
+            state = "missing"           # 目标里没有这个技能
+        elif not inst_sha:
+            state = "stale"             # 目录在但清单没记哈希：无法证明同步
+        elif actual_sha != inst_sha:
+            state = "modified"          # 目标文件被本地改过 / 损坏
+        elif inst_sha != repo_sha:
+            state = "stale"             # 仓库更新了，目标没跟
+        else:
+            state = "fresh"
+        counts[state] += 1
+        rows.append({"skill": name, "state": state, "installed_sha256": inst_sha,
+                     "repo_sha256": repo_sha, "installed_at": entry.get("at") or "",
+                     "mode": entry.get("mode") or ""})
+    extras = sorted(set(entries) - set(skills))
+    counts["extra"] = len(extras)
+    return {"target": target, "has_manifest": bool(entries), "rows": rows,
+            "extra_in_target": extras, "counts": counts,
+            "fresh": counts["fresh"] == len(skills) and not extras}
+
+
 def default_target() -> str:
     home = os.path.expanduser("~")
     for cand in (os.path.join(home, ".dsh", "skills"),
@@ -163,6 +201,7 @@ def main(argv=None) -> int:
     ap.add_argument("--target", default=default_target())
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--update", action="store_true")
+    ap.add_argument("--status", action="store_true", help="只报告已装状态（fresh/stale/missing）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
@@ -177,6 +216,29 @@ def main(argv=None) -> int:
             n = len(_walk_files(path))
             print("%-28s %3d 个文件  %s" % (name, n, path))
         return 0
+
+    if args.status:
+        st = status(args.target, skills)
+        if args.json:
+            print(json.dumps(st, ensure_ascii=False, indent=2))
+            return 0 if st["fresh"] else 1
+        print("目标：%s" % st["target"])
+        if not st["has_manifest"]:
+            print("（目标里没有 %s 清单，无法判断是否已装）" % MANIFEST)
+        for row in st["rows"]:
+            mark = {"fresh": "OK  ", "stale": "旧版", "modified": "被改",
+                    "missing": "未装"}[row["state"]]
+            extra = ""
+            if row["state"] == "stale" and row["installed_at"]:
+                extra = "  （装的版本：%s）" % row["installed_at"]
+            print("  [%s] %-28s %s" % (mark, row["skill"], extra))
+        if st["extra_in_target"]:
+            print("  目标里还有仓库没有的技能：%s" % ", ".join(st["extra_in_target"]))
+        c = st["counts"]
+        print("结论：%s（fresh=%d stale=%d modified=%d missing=%d extra=%d）"
+              % ("全部最新" if st["fresh"] else "需要 --update 或重新安装",
+                 c["fresh"], c["stale"], c["modified"], c["missing"], c["extra"]))
+        return 0 if st["fresh"] else 1
 
     out = install(args.target, skills, update=args.update, dry_run=args.dry_run)
     if args.json:

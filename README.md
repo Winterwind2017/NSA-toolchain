@@ -52,6 +52,10 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 
 # 技能一致性（路由覆盖 + 快照↔注册表 + 每个技能自带检查）；CI 里也会跑
 & $py scripts\check_skills.py --check
+
+# 统一入口（推荐）：把下面这些收成一组动词
+& $py scripts\nsa.py doctor
+& $py scripts\nsa.py skills status
 ```
 
 ## 技能层（给 agent 的"脑子"）
@@ -63,6 +67,8 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 - `skills/*/SKILL.md` 里出现的每个能力 id 都必须存在于对应内核的注册表，
   由 `scripts/check_skills.py` 核对：**内部矛盾（FAIL）**与**跨仓版本漂移（WARN，`--strict` 升级为 FAIL）**分开报。
 - 没有 `docs/registry.yaml` 的内核（sw / autoshop / codesys）会被明确标成"**无法核对**"，不会假装通过。
+- `scripts/nsa.py skills status` 报**已装状态**：fresh / 旧版（仓库更新了没跟）/ 被改（目标文件被本地改动）/ 未装；
+  `doctor` 里也有一行，装旧版或没有清单时会 WARN 并给出重装命令。
 
 ## 离线能力（不需要开 CAD 软件）
 
