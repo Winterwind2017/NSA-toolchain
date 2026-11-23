@@ -32,6 +32,7 @@ PY = sys.executable
 
 SCRIPTS = os.path.join(ROOT, "scripts")
 FEA = os.path.join(ROOT, "kernels", "acad", "tools", "fea_screen.py")
+DRAWING = os.path.join(ROOT, "kernels", "acad", "tools", "drawing.py")
 
 USAGE = """nsa —— nsa-toolchain 统一入口
 
@@ -111,6 +112,8 @@ def main(argv=None) -> int:
         return _run(FEA, ["--case", rest[0]] + rest[1:])
     if cmd == "render":
         return _run(FEA, ["--case", "render"] + rest)
+    if cmd == "drawing":
+        return _run(DRAWING, rest)
     if cmd == "skills":
         sub = rest[0] if rest else "status"
         tail = rest[1:]
