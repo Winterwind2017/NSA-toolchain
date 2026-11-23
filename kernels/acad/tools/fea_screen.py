@@ -38,7 +38,8 @@ from acadkit.fea import runner as R         # noqa: E402
 from acadkit.fea.mesh import FeaError       # noqa: E402
 
 CASES = ("bar", "cylinder", "cantilever", "torsion", "plate",
-         "brep-axial", "brep-cantilever", "sweep", "flange", "combined")
+         "brep-axial", "brep-cantilever", "stepped", "bracket",
+         "sweep", "flange", "combined")
 PARTS = ("shaft", "plate", "flange")
 
 
@@ -144,6 +145,9 @@ def main(argv=None) -> int:
     ap.add_argument("--nozzle", type=float, default=0.4, help="3D 打印喷嘴 mm")
     ap.add_argument("--concentration", type=float, default=3.0,
                     help="名义→峰值应力集中系数")
+    ap.add_argument("--segments", default="", help='阶梯轴段，如 "20x60,12x40,16x100"（直径x长度）')
+    ap.add_argument("--root-h", type=float, default=30.0, help="支架根部高")
+    ap.add_argument("--tip-h", type=float, default=10.0, help="支架端部高")
     ap.add_argument("--thickness", type=float, default=4.0, help="板厚")
     ap.add_argument("--force", type=float, default=0.0, help="轴向/悬臂载荷 N")
     ap.add_argument("--torque", type=float, default=0.0, help="扭矩 N·mm")
@@ -161,7 +165,8 @@ def main(argv=None) -> int:
     defaults = {"bar": 1e-6, "cylinder": 5e-3, "cantilever": 1e-2,
                 "torsion": 1e-2, "plate": 5e-2,
                 "brep-axial": 3e-2, "brep-cantilever": 5e-2,
-                "sweep": 5e-2, "flange": 1.0, "combined": 5e-2}
+                "sweep": 5e-2, "flange": 1.0, "combined": 5e-2,
+                "stepped": 6e-2, "bracket": 3e-2}
     note = ""
     if args.case in ("bar", "cylinder") and abs(args.nu) > 1e-12 and defaults[args.case] < 1e-2:
         # 一维杆理论假设横向自由收缩；固定端会限制泊松收缩（ν≠0 时偏刚 ~0.5%）
@@ -173,7 +178,8 @@ def main(argv=None) -> int:
     required = {"bar": ("force",), "cylinder": ("force",), "cantilever": ("force",),
                 "torsion": ("torque",), "plate": ("pressure",),
                 "brep-axial": ("force",), "brep-cantilever": ("force",),
-                "sweep": ("force",), "flange": (), "combined": ("force",)}[args.case]
+                "sweep": ("force",), "flange": (), "combined": ("force",),
+                "stepped": ("force",), "bracket": ("force",)}[args.case]
     missing = [n for n in required if getattr(args, n) <= 0]
     if missing:
         print("参数错误：%s 工况需要 --%s > 0" % (args.case, ", --".join(missing)),
@@ -185,6 +191,53 @@ def main(argv=None) -> int:
     if args.case == "torsion" and args.radius <= 0 and args.diameter <= 0:
         print("参数错误：torsion 需要 --radius 或 --diameter", file=sys.stderr)
         return 2
+
+    # 阶梯轴 / 变截面支架（真实件）
+    if args.case in ("stepped", "bracket"):
+        try:
+            if args.case == "stepped":
+                raw = [x.strip() for x in args.segments.split(",") if x.strip()]
+                if not raw:
+                    print("参数错误：stepped 需要 --segments", file=sys.stderr)
+                    return 2
+                segs = []
+                for tok in raw:
+                    d_s, L_s = tok.lower().split("x")
+                    segs.append((float(d_s), float(L_s)))
+                part = B.stepped_shaft(segs)
+                min_d = min(d for d, _L in segs)
+                size = args.mesh_size or min_d / 4.0
+                out = BB.stepped_axial(part, segments=segs, force=args.force,
+                                       E=args.E, nu=args.nu, mesh_size=size,
+                                       order=args.order, tol=args.tol,
+                                       workdir=_workdir(args, "stp"))
+            else:
+                part = B.bracket(length=args.length, root_height=args.root_h,
+                                 tip_height=args.tip_h, width=args.width)
+                size = args.mesh_size or args.tip_h / 2.0
+                out = BB.bracket_cantilever(part, length=args.length,
+                                            root_height=args.root_h,
+                                            tip_height=args.tip_h, width=args.width,
+                                            force=args.force, E=args.E, nu=args.nu,
+                                            mesh_size=size, order=args.order,
+                                            tol=args.tol, workdir=_workdir(args, "brk"))
+        except (FeaError, ValueError) as exc:
+            print("FEA 失败：%s" % exc, file=sys.stderr)
+            return 2
+        if out.get("stage") != "done":
+            print("未解出：%s" % (out.get("run") or {}).get("stdout_tail", [])[-4:])
+            return 1
+        if args.json:
+            print(json.dumps(out, ensure_ascii=False, indent=2, default=str))
+        else:
+            p = out["part"]
+            print("工况：%s  体积=%.2f mm³，网格=%.2f mm³（差 %.3f%%）"
+                  % (args.case, p["part_volume"], p["mesh_volume"], p["volume_error"] * 100))
+            print("实测：%.7g" % abs(out["measured"]))
+            print("参考：%.7g" % abs(out["expected"]))
+            print("相对误差：%.3e（容差 %.1e）" % (out["relative_error"], args.tol))
+            print("结论：%s" % ("ok" if out.get("ok") else "超差"))
+        return 0 if out.get("ok") else 1
 
     # 参数扫描
     if args.case == "sweep":

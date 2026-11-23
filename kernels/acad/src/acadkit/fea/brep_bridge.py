@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
 from ..brep import parts as brep
+from . import refs
 from . import inp as inpmod
 from .cases import solve_face_loaded
 from .mesh import FeaError, TetMesh, step_mesh
@@ -220,6 +221,115 @@ def cantilever_part(part: brep.Part, *, force: float, E: float, nu: float,
                 "inertia": I, "slenderness": slenderness, "part": pm.summary(),
                 "stress_nominal": (abs(force) * length * (extent(depth_key) / 2.0) / I)
                 if I > 0 else float("inf")})
+    return out
+
+
+def _segment_areas(mesh: TetMesh, segments) -> list:
+    """按 z 分带统计网格体积 → 每段**实测**截面积（把多边化误差单独拎出来）。"""
+    bounds = []
+    z = 0.0
+    for _d, L in segments:
+        bounds.append((z, z + float(L)))
+        z += float(L)
+    vols = [0.0] * len(bounds)
+    for tet in mesh.tets:
+        zc = sum(mesh.nodes[n][2] for n in tet) / 4.0
+        for i, (z0, z1) in enumerate(bounds):
+            if z0 - 1e-9 <= zc <= z1 + 1e-9:
+                vols[i] += abs(_tet_volume(mesh, tet))
+                break
+    return [v / (z1 - z0) for v, (z0, z1) in zip(vols, bounds)]
+
+
+def _tet_volume(mesh: TetMesh, tet) -> float:
+    a, b, c, d = (mesh.nodes[n] for n in tet)
+    ax, ay, az = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+    bx, by, bz = c[0] - a[0], c[1] - a[1], c[2] - a[2]
+    cx, cy, cz = d[0] - a[0], d[1] - a[1], d[2] - a[2]
+    return ((ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx)
+             + az * (bx * cy - by * cx)) / 6.0)
+
+
+def stepped_axial(part: brep.Part, *, segments, force: float, E: float, nu: float,
+                  mesh_size: float, order: int = 2, tol: float = 6e-2,
+                  max_volume_error: float = 0.05,
+                  workdir: Optional[str] = None) -> Dict[str, object]:
+    """阶梯轴轴向拉伸。参考解 = 串联柔度 δ = F·Σ(Li/(E·Ai))，Ai 用**名义** πd²/4。
+
+    容差 6e-2 是实测定的，来源有两块（都不该算成"算错"）：
+    * 圆柱面多边化：网格体积比零件少 0.8%~2.8%，实测位移随之偏大；
+    * 台阶处应力奇异：加密收得很慢（h=4/3/2.2 → 名义偏差 5.53/4.80/4.46%）。
+    所以这里用**独立于网格**的名义公式当判据（手算可复核），
+    另把网格实测分段面积放进 `areas_mesh` 供诊断（它自己会引入过渡带误差，
+    实测反而不收敛：2.17/2.59/3.43%，因此不拿它当判据）。
+    """
+    ref = refs.stepped_axial(segments=[(float(L), float(d)) for d, L in segments],
+                             E=E, force=force)
+    pm = part_mesh(part, mesh_size=mesh_size, order=order, workdir=workdir,
+                   max_volume_error=max_volume_error)
+    mesh = pm.mesh
+    lo, hi, length = _axis_data(mesh, "z")
+    tol_len = max(length * 1e-6, 1e-9)
+    out = solve_face_loaded(
+        mesh, fixed_pred=lambda p: p[2] <= lo + tol_len,
+        load_pred=lambda p: p[2] >= hi - tol_len,
+        total_vec=(0.0, 0.0, float(force)),
+        workdir=(pm.step_path.rsplit(".", 1)[0] + "_stax"), job="stepped_axial",
+        E=E, nu=nu)
+    if out["stage"] != "solved":
+        out["part"] = pm.summary()
+        return out
+    disp = out["displacements"]                                # type: ignore[assignment]
+    measured = max(abs(v[2]) for v in disp.values())
+    # 判据用名义面积（独立、可手算）；网格实测分段面积只作诊断
+    areas_mesh = _segment_areas(mesh, [(d, L) for d, L in segments])
+    expected = float(ref["deflection"])
+    rel = abs(measured - expected) / expected if expected else float("inf")
+    area_avg = pm.mesh_volume / length
+    out.update({"ok": rel <= tol, "stage": "done", "measured": measured,
+                "expected": expected, "relative_error": rel, "tol": tol,
+                "expected_mesh_areas": abs(float(force)) * sum(
+                    float(L) / (E * a) for (_d, L), a in zip(segments, areas_mesh)),
+                "reference": ref, "part": pm.summary(),
+                "areas_mesh": areas_mesh, "areas_nominal": ref["areas"],
+                "area_effective": area_avg,
+                "stress_nominal": abs(force) / min(areas_mesh) if areas_mesh else 0.0})
+    return out
+
+
+def bracket_cantilever(part: brep.Part, *, length: float, root_height: float,
+                       tip_height: float, width: float, force: float, E: float,
+                       nu: float, mesh_size: float, order: int = 2,
+                       tol: float = 5e-2, max_volume_error: float = 0.05,
+                       workdir: Optional[str] = None) -> Dict[str, object]:
+    """变截面角撑板当悬臂：参考解 = 梁理论数值积分（见 refs.tapered_cantilever）。"""
+    ref = refs.tapered_cantilever(length=length, root_height=root_height,
+                                  tip_height=tip_height, width=width,
+                                  E=E, force=force)
+    pm = part_mesh(part, mesh_size=mesh_size, order=order, workdir=workdir,
+                   max_volume_error=max_volume_error)
+    mesh = pm.mesh
+    lo, hi, span = _axis_data(mesh, "x")
+    tol_len = max(span * 1e-6, 1e-9)
+    out = solve_face_loaded(
+        mesh, fixed_pred=lambda p: p[0] <= lo + tol_len,
+        load_pred=lambda p: p[0] >= hi - tol_len,
+        total_vec=(0.0, 0.0, -abs(float(force))),
+        workdir=(pm.step_path.rsplit(".", 1)[0] + "_brk"), job="bracket",
+        E=E, nu=nu)
+    if out["stage"] != "solved":
+        out["part"] = pm.summary()
+        return out
+    disp = out["displacements"]                                # type: ignore[assignment]
+    measured = max(abs(v[2]) for v in disp.values())
+    expected = float(ref["deflection"])
+    rel = abs(measured - expected) / expected if expected else float("inf")
+    I_root = width * root_height ** 3 / 12.0
+    out.update({"ok": rel <= tol, "stage": "done", "measured": measured,
+                "expected": expected, "relative_error": rel, "tol": tol,
+                "reference": ref, "part": pm.summary(),
+                "inertia_root": I_root,
+                "stress_nominal": abs(force) * length * (root_height / 2.0) / I_root})
     return out
 
 

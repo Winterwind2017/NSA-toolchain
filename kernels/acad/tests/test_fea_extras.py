@@ -85,6 +85,107 @@ def test_flange_rejects_bad_input() -> None:
         raise AssertionError("非法输入应报错：%r" % (kw,))
 
 
+# ── 参考解（纯数学，无需 gmsh/ccx）────────────────────────────────
+def test_series_compliance_reduces_to_bar_formula() -> None:
+    from acadkit.fea import refs
+    L, A, E = 100.0, 100.0, 210000.0
+    assert abs(refs.series_compliance([(L, A)], E) - L / (E * A)) < 1e-15
+
+
+def test_series_compliance_is_additive() -> None:
+    from acadkit.fea import refs
+    E = 210000.0
+    one = refs.series_compliance([(100.0, 100.0)], E)
+    two = refs.series_compliance([(50.0, 100.0), (50.0, 100.0)], E)
+    assert abs(one - two) < 1e-15
+
+
+def test_stepped_axial_reference() -> None:
+    from acadkit.fea import refs
+    out = refs.stepped_axial(segments=[(60.0, 20.0), (40.0, 12.0)], E=210000, force=5000)
+    expect = 5000 * (60 / (210000 * refs.round_area(20)) + 40 / (210000 * refs.round_area(12)))
+    assert abs(out["deflection"] - expect) < 1e-12
+    assert out["total_length"] == 100.0
+
+
+def test_tapered_cantilever_constant_limit() -> None:
+    """h1 == h0 时必须回到 PL³/(3EI)。"""
+    from acadkit.fea import refs
+    out = refs.tapered_cantilever(length=200, root_height=30, tip_height=30,
+                                  width=20, E=210000, force=100)
+    assert abs(out["deflection"] - out["closed_form_constant"]) / out["closed_form_constant"] < 1e-6
+
+
+def test_tapered_is_softer_than_constant() -> None:
+    from acadkit.fea import refs
+    out = refs.tapered_cantilever(length=200, root_height=30, tip_height=10,
+                                  width=20, E=210000, force=100)
+    assert out["ratio_to_constant"] > 1.5, out["ratio_to_constant"]
+    assert out["deflection"] > out["closed_form_constant"]
+
+
+def test_refs_reject_bad_input() -> None:
+    from acadkit.fea import refs
+    for call in (lambda: refs.series_compliance([], 1.0),
+                 lambda: refs.series_compliance([(0.0, 1.0)], 1.0),
+                 lambda: refs.series_compliance([(1.0, -1.0)], 1.0),
+                 lambda: refs.tapered_cantilever(length=0, root_height=1, tip_height=1,
+                                                 width=1, E=1, force=1),
+                 lambda: refs.tapered_cantilever(length=1, root_height=1, tip_height=1,
+                                                 width=1, E=1, force=1, samples=3)):
+        try:
+            call()
+        except M.FeaError:
+            continue
+        raise AssertionError("非法输入应报错")
+
+
+# ── 真实件：阶梯轴 / 变截面支架 ────────────────────────────────────
+@pytest.mark.skipif(not (has_bridge and has_brep), reason="缺 brep/gmsh/ccx")
+def test_stepped_shaft_matches_series_compliance() -> None:
+    from acadkit.fea import brep_bridge as BB
+    segs = [(20.0, 60.0), (12.0, 40.0), (16.0, 100.0)]
+    part = B.stepped_shaft(segs)
+    out = BB.stepped_axial(part, segments=segs, force=5000, E=210000, nu=0.0,
+                           mesh_size=4.0, tol=6e-2,
+                           workdir=tempfile.mkdtemp(prefix="stp_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert out["part"]["volume_error"] < 0.05
+    # 名义参考与网格实测面积参考应同量级（差别就是多边化）
+    assert abs(out["expected"] - out["expected_mesh_areas"]) / out["expected"] < 0.05
+
+
+@pytest.mark.skipif(not (has_bridge and has_brep), reason="缺 brep/gmsh/ccx")
+def test_bracket_matches_tapered_beam_reference() -> None:
+    from acadkit.fea import brep_bridge as BB
+    part = B.bracket(length=200, root_height=30, tip_height=10, width=20)
+    out = BB.bracket_cantilever(part, length=200, root_height=30, tip_height=10,
+                                width=20, force=100, E=210000, nu=0.3,
+                                mesh_size=5.0, tol=3e-2,
+                                workdir=tempfile.mkdtemp(prefix="brk_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert out["part"]["volume_error"] < 1e-3, "直棱柱零件网格体积应完全一致"
+    assert out["measured"] > out["reference"]["closed_form_constant"], "变截面应比等截面软"
+
+
+def test_bracket_rejects_non_convergent_shape() -> None:
+    """端部为 0 的尖角三角形在梁理论里积分发散，必须拒绝。"""
+    try:
+        B.bracket(length=200, root_height=30, tip_height=0, width=20)
+    except Exception as exc:                            # noqa: BLE001
+        assert "正数" in str(exc) or "tip_height" in str(exc)
+    else:
+        raise AssertionError("tip_height=0 应报错")
+    try:
+        B.bracket(length=200, root_height=20, tip_height=30, width=20)
+    except Exception as exc:                            # noqa: BLE001
+        assert "小于" in str(exc)
+    else:
+        raise AssertionError("tip>=root 应报错")
+
+
 # ── FEA + DFM 合成 ────────────────────────────────────────────────
 def _fake_fea(stress: float, disp: float) -> dict:
     return {"stage": "done", "stress_nominal": stress, "measured": -disp}

@@ -135,6 +135,49 @@ def plate(length: float, width: float, thickness: float,
     return Part(name, p, expected)
 
 
+def stepped_shaft(segments, *, name: str = "stepped_shaft") -> Part:
+    """阶梯轴：segments = [(diameter, length)]，从 z=0 往上依次堆。
+
+    期望体积 = Σ π(d/2)²·L（解析式），便于与网格体积对账。
+    """
+    cq = _cq()
+    if not segments:
+        raise BrepError("segments 不能为空")
+    p = None
+    z = 0.0
+    volume = 0.0
+    for i, (d, length) in enumerate(segments):
+        dd = _positive(d, "segments[%d].diameter" % i)
+        L = _positive(length, "segments[%d].length" % i)
+        if p is None:
+            p = cq.Workplane("XY").circle(dd / 2.0).extrude(L)
+        else:
+            p = p.faces(">Z").workplane().circle(dd / 2.0).extrude(L)
+        volume += math.pi * (dd / 2.0) ** 2 * L
+        z += L
+    return Part(name, p, volume)
+
+
+def bracket(length: float, root_height: float, tip_height: float, width: float,
+            *, name: str = "bracket") -> Part:
+    """变截面角撑板（梯形侧影沿 Y 挤出）：根部高 root，端部高 tip（须 >0）。
+
+    为什么端部不能为 0：尖角三角形在梁理论里 I→0、挠度积分发散，
+    参考解不存在；工程上真实件也都有个小端面。
+    """
+    cq = _cq()
+    L = _positive(length, "length")
+    h0 = _positive(root_height, "root_height")
+    h1 = _positive(tip_height, "tip_height")
+    b = _positive(width, "width")
+    if h1 >= h0:
+        raise BrepError("tip_height 必须小于 root_height（否则不是收敛的变截面）")
+    pts = [(0.0, 0.0), (L, 0.0), (L, h1), (0.0, h0)]
+    p = cq.Workplane("XZ").polyline(pts).close().extrude(b)
+    volume = (h0 + h1) / 2.0 * L * b
+    return Part(name, p, volume)
+
+
 # ── 导出 ────────────────────────────────────────────────────────────
 def _export(part: Part, path: str, kind: str) -> Dict[str, object]:
     d = os.path.dirname(path)
