@@ -54,7 +54,19 @@ KITS: List[KitSpec] = [
 
 OPTIONAL_PY = [("cadquery", "离线 B-rep / STEP 出口"),
                ("yaml", "registry 与文档生成"),
-               ("pytest", "离线测试")]
+               ("pytest", "离线测试"),
+               ("gmsh", "FEA：体积网格"),
+               ("sfepy", "FEA：Python 有限元框架"),
+               ("skfem", "FEA：轻量装配库")]
+
+# ccx 求解器候选（静态版自带运行时，动态版缺 MinGW DLL）
+CCX_CANDIDATES = (
+    os.environ.get("NSA_CCX", ""),
+    r"D:\bililive\tools\calculix\calculix_2.24_4win\ccx_i4_static.exe",
+    r"D:\bililive\tools\calculix\calculix_2.24_4win\ccx_i8_static.exe",
+    "ccx_i4_static.exe",
+    "ccx",
+)
 
 
 @dataclass
@@ -149,6 +161,12 @@ def diagnose(specs: List[KitSpec], probes: Optional[object] = None,
         rep.add("OK" if ok else "WARN", "包 %s" % pkg,
                 ("可用（%s）" % why) if ok else "缺失（%s）" % why,
                 "" if ok else "pip install %s" % pkg)
+
+    # FEA 链路：网格器 / 框架 / 求解器三环，缺哪环说哪环
+    ccx = pr.any_path(CCX_CANDIDATES)
+    rep.add("OK" if ccx else "WARN", "FEA 求解器 ccx",
+            ccx or "未找到（静态版 ccx_i4_static.exe）",
+            "" if ccx else "下载 calculix_2.24_4win.zip 解包，或设 NSA_CCX 指向 ccx_i4_static.exe")
 
     skills_root = os.path.join(root, "skills")
     rep.add("OK" if pr.exists(skills_root) else "FAIL", "skills/",
