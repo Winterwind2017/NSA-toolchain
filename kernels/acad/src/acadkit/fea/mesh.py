@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import math
+import os
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -168,6 +169,43 @@ def box_mesh(sx: float, sy: float, sz: float, *, mesh_size: float,
             raise FeaError("没有生成体单元（mesh_size=%r 可能太大或几何有问题）" % mesh_size)
         return TetMesh(nodes=nodes, tets=corners, order=order, tets10=full,
                        source="gmsh box %gx%gx%g order=%d" % (sx, sy, sz, order))
+    finally:
+        gmsh.finalize()
+
+
+def step_mesh(step_path: str, *, mesh_size: float, order: int = 1,
+              name: str = "step") -> TetMesh:
+    """从 STEP 文件划四面体网格（gmsh 的 OCC 内核直接读 STEP）。
+
+    这条路径是 brep → FEA 的桥：brep 出 STEP，gmsh 读 STEP，
+    所以 FEA 用的是**真实件**而不是手填的方块尺寸。
+    """
+    import gmsh
+
+    if not os.path.isfile(step_path):
+        raise FeaError("STEP 文件不存在：%s" % step_path)
+    h = _positive(mesh_size, "mesh_size")
+    gmsh.initialize()
+    try:
+        gmsh.option.setNumber("General.Terminal", 0)
+        gmsh.model.add(name)
+        gmsh.model.occ.importShapes(step_path)
+        gmsh.model.occ.synchronize()
+        gmsh.option.setNumber("Mesh.MeshSizeMax", h)
+        gmsh.option.setNumber("Mesh.MeshSizeMin", h * 0.4)
+        gmsh.option.setNumber("Mesh.CharacteristicLengthMax", h)
+        gmsh.option.setNumber("Mesh.CharacteristicLengthMin", h * 0.4)
+        gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
+        gmsh.option.setNumber("Mesh.Algorithm", 6)
+        gmsh.option.setNumber("Mesh.ElementOrder", 2 if order == 2 else 1)
+        gmsh.model.mesh.generate(3)
+        node_tags, coords, _ = gmsh.model.mesh.getNodes()
+        types, _, node_sets = gmsh.model.mesh.getElements(3)
+        nodes, corners, full = _collect(order, node_tags, coords, types, node_sets)
+        if not corners:
+            raise FeaError("STEP 网格没有生成体单元（mesh_size=%r）" % mesh_size)
+        return TetMesh(nodes=nodes, tets=corners, order=order, tets10=full,
+                       source="gmsh step %s order=%d" % (os.path.basename(step_path), order))
     finally:
         gmsh.finalize()
 

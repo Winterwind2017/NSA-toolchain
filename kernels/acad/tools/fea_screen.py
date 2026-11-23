@@ -27,11 +27,29 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
 
+from acadkit.brep import parts as B         # noqa: E402
+from acadkit.fea import brep_bridge as BB   # noqa: E402
 from acadkit.fea import cases as C          # noqa: E402
 from acadkit.fea import runner as R         # noqa: E402
 from acadkit.fea.mesh import FeaError       # noqa: E402
 
-CASES = ("bar", "cylinder", "cantilever", "torsion", "plate")
+CASES = ("bar", "cylinder", "cantilever", "torsion", "plate",
+         "brep-axial", "brep-cantilever")
+PARTS = ("shaft", "plate", "flange")
+
+
+def _make_part(args):
+    """按 --part 造零件（复用 acadkit.brep 的参数化件）。"""
+    if args.part == "shaft":
+        if args.diameter <= 0:
+            raise FeaError("shaft 需要 --diameter")
+        return B.shaft(diameter=args.diameter, length=args.length)
+    if args.part == "plate":
+        return B.plate(length=args.length, width=args.width, thickness=args.thickness)
+    if args.part == "flange":
+        return B.flange(outer_d=args.outer, bore_d=args.bore, thickness=args.thickness,
+                        bolt_holes=[{"diameter": 10, "bcd": args.bore * 1.6, "count": 4}])
+    raise FeaError("未知零件：%s（可用：%s）" % (args.part, ", ".join(PARTS)))
 
 
 def _workdir(args, tag: str) -> str:
@@ -61,6 +79,17 @@ def run_case(args) -> dict:
                                E=args.E, nu=args.nu, torque=args.torque,
                                order=args.order, tol=args.tol,
                                workdir=_workdir(args, "tors"))
+    if args.case in ("brep-axial", "brep-cantilever"):
+        part = _make_part(args)
+        size = args.mesh_size or _part_characteristic(args)
+        if args.case == "brep-axial":
+            return BB.axial_part(part, force=args.force, E=args.E, nu=args.nu,
+                                 mesh_size=size, order=args.order, tol=args.tol,
+                                 workdir=_workdir(args, "pax"))
+        return BB.cantilever_part(part, force=args.force, E=args.E, nu=args.nu,
+                                  mesh_size=size, axis="x", load_axis="z",
+                                  order=args.order, tol=args.tol,
+                                  workdir=_workdir(args, "pcant"))
     if args.case == "plate":
         # 板默认 t/h=2（够 5% 判据，且比 t/h=3 便宜一个量级）
         return C.simply_supported_plate(side=args.side, thickness=args.thickness,
@@ -69,6 +98,15 @@ def run_case(args) -> dict:
                                         order=args.order, tol=args.tol,
                                         workdir=_workdir(args, "plate"))
     raise FeaError("未知工况：%s（可用：%s）" % (args.case, ", ".join(CASES)))
+
+
+def _part_characteristic(args) -> float:
+    """**最终**网格尺寸（不经 _mesh 再除 3）。"""
+    if args.part == "shaft":
+        return args.diameter / 4.0
+    if args.part == "flange":
+        return args.thickness / 4.0
+    return args.thickness / 2.0        # 板：t/h=2 够判据，再细会跑到百万自由度
 
 
 def _mesh(args, characteristic: float) -> float:
@@ -84,6 +122,9 @@ def main(argv=None) -> int:
     ap.add_argument("--diameter", type=float, default=0.0)
     ap.add_argument("--radius", type=float, default=0.0)
     ap.add_argument("--side", type=float, default=100.0, help="板边长")
+    ap.add_argument("--part", default="shaft", choices=PARTS, help="brep 零件类型")
+    ap.add_argument("--outer", type=float, default=120.0, help="法兰外径")
+    ap.add_argument("--bore", type=float, default=40.0, help="法兰内孔")
     ap.add_argument("--thickness", type=float, default=4.0, help="板厚")
     ap.add_argument("--force", type=float, default=0.0, help="轴向/悬臂载荷 N")
     ap.add_argument("--torque", type=float, default=0.0, help="扭矩 N·mm")
@@ -99,7 +140,8 @@ def main(argv=None) -> int:
 
     # 每种工况的必备参数与默认容差
     defaults = {"bar": 1e-6, "cylinder": 5e-3, "cantilever": 1e-2,
-                "torsion": 1e-2, "plate": 5e-2}
+                "torsion": 1e-2, "plate": 5e-2,
+                "brep-axial": 3e-2, "brep-cantilever": 5e-2}
     note = ""
     if args.case in ("bar", "cylinder") and abs(args.nu) > 1e-12 and defaults[args.case] < 1e-2:
         # 一维杆理论假设横向自由收缩；固定端会限制泊松收缩（ν≠0 时偏刚 ~0.5%）
@@ -109,7 +151,8 @@ def main(argv=None) -> int:
     if args.tol <= 0:
         args.tol = defaults[args.case]
     required = {"bar": ("force",), "cylinder": ("force",), "cantilever": ("force",),
-                "torsion": ("torque",), "plate": ("pressure",)}[args.case]
+                "torsion": ("torque",), "plate": ("pressure",),
+                "brep-axial": ("force",), "brep-cantilever": ("force",)}[args.case]
     missing = [n for n in required if getattr(args, n) <= 0]
     if missing:
         print("参数错误：%s 工况需要 --%s > 0" % (args.case, ", --".join(missing)),
@@ -140,7 +183,12 @@ def main(argv=None) -> int:
         m = out.get("mesh") or {}
         if note:
             print(note)
-        print("工况：%s（order=%d）" % (args.case, args.order))
+        label = args.case if not args.case.startswith("brep") else "%s/%s" % (args.case, args.part)
+        print("工况：%s（order=%d）" % (label, args.order))
+        if out.get("part"):
+            p = out["part"]
+            print("零件：%s 体积=%.2f mm³，网格体积=%.2f mm³（差 %.3f%%）"
+                  % (args.part, p["part_volume"], p["mesh_volume"], p["volume_error"] * 100))
         print("网格：%s 节点 / %s 单元 / 倒置 %s / 体积 %s mm³"
               % (m.get("nodes"), m.get("tets"), m.get("inverted"), m.get("volume")))
         if solved:

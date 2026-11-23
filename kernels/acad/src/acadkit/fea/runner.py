@@ -78,7 +78,7 @@ def find_ccx() -> Optional[str]:
     return None
 
 
-def run(inp_path: str, *, ccx: Optional[str] = None, timeout: float = 120.0,
+def run(inp_path: str, *, ccx: Optional[str] = None, timeout: float = 300.0,
         keep_log: bool = True) -> CcxRun:
     """在 .inp 所在目录跑 ccx（它按 jobname 找 .inp，所以必须在同目录）。"""
     if not os.path.isfile(inp_path):

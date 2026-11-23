@@ -241,6 +241,96 @@ def test_plate_rejects_too_few_layers() -> None:
         raise AssertionError("单层单元应被拒绝（order=1）")
 
 
+# ── brep → STEP → 网格 → ccx 的桥 ──────────────────────────────────
+def _has_bridge() -> bool:
+    try:
+        from acadkit.brep import parts  # noqa: F401
+    except Exception:                                   # noqa: BLE001
+        return False
+    return has_gmsh and has_ccx
+
+
+@pytest.mark.skipif(not _has_bridge(), reason="缺 cadquery/gmsh/ccx")
+def test_part_mesh_volume_faithful_for_plate() -> None:
+    from acadkit.brep import parts as B
+    from acadkit.fea import brep_bridge as BB
+    pm = BB.part_mesh(B.plate(length=200, width=100, thickness=8), mesh_size=4.0,
+                      order=2, workdir=tempfile.mkdtemp(prefix="pm_"))
+    assert pm.mesh.tets and len(pm.mesh.inverted()) == 0
+    assert pm.volume_error < 1e-6, "直板体网格体积应与零件完全一致，实测 %.3e" % pm.volume_error
+    assert BB.brep.read_step(pm.step_path)["solids"] == 1
+
+
+@pytest.mark.skipif(not _has_bridge(), reason="缺 cadquery/gmsh/ccx")
+def test_brep_shaft_axial_matches_analytic() -> None:
+    from acadkit.brep import parts as B
+    from acadkit.fea import brep_bridge as BB
+    out = BB.axial_part(B.shaft(diameter=20, length=200), force=5000, E=210000,
+                        nu=0.0, mesh_size=6.0, tol=3e-2,
+                        workdir=tempfile.mkdtemp(prefix="bs_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert out["part"]["volume_error"] < 0.05
+    assert out["slenderness"] > 3
+
+
+@pytest.mark.skipif(not _has_bridge(), reason="缺 cadquery/gmsh/ccx")
+def test_brep_plate_cantilever_matches_beam_within_plate_effect() -> None:
+    from acadkit.brep import parts as B
+    from acadkit.fea import brep_bridge as BB
+    out = BB.cantilever_part(B.plate(length=200, width=100, thickness=8), force=100,
+                             E=210000, nu=0.3, mesh_size=6.0, axis="x", load_axis="z",
+                             workdir=tempfile.mkdtemp(prefix="bc_"))
+    assert out["stage"] == "done", out
+    assert out["ok"], out
+    assert abs(out["measured"]) < abs(out["expected"]), "宽板受反平面约束应比梁理论更刚"
+
+
+@pytest.mark.skipif(not _has_bridge(), reason="缺 cadquery/gmsh/ccx")
+def test_brep_refuses_bar_theory_for_wide_part() -> None:
+    """法兰 L/√A≈0.10，一维杆公式不适用——必须拒绝，而不是给个 63% 错的数。"""
+    from acadkit.brep import parts as B
+    from acadkit.fea import brep_bridge as BB
+    flange = B.flange(outer_d=120, bore_d=40, thickness=10,
+                      bolt_holes=[{"diameter": 10, "bcd": 64, "count": 4}])
+    try:
+        BB.axial_part(flange, force=10000, E=210000, nu=0.3, mesh_size=5.0,
+                      workdir=tempfile.mkdtemp(prefix="bf_"))
+    except M.FeaError as exc:
+        assert "细长比" in str(exc)
+        assert "不适用" in str(exc)
+    else:
+        raise AssertionError("宽扁件应拒绝一维杆公式")
+
+
+@pytest.mark.skipif(not _has_bridge(), reason="缺 cadquery/gmsh/ccx")
+def test_brep_refuses_unfaithful_mesh() -> None:
+    """粗网格下圆柱体积少 >5% → 拒算（否则算的不是这个件）。"""
+    from acadkit.brep import parts as B
+    from acadkit.fea import brep_bridge as BB
+    try:
+        BB.part_mesh(B.shaft(diameter=20, length=200), mesh_size=15.0, order=2,
+                     workdir=tempfile.mkdtemp(prefix="bfm_"))
+    except M.FeaError as exc:
+        assert "体积" in str(exc) and "拒算" in str(exc)
+    else:
+        raise AssertionError("网格不忠实应拒算")
+
+
+@pytest.mark.skipif(not _has_bridge(), reason="缺 cadquery/gmsh/ccx")
+def test_brep_refuses_short_cantilever() -> None:
+    from acadkit.brep import parts as B
+    from acadkit.fea import brep_bridge as BB
+    try:
+        BB.cantilever_part(B.plate(length=30, width=100, thickness=8), force=100,
+                           E=210000, nu=0.3, mesh_size=4.0, axis="x", load_axis="z",
+                           workdir=tempfile.mkdtemp(prefix="bsc_"))
+    except M.FeaError as exc:
+        assert "长厚比" in str(exc)
+    else:
+        raise AssertionError("L/h<5 应拒绝梁理论")
+
+
 # ── 求解器定位 ──────────────────────────────────────────────────────
 def test_find_ccx_or_none() -> None:
     got = R.find_ccx()
