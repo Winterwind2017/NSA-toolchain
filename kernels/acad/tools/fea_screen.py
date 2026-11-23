@@ -281,6 +281,15 @@ def main(argv=None) -> int:
             print("参考：%.7g" % abs(out["expected"]))
             print("相对误差：%.3e（容差 %.1e）" % (out["relative_error"], args.tol))
             print("结论：%s" % ("ok" if out.get("ok") else "超差"))
+            if args.png:
+                try:
+                    g = VW.deformed_from_result(out, args.png)
+                    print("云图：%s  %d B  三角形 %d  放大 %.0f×  最大 |u|=%.4e mm"
+                          % (g["path"], g["bytes"], g["triangles"], g["scale"],
+                             g["max_disp"]))
+                except FeaError as exc:
+                    print("云图失败：%s" % exc, file=sys.stderr)
+                    return 2
         return 0 if out.get("ok") else 1
 
     # 参数扫描

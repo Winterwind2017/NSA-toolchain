@@ -107,7 +107,8 @@ def main(argv=None) -> int:
         if not rest:
             print("nsa fea 需要一个工况名；可选见 nsa help", file=sys.stderr)
             return 2
-        return _run(FEA, rest)
+        # nsa fea bar ...  →  fea_screen.py --case bar ...
+        return _run(FEA, ["--case", rest[0]] + rest[1:])
     if cmd == "render":
         return _run(FEA, ["--case", "render"] + rest)
     if cmd == "skills":

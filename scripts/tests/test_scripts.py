@@ -252,6 +252,14 @@ def test_nsa_version_and_help() -> None:
     assert "nsa fea" in res.stdout
 
 
+def test_nsa_fea_translates_case() -> None:
+    """nsa fea bar 必须翻译成 --case bar（少这步会报“参数错误”退出 2）。"""
+    res = _nsa("fea", "bar", "--length", "100", "--width", "10", "--height", "10",
+               "--force", "10000", "--nu", "0")
+    assert res.returncode in (0, 1), res.stdout + res.stderr   # 1 = 超差，2 = 参数错
+    assert "相对误差" in res.stdout or "结论" in res.stdout
+
+
 def test_nsa_rejects_bad_command() -> None:
     assert _nsa().returncode == 2
     res = _nsa("bogus")

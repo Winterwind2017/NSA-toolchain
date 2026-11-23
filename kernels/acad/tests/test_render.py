@@ -127,6 +127,27 @@ def test_deformed_png_from_fea_result() -> None:
 
 
 @need
+def test_cli_png_written_for_every_solving_branch() -> None:
+    """--png 不能在某些分支被静默忽略：bracket / stepped 都走各自分支。"""
+    import subprocess
+    d = _tmp()
+    script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "tools", "fea_screen.py")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    for case, extra in (("bracket", ["--length", "200", "--root-h", "30",
+                                     "--tip-h", "10", "--width", "20"]),
+                        ("stepped", ["--segments", "20x60,12x40,16x100", "--nu", "0"])):
+        out_png = os.path.join(d, "%s.png" % case)
+        res = subprocess.run([sys.executable, script, "--case", case, "--force", "100",
+                              "--png", out_png] + extra,
+                             capture_output=True, text=True, encoding="utf-8",
+                             errors="replace", env=env, timeout=600)
+        assert res.returncode in (0, 1), res.stdout + res.stderr
+        assert os.path.isfile(out_png), "%s 分支没出图：%s" % (case, res.stdout[-300:])
+        assert open(out_png, "rb").read(8) == b"\x89PNG\r\n\x1a\n"
+
+
+@need
 def test_deformed_png_rejects_bad_result() -> None:
     d = _tmp()
     with pytest.raises(M.FeaError):
