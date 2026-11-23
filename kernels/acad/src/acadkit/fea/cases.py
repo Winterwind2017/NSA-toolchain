@@ -64,7 +64,7 @@ def solve_face_loaded(mesh: TetMesh, *, fixed_pred: Callable[[Vec3], bool],
     dat = inpmod.parse_dat(runres.files["dat"])
     blocks = dat["displacements"]
     disp = blocks.get("MEASURE") or blocks.get("LOAD") or {}
-    return {"stage": "solved", "mesh": mesh.summary(), "inp": info,
+    return {"stage": "solved", "mesh": mesh.summary(), "mesh_obj": mesh, "inp": info,
             "run": runres.to_dict(), "dat": runres.files["dat"],
             "displacements": disp, "volume": mesh.volume(),
             "fixed": len(fixed), "loaded": len(loads)}
@@ -317,6 +317,6 @@ def _plate_run(mesh: TetMesh, *, edge_nodes: List[int],
                 "ok": False}
     dat = inpmod.parse_dat(runres.files["dat"])
     blocks = dat["displacements"]
-    return {"stage": "solved", "mesh": mesh.summary(), "run": runres.to_dict(),
-            "dat": runres.files["dat"],
+    return {"stage": "solved", "mesh": mesh.summary(), "mesh_obj": mesh,
+            "run": runres.to_dict(), "dat": runres.files["dat"],
             "displacements": blocks.get("MEASURE") or blocks.get("LOAD") or {}}

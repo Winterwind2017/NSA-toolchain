@@ -28,6 +28,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
 
 from acadkit.brep import parts as B         # noqa: E402
+from acadkit.brep import render as BR       # noqa: E402
+from acadkit.fea import view as VW          # noqa: E402
 from acadkit.dfm.rules import check_milling, check_print3d  # noqa: E402
 from acadkit.fea import brep_bridge as BB   # noqa: E402
 from acadkit.fea import combined as CB      # noqa: E402
@@ -39,7 +41,7 @@ from acadkit.fea.mesh import FeaError       # noqa: E402
 
 CASES = ("bar", "cylinder", "cantilever", "torsion", "plate",
          "brep-axial", "brep-cantilever", "stepped", "bracket",
-         "sweep", "flange", "combined")
+         "sweep", "flange", "combined", "render")
 PARTS = ("shaft", "plate", "flange")
 
 
@@ -145,6 +147,10 @@ def main(argv=None) -> int:
     ap.add_argument("--nozzle", type=float, default=0.4, help="3D 打印喷嘴 mm")
     ap.add_argument("--concentration", type=float, default=3.0,
                     help="名义→峰值应力集中系数")
+    ap.add_argument("--png", default="", help="结果图输出路径（求解类工况自动出变形云图）")
+    ap.add_argument("--views", default="iso", choices=("iso", "three"),
+                    help="render 工况：单张等轴测或三视图")
+    ap.add_argument("--svg", default="", help="render 工况：额外出线框 SVG")
     ap.add_argument("--segments", default="", help='阶梯轴段，如 "20x60,12x40,16x100"（直径x长度）')
     ap.add_argument("--root-h", type=float, default=30.0, help="支架根部高")
     ap.add_argument("--tip-h", type=float, default=10.0, help="支架端部高")
@@ -166,7 +172,7 @@ def main(argv=None) -> int:
                 "torsion": 1e-2, "plate": 5e-2,
                 "brep-axial": 3e-2, "brep-cantilever": 5e-2,
                 "sweep": 5e-2, "flange": 1.0, "combined": 5e-2,
-                "stepped": 6e-2, "bracket": 3e-2}
+                "stepped": 6e-2, "bracket": 3e-2, "render": 1.0}
     note = ""
     if args.case in ("bar", "cylinder") and abs(args.nu) > 1e-12 and defaults[args.case] < 1e-2:
         # 一维杆理论假设横向自由收缩；固定端会限制泊松收缩（ν≠0 时偏刚 ~0.5%）
@@ -179,7 +185,8 @@ def main(argv=None) -> int:
                 "torsion": ("torque",), "plate": ("pressure",),
                 "brep-axial": ("force",), "brep-cantilever": ("force",),
                 "sweep": ("force",), "flange": (), "combined": ("force",),
-                "stepped": ("force",), "bracket": ("force",)}[args.case]
+                "stepped": ("force",), "bracket": ("force",),
+                "render": ()}[args.case]
     missing = [n for n in required if getattr(args, n) <= 0]
     if missing:
         print("参数错误：%s 工况需要 --%s > 0" % (args.case, ", --".join(missing)),
@@ -191,6 +198,43 @@ def main(argv=None) -> int:
     if args.case == "torsion" and args.radius <= 0 and args.diameter <= 0:
         print("参数错误：torsion 需要 --radius 或 --diameter", file=sys.stderr)
         return 2
+
+    # 纯出图（不求解）：--case render
+    if args.case == "render":
+        try:
+            part = _make_part(args)
+        except (FeaError, ValueError) as exc:
+            print("建件失败：%s" % exc, file=sys.stderr)
+            return 2
+        out = _workdir(args, "render")
+        os.makedirs(out, exist_ok=True)
+        info = {}
+        try:
+            if args.views == "three":
+                p = args.png or os.path.join(out, "%s_three.png" % args.part)
+                info["three"] = BR.three_view_png(part, p)
+            else:
+                p = args.png or os.path.join(out, "%s_iso.png" % args.part)
+                info["iso"] = BR.iso_png(part, p)
+            if args.svg:
+                info["svg"] = BR.svg_views(part, args.svg)
+        except (BrepError,) as exc:
+            print("出图失败：%s" % exc, file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(info, ensure_ascii=False, indent=2, default=str))
+        else:
+            for key, st in info.items():
+                if "paths" in st:
+                    print("%-6s %s  %d B  paths=%d  隐藏线=%s"
+                          % (key, st.get("path", ""), st.get("bytes", 0),
+                             st["paths"], "有" if st["has_hidden"] else "无"))
+                else:
+                    print("%-6s %s  %d B  %dx%d  std=%.1f"
+                          % (key, st.get("path", ""), st.get("bytes", 0),
+                             st.get("size", [0, 0])[0], st.get("size", [0, 0])[1],
+                             st.get("pixel_std", 0.0)))
+        return 0
 
     # 阶梯轴 / 变截面支架（真实件）
     if args.case in ("stepped", "bracket"):
@@ -342,6 +386,13 @@ def main(argv=None) -> int:
         print("FEA 失败：%s" % exc, file=sys.stderr)
         return 2
 
+    if args.png and out.get("stage") == "done":
+        try:
+            stats = VW.deformed_from_result(out, args.png)
+            out["_png"] = stats
+        except FeaError as exc:
+            print("云图失败：%s" % exc, file=sys.stderr)
+
     solved = out.get("stage") == "done"
     payload = {"case": args.case, "order": args.order, "tol": args.tol,
                "ok": bool(out.get("ok")), "stage": out.get("stage"),
@@ -349,6 +400,7 @@ def main(argv=None) -> int:
                "relative_error": out.get("relative_error"),
                "mesh": out.get("mesh"), "run": out.get("run")}
     if args.json:
+        payload.pop("mesh_obj", None)
         print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
     else:
         m = out.get("mesh") or {}
@@ -368,6 +420,10 @@ def main(argv=None) -> int:
             print("相对误差：%.3e（容差 %.1e）"
                   % (out["relative_error"], args.tol))
             print("结论：%s" % ("ok" if out.get("ok") else "超差"))
+            if out.get("_png"):
+                g = out["_png"]
+                print("云图：%s  %d B  三角形 %d  放大 %.0f×  最大 |u|=%.4e mm"
+                      % (g["path"], g["bytes"], g["triangles"], g["scale"], g["max_disp"]))
         else:
             print("未解出：%s" % (out.get("run") or {}).get("stdout_tail", [])[-4:])
             print("结论：not_solved")

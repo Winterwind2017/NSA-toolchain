@@ -154,7 +154,8 @@ def _solve_mesh(mesh, *, workdir: str, job: str, E: float, nu: float,
     peak = inpmod.max_component(disp, axis=axis)
     length = hi - lo
     volume = mesh.volume()
-    return {"ok": None, "stage": "solved", "mesh": mesh.summary(), "inp": info,
+    return {"ok": None, "stage": "solved", "mesh": mesh.summary(), "mesh_obj": mesh,
+            "inp": info,
             "run": runres.to_dict(), "measured": peak["value"],
             "measured_node": peak["node"], "dat": runres.files["dat"],
             "displacements": disp, "len": length, "volume": volume,

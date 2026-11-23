@@ -70,7 +70,9 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 |---|---|---|
 | `kernels/acad/src/acadkit/dfm/` | 钣金/铣削/注塑/3D 打印的**可制造性检查**，每条给「改哪儿」 | 合规件零告警；违规件命中对应规则（17 例） |
 | `kernels/acad/src/acadkit/brep/` | 参数化件（轴/法兰/板）→ 真 B-rep → STEP/STL（cadquery/OCP） | 体积与解析式一致（≤1e-6）；STEP 读回体积一致（10 例） |
+| `kernels/acad/src/acadkit/brep/render.py` | **零件出图（离线，不需 CAD 软件）**：等轴测 PNG、三视图 PNG（前/俯/右）、线框 SVG（带隐藏线） | PNG 魔数 + 像素标准差 >2（防空图）+ 三视图三格宽度 ≥1000；不同视角字节不同；SVG 路径 ≥5 且含 stroke-dasharray（50 例） |
 | `kernels/acad/src/acadkit/fea/` | 十二种 CLI 工况（gmsh 划网格 → Abaqus inp → CalculiX ccx）：轴向拉伸（矩形/圆）、悬臂梁、圆轴扭转、四边简支板、brep 零件（轴/板/法兰）、**阶梯轴**（串联柔度参考解）、**变截面角撑板**（梁理论数值积分参考解）、参数扫描（求最小满足值 + CSV）、法兰简化校核、FEA+DFM 合成结论 | 默认二阶 C3D10。实测：悬臂 5.3e-4、扭转 2.9e-3、板 3.9e-2、矩形拉伸 5e-8、圆轴 7.1e-4、brep 轴 5.2e-3、brep 板悬臂 3.7e-2、阶梯轴 4.8e-2、变截面支架 1.2e-2。四道门禁（不满足**拒算**）：网格体积差 ≤5%、杆 L/√A ≥3、梁 L/h ≥5、预估单元 ≤20 万（52 例） |
+| `kernels/acad/src/acadkit/fea/view.py` | **FEA 变形云图**：四面体边界曲面 + 位移放大 + 按 \|u\| 着色 | 边界三角形数 >0 且少于全部面；PNG 非空白；颜色分布 >10；最大位移 >0；MEASURE 覆盖无缺失 |
 | `scripts/doctor.py` | 一条命令报 6 个内核的包/引擎/进程/技能 + FEA 三环（gmsh/sfepy/skfem/ccx） | 查不到的标 `SKIP`，不假装通过；退出码 = 阻塞数 |
 | `scripts/install_skills.py` | 把 7 个技能（含路由）装到目标 skills 根，支持 `--dry-run` / `--update` | 装完 `check_skills.py` 通过；`--update` 只覆盖清单登记的两个文件 |
 
