@@ -223,6 +223,21 @@ def diagnose(specs: List[KitSpec], probes: Optional[object] = None,
                        ", ".join(bad[:4])),
                     "python scripts/nsa.py skills update（或 install 重装）")
 
+    # cad-viewer（交互看件）：只看装没装 + node 在不在，不启动服务
+    try:
+        import viewer as VW
+        try:
+            viewer_dir = VW.viewer_root()        # 注意：不能叫 root，会盖掉仓库根
+            node_ok = shutil.which("node") is not None
+            rep.add("OK" if node_ok else "WARN", "cad-viewer",
+                    "%s（node %s）" % (viewer_dir, "可用" if node_ok else "缺失"),
+                    "" if node_ok else "装 Node.js 18+ 后可用；或设 NSA_CAD_VIEWER 指向 skill 目录")
+        except FileNotFoundError as exc:
+            rep.add("SKIP", "cad-viewer", str(exc),
+                    "装 cad-viewer skill，或设 NSA_CAD_VIEWER")
+    except Exception as exc:                            # noqa: BLE001
+        rep.add("SKIP", "cad-viewer", "封装读不出来：%s" % exc, "")
+
     # 每个内核
     for spec in specs:
         src = os.path.join(root, "kernels", spec.name, "src")

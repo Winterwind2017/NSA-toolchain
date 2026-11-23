@@ -311,6 +311,19 @@ def test_doctor_reports_skill_install_state() -> None:
     assert rows2 and rows2[0].level == "SKIP", rows2[0].to_dict()
 
 
+def test_doctor_kernel_rows_use_repo_root() -> None:
+    """回归：cad-viewer 那段曾用局部变量 root，覆盖了 diagnose(root=...)，
+    导致所有内核都被判成“没有 kernels/<name>/src”。"""
+    name = doctor.KITS[0].name
+    rep = doctor.diagnose(doctor.KITS[:1], probes=doctor.Probes())
+    rows = [c for c in rep.checks if c.area.startswith(name + " ")]
+    assert rows, [c.to_dict() for c in rep.checks]
+    assert not any(c.level == "SKIP" for c in rows), [c.to_dict() for c in rows]
+    assert not any("没有 kernels/" in c.message for c in rows), [c.to_dict() for c in rows]
+    pkg = [c for c in rows if c.area == name + " 包"][0]
+    assert pkg.level == "OK", pkg.to_dict()
+
+
 def test_doctor_warns_when_dirs_exist_without_manifest() -> None:
     """有技能目录但没有清单（老版本装的）应 WARN 而不是 SKIP。"""
     import shutil

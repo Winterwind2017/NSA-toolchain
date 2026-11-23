@@ -57,6 +57,7 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 & $py scripts\nsa.py doctor
 & $py scripts\nsa.py skills status
 & $py scripts\nsa.py drawing --part flange --outer 120 --title 法兰盘 --number NSA-001 --pdf flange.pdf
+& $py scripts\nsa.py viewer --dir <产物目录>      # 起 cad-viewer 给 review 链接
 ```
 
 ## 技能层（给 agent 的"脑子"）
@@ -82,6 +83,7 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 | `kernels/acad/src/acadkit/fea/` | 十二种 CLI 工况（gmsh 划网格 → Abaqus inp → CalculiX ccx）：轴向拉伸（矩形/圆）、悬臂梁、圆轴扭转、四边简支板、brep 零件（轴/板/法兰）、**阶梯轴**（串联柔度参考解）、**变截面角撑板**（梁理论数值积分参考解）、参数扫描（求最小满足值 + CSV）、法兰简化校核、FEA+DFM 合成结论 | 默认二阶 C3D10。实测：悬臂 5.3e-4、扭转 2.9e-3、板 3.9e-2、矩形拉伸 5e-8、圆轴 7.1e-4、brep 轴 5.2e-3、brep 板悬臂 3.7e-2、阶梯轴 4.8e-2、变截面支架 1.2e-2。四道门禁（不满足**拒算**）：网格体积差 ≤5%、杆 L/√A ≥3、梁 L/h ≥5、预估单元 ≤20 万（52 例） |
 | `kernels/acad/src/acadkit/fea/view.py` | **FEA 变形云图**：四面体边界曲面 + 位移放大 + 按 \|u\| 着色 | 边界三角形数 >0 且少于全部面；PNG 非空白；颜色分布 >10；最大位移 >0；MEASURE 覆盖无缺失 |
 | `scripts/doctor.py` | 一条命令报 6 个内核的包/引擎/进程/技能 + FEA 三环（gmsh/sfepy/skfem/ccx） | 查不到的标 `SKIP`，不假装通过；退出码 = 阻塞数 |
+| `scripts/viewer.py` | **交互看件**：起/复用本机 cad-viewer（STEP/STL/GLB/DXF/G-code/URDF/SDF），给出 review 链接；`--stop` 收工。判据：`/__cad/server` 是 cad-viewer+local-fs、catalog 列到文件、STEP 被 `step-source-status` 接受（12 例，含真启动）|
 | `scripts/install_skills.py` | 把 7 个技能（含路由）装到目标 skills 根，支持 `--dry-run` / `--update` | 装完 `check_skills.py` 通过；`--update` 只覆盖清单登记的两个文件 |
 
 ## 历史与发布
