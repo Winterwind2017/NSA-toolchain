@@ -59,7 +59,7 @@ def deformed_png(mesh: TetMesh, displacements: Dict[int, Tuple[float, float, flo
                  path: str, *, scale: Optional[float] = None,
                  target_ratio: float = 0.15,
                  size: Tuple[int, int] = (1000, 700), cmap: str = "turbo",
-                 show_edges: bool = True) -> Dict[str, object]:
+                 camera: str = "iso", show_edges: bool = False) -> Dict[str, object]:
     """变形云图：位移场 → 曲面外表面 + 按 |u| 着色。
 
     displacements: {节点号: (ux,uy,uz)}，只包含被打印的节点（MEASURE 集合）。
@@ -102,7 +102,7 @@ def deformed_png(mesh: TetMesh, displacements: Dict[int, Tuple[float, float, flo
         plotter.add_mesh(surf, scalars="u_mag", cmap=cmap, show_edges=show_edges,
                          edge_color="#30343c", scalar_bar_args={"title": "|u| (mm)"})
         plotter.add_text("magnified x%.0f" % s, font_size=9, color="black")
-        plotter.camera_position = "xz"
+        plotter.camera_position = camera
         plotter.reset_camera()
         img = np.asarray(plotter.screenshot(return_img=True))
     finally:

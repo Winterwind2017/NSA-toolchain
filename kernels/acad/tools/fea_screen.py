@@ -120,8 +120,8 @@ def _mesh(args, characteristic: float) -> float:
     return args.mesh_size or max(characteristic / 3.0, 0.5)
 
 
-def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="FEA screening（五种工况，带解析判据）")
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(description="FEA screening（十二种工况，带解析判据）")
     ap.add_argument("--case", default="bar", choices=CASES)
     ap.add_argument("--length", type=float, default=100.0)
     ap.add_argument("--width", type=float, default=10.0)
@@ -165,14 +165,23 @@ def main(argv=None) -> int:
     ap.add_argument("--tol", type=float, default=0.0, help="覆盖默认容差")
     ap.add_argument("--workdir", default="")
     ap.add_argument("--json", action="store_true")
-    args = ap.parse_args(argv)
+    return ap
 
-    # 每种工况的必备参数与默认容差
-    defaults = {"bar": 1e-6, "cylinder": 5e-3, "cantilever": 1e-2,
+
+# 每种工况的默认容差（report.py 也读这张表，避免两处漂移）
+TOL_DEFAULTS = {"bar": 1e-6, "cylinder": 5e-3, "cantilever": 1e-2,
                 "torsion": 1e-2, "plate": 5e-2,
                 "brep-axial": 3e-2, "brep-cantilever": 5e-2,
                 "sweep": 5e-2, "flange": 1.0, "combined": 5e-2,
                 "stepped": 6e-2, "bracket": 3e-2, "render": 1.0}
+
+
+def main(argv=None) -> int:
+    ap = build_parser()
+    args = ap.parse_args(argv)
+
+    # 每种工况的必备参数与默认容差
+    defaults = dict(TOL_DEFAULTS)
     note = ""
     if args.case in ("bar", "cylinder") and abs(args.nu) > 1e-12 and defaults[args.case] < 1e-2:
         # 一维杆理论假设横向自由收缩；固定端会限制泊松收缩（ν≠0 时偏刚 ~0.5%）

@@ -88,6 +88,7 @@ class TetMesh:
 
     def summary(self) -> Dict[str, object]:
         return {"nodes": len(self.nodes), "tets": len(self.tets),
+                "order": self.order,
                 "volume": round(self.volume(), 6),
                 "inverted": len(self.inverted()), "bbox": self.bbox(),
                 "source": self.source}

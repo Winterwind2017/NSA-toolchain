@@ -34,6 +34,7 @@ SCRIPTS = os.path.join(ROOT, "scripts")
 FEA = os.path.join(ROOT, "kernels", "acad", "tools", "fea_screen.py")
 DRAWING = os.path.join(ROOT, "kernels", "acad", "tools", "drawing.py")
 VIEWER = os.path.join(ROOT, "scripts", "viewer.py")
+REPORT = os.path.join(ROOT, "kernels", "acad", "tools", "report.py")
 
 USAGE = """nsa —— nsa-toolchain 统一入口
 
@@ -117,6 +118,8 @@ def main(argv=None) -> int:
         return _run(DRAWING, rest)
     if cmd == "viewer":
         return _run(VIEWER, rest)
+    if cmd == "report":
+        return _run(REPORT, rest)
     if cmd == "skills":
         sub = rest[0] if rest else "status"
         tail = rest[1:]

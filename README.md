@@ -58,6 +58,7 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 & $py scripts\nsa.py skills status
 & $py scripts\nsa.py drawing --part flange --outer 120 --title 法兰盘 --number NSA-001 --pdf flange.pdf
 & $py scripts\nsa.py viewer --dir <产物目录>      # 起 cad-viewer 给 review 链接
+& $py scripts\nsa.py report --case brep-cantilever --part plate --length 200 --width 100 --thickness 8 --force 100 --outdir out
 ```
 
 ## 技能层（给 agent 的"脑子"）
@@ -84,6 +85,7 @@ $env:PYTHONPATH = "D:\bililive\nsa-toolchain\hub"
 | `kernels/acad/src/acadkit/fea/view.py` | **FEA 变形云图**：四面体边界曲面 + 位移放大 + 按 \|u\| 着色 | 边界三角形数 >0 且少于全部面；PNG 非空白；颜色分布 >10；最大位移 >0；MEASURE 覆盖无缺失 |
 | `scripts/doctor.py` | 一条命令报 6 个内核的包/引擎/进程/技能 + FEA 三环（gmsh/sfepy/skfem/ccx） | 查不到的标 `SKIP`，不假装通过；退出码 = 阻塞数 |
 | `scripts/viewer.py` | **交互看件**：起/复用本机 cad-viewer（STEP/STL/GLB/DXF/G-code/URDF/SDF），给出 review 链接；`--stop` 收工。判据：`/__cad/server` 是 cad-viewer+local-fs、catalog 列到文件、STEP 被 `step-source-status` 接受（12 例，含真启动）|
+| `kernels/acad/tools/report.py` | **一条命令出整套交付物**：求解 → 变形云图 + 三视图图纸 + STEP/STL + viewer 链接 + `report.md`/`report.json`（含判据汇总与边界声明） | 四项 checks 全绿才退出 0：physics_ok（与参考解对账）、png_ok（非空白）、drawing_ok（幅面+文字）、viewer_ok（后端认了 STEP）；无零件工况自动跳过图纸（4 例）|
 | `scripts/install_skills.py` | 把 7 个技能（含路由）装到目标 skills 根，支持 `--dry-run` / `--update` | 装完 `check_skills.py` 通过；`--update` 只覆盖清单登记的两个文件 |
 
 ## 历史与发布
