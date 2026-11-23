@@ -39,10 +39,25 @@ class PartMesh:
 
 
 def part_mesh(part: brep.Part, *, mesh_size: float, order: int = 2,
-              workdir: Optional[str] = None, max_volume_error: float = 0.05) -> PartMesh:
-    """零件 → STEP → 四面体网格，并校验体积保真度。"""
+              workdir: Optional[str] = None, max_volume_error: float = 0.05,
+              max_cells: int = 200_000) -> PartMesh:
+    """零件 → STEP → 四面体网格，并校验体积保真度与**算力预算**。
+
+    算力门禁：按包围盒体积粗估单元数（vol/h³），超过 `max_cells`（默认 20 万）
+    直接拒绝。实测教训：200×100×0.8 的薄板用 h=0.4 会生成约 150 万四面体，
+    ccx 跑 5 分钟不解（二阶后自由度 ~700 万），先把门禁放在前面比等超时好。
+    """
     if not hasattr(part, "obj"):
         raise FeaError("part 需要是 acadkit.brep.parts.Part")
+    bbox = part.bbox()
+    vol_bbox = bbox["xlen"] * bbox["ylen"] * bbox["zlen"]
+    est_cells = vol_bbox / max(mesh_size, 1e-9) ** 3
+    if est_cells > max_cells:
+        need = (vol_bbox / max_cells) ** (1.0 / 3.0)
+        raise FeaError(
+            "网格过大：h=%.3g mm 在包围盒 %.0f mm³ 上约 %.0f 万单元（上限 %d 万）。"
+            "把 mesh_size 放大到 ≥ %.2f mm，或缩小零件/减薄方向单独建模"
+            % (mesh_size, vol_bbox, est_cells / 1e4, max_cells // 10_000, need))
     workdir = workdir or tempfile.mkdtemp(prefix="brep_fea_")
     os.makedirs(workdir, exist_ok=True)
     step_path = os.path.join(workdir, "%s.step" % part.name)
@@ -131,7 +146,8 @@ def axial_part(part: brep.Part, *, force: float, E: float, nu: float,
     out.update({"ok": rel <= tol, "stage": "done", "measured": measured,
                 "expected": expected, "relative_error": rel, "tol": tol,
                 "axis": axis, "length": length, "area_effective": area_eff,
-                "slenderness": slenderness, "part": pm.summary()})
+                "slenderness": slenderness, "part": pm.summary(),
+                "stress_nominal": abs(force) / area_eff if area_eff > 0 else float("inf")})
     return out
 
 
@@ -201,7 +217,9 @@ def cantilever_part(part: brep.Part, *, force: float, E: float, nu: float,
     out.update({"ok": rel <= tol, "stage": "done", "measured": measured,
                 "expected": expected, "relative_error": rel, "tol": tol,
                 "axis": axis, "load_axis": load_axis, "length": length,
-                "inertia": I, "slenderness": slenderness, "part": pm.summary()})
+                "inertia": I, "slenderness": slenderness, "part": pm.summary(),
+                "stress_nominal": (abs(force) * length * (extent(depth_key) / 2.0) / I)
+                if I > 0 else float("inf")})
     return out
 
 

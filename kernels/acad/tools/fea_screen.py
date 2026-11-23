@@ -28,13 +28,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
 
 from acadkit.brep import parts as B         # noqa: E402
+from acadkit.dfm.rules import check_milling, check_print3d  # noqa: E402
 from acadkit.fea import brep_bridge as BB   # noqa: E402
+from acadkit.fea import combined as CB      # noqa: E402
+from acadkit.fea import flange as FL        # noqa: E402
+from acadkit.fea import sweep as SW         # noqa: E402
 from acadkit.fea import cases as C          # noqa: E402
 from acadkit.fea import runner as R         # noqa: E402
 from acadkit.fea.mesh import FeaError       # noqa: E402
 
 CASES = ("bar", "cylinder", "cantilever", "torsion", "plate",
-         "brep-axial", "brep-cantilever")
+         "brep-axial", "brep-cantilever", "sweep", "flange", "combined")
 PARTS = ("shaft", "plate", "flange")
 
 
@@ -125,6 +129,21 @@ def main(argv=None) -> int:
     ap.add_argument("--part", default="shaft", choices=PARTS, help="brep 零件类型")
     ap.add_argument("--outer", type=float, default=120.0, help="法兰外径")
     ap.add_argument("--bore", type=float, default=40.0, help="法兰内孔")
+    ap.add_argument("--sweep-param", default="thickness", choices=("thickness", "diameter"))
+    ap.add_argument("--sweep-values", default="", help="逗号分隔，如 8,12,16")
+    ap.add_argument("--max-deflection", type=float, default=0.0, help="许用挠度 mm")
+    ap.add_argument("--max-stress", type=float, default=0.0, help="许用应力 MPa")
+    ap.add_argument("--csv", default="", help="扫描结果写 CSV 的路径")
+    ap.add_argument("--bolt-count", type=int, default=8)
+    ap.add_argument("--bolt-d", type=float, default=12.0)
+    ap.add_argument("--bcd", type=float, default=0.0, help="螺栓分布圆直径（0=按 bore*1.6）")
+    ap.add_argument("--preload", type=float, default=0.0, help="单螺栓预紧力 N")
+    ap.add_argument("--sigma-allow", type=float, default=140.0, help="许用应力 MPa")
+    ap.add_argument("--process", default="print3d", choices=("print3d", "milling"),
+                    help="combined 用法里的制造工艺")
+    ap.add_argument("--nozzle", type=float, default=0.4, help="3D 打印喷嘴 mm")
+    ap.add_argument("--concentration", type=float, default=3.0,
+                    help="名义→峰值应力集中系数")
     ap.add_argument("--thickness", type=float, default=4.0, help="板厚")
     ap.add_argument("--force", type=float, default=0.0, help="轴向/悬臂载荷 N")
     ap.add_argument("--torque", type=float, default=0.0, help="扭矩 N·mm")
@@ -141,7 +160,8 @@ def main(argv=None) -> int:
     # 每种工况的必备参数与默认容差
     defaults = {"bar": 1e-6, "cylinder": 5e-3, "cantilever": 1e-2,
                 "torsion": 1e-2, "plate": 5e-2,
-                "brep-axial": 3e-2, "brep-cantilever": 5e-2}
+                "brep-axial": 3e-2, "brep-cantilever": 5e-2,
+                "sweep": 5e-2, "flange": 1.0, "combined": 5e-2}
     note = ""
     if args.case in ("bar", "cylinder") and abs(args.nu) > 1e-12 and defaults[args.case] < 1e-2:
         # 一维杆理论假设横向自由收缩；固定端会限制泊松收缩（ν≠0 时偏刚 ~0.5%）
@@ -152,7 +172,8 @@ def main(argv=None) -> int:
         args.tol = defaults[args.case]
     required = {"bar": ("force",), "cylinder": ("force",), "cantilever": ("force",),
                 "torsion": ("torque",), "plate": ("pressure",),
-                "brep-axial": ("force",), "brep-cantilever": ("force",)}[args.case]
+                "brep-axial": ("force",), "brep-cantilever": ("force",),
+                "sweep": ("force",), "flange": (), "combined": ("force",)}[args.case]
     missing = [n for n in required if getattr(args, n) <= 0]
     if missing:
         print("参数错误：%s 工况需要 --%s > 0" % (args.case, ", --".join(missing)),
@@ -164,6 +185,103 @@ def main(argv=None) -> int:
     if args.case == "torsion" and args.radius <= 0 and args.diameter <= 0:
         print("参数错误：torsion 需要 --radius 或 --diameter", file=sys.stderr)
         return 2
+
+    # 参数扫描
+    if args.case == "sweep":
+        raw = [x.strip() for x in args.sweep_values.split(",") if x.strip()]
+        if not raw:
+            print("参数错误：sweep 需要 --sweep-values", file=sys.stderr)
+            return 2
+        values = [float(x) for x in raw]
+        if args.part == "plate":
+            factory = lambda v: B.plate(length=args.length, width=args.width, thickness=v)
+            kwargs = {"axis": "x", "load_axis": "z"}
+            mesh = args.mesh_size or min(values) / 2.0
+        elif args.part == "shaft":
+            factory = lambda v: B.shaft(diameter=v, length=args.length)
+            kwargs = {}
+            mesh = args.mesh_size or min(values) / 4.0
+        else:
+            print("参数错误：sweep 只支持 --part plate|shaft", file=sys.stderr)
+            return 2
+        case = "cantilever" if args.part == "plate" else "axial"
+        try:
+            sw = SW.sweep(factory=factory, param=args.sweep_param, values=values,
+                          case=case, force=args.force, E=args.E, nu=args.nu,
+                          mesh_size=mesh, order=args.order, tol=args.tol,
+                          workdir=_workdir(args, "sweep"), kwargs=kwargs)
+        except FeaError as exc:
+            print("扫描失败：%s" % exc, file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps({"param": sw.param, "case": sw.case,
+                              "points": [p.to_dict() for p in sw.points]},
+                             ensure_ascii=False, indent=2))
+        else:
+            print(sw.to_text())
+        if args.csv:
+            print("CSV：%s" % sw.to_csv(args.csv))
+        best = None
+        if args.max_deflection > 0 or args.max_stress > 0:
+            best = SW.pick_min(sw, max_deflection=args.max_deflection or None,
+                               max_stress=args.max_stress or None)
+            print("最小满足值：%s" % ("(无解)" if best is None else "%g mm" % best))
+        return 0 if best is not None or (args.max_deflection <= 0 and args.max_stress <= 0) else 1
+
+    # FEA + DFM 合成
+    if args.case == "combined":
+        part = _make_part(args)
+        size = args.mesh_size or _part_characteristic(args)
+        try:
+            if args.part == "plate":
+                fea = BB.cantilever_part(part, force=args.force, E=args.E, nu=args.nu,
+                                         mesh_size=size, axis="x", load_axis="z",
+                                         order=args.order, tol=args.tol,
+                                         workdir=_workdir(args, "cmb"))
+            else:
+                fea = BB.axial_part(part, force=args.force, E=args.E, nu=args.nu,
+                                    mesh_size=size, order=args.order, tol=args.tol,
+                                    workdir=_workdir(args, "cmb"))
+        except FeaError as exc:
+            print("FEA 失败：%s" % exc, file=sys.stderr)
+            return 2
+        bbox = part.bbox()
+        min_dim = min(bbox["xlen"], bbox["ylen"], bbox["zlen"])
+        if args.process == "print3d":
+            dfm = check_print3d(min_wall=min_dim, overhang_deg=0.0,
+                                nozzle=args.nozzle)
+            note = "DFM 只检查打印最小壁厚（= %.2f mm）与喷嘴匹配" % min_dim
+        else:
+            dfm = check_milling(tool_diameter=6.0, pockets=[])
+            note = "DFM 只检查铣削刀具可达性（无型腔，恒通过）"
+        try:
+            res = CB.combine(fea, sigma_allow=args.sigma_allow, dfm=dfm,
+                             deflection_limit=args.max_deflection or None,
+                             concentration=args.concentration)
+        except FeaError as exc:
+            print("合成失败：%s" % exc, file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(res.to_dict(), ensure_ascii=False, indent=2, default=str))
+        else:
+            print(note)
+            print(res.to_text())
+        return 0 if res.ok else 1
+
+    # 法兰简化校核（不开 FEA）
+    if args.case == "flange":
+        try:
+            rep = FL.flange_check(
+                outer_d=args.outer, bore_d=args.bore, thickness=args.thickness,
+                bolt_count=args.bolt_count, bolt_d=args.bolt_d,
+                bcd=args.bcd or args.bore * 1.6,
+                preload_per_bolt=args.preload or (args.force or 1.0),
+                sigma_allow=args.sigma_allow)
+        except ValueError as exc:
+            print("参数错误：%s" % exc, file=sys.stderr)
+            return 2
+        print(rep.to_text())
+        return 0 if rep.ok else 1
 
     try:
         out = run_case(args)
