@@ -37,7 +37,7 @@ acadkit env-check       # 与基线比对
 |---|---|---|
 | AutoCAD 未运行时 `status` | 只报告、不启动、rc=0 | ✅ 跑完进程数仍为 0 |
 | AutoCAD 运行中 `status` | 读到 profile=`<<VANILLA>>`、单实例 OK | ✅ |
-| `env-baseline` | 写基线文件 | ✅ `C:\Users\yuche\.acadkit\env_baseline.json` |
+| `env-baseline` | 写基线文件 | ✅ `~\.acadkit\env_baseline.json` |
 | 改 `MEASUREMENT` 1→0 后 `env-check` | 检出 1 项漂移、rc=5 | ✅ `var:MEASUREMENT '1' → '0'` |
 | 还原后 `env-check` | 干净、rc=0 | ✅ |
 | `clean_quit` | 进程真消失、不留 `.sv$` | ✅ `process_exited=True`，等 1.8 s，`.sv$`=0 |

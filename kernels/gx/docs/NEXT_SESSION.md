@@ -10,9 +10,9 @@
 ## 0. 开场三步（不需要用户额外交代）
 
 ```powershell
-cd D:\bililive\gxkit
-$py = "C:\Users\yuche\AppData\Local\Programs\Python\Python312\python.exe"
-$env:PYTHONPATH='D:\bililive\gxkit\src'
+cd <repo>\gxkit
+$py = "python"
+$env:PYTHONPATH='<repo>\gxkit\src'
 & $py -m gxkit selftest          # 期望：自检通过：42 条能力
 & $py -m pytest -q tests         # 期望：34 passed
 & $py tools\check_consistency.py # 期望：五处数字一致
@@ -21,9 +21,9 @@ $env:PYTHONPATH='D:\bililive\gxkit\src'
 之后按「改一批 → 单跑该项 → 全量三轮」推进（用户已确认能接受每轮约 105 分钟）：
 
 ```powershell
-& $py -m gxkit run --workdir D:\bililive\gxkit\_runs\a1
-& $py -m gxkit run --workdir D:\bililive\gxkit\_runs\a2
-& $py -m gxkit run --shuffle --seed 61 --workdir D:\bililive\gxkit\_runs\a3
+& $py -m gxkit run --workdir <repo>\gxkit\_runs\a1
+& $py -m gxkit run --workdir <repo>\gxkit\_runs\a2
+& $py -m gxkit run --shuffle --seed 61 --workdir <repo>\gxkit\_runs\a3
 ```
 
 ## 1. 能纯离线继续做的（不需要真机）

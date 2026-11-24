@@ -60,7 +60,7 @@
 ## 四、P0 交付物
 
 ```
-D:\bililive\acadkit\
+<repo>\acadkit\
 ├─ docs\
 │  ├─ registry.yaml        60 条能力（后端/状态/判据/证据）
 │  ├─ BACKEND_MATRIX.md    4 条执行路径 × 20 个能力族 + 选择规则

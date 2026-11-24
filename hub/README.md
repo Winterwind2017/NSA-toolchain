@@ -193,7 +193,7 @@ sw_sim_read                # 步数 1，位移 max 5.47e-07 mm，应力 max 2102
 
 
 > **autoshop 为什么是 24 而不是 40+**：它不是"能力表"模型——AutoShop 的 CLI 只有
-> 24 个 verb（`D:\bililive\autoshopkit\src\autoshopkit\cli.py`），全部已工具化。
+> 24 个 verb（`<repo>\autoshopkit\src\autoshopkit\cli.py`），全部已工具化。
 > 再拆就只能把 `il --view/--write` 拆成两个工具这种纯包装，不增加可执行能力。
 > 40+ 的门槛是为 CAD kit（58–146 条能力）定的；autoshop 按"verb 全覆盖"验收。
 
@@ -268,7 +268,7 @@ SolidWorks 侧同时补齐了上游有、我们缺的两个工具：`sw_reload_r
 六个 kit 各是一个 MCP 服务器（各自独占 COM/UI 与崩溃域）。**日常用网关就够了**：
 
 ```powershell
-D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\nsa-mcp-hub\_tools\nsa-mcp-hub.cmd
+<repo>\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 <repo>/hub\_tools\nsa-mcp-hub.cmd
 ```
 
 * `tools/list` → **579 个工具**（八家合计，去重后）；`initialize` 返回
@@ -282,7 +282,7 @@ D:\bililive\DeepHarness\_tools\nsa-mcp-hub.cmd     # 或 D:\bililive\nsa-mcp-hub
 
 DSH 里已经改成只挂这一条（`%USERPROFILE%\.dsh\cordis.patch.yml`），
 原来的六条 `nsa-mcp-hub-*` 已摘掉；回退办法：同目录下 `cordis.patch.yml.bak-hub-*` 覆盖回去再重启 DSH。
-六个单独的 `.cmd` 启动器仍保留在 `D:\bililive\DeepHarness\_tools\`，随时可以单挂。
+六个单独的 `.cmd` 启动器仍保留在 `<repo>\DeepHarness\_tools\`，随时可以单挂。
 
 ## 环境坑（都踩过）
 

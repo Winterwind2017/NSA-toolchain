@@ -103,7 +103,7 @@ python -m gxkit run --shuffle --seed 7            # 乱序跑一轮（查顺序�
 ## 复现
 
 ```powershell
-$env:PYTHONPATH='D:\bililive\gxkit\src'
+$env:PYTHONPATH='<repo>\gxkit\src'
 python -m gxkit selftest
 python -m gxkit run --workdir D:\tmp\run1     # 42/42，约 105 分钟
 ```

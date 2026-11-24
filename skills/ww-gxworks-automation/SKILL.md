@@ -30,7 +30,7 @@ description: >
 ## 1. 跑起来
 
 ```powershell
-$env:PYTHONPATH='D:\bililive\gxkit\src'
+$env:PYTHONPATH='<repo>\gxkit\src'
 python -m gxkit selftest            # 离线自检（25 条）
 python -m gxkit caps                # 列能力
 python -m gxkit apply --xml build.xml --dry   # 离线预检一份 XML（不开 GX Works3）

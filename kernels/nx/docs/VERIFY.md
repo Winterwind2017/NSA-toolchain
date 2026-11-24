@@ -9,7 +9,7 @@
 |---|---|
 | 引擎 | NX 2512 @ `D:\Program Files\Siemens\DesigncenterNX2512` |
 | 入口 | `NXBIN\run_journal.exe <journal.py> -nx` |
-| 宿主 Python | `C:\Users\yuche\AppData\Local\Programs\Python\Python312\python.exe` |
+| 宿主 Python | `python` |
 | 许可 | `C:\ProgramData\Siemens\siemens_SSQ.dat`（feature 4,420） |
 | 内核 | nxkit 0.1.0（本仓库） |
 | 技能 | ww-nx-automation |
@@ -17,10 +17,10 @@
 ## 1. 干净 clone（不是工作副本）
 
 ```powershell
-git clone git@github.com:Winterwind2017/nxkit.git D:\bililive\_verify3\clone
-cd D:\bililive\_verify3\clone
+git clone git@github.com:Winterwind2017/nxkit.git <repo>\_verify3\clone
+cd <repo>\_verify3\clone
 git log --oneline -1        # 3922a76
-$env:PYTHONPATH = "D:\bililive\_verify3\clone\src"
+$env:PYTHONPATH = "<repo>\_verify3\clone\src"
 ```
 
 ## 2. 离线测试与自检
@@ -39,7 +39,7 @@ python -m nxkit licenses
 ## 3. 真机全量（干净 clone 里跑）
 
 ```powershell
-python -m nxkit run --workdir D:\bililive\_verify3\runs\full
+python -m nxkit run --workdir <repo>\_verify3\runs\full
 # 146/146 通过  (会话 47.9s, 退出码 1)（干净 clone 实测）
 ```
 
@@ -48,7 +48,7 @@ python -m nxkit run --workdir D:\bililive\_verify3\runs\full
 ## 4. 技能仓库
 
 ```powershell
-cd D:\bililive\ww-nx-automation
+cd <repo>\ww-nx-automation
 python tools/check_skill.py --check
 # 技能校验通过：能力名、CLI 命令、数量断言、链接都与 capabilities.json 一致
 python -m pytest -q tests
@@ -60,8 +60,8 @@ python tools/sync_capabilities.py
 ## 5. 数字一致性
 
 ```powershell
-cd D:\bililive\nxkit
-python tools/check_consistency.py --skill D:\bililive\ww-nx-automation
+cd <repo>\nxkit
+python tools/check_consistency.py --skill <repo>\ww-nx-automation
 # 五处数字一致
 ```
 

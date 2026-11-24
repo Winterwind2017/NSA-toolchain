@@ -123,9 +123,9 @@ Online through **simulation** (`python tests/live_online.py`, 16/16):
 ## Install
 
 ```powershell
-py -m pip install -e D:\bililive\codesyskit
+py -m pip install -e <repo>\codesyskit
 # or run from the tree:
-$env:PYTHONPATH = "D:\bililive\codesyskit\src"
+$env:PYTHONPATH = "<repo>\codesyskit\src"
 python -m codesyskit start
 ```
 

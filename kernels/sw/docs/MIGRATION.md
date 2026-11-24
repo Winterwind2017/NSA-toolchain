@@ -6,10 +6,10 @@
 
 | # | 来源 | 位置 | 体量 | 进入本仓库的方式 |
 |---|---|---|---|---|
-| ① | 第三方 MCP（fork） | `D:\bililive\Solidworks-MCP-Server` | 188 工具 / 316 KB | 只继承**工具名与分组**；实现按实测重写，错误清单见 `docs/UNSUPPORTED.md` |
-| ② | 自有对象框架 | `D:\bililive\DeepCode\cad_framework` | `sw_app.py` 50 KB 等 | `api/app.py`、`core/base.py`、`core/errors.py`、`api/advanced.py` **整体移植**（本人作品，MIT） |
-| ③ | 仿真/运动/元数据 MCP | `D:\bililive\mcp-patches`（`sw_sim`/`sw_motion`/`swdm_lite`/`sw_ovba`/`sw_adv`） | 15 工具 | **已合并**：`swkit/study` + `swkit/meta` + `_legacy`（见"③ 的落地方式"） |
-| ④ | 实测修复层 | `D:\bililive\mcp-patches\sw_fixpack.py` | 46 命令 / 153 KB | 已验证条目进 `verified/` + `registry.py`；其余命令逐条迁移 |
+| ① | 第三方 MCP（fork） | `<repo>\Solidworks-MCP-Server` | 188 工具 / 316 KB | 只继承**工具名与分组**；实现按实测重写，错误清单见 `docs/UNSUPPORTED.md` |
+| ② | 自有对象框架 | `<repo>\DeepCode\cad_framework` | `sw_app.py` 50 KB 等 | `api/app.py`、`core/base.py`、`core/errors.py`、`api/advanced.py` **整体移植**（本人作品，MIT） |
+| ③ | 仿真/运动/元数据 MCP | `<repo>\mcp-patches`（`sw_sim`/`sw_motion`/`swdm_lite`/`sw_ovba`/`sw_adv`） | 15 工具 | **已合并**：`swkit/study` + `swkit/meta` + `_legacy`（见"③ 的落地方式"） |
+| ④ | 实测修复层 | `<repo>\mcp-patches\sw_fixpack.py` | 46 命令 / 153 KB | 已验证条目进 `verified/` + `registry.py`；其余命令逐条迁移 |
 | ⑤ | 知识资产 | `_sw_probe`（310 探针）+ 11 份 `SW_*.md`（台账 109 KB） | ~1000 文件 | 结论进 `docs/`（RECIPES / PITFALLS / UNSUPPORTED）；只留**精简探针**在 `diagnostics/` |
 
 ## 已搬迁（v0.1）

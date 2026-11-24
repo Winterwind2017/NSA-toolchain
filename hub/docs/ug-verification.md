@@ -305,7 +305,7 @@ attribute 'BlankDefinitionType'`）。只有 UI 里那个下拉能改。
 查了默认设置落盘位置：
 
 ```
-C:\Users\yuche\AppData\Local\Siemens\Designcenter2512\user.mtx   （186 KB）
+~\AppData\Local\Siemens\Designcenter2512\user.mtx   （186 KB）
 ```
 
 里面只有 `<NX_PROFILES><Profile name="UG_APP_NOPART"><Layout>` 这类**界面布局**（Ribbon 标签、

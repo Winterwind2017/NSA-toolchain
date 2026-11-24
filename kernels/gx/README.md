@@ -31,7 +31,7 @@
 ## 安装 / 使用
 
 ```powershell
-$env:PYTHONPATH='D:\bililive\gxkit\src'
+$env:PYTHONPATH='<repo>\gxkit\src'
 python -m gxkit selftest                       # 离线自检（不需要 GX Works3）
 python -m gxkit caps                           # 列能力
 python -m gxkit run --workdir D:\tmp\run1      # 真机跑全部 42 条（约 105 分钟）

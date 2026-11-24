@@ -428,7 +428,7 @@ PASS gx.batch.offline   170 s
 之前把 ug 记成"环境阻塞、要人手 Ctrl+U"，**这是错的**：
 
 ```
-$env:UGII_USER_DIR = 'D:\bililive\CAD-Agent-Hub\MCP\UG\nx_user'
+$env:UGII_USER_DIR = '<repo>\CAD-Agent-Hub\MCP\UG\nx_user'
 Start-Process 'D:\Program Files\Siemens\DesigncenterNX2512\NXBIN\ugraf.exe'
 → 45 秒后 127.0.0.1:48161 就在听，ug_ping ok
 ```
@@ -539,7 +539,7 @@ CAM 刀路（`generate_cam_toolpath` backend error）、装配写入（`add_comp
 
 ## `sw_scan` 的真实执行路径修正
 
-`sw_scan` 走的是 **`D:\bililive\mcp-patches\sw_adv.py`**（`sw_scripts._run_script`
+`sw_scan` 走的是 **`<repo>\mcp-patches\sw_adv.py`**（`sw_scripts._run_script`
 用 PATCH_DIR），不是 `swkit/_legacy/sw_adv.py`。两处都已加 `getsize` 保护；
 之前"改了但没生效"就是改错了副本。
 
@@ -716,7 +716,7 @@ text_matches)`」的工具会被误判：本机 `InsertSketchText` 的 `GetText`
 | `sw_sketch_text` | 代理层修好后直接过（线段 0→1） |
 | `sw_close_document` | **不给 title** 就是关活动文档（给错名字会判 `count_decreased=false`） |
 | `sw_select_references` | 先 `sw_feature_inspect(include_tokens=True)` 拿 `reads.result.topology[].reference_token`，再选 |
-| `sw_vba_dump` | 用本机样本 `D:\bililive\DeepHarness\_sw_probe\generated_test.swp`（32 KB），0.26 s |
+| `sw_vba_dump` | 用本机样本 `<repo>\DeepHarness\_sw_probe\generated_test.swp`（32 KB），0.26 s |
 | `sw_create_two_stage_reducer` | `execute=False`（只出计划）|
 | `sw_sim_run` / `sw_sim_read` | 在同一个研究上再求解 + 读结果；`sim_solve` 后接 `sim_run` 都 < 35 s（100×50×10 板、10 mm 网格）|
 
@@ -800,7 +800,7 @@ NX 恢复办法：`Stop-Process -Name ugraf` → 设 `UGII_USER_DIR` 重开 → 
    `acad.exe /p "<<VANILLA>>"`，实测 `CPROFILE = <<VANILLA>>`。
 2. `%TEMP%` 里有一个 2026-11-04 的 `Drawing2_1_29790_3f894360.sv$`（自动保存残留），
    它让 `acad_status` 一直判 `sv_count` 漂移。已**移到备份目录**
-   `D:\bililive\acad_out\sv_backup\`（没删），status 随即通过。
+   `<repo>\acad_out\sv_backup\`（没删），status 随即通过。
 
 ### 收尾后的"未覆盖"是什么
 

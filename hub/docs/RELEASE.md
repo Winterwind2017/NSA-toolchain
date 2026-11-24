@@ -3,7 +3,7 @@
 > 这份文档回答三个问题：**这套东西现在是什么状态**、**怎么把它跑起来**、**哪些能力明确不可用**。
 > 日期：2026-11-09 ｜ 代码版本：`nsa_mcp_hub.__version__ = 0.2.0` ｜ 里程碑 tag：`v1.0-acceptance`
 > **仓库形态**：2026-11-09 起本网关与 6 个内核、6 个技能同处一个 monorepo `NSA-toolchain`（`hub/` + `kernels/` + `skills/`）；
-> 老路径 `D:\bililive\nsa-mcp-hub` 等仍是可用联接，见 `docs/MIGRATION.md`。
+> 老路径 `<repo>/hub` 等仍是可用联接，见 `docs/MIGRATION.md`。
 > 数字口径全部来自实测（`docs/acceptance-coverage.md`、各 kit 的 `docs/UNSUPPORTED.md`），不引用旧结论。
 
 ---
@@ -60,8 +60,8 @@ MCP 客户端（DSH 等）
 ## 3. 怎么跑
 
 ```powershell
-$py = "C:\Users\yuche\AppData\Local\Programs\Python\Python312\python.exe"
-$env:PYTHONPATH = "D:\bililive\nsa-mcp-hub"
+$py = "python"
+$env:PYTHONPATH = "<repo>/hub"
 
 # ① 全量收官（自动探测哪些应用开着 → 只跑能跑的 → 最后重算覆盖表）
 .\scripts\run_all.ps1

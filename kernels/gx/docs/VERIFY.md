@@ -7,14 +7,14 @@
 | 项 | 值 |
 |---|---|
 | 引擎 | GX Works3 1.117.0.1 @ `D:\Program Files (x86)\MELSOFT\GPPW3\GXW3.exe` |
-| 宿主 Python | `C:\Users\yuche\AppData\Local\Programs\Python\Python312\python.exe` |
+| 宿主 Python | `python` |
 | 依赖 | `pywin32`、`comtypes`、`Pillow`（UIA 走 `comtypes` 生成 `UIAutomationClient`） |
 | 目标机型 | FX5U（`FX5CPU` 系列），程序语言 ST |
 
 ## 步骤
 
 ```powershell
-$env:PYTHONPATH='D:\bililive\gxkit\src'
+$env:PYTHONPATH='<repo>\gxkit\src'
 
 # 1) 离线自检（不需要打开软件）
 python -m gxkit selftest
@@ -25,7 +25,7 @@ python -m pytest -q tests
 # 23 passed
 
 # 3) 真机全量（约 105 分钟；每条能力一个干净会话）
-python -m gxkit run --workdir D:\bililive\gxkit\_runs\g1
+python -m gxkit run --workdir <repo>\gxkit\_runs\g1
 ```
 
 ## 单条验证

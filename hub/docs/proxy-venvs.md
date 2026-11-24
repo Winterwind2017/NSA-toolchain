@@ -42,7 +42,7 @@ python scripts\setup_proxy_venvs.py --check    :: 只体检，不改文件
 2. 端到端：用 hub 自己的适配器起子 MCP，确认工具面完整（不能出现 `*_unavailable`）：
 
 ```python
-import sys; sys.path.insert(0, r"D:\bililive\nsa-mcp-hub")
+import sys; sys.path.insert(0, r"<repo>/hub")
 from nsa_mcp_hub.adapters import ug_mcp, eplan_mcp, catia_mcp
 for mod, name in ((ug_mcp, "ug"), (eplan_mcp, "eplan"), (catia_mcp, "catia")):
     kit = mod.build_kit()

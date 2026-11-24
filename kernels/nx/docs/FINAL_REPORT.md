@@ -85,11 +85,11 @@
 ## 5. 复现
 
 ```powershell
-$env:PYTHONPATH='D:\bililive\nxkit\src'
-python -m nxkit run --workdir D:\bililive\nxkit\_runs\check   # 146/146 通过，约 47 s
+$env:PYTHONPATH='<repo>\nxkit\src'
+python -m nxkit run --workdir <repo>\nxkit\_runs\check   # 146/146 通过，约 47 s
 python -m nxkit selftest       # 146 条，动作/判据齐全，负例被拒
 python -m pytest -q tests      # 9 passed
-python tools\check_consistency.py --skill D:\bililive\ww-nx-automation   # 五处数字一致
+python tools\check_consistency.py --skill <repo>\ww-nx-automation   # 五处数字一致
 ```
 
 ## 6. 已知边界
