@@ -3,8 +3,8 @@
 # 背景见 docs/MIGRATION.md。迁移当时 D:\bililive\nsa-mcp-hub 被进程占用，
 # 只能反过来让 nsa-toolchain\hub 指向它。占用释放后跑本脚本即可翻正：
 #
-#   .\scripts\flip-hub-junction.ps1            # 试运行（只检查）
-#   .\scripts\flip-hub-junction.ps1 -Apply     # 真翻
+#   .\docs\internal\migration\flip-hub-junction.ps1            # 试运行（只检查）
+#   .\docs\internal\migration\flip-hub-junction.ps1 -Apply     # 真翻
 #
 # 安全措施：先把旧目录整份复制到 nsa-toolchain\hub.new，成功后再替换联接。
 
@@ -65,4 +65,4 @@ Rename-Item $stage $new
 Write-Host "完成：" -ForegroundColor Green
 Write-Host ("  {0} → Junction → {1}" -f $old, (Get-Item $old -Force).Target)
 Write-Host ("  {0} 真实目录，文件数 {1}" -f $new, (Get-ChildItem $new -Force | Measure-Object).Count)
-Write-Host "`n记得跑一次 scripts\verify-migration.ps1 和 hubs 的 codesys 冒烟。" -ForegroundColor Cyan
+Write-Host "`n记得跑一次 docs\internal\migration\verify-migration.ps1 和 hubs 的 codesys 冒烟。" -ForegroundColor Cyan

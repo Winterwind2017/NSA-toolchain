@@ -1,6 +1,6 @@
 ﻿# 迁移校验：13 个老路径是否都正确指向 monorepo，内容是否一致，git 是否干净
 #
-#   .\scripts\verify-migration.ps1
+#   .\docs\internal\migration\verify-migration.ps1
 #
 # 退出码 0 = 全部 OK。
 

@@ -9,7 +9,7 @@
 - 老路径全部改为目录联接，环境变量与 MCP 配置不用改；旧 GitHub 仓全部归档（只读）。
 - 动机：13 个仓加起来才 3 MB，但 10 个脚手架文件在 ≥4 个仓里各存一份且内容不同
   （实例：tool-surface.md 写 579 工具、实际 639），6 个技能仓各复制一套 tools/ 脚本且哈希全不同。
-- 配套：`docs/MIGRATION.md`、`scripts/verify-migration.ps1`、`scripts/flip-hub-junction.ps1`。
+- 配套：`docs/MIGRATION.md`、`docs/internal/migration/`（迁移工具，已从 scripts/ 移出）。
 
 ## v1.0-acceptance —— 2026-11-09（收官里程碑）
 

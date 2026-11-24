@@ -65,7 +65,7 @@ nsa-toolchain/                    ← 新仓（私有）
 > 关键教训：**光"杀进程"不够，必须在同一个动作里杀掉 + 改名**；分开两步的话，DSH 的按需重启会
 > 在两步之间把句柄重新装上。
 
-`scripts\flip-hub-junction.ps1` 保留下来备查（也能在将来万一又出现反向联接时用），
+`docs\internal\migration\flip-hub-junction.ps1` 保留下来备查（也能在将来万一又出现反向联接时用），
 但它只做"探测 + 改名"，**不做杀进程**——真正可靠的做法是上面那个"杀+改名"一条龙。
 
 翻正后复核：
@@ -77,7 +77,7 @@ nsa-toolchain/                    ← 新仓（私有）
 ## 验证
 
 ```powershell
-.\scripts\verify-migration.ps1     # 检查 13 个联接 + hub 方向 + 内容一致性 + git 干净
+.\docs\internal\migration\verify-migration.ps1   # 检查 13 个联接 + hub 方向 + 内容一致性 + git 干净
 ```
 
 实测（2026-11-09）：
