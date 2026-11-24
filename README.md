@@ -1,5 +1,9 @@
 # NSA-toolchain
 
+[![CI](https://github.com/Winterwind2017/NSA-toolchain/actions/workflows/ci.yml/badge.svg)](https://github.com/Winterwind2017/NSA-toolchain/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/Winterwind2017/NSA-toolchain?v=1)](https://github.com/Winterwind2017/NSA-toolchain/releases)
+
 **让 agent 能真正操作 CAD / PLC 软件的工具链**：6 个软件自动化内核 + 一个把它们聚合成**单一 MCP 端点**的 hub + 6 个给 agent 的技能。
 
 每个宣称可用的能力都带**判据**（读取什么值、等于什么才算成功）。没有"看起来成功"这种状态。
