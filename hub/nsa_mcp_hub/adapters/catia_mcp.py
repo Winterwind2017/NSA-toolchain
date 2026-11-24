@@ -13,10 +13,11 @@ from __future__ import annotations
 import os
 
 from .proxymcp import build_proxy_kit, venv_python
+from .. import paths
 
 KIT_KEY = "catia"
 KIT_NAME = "CAD-Agent-Hub CATIA V5 MCP（建模·曲面·原生 Analysis）"
-HUB = os.environ.get("CAD_AGENT_HUB", r"D:\bililive\CAD-Agent-Hub")
+HUB = os.environ.get("CAD_AGENT_HUB") or paths.CAD_AGENT_HUB
 CATIA_DIR = os.path.join(HUB, "MCP", "CATIA")
 SRC = os.path.join(CATIA_DIR, "src")
 

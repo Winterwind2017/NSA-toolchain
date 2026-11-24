@@ -32,7 +32,7 @@ def _default_db():
     env = os.environ.get("SWKIT_DM_DB")
     if env:
         return env
-    legacy = os.environ.get("SWKIT_LEGACY_DB") or r"D:\bililive\mcp-patches\swdm_lite.db"
+    legacy = os.environ.get("SWKIT_LEGACY_DB", "")
     if os.path.exists(legacy):
         return legacy
     home = os.path.join(os.path.expanduser("~"), ".swkit")

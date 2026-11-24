@@ -27,7 +27,7 @@ BEGIN = "<!-- gen:capabilities:BEGIN -->"
 END = "<!-- gen:capabilities:END -->"
 
 KERNEL_REPO = "https://github.com/Winterwind2017/codesyskit"
-KERNEL_DIR = os.environ.get("CODESYSKIT_SRC", r"D:\bililive\codesyskit")
+KERNEL_DIR = os.environ.get("CODESYSKIT_SRC") or str(Path(__file__).resolve().parents[4] / "kernels" / "codesys")
 
 FAMILY_LABEL = {
     "svc": "常驻服务（进程/协议）",

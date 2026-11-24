@@ -25,7 +25,7 @@ BEGIN = "<!-- gen:capabilities:BEGIN -->"
 END = "<!-- gen:capabilities:END -->"
 
 KERNEL_REPO = "https://github.com/Winterwind2017/autoshopkit"
-KERNEL_DIR = os.environ.get("AUTOSHOPKIT_SRC", r"D:\bililive\autoshopkit")
+KERNEL_DIR = os.environ.get("AUTOSHOPKIT_SRC") or str(Path(__file__).resolve().parents[4] / "kernels" / "autoshop")
 
 FAMILY_LABEL = {
     "proj": "工程文件（离线）",

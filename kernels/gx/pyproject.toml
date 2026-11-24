@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gxkit"
+version = "0.16.0"
+description = "MELSOFT GX Works3 automation kernel: FX5U/iQ-R project automation, ST programs, compile diagnostics"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Winterwind2017" }]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Operating System :: Microsoft :: Windows",
+]
+dependencies = ["pywin32>=306; sys_platform == 'win32'", "pyyaml>=6"]
+
+[project.urls]
+Homepage = "https://github.com/Winterwind2017/NSA-toolchain"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gxkit = ["**/*.json", "**/*.yaml", "**/*.md"]

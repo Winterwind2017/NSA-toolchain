@@ -17,10 +17,11 @@ import subprocess
 import sys
 
 from ..tools import Kit, ToolSpec, apply_checks, normalize
+from .. import paths
 
 KIT_KEY = "autoshop"
 KIT_NAME = "autoshopkit"
-SRC = os.environ.get("AUTOSHOPKIT_SRC", r"D:\bililive\autoshopkit\src")
+SRC = paths.src_dir("autoshop")
 
 LAUNCH = ("import sys;from autoshopkit.cli import main;"
           "sys.exit(main(sys.argv[1:]))")

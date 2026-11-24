@@ -21,11 +21,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "src")
 CLI = os.path.join(SRC, "autoshopkit", "cli.py")
 
-# 客户/现场标识，禁止出现在会发布的文件里
-FORBIDDEN = [
-    "某非标设备厂", "某客户", "某客户", "某客户", "方管折弯机", "客户资料",
-    r"1号机_H5U", r"H5U-1614MTD",
-]
+# 客户/现场标识：留在本地，不写进要发布的仓库。
+# 本机可用环境变量 NSA_BANNED_TERMS（逗号分隔）或同目录 .banned_terms.txt 追加。
+FORBIDDEN = ["客户资料", "真实产线", "现场截图"]
+
+
+def _extra_terms():
+    terms = [t.strip() for t in os.environ.get("NSA_BANNED_TERMS", "").split(",") if t.strip()]
+    local = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".banned_terms.txt")
+    if os.path.exists(local):
+        terms += [line.strip() for line in open(local, encoding="utf-8") if line.strip()]
+    return terms
+
+
+FORBIDDEN += _extra_terms()
 SKIP_DIRS = {"local", "recon", "sandbox", "probes", ".git", "__pycache__", ".pytest_cache"}
 TEXT_EXT = {".md", ".py", ".toml", ".json", ".yml", ".yaml", ".txt", ".cfg", ".ini"}
 

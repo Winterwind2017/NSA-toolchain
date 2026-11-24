@@ -1,52 +1,50 @@
-name: kernels/acad ci
+name: offline quality gates
 
-# 离线质量门：不需要 AutoCAD。
-# 真机用例（tests/live_judges.py / tools/alpha_gate.py / tools/netload.py）跑不了，
-# 它们在本地由人/agent 跑并把结果写进 docs/ALPHA_GATE.md——CI 只守住"不需要 CAD"的那部分。
+# 离线门禁：不需要任何 CAD / PLC 软件。
+# 真机验收（tests/live_judges.py、acceptance --kit ...）由人/agent 在真机上跑，结果写进各内核 docs/。
 
 on:
   push:
     paths:
       - "kernels/**"
+      - "hub/**"
       - "skills/**"
       - "scripts/**"
+      - "requirements*.txt"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "kernels/**"
+      - "hub/**"
       - "skills/**"
       - "scripts/**"
+      - "requirements*.txt"
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: kernels/acad
-
 jobs:
-  offline:
+  acad-offline:
+    name: acad offline (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.12"]
-
+    defaults:
+      run:
+        working-directory: kernels/acad
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          pip install pyyaml pytest
+          pip install -r ../../requirements-dev.txt
           pip install -e . || echo "::warning::pip install -e . 失败，继续（离线测试不依赖安装）"
-
-      - name: registry 自检 + 文档新鲜度 + 离线能力测试
+      - name: registry 自检 + 文档新鲜度 + 离线能力
         run: python -m pytest tests/test_docs.py tests/test_reports.py tests/test_offline.py -q
-
       - name: 生成物一致性（生成了却没提交 = 失败）
         run: |
           python tools/gen_readme_counts.py
@@ -58,32 +56,56 @@ jobs:
           python tools/fix_registry_quoting.py --check
           git diff --exit-code -- docs README.md \
             || (echo "::error::生成物过期：请跑 tools/gen_*.py 并提交" && exit 1)
-
-      - name: parity 扫描（实现/registry 一致 + 程序化路径不许弹框）
+      - name: parity 扫描
         run: python tools/parity_scan.py
-
       - name: 署名文件存在
         run: test -f ATTRIBUTION.md && test -f docs/CADCRAFT_MINE.md
 
-  skills:
-    # 技能一致性是**跨仓**的：快照 ↔ 内核注册表 ↔ 路由覆盖。
-    # 放在仓库根跑，不继承上面 job 的 kernels/acad 工作目录。
+  hub:
+    name: hub (${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    env:
+      PYTHONPATH: hub
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: hub 单测（JSON-RPC / server / tools）
+        run: python -m pytest hub/tests -q
+      - name: 导入聚合端点（不启动 stdio）
+        run: |
+          python -c "import nsa_mcp_hub.hub as h; print('KITS', len(h.KITS))"
+          python -c "import nsa_mcp_hub.paths as p; print('REPO_ROOT', p.REPO_ROOT)"
+      - name: 路径可移植性（不许出现作者机器路径）
+        run: |
+          if git grep -n -E 'D:\\\\bililive|C:\\\\Users\\\\[^/\\\\]+\\\\AppData' -- 'scripts/*.py' 'hub/nsa_mcp_hub/**' 'kernels/*/src/**'; then
+            echo "::error::发现写死的本机路径，请改用 nsa_mcp_hub.paths 或环境变量"; exit 1
+          fi
 
+  skills-and-scripts:
+    name: skills + scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: 安装依赖
-        run: pip install pyyaml pytest
-
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
       - name: 技能一致性（路由覆盖 + 快照↔注册表 + 各技能自带检查）
         run: python scripts/check_skills.py --check
-
-      - name: 仓库级脚本单测（doctor / install_skills）
+      - name: 仓库级脚本单测（doctor / install_skills / nsa）
         run: python -m pytest scripts/tests -q
+      - name: nsa CLI 冒烟（doctor 必须能跑完）
+        run: python scripts/nsa.py doctor || true

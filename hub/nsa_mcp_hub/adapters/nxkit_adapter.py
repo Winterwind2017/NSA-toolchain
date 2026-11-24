@@ -13,10 +13,11 @@ import sys
 from ..tools import Kit, ToolSpec, normalize
 
 from . import capgen, capcuration
+from .. import paths
 
 KIT_KEY = "nx"
 KIT_NAME = "nxkit"
-SRC = os.environ.get("NXKIT_SRC", r"D:\bililive\nxkit\src")
+SRC = paths.src_dir("nx")
 
 
 def _import():

@@ -20,9 +20,8 @@ from .mesh import FeaError
 # 静态版优先；环境变量可覆盖
 CANDIDATES: Sequence[str] = (
     os.environ.get("NSA_CCX", ""),
-    r"D:\bililive\tools\calculix\calculix_2.24_4win\ccx_i4_static.exe",
-    r"D:\bililive\tools\calculix\calculix_2.24_4win\ccx_i8_static.exe",
     "ccx_i4_static.exe",
+    "ccx_i8_static.exe",
     "ccx",
 )
 

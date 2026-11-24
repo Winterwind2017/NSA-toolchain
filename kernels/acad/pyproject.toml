@@ -24,7 +24,9 @@ yaml = ["PyYAML>=6"]
 dxf = ["ezdxf>=1.0"]
 pdf = ["pypdf>=4"]
 mcp = ["mcp>=1.0.0"]
-dev = ["pytest>=8", "ezdxf>=1.0", "PyYAML>=6"]
+brep = ["cadquery>=2.4"]
+fea = ["numpy>=1.24", "gmsh>=4.11", "matplotlib>=3.7"]
+dev = ["pytest>=8", "ezdxf>=1.0", "PyYAML>=6", "numpy>=1.24", "gmsh>=4.11"]
 
 [project.scripts]
 acadkit = "acadkit.cli.main:main"

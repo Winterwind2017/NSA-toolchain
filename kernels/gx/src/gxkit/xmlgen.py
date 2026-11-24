@@ -491,7 +491,7 @@ def write_fb_program(path: str | pathlib.Path, program_name: str, st_code: str,
 
 
 if __name__ == "__main__":
-    out = write(pathlib.Path(r"D:\bililive\gxkit\_runs\labels\labels.xml"))
+    out = write(pathlib.Path(os.environ.get("GXKIT_RUNS", ".")) / "labels" / "labels.xml")
     print("written:", out, out.stat().st_size)
 
 

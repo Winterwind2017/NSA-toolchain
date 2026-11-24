@@ -19,15 +19,15 @@
 
 ## 快速开始
 
-```powershell
-$py = "C:\Users\yuche\AppData\Local\Programs\Python\Python312\python.exe"
-$env:PYTHONPATH = "D:\bililive\nsa-mcp-hub"
-& $py -m nsa_mcp_hub.servers.sw_mcp          # 单独起一个 kit
-& $py -m nsa_mcp_hub.acceptance --kit sw     # 跑验收
+```bash
+# 在仓库根目录执行；PYTHONPATH 指向 <仓库>/hub
+export PYTHONPATH="$PWD/hub"            # Windows: $env:PYTHONPATH = "$PWD\hub"
+python -m nsa_mcp_hub.servers.sw_mcp         # 单独起一个 kit（stdio）
+python -m nsa_mcp_hub.acceptance --kit sw    # 跑验收（需要真机）
 ```
 
-> 本机 `pip install` 必然卡死，所以 `pyproject.toml` 里的 console script 装不上，
-> 一律用 `python -m` 形式运行。
+> 也可以用 `hub/_tools/` 下的 Windows 启动器（相对路径，无写死盘符）。
+> 本文中出现的其它绝对路径属于历史说明，按 `QUICKSTART.md` 的环境变量调整即可。
 
 ## 统一返回结构
 

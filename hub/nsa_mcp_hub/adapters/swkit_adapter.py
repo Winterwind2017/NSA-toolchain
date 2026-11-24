@@ -12,10 +12,11 @@ import sys
 from ..jsonrpc import log
 from ..mcpclient import ChildMcp, unwrap
 from ..tools import Kit, ToolSpec, apply_checks, normalize
+from .. import paths
 
 KIT_KEY = "sw"
 KIT_NAME = "swkit"
-SRC = os.environ.get("SWKIT_SRC", r"D:\bililive\solidworks-agent-kit\src")
+SRC = paths.src_dir("sw")
 
 
 def _spawn() -> ChildMcp:

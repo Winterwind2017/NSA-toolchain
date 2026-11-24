@@ -47,7 +47,7 @@ PROSE_HEAD = """# 从 CADCraft 能挖什么（全量清单）
 **许可证**：MIT OR Apache-2.0 —— 允许移植/改写/商用，但必须署名。
 凡 `移植` 类条目落地时，都要往 `NOTICE.md` / `ATTRIBUTION.md` 加一条。
 
-**这份清单回答的是**：把 CADCraft 的**优势**吸收进 nsa-toolchain，一共有多少东西、多少工时。
+**这份清单回答的是**：把 CADCraft 的**优势**吸收进 NSA-toolchain，一共有多少东西、多少工时。
 它**不是** AutoCAD 能力补全计划（那个在 `docs/BACKLOG.md`）——两者唯一重叠的是
 `dxf` 解析与「真实语料/无损存盘」这类**方法**。
 
@@ -132,7 +132,7 @@ def render() -> str:
         lines.append("| %s | %d | %gh | %.0f%% | %s |"
                      % (MODE_LABEL[m], len(group), h, 100.0 * h / total if total else 0,
                         {
-                            "port": "真改写成 Python 进 nsa-toolchain",
+                            "port": "真改写成 Python 进 NSA-toolchain",
                             "spec": "把它的测试翻译成我们的真机判据",
                             "design": "读模型/状态机，指导自己实现",
                             "read": "只为了解，不产出代码",

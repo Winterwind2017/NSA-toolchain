@@ -13,11 +13,12 @@ import shutil
 import tempfile
 import uuid
 import time
+from .. import paths
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SW_FIXTURE = os.environ.get(
-    "NSA_MCP_HUB_SW_FIXTURE", r"C:\Users\yuche\Desktop\450隔音罩1-B2.SLDPRT")
+    "NSA_MCP_HUB_SW_FIXTURE", "")
 
 
 # ----------------------------------------------------------------- SolidWorks
@@ -360,7 +361,7 @@ SW_CASES = [
      "call": lambda client, context: _sw_select_refs_flow(client, context)},
     {"id": "sw.tool.vba_dump", "tool": "sw_vba_dump",
      "title": "VBA 源码导出（用本机样本 .swp）",
-     "args": {"swp": r"D:\bililive\DeepHarness\_sw_probe\generated_test.swp"},
+     "args": {"swp": os.environ.get("NSA_SW_VBA_SWP", "")},
      "expect_ok": True, "timeout_s": 300,
      "requires": ["solidworks"]},
 
@@ -2338,7 +2339,7 @@ def codesys_setup() -> dict:
             print("  [info] CODESYS 服务状态陈旧（端口连不上），已归档并重启服务", flush=True)
         except Exception:                          # noqa: BLE001
             pass
-    src = os.environ.get("CODESYSKIT_SRC", r"D:\bililive\codesyskit\src")
+    src = paths.src_dir("codesys")
     env = dict(os.environ)
     env["PYTHONPATH"] = src + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["PYTHONIOENCODING"] = "utf-8"
@@ -2477,7 +2478,7 @@ def _as_run(*args, timeout=300):
     import json
     import subprocess
     import sys as _sys
-    src = os.environ.get("AUTOSHOPKIT_SRC", r"D:\bililive\autoshopkit\src")
+    src = paths.src_dir("autoshop")
     env = dict(os.environ)
     env["PYTHONPATH"] = src + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["PYTHONIOENCODING"] = "utf-8"
@@ -2528,7 +2529,7 @@ def autoshop_setup() -> dict:
     if project:
         return {"available": True, "project": project, "provisioned": False}
 
-    src = os.environ.get("AUTOSHOP_IL_PROJECT", r"D:\bililive\autoshopkit\sandbox\ilcorpus")
+    src = os.environ.get("AUTOSHOP_IL_PROJECT", "")
     if not os.path.isdir(src):
         print("  [warn] 找不到 IL 工程样本：%s" % src, flush=True)
         return {"available": False}
@@ -3263,7 +3264,7 @@ def _ug_restart_nx_session(client, log=None):
             log(text)
 
     shadow_marker = _PathForMachineBuilds(
-        r"D:\bililive\CAD-Agent-Hub\MCP\UG\machine_shadow\active.json")
+        os.path.join(paths.CAD_AGENT_HUB, "MCP", "UG", "machine_shadow", "active.json"))
     say("   重启 NX（隔离会话）…")
     subprocess.run(["taskkill", "/F", "/IM", "ugraf.exe"],
                    capture_output=True, text=True, errors="replace")
@@ -3275,11 +3276,11 @@ def _ug_restart_nx_session(client, log=None):
         pass
     if shadow_marker.exists():
         subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
-                        "-File", r"D:\bililive\CAD-Agent-Hub\MCP\UG\scripts\start-nx-shadow.ps1"],
+                        "-File", os.path.join(paths.CAD_AGENT_HUB, "MCP", "UG", "scripts", "start-nx-shadow.ps1")],
                        capture_output=True, text=True, errors="replace", timeout=600)
     else:
         env = os.environ.copy()
-        env["UGII_USER_DIR"] = r"D:\bililive\CAD-Agent-Hub\MCP\UG\nx_user"
+        env["UGII_USER_DIR"] = os.path.join(paths.CAD_AGENT_HUB, "MCP", "UG", "nx_user")
         subprocess.Popen([r"D:\Program Files\Siemens\DesigncenterNX2512\NXBIN\ugraf.exe"], env=env)
         for _ in range(60):
             _time.sleep(5)
@@ -3514,7 +3515,7 @@ def _ug_machine_validate_flow(client, context):
 from pathlib import Path as _PathForMachineBuilds
 
 _MACHINE_BUILD_DIR = _PathForMachineBuilds(
-    r"D:\bililive\CAD-Agent-Hub\MCP\UG\workspace\machine_builds"
+    os.path.join(paths.CAD_AGENT_HUB, "MCP", "UG", "workspace", "machine_builds")
 )
 _BOUND_MACHINE_FIXTURE = "acc_kit_61ab27.prt"
 
@@ -3933,7 +3934,7 @@ def _ug_machine_swap_flow(client, context):
 
 
 _SHADOW_ACTIVE_JSON = _PathForMachineBuilds(
-    r"D:\bililive\CAD-Agent-Hub\MCP\UG\machine_shadow\active.json")
+    os.path.join(paths.CAD_AGENT_HUB, "MCP", "UG", "machine_shadow", "active.json"))
 
 
 def _ug_shadow_active(context=None):

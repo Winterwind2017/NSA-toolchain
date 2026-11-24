@@ -13,7 +13,7 @@ import os
 import runpy
 import sys
 
-CANON = os.environ.get("SWKIT_SIM_SCRIPT") or r"D:\bililive\mcp-patches\sw_sim.py"
+CANON = os.environ.get("SWKIT_SIM_SCRIPT", "")
 
 if not os.path.isfile(CANON):
     raise SystemExit("找不到主脚本：%s" % CANON)

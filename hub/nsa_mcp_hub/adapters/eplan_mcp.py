@@ -17,10 +17,11 @@ from __future__ import annotations
 import os
 
 from .proxymcp import build_proxy_kit, venv_python
+from .. import paths
 
 KIT_KEY = "eplan"
 KIT_NAME = "CAD-Agent-Hub EPLAN 2.9 MCP（工程·页·符号·审图）"
-HUB = os.environ.get("CAD_AGENT_HUB", r"D:\bililive\CAD-Agent-Hub")
+HUB = os.environ.get("CAD_AGENT_HUB") or paths.CAD_AGENT_HUB
 EPLAN_DIR = os.path.join(HUB, "MCP", "EPLAN")
 
 INSTRUCTIONS = (

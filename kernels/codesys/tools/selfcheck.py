@@ -107,7 +107,12 @@ def main():
         check("README link %s" % name, os.path.exists(os.path.join(ROOT, name)))
 
     # 8. no customer identifiers from other projects leaked in
-    banned = ["1号机", "某非标设备厂", "Inovance", "AutoShop", "汇川", "H5U"]
+    # 客户/现场标识由本地提供（环境变量或 tools/.banned_terms.txt），仓库里不写
+    banned = ["客户资料", "真实产线"]
+    banned += [t.strip() for t in os.environ.get("NSA_BANNED_TERMS", "").split(",") if t.strip()]
+    local_terms = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".banned_terms.txt")
+    if os.path.exists(local_terms):
+        banned += [line.strip() for line in open(local_terms, encoding="utf-8") if line.strip()]
     leaks = []
     for base, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in {".git", "__pycache__", "_runs", ".pytest_cache"}]

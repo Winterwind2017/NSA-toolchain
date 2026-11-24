@@ -9,7 +9,8 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-KIT = pathlib.Path(os.environ.get("GXKIT_REPO", r"D:\bililive\gxkit"))
+KIT = pathlib.Path(os.environ.get("GXKIT_REPO")
+                   or pathlib.Path(__file__).resolve().parents[4] / "kernels" / "gx")
 sys.path.insert(0, str(KIT / "src"))
 
 from gxkit import caps  # noqa: E402

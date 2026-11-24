@@ -18,7 +18,7 @@ except Exception:
 from autoshopkit.app import AutoShop
 
 SRC = _template.require_template("e2e.py")
-WORK = r"D:\bililive\autoshopkit\sandbox\e2e"
+WORK = str(Path(__file__).resolve().parents[1] / "sandbox" / "e2e")
 RESULTS = []
 
 

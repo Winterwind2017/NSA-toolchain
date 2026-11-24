@@ -14,10 +14,11 @@ from ..jsonrpc import log
 from ..tools import Kit, ToolSpec, apply_checks, normalize
 
 from . import codesys_tools
+from .. import paths
 
 KIT_KEY = "codesys"
 KIT_NAME = "codesyskit"
-SRC = os.environ.get("CODESYSKIT_SRC", r"D:\bililive\codesyskit\src")
+SRC = paths.src_dir("codesys")
 
 COMMANDS = {
     "ping": "往返检查（最轻量，先用它判断服务在不在）",
@@ -81,7 +82,7 @@ def _ensure_service(state: str, timeout_s: float = 240.0) -> None:
             os.replace(state, state + ".stale")
         except OSError:
             pass
-    src_dir = os.environ.get("CODESYSKIT_SRC", r"D:\bililive\codesyskit\src")
+    src_dir = paths.src_dir("codesys")
     env = dict(os.environ)
     env["PYTHONPATH"] = src_dir + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["PYTHONIOENCODING"] = "utf-8"

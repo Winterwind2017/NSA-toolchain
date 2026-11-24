@@ -1,0 +1,3 @@
+# 运行时依赖（最小集：能跑 hub + 各内核的离线部分）
+pyyaml>=6.0
+pywin32>=306; sys_platform == "win32"

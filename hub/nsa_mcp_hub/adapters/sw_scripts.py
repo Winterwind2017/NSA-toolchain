@@ -21,12 +21,12 @@ import time
 import uuid
 
 from ..tools import ToolSpec, apply_checks, normalize
+from .. import paths
 
 KIT_KEY = "sw"
-PATCH_DIR = os.environ.get("SW_PATCH_DIR", r"D:\bililive\mcp-patches")
-PATCH_PY = os.environ.get("SW_PATCH_PYTHON",
-                          r"D:\bililive\Solidworks-MCP-Server\.venv\Scripts\python.exe")
-RUNS = os.environ.get("NSA_MCP_HUB_RUNS", r"D:\bililive\nsa-mcp-hub\_runs")
+PATCH_DIR = os.environ.get("SW_PATCH_DIR") or str(paths.repo_path("mcp-patches"))
+PATCH_PY = os.environ.get("SW_PATCH_PYTHON") or paths.python_exe()
+RUNS = paths.runs_dir()
 MAX_OUT = 20000
 
 

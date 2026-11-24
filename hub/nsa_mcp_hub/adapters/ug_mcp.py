@@ -19,10 +19,11 @@ from __future__ import annotations
 import os
 
 from .proxymcp import build_proxy_kit, venv_python
+from .. import paths
 
 KIT_KEY = "ug"
 KIT_NAME = "CAD-Agent-Hub UG/NX MCP（CAM·机床·钣金）"
-HUB = os.environ.get("CAD_AGENT_HUB", r"D:\bililive\CAD-Agent-Hub")
+HUB = os.environ.get("CAD_AGENT_HUB") or paths.CAD_AGENT_HUB
 UG_DIR = os.path.join(HUB, "MCP", "UG")
 
 INSTRUCTIONS = (

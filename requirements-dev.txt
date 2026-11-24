@@ -1,0 +1,5 @@
+# 开发/测试依赖（CI 用这一份）
+-r requirements.txt
+pytest>=7.0
+numpy>=1.24
+gmsh>=4.11

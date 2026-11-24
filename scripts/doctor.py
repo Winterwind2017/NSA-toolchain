@@ -65,9 +65,8 @@ OPTIONAL_PY = [("cadquery", "离线 B-rep / STEP 出口"),
 # ccx 求解器候选（静态版自带运行时，动态版缺 MinGW DLL）
 CCX_CANDIDATES = (
     os.environ.get("NSA_CCX", ""),
-    r"D:\bililive\tools\calculix\calculix_2.24_4win\ccx_i4_static.exe",
-    r"D:\bililive\tools\calculix\calculix_2.24_4win\ccx_i8_static.exe",
     "ccx_i4_static.exe",
+    "ccx_i8_static.exe",
     "ccx",
 )
 

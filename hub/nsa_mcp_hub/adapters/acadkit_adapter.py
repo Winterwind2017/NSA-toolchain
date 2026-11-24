@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 
+from .. import paths
 from ..contracts import require_present
 from ..tools import Kit, ToolSpec, normalize
 
@@ -10,7 +11,7 @@ from . import capgen, capcuration
 
 KIT_KEY = "acad"
 KIT_NAME = "AutoCAD 2025"
-SRC = os.environ.get("ACADKIT_SRC", r"D:\bililive\acadkit\src")
+SRC = paths.src_dir("acad")
 
 
 def _import():

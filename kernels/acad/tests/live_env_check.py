@@ -5,11 +5,14 @@
 """
 
 import json
+import os
 import subprocess
 import sys
+from pathlib import Path
 
-PY = r"D:\bililive\Solidworks-MCP-Server\.venv\Scripts\python.exe"
-ENV = {"PYTHONPATH": r"D:\bililive\acadkit\src", "PYTHONIOENCODING": "utf-8"}
+_REPO = Path(__file__).resolve().parents[3]
+PY = os.environ.get("NSA_PYTHON") or sys.executable
+ENV = {"PYTHONPATH": str(_REPO / "kernels" / "acad" / "src"), "PYTHONIOENCODING": "utf-8"}
 
 
 def run(*args):
@@ -54,7 +57,7 @@ print("   " + out.strip().splitlines()[0] if out.strip() else "   (none)")
 print("rc =", rc)
 
 print("\n=== 7) 干净退出 ===")
-sys.path.insert(0, r"D:\bililive\acadkit\src")
+sys.path.insert(0, str(_REPO / "kernels" / "acad" / "src"))
 from acadkit.core import com
 res = com.clean_quit(app)
 print("   clean_quit:", json.dumps(res, ensure_ascii=False))

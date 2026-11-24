@@ -1,0 +1,41 @@
+name: Bug report
+description: 某个工具/内核行为不对，或返回"成功"但结果不对
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先跑 `python scripts/doctor.py` 并贴出相关行——它能区分"环境问题"与"代码问题"。
+        如果是安全漏洞，请改用 Security → Report a vulnerability，不要开公开 issue。
+  - type: input
+    id: version
+    attributes:
+      label: 提交 / 版本
+      description: `git rev-parse --short HEAD` 或 tag
+    validations:
+      required: true
+  - type: dropdown
+    id: kit
+    attributes:
+      label: 涉及的内核
+      multiple: true
+      options: [acad, sw, nx, gx, codesys, autoshop, hub, skills, 离线能力(DFM/B-rep/FEA/出图)]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 你做了什么 / 期望什么 / 实际什么
+      description: 贴命令与输出（含 `reads` / `checks` / `errors`），别只贴截图
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: OS 版本、Python 版本、软件版本（如 AutoCAD 2025 / CODESYS 3.5 SP22）
+  - type: textarea
+    id: doctor
+    attributes:
+      label: doctor 输出（相关行）
+      render: shell

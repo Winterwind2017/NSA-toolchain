@@ -34,3 +34,5 @@ recon/
 # OS
 Thumbs.db
 desktop.ini
+# 本地隐私名单（不进仓库）
+.banned_terms.txt

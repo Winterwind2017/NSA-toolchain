@@ -14,11 +14,12 @@ import time
 from ..tools import Kit, ToolSpec, normalize
 
 from . import capgen, capcuration
+from .. import paths
 
 KIT_KEY = "gx"
 KIT_NAME = "gxkit"
-SRC = os.environ.get("GXKIT_SRC", r"D:\bililive\gxkit\src")
-RUNS = os.environ.get("NSA_MCP_HUB_RUNS", r"D:\bililive\nsa-mcp-hub\_runs")
+SRC = paths.src_dir("gx")
+RUNS = paths.runs_dir()
 
 
 def _import():
