@@ -1,4 +1,4 @@
-# nsa-toolchain —— 非标自动化工具链（monorepo）
+# NSA-toolchain —— 非标自动化工具链（monorepo）
 
 > **NSA = Non-standard automation（非标自动化）**。这个仓库把原先分散的一堆小仓收成一处：
 > **6 个软件自动化内核 + 聚合网关 + 6 个 agent 技能**。

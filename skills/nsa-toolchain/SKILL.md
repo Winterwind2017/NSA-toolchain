@@ -1,7 +1,7 @@
 ---
 name: nsa-toolchain
 description: >
-  nsa-toolchain 的**路由技能**：当用户要做工业自动化/机械设计相关的机器操作
+  NSA-toolchain 的**路由技能**：当用户要做工业自动化/机械设计相关的机器操作
   （AutoCAD 二维三维与出图、SolidWorks 建模装配、UG NX 建模制图、三菱 GX Works3、
   汇川 AutoShop、CODESYS PLC、以及 HAP/笔记库等），但不确定该用哪套工具、
   或任务跨多个软件时，先用这个技能决定"加载哪个域技能、按什么顺序做、
@@ -11,7 +11,7 @@ description: >
   readiness check and a pass/fail criterion.
 ---
 
-# nsa-toolchain（路由）
+# NSA-toolchain（路由）
 
 > 本技能**不执行**。它只回答三件事：**用哪个**、**什么顺序**、**怎么算做成**。
 > 真正的配方、判据、坑，在对应域技能里。
@@ -48,7 +48,7 @@ description: >
 2. **先想判据再动手**：这次操作应该让**实体数/面积/长度/体积/属性/文件签名**
    中的哪一个变化？说不出来就别调——调了也证明不了成功。
 3. **失败先分类**：卡住/被拒/权限/只读/不支持，处理方式完全不同。
-   `nsa-toolchain` 收录的内核都有错误分类与建议，别把"RPC 被拒"当成"能力不存在"。
+   `NSA-toolchain` 收录的内核都有错误分类与建议，别把"RPC 被拒"当成"能力不存在"。
 
 ## 开工前的 20 秒健康检查
 

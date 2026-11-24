@@ -1,7 +1,7 @@
 # 仓库地图
 
 > **2026-11-09 起：软件自动化相关的 13 个仓已合并成一个 monorepo**
-> [`nsa-toolchain`](https://github.com/Winterwind2017/nsa-toolchain)
+> [`NSA-toolchain`](https://github.com/Winterwind2017/NSA-toolchain)
 > （6 内核 + 网关 + 6 技能）。旧的单仓**全部归档**（只读保留历史），
 > 内容与提交历史都已并入 monorepo，老路径在本地是目录联接。
 > 迁移细节见 monorepo 的 `docs/MIGRATION.md`。

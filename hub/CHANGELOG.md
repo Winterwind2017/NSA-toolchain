@@ -5,7 +5,7 @@
 ## toolchain-v1.0 —— 2026-11-09（13 仓合一）
 
 - 6 内核（sw/acad/nx/gx/codesys/autoshop）+ 本网关 + 6 个技能仓，用 `git subtree`
-  收进 monorepo `nsa-toolchain`，历史完整保留（521 提交 / 563 tracked 文件）。
+  收进 monorepo `NSA-toolchain`，历史完整保留（521 提交 / 563 tracked 文件）。
 - 老路径全部改为目录联接，环境变量与 MCP 配置不用改；旧 GitHub 仓全部归档（只读）。
 - 动机：13 个仓加起来才 3 MB，但 10 个脚手架文件在 ≥4 个仓里各存一份且内容不同
   （实例：tool-surface.md 写 579 工具、实际 639），6 个技能仓各复制一套 tools/ 脚本且哈希全不同。
