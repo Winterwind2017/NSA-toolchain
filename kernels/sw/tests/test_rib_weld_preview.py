@@ -33,7 +33,9 @@ class _Feat:
 
 def test_registry_splits_live_results_from_open_gaps():
     verified = ("sw_insert_weldment", "sw_structural_member", "sw_spur_gear",
-                "sw_sprocket", "sw_preview_frame", "sw_preview_burst")
+                "sw_sprocket", "sw_triangular_rib", "sw_spring",
+                "sw_fillet_two_radii", "sw_projected_zone",
+                "sw_preview_frame", "sw_preview_burst")
     for name in verified:
         entry = REGISTRY[name]
         assert entry.status == "verified"
@@ -73,6 +75,31 @@ def test_weldment_refuses_missing_profile_and_fake_cut_list(tmp_path):
     listed = SolidWorksAdvanced(type("App", (), {"_log": lambda *a, **k: None})()).weldment_cut_list()
     assert listed == []
     assert not os.path.exists(str(tmp_path / "no-such.sldlfp"))
+
+
+def test_projected_zone_uses_below_frame_text():
+    class Gtol:
+        def __init__(self):
+            self.values = None
+            self.below = ""
+
+        def SetFrameValues(self, frame, tol1, tol2, d1, d2, d3):
+            self.values = [tol1, tol2, d1, d2, d3]
+
+        def GetFrameValues(self, frame):
+            return list(self.values)
+
+        def SetBelowFrameTextAt(self, index, text, overwrite=True):
+            self.below = text
+
+        def GetBelowFrameTextAt(self, index):
+            return self.below
+
+    from swkit.verified.gtol_frame import set_projected_zone
+    made = set_projected_zone(Gtol(), "A-B", 15)
+    assert made["ok"] is True
+    assert made["checks"]["common_datum"] is True
+    assert made["checks"]["projected_text"] is True
 
 
 def test_gtol_frame_reads_back_and_rejects_projected_zone():

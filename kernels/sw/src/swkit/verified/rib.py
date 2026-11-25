@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, Optional
 from ..core.com import val
 from ._common import com_doc, count_features, iter_features
 
-__all__ = ["insert_rib", "judge_rib"]
+__all__ = ["insert_rib", "judge_rib", "triangular_rib"]
 
 
 def judge_rib(features_before: int, features_after: int,
@@ -82,4 +82,43 @@ def insert_rib(doc: Any, thickness_mm: float = 3.0, two_sided: bool = True,
         "volume_after_mm3": volume_after,
     })
     out["ok"] = all(checks.values())
+    return out
+
+
+def triangular_rib(doc: Any, base_mm: float = 30.0, height_mm: float = 20.0,
+                   length_mm: float = 40.0) -> Dict[str, Any]:
+    """直角三角形截面的筋，沿长度拉伸。体积必须等于底×高×长的一半。"""
+    out: Dict[str, Any] = {
+        "ok": False, "tool": "sw_triangular_rib",
+        "api": "Sketch lines + FeatureExtrusion3",
+        "status": "unverified", "detail": {}, "checks": {},
+    }
+    if min(base_mm, height_mm, length_mm) <= 0:
+        out["detail"]["error"] = "底、高、长都必须大于 0"
+        return out
+    from .features import _volume_mm3, extrude
+    from .sketch_ops import create_sketch, line
+    expected = 0.5 * base_mm * height_mm * length_mm
+    try:
+        create_sketch(doc)
+        line(doc, 0, 0, base_mm, 0)
+        line(doc, base_mm, 0, 0, height_mm)
+        line(doc, 0, height_mm, 0, 0)
+        made = extrude(doc, length_mm)
+    except Exception as exc:  # noqa: BLE001
+        out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
+        return out
+    volume = _volume_mm3(doc)
+    close = volume is not None and abs(volume - expected) / expected < 0.05
+    out["checks"] = {
+        "extrude_ok": bool(made.get("ok")),
+        "volume_matches": close,
+    }
+    out["detail"].update({
+        "expected_mm3": expected,
+        "volume_mm3": volume,
+        "native_insert_rib": "本机 InsertRib 仍返回 0，这里用三角形截面拉伸",
+    })
+    out["ok"] = all(out["checks"].values())
+    out["status"] = "verified" if out["ok"] else "unverified"
     return out

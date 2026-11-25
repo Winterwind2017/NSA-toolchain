@@ -1586,6 +1586,71 @@ def sw_preview_frame(path: str) -> Dict[str, Any]:
     return capture_solidworks(path)
 
 
+@mcp.tool(name="sw_triangular_rib")
+def sw_triangular_rib(base_mm: float = 30.0, height_mm: float = 20.0,
+                      length_mm: float = 40.0) -> Dict[str, Any]:
+    """三角形截面的筋。体积必须等于底×高×长的一半。"""
+    from ..verified.rib import triangular_rib
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档"}
+        return triangular_rib(doc, base_mm, height_mm, length_mm)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_spring")
+def sw_spring(radius_mm: float = 15.0, wire_mm: float = 3.0,
+              pitch_mm: float = 10.0, height_mm: float = 40.0) -> Dict[str, Any]:
+    """螺旋线扫出弹簧丝。体积必须大于 0。"""
+    from ..verified.shapes import spring
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档"}
+        return spring(doc, radius_mm, wire_mm, pitch_mm, height_mm)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_fillet_two_radii")
+def sw_fillet_two_radii(radius1_mm: float = 2.0, radius2_mm: float = 5.0) -> Dict[str, Any]:
+    """两条边两个半径。两次体积都必须下降。"""
+    from ..verified.shapes import fillet_two_radii
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档"}
+        return fillet_two_radii(doc, radius1_mm, radius2_mm)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_projected_zone")
+def sw_projected_zone(common_datum: str = "A-B", height_mm: float = 12.0) -> Dict[str, Any]:
+    """在当前图纸上写公共基准，并把投影带记号 P 写进基准栏。"""
+    from ..core.com import none_dispatch
+    from ..verified._common import com_doc as connect_doc
+    from ..verified.gtol_frame import set_projected_zone
+    from ..verified import drawing
+
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的图纸"}
+        view = drawing.first_model_view(doc)
+        edges = drawing._view_edges(view) if view is not None else []
+        _sw, md = connect_doc()
+        target = None
+        for edge in edges[:6]:
+            edge.Select4(False, none_dispatch())
+            target = md.InsertGtol()
+            if target is not None:
+                break
+        if target is None:
+            return {"ok": False, "error": "InsertGtol 没有得到对象"}
+        return set_projected_zone(target, common_datum, height_mm)
+    return _com(_do)
+
+
 @mcp.tool(name="sw_spur_gear")
 def sw_spur_gear(module: float = 2.0, teeth: int = 12, thickness_mm: float = 8.0) -> Dict[str, Any]:
     """用折线齿廓拉一个直齿轮。体积必须大于 0 且小于齿顶圆柱。"""

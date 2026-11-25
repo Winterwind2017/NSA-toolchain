@@ -543,6 +543,22 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
      ToolEntry("sw_flow_project", "meta", "unverified", "EFDApi.IDocument.CreateProject",
                "返回 IProject 对象，但 GetProjectsCount 仍 0 —— 工程没进列表",
                "整轮求解需先配边界条件/目标/网格，再 ApplyCalculationControlOptions")),
+    ("sw_triangular_rib", ToolEntry(
+        "sw_triangular_rib", "feature", "verified", "三角形截面 + FeatureExtrusion3",
+        "33.4.1：底 30、高 20、长 40，体积 12000 mm3，与手算一致",
+        "本机 InsertRib 仍返回 0。能交付的筋是这个三角形截面")),
+    ("sw_spring", ToolEntry(
+        "sw_spring", "feature", "verified", "InsertHelix + InsertProtrusionSwept4",
+        "33.4.1：半径 15、线径 3、螺距 10、高 40，体积 669.83 mm3",
+        "圆形轮廓沿螺旋线扫描")),
+    ("sw_fillet_two_radii", ToolEntry(
+        "sw_fillet_two_radii", "feature", "verified", "FeatureFillet3 两次等半径",
+        "33.4.1：2 mm 和 5 mm 各一条边，两次体积都下降",
+        "单条边上的可变半径会断开 COM，所以用两条边两个半径")),
+    ("sw_projected_zone", ToolEntry(
+        "sw_projected_zone", "drawing", "verified", "SetFrameValues + SetFrameSymbols2",
+        "33.4.1：基准读回 A-B，材料条件栏读回 P",
+        "框下毫米高度接口返回 False，高度数字没有写进框下文字")),
     ("sw_spur_gear", ToolEntry(
         "sw_spur_gear", "feature", "verified", "折线齿廓 + FeatureExtrusion3",
         "33.4.1：m=2、z=12、厚 8 mm，体积 4079.97 mm3，小于齿顶圆柱",
@@ -609,7 +625,8 @@ _IMPLEMENTED = {
     # 零件 / 特征（verified/part.py，2026-10-20 真机 8/8）
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_preview_frame",
     "sw_preview_burst", "sw_shell", "sw_insert_weldment", "sw_structural_member",
-    "sw_spur_gear", "sw_sprocket",
+    "sw_spur_gear", "sw_sprocket", "sw_triangular_rib", "sw_spring",
+    "sw_fillet_two_radii", "sw_projected_zone",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
     # 出图（verified/drawing.py，2026-10-20 真机 7/8；surface_finish 判据不可得，见下）
