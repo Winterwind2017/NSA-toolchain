@@ -2,6 +2,14 @@
 
 > 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
 
+## v1.3.2 —— 2026-11-25（结构构件）
+
+线段数组传给 `StructuralMemberGroup` 会在 COM 边界丢掉。
+改为 `Select4` 选中草图线段，再调用没有数组参数的 `InsertStructuralWeldment`。
+
+本机 SolidWorks 2025（33.4.1），ISO 方管默认配置：
+特征 `WeldMemberFeat`，体积 40109.7 mm³。
+
 ## v1.3.1 —— 2026-11-25（焊件轮廓库定位）
 
 本机本来就有 SolidWorks 焊件轮廓，路径是

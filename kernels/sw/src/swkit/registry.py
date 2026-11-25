@@ -553,10 +553,10 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "33.4.1：新类型 WeldmentFeature，特征数增加",
         "必须走 comtypes。pywin32 报找不到成员。advanced.py 的旧方法不调用这个接口")),
     ("sw_structural_member", ToolEntry(
-        "sw_structural_member", "weldment", "unverified", "IFeatureManager.InsertStructuralWeldment5",
-        "轮廓文件存在，草图有线段，特征增加且类型名含 Structural",
-        "轮廓用 weldment_library.default_profile()，本机优先 ISO 方管。"
-        "配置名要从文件里读，例如 20 x 20 x 2，不是 Default")),
+        "sw_structural_member", "weldment", "verified", "IFeatureManager.InsertStructuralWeldment",
+        "33.4.1：选中草图直线后生成 WeldMemberFeat，体积 40109.7 mm3",
+        "线段数组传给 StructuralMemberGroup 会丢。改成 Select4 再调无数组的旧接口。"
+        "轮廓默认 ISO 方管，用文件自己的默认配置")),
     ("sw_weldment_cut_list", ToolEntry(
         "sw_weldment_cut_list", "weldment", "unverified", "IFeature.GetTypeName2",
         "读到切割清单特征才 ok；没有就空列表",
@@ -596,7 +596,7 @@ _IMPLEMENTED = {
     "sw_motion_list", "sw_motion_read",
     # 零件 / 特征（verified/part.py，2026-10-20 真机 8/8）
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_preview_frame",
-    "sw_preview_burst", "sw_shell", "sw_insert_weldment",
+    "sw_preview_burst", "sw_shell", "sw_insert_weldment", "sw_structural_member",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
     # 出图（verified/drawing.py，2026-10-20 真机 7/8；surface_finish 判据不可得，见下）

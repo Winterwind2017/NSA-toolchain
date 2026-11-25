@@ -32,13 +32,13 @@ class _Feat:
 
 
 def test_registry_splits_live_results_from_open_gaps():
-    verified = ("sw_insert_weldment", "sw_preview_frame", "sw_preview_burst")
+    verified = ("sw_insert_weldment", "sw_structural_member", "sw_preview_frame", "sw_preview_burst")
     for name in verified:
         entry = REGISTRY[name]
         assert entry.status == "verified"
         assert entry.implemented is True
         assert "33.4.1" in entry.evidence
-    for name in ("sw_rib", "sw_structural_member", "sw_weldment_cut_list", "sw_gtol_frame"):
+    for name in ("sw_rib", "sw_weldment_cut_list", "sw_gtol_frame"):
         entry = REGISTRY[name]
         assert entry.status == "unverified"
         assert entry.implemented is False

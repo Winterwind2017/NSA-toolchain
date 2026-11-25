@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List
 
-from ..core.com import val, var_dispatch_array
+from ..core.com import none_dispatch, val
 from ._common import com_doc, count_features, iter_features
 
 __all__ = ["insert_weldment", "structural_member", "read_cut_list", "judge_feature"]
@@ -47,11 +47,39 @@ def insert_weldment(doc: Any) -> Dict[str, Any]:
     return out
 
 
+def _member_type(name: str) -> bool:
+    low = str(name).lower()
+    return "weldmember" in low or "structuralmember" in low
+
+
+def _sketch_segments(doc: Any) -> List[Any]:
+    """退出草图后 ActiveSketch 为空，线段在 ProfileFeature 上。"""
+    sketch = val(val(doc, "SketchManager"), "ActiveSketch")
+    raw = sketch.GetSketchSegments if sketch is not None else None
+    if not raw:
+        for feat in iter_features(doc):
+            if str(val(feat, "GetTypeName2")) != "ProfileFeature":
+                continue
+            specific = val(feat, "GetSpecificFeature2")
+            if specific is None:
+                continue
+            raw = specific.GetSketchSegments
+            break
+    if raw is None:
+        return []
+    if callable(raw):
+        try:
+            raw = raw()
+        except Exception:  # noqa: BLE001
+            return []
+    return list(raw or [])
+
+
 def structural_member(doc: Any, profile_path: str, configuration: str = "Default") -> Dict[str, Any]:
-    """沿当前草图的线段放结构构件。轮廓文件必须真实存在。"""
+    """沿草图线段放结构构件。先选中线段，再调不需要线段数组的旧接口。"""
     out: Dict[str, Any] = {
         "ok": False, "tool": "sw_structural_member",
-        "api": "IFeatureManager.InsertStructuralWeldment5",
+        "api": "IFeatureManager.InsertStructuralWeldment",
         "status": "unverified", "detail": {"profile": profile_path}, "checks": {},
     }
     if not profile_path:
@@ -66,41 +94,42 @@ def structural_member(doc: Any, profile_path: str, configuration: str = "Default
         return out
     before_n = count_features(doc)
     before = {str(val(feat, "GetTypeName2")) for feat in iter_features(doc)}
+    segments = _sketch_segments(doc)
+    if not segments:
+        out["detail"]["error"] = "需要一条已经画好的草图线段"
+        out["checks"] = {"profile_exists": True, "has_segments": False}
+        return out
     try:
-        active = doc.SketchManager.ActiveSketch
-        raw = active.GetSketchSegments
-        # pywin32 下这是属性，里面已经是线段元组；再加括号会报 tuple 不能调用。
-        if callable(raw):
-            raw = raw()
-        segments = list(raw or [])
-        if not segments:
-            out["detail"]["error"] = "需要一条已经画好的草图线段"
-            out["checks"] = {"profile_exists": True, "has_segments": False}
-            return out
-        packed = var_dispatch_array(segments)
-        try:
-            group = doc.FeatureManager.CreateStructuralMemberGroup()
-            group.Segments = packed
-            doc.FeatureManager.InsertStructuralWeldment5(
-                profile_path, 0, False, var_dispatch_array([group]), configuration or "Default")
-        except Exception as first:  # noqa: BLE001
-            _sw, md = com_doc()
-            group = md.FeatureManager.CreateStructuralMemberGroup()
-            group.Segments = packed
-            md.FeatureManager.InsertStructuralWeldment5(
-                profile_path, 0, False, var_dispatch_array([group]), configuration or "Default")
-            out["detail"]["pywin32"] = "%s: %s" % (type(first).__name__, first)
+        doc.ClearSelection2(True)
+        for index, segment in enumerate(segments):
+            segment.Select4(index > 0, none_dispatch())
+        _sw, md = com_doc()
+        md.FeatureManager.InsertStructuralWeldment(profile_path, 0, 0.0)
     except Exception as exc:  # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         out["checks"] = {"profile_exists": True, "has_segments": True, "feature_added": False}
         return out
     new_types = _new_types(doc, before)
-    checks = judge_feature(before_n, count_features(doc), new_types, "structural")
-    checks["profile_exists"] = True
-    checks["has_segments"] = True
+    from .features import _volume_mm3
+    volume = _volume_mm3(doc)
+    member = any(_member_type(name) for name in new_types)
+    checks = {
+        "profile_exists": True,
+        "has_segments": True,
+        "feature_added": count_features(doc) > before_n,
+        "type_matches": member,
+        "has_volume": volume is not None and volume > 1.0,
+    }
     out["checks"] = checks
-    out["detail"]["new_types"] = new_types
-    out["ok"] = checks["feature_added"] and checks["type_matches"]
+    out["detail"].update({
+        "new_types": new_types,
+        "segments": len(segments),
+        "volume_mm3": volume,
+        "configuration_requested": configuration,
+        "configuration_note": "这个接口用轮廓文件的默认配置，不能在这里切换规格",
+    })
+    out["ok"] = checks["feature_added"] and checks["type_matches"] and checks["has_volume"]
+    out["status"] = "verified" if out["ok"] else "unverified"
     return out
 
 
