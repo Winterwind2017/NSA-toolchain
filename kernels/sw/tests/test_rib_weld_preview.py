@@ -32,7 +32,8 @@ class _Feat:
 
 
 def test_registry_splits_live_results_from_open_gaps():
-    verified = ("sw_insert_weldment", "sw_structural_member", "sw_preview_frame", "sw_preview_burst")
+    verified = ("sw_insert_weldment", "sw_structural_member", "sw_spur_gear",
+                "sw_sprocket", "sw_preview_frame", "sw_preview_burst")
     for name in verified:
         entry = REGISTRY[name]
         assert entry.status == "verified"

@@ -1586,6 +1586,42 @@ def sw_preview_frame(path: str) -> Dict[str, Any]:
     return capture_solidworks(path)
 
 
+@mcp.tool(name="sw_spur_gear")
+def sw_spur_gear(module: float = 2.0, teeth: int = 12, thickness_mm: float = 8.0) -> Dict[str, Any]:
+    """用折线齿廓拉一个直齿轮。体积必须大于 0 且小于齿顶圆柱。"""
+    from ..verified.shapes import gear
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        return gear(doc, module, teeth, thickness_mm)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_sprocket")
+def sw_sprocket(teeth: int = 12, pitch_mm: float = 12.7, thickness_mm: float = 6.0) -> Dict[str, Any]:
+    """用节圆折线拉一个近似链轮。"""
+    from ..verified.shapes import sprocket
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        return sprocket(doc, teeth, pitch_mm, thickness_mm)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_fillet_edges")
+def sw_fillet_edges(radius_mm: float = 2.0, kind: str = "variable") -> Dict[str, Any]:
+    """uniform / variable / full_round。体积没有下降就不算做成。"""
+    from ..verified.shapes import fillet_edges
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        return fillet_edges(doc, radius_mm, kind)
+    return _com(_do)
+
+
 @mcp.tool(name="sw_preview_burst")
 def sw_preview_burst(directory: str, frames: int = 3) -> Dict[str, Any]:
     """连续抓几帧 SolidWorks 窗口。每一帧都要单独通过窗口过滤。"""

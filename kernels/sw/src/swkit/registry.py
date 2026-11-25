@@ -543,6 +543,18 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
      ToolEntry("sw_flow_project", "meta", "unverified", "EFDApi.IDocument.CreateProject",
                "返回 IProject 对象，但 GetProjectsCount 仍 0 —— 工程没进列表",
                "整轮求解需先配边界条件/目标/网格，再 ApplyCalculationControlOptions")),
+    ("sw_spur_gear", ToolEntry(
+        "sw_spur_gear", "feature", "verified", "折线齿廓 + FeatureExtrusion3",
+        "33.4.1：m=2、z=12、厚 8 mm，体积 4079.97 mm3，小于齿顶圆柱",
+        "齿廓是齿顶/齿根折线，不是加工用渐开线刀路")),
+    ("sw_sprocket", ToolEntry(
+        "sw_sprocket", "feature", "verified", "节圆折线 + FeatureExtrusion3",
+        "33.4.1：12 齿、节距 12.7 mm、厚 6 mm，体积 12442.06 mm3",
+        "近似齿形，不是生产用滚刀齿")),
+    ("sw_fillet_edges", ToolEntry(
+        "sw_fillet_edges", "feature", "unverified", "FeatureFillet3 Ftyp=variable",
+        "面数增加且体积下降",
+        "2026-11-25：60×40×12 板上可变半径调用后体积仍是 28800 mm3")),
     ("sw_rib", ToolEntry(
         "sw_rib", "feature", "unverified", "IFeatureManager.InsertRib",
         "特征 +1，类型名含 Rib，体积增加",
@@ -597,6 +609,7 @@ _IMPLEMENTED = {
     # 零件 / 特征（verified/part.py，2026-10-20 真机 8/8）
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_preview_frame",
     "sw_preview_burst", "sw_shell", "sw_insert_weldment", "sw_structural_member",
+    "sw_spur_gear", "sw_sprocket",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
     # 出图（verified/drawing.py，2026-10-20 真机 7/8；surface_finish 判据不可得，见下）
