@@ -1,6 +1,8 @@
 # 架构
 
-三层：**内核（手）→ hub（统一入口）→ 技能（脑子）**。
+四层：**设计（先算）→ 内核（手）→ hub（统一入口）→ 技能（脑子）**。
+
+设计层不驱动任何 CAD。`design/design_calc` 出力和尺寸，`design/knowledge` 给出机构与标准件的查法，技能 `ww-nsa-design` 规定七段流程。算完之后才进入下面的内核。
 
 ```
                      ┌──────────────────────────────┐
@@ -62,8 +64,9 @@ kernels/<kit>/
 ## 3. 技能（`skills/`）
 
 - `skills/nsa-toolchain/` —— **路由**：只回答"用哪个域、什么顺序、怎么判"。
-- `skills/ww-*/` —— 6 个域技能：配方、判据、证伪清单。
-- 每个技能带 `capabilities.json`（能力快照）与 `tools/check_skill.py`。
+- `skills/ww-nsa-design/` —— 非标设计流程：需求、方案、选型计算、再交给 CAD 技能。
+- `skills/ww-*/` —— 其余域技能：配方、判据、证伪清单。
+- CAD/PLC 域技能带 `capabilities.json`（能力快照）与 `tools/check_skill.py`。设计技能没有软件注册表，计算判据在 `design/tests/`。
 
 技能与内核的关系是"**文档不重复、判据不漂移**"：能力 id 必须存在于内核注册表，
 由 CI 的 `scripts/check_skills.py --check` 守住。
@@ -72,6 +75,7 @@ kernels/<kit>/
 
 | 门 | 命令 | 覆盖 |
 |---|---|---|
+| 设计计算 | `pytest design/tests` | 缸径、惯量、丝杆寿命、节拍、公差、疲劳 |
 | 仓库级脚本单测 | `pytest scripts/tests` | doctor / install_skills / nsa CLI |
 | hub 单测 | `PYTHONPATH=hub pytest hub/tests` | JSON-RPC、server、tools |
 | acad 离线离线三件套 | `pytest kernels/acad/tests/test_{docs,reports,offline}.py` | 注册表自检、文档新鲜度、离线能力 |

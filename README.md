@@ -4,14 +4,15 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Winterwind2017/NSA-toolchain?v=1)](https://github.com/Winterwind2017/NSA-toolchain/releases)
 
-**让 agent 能真正操作 CAD / PLC 软件的工具链**：6 个软件自动化内核 + 一个把它们聚合成**单一 MCP 端点**的 hub + 6 个给 agent 的技能。
+**让 agent 能设计并操作 CAD / PLC 的工具链**：设计计算库和知识库 + 6 个软件自动化内核 + 一个把它们聚合成**单一 MCP 端点**的 hub + 给 agent 的技能。
 
 每个宣称可用的能力都带**判据**（读取什么值、等于什么才算成功）。没有"看起来成功"这种状态。
 
 ```
+design/    design_calc 计算库 + knowledge 知识库        先算力、节拍、标准件
 kernels/   sw · acad · nx · gx · codesys · autoshop     6 个内核（库 + CLI + MCP）
 hub/       聚合网关：一个端点上挂 9 个 kit、600+ 工具
-skills/    1 个路由技能 + 6 个域技能（给 agent 的配方与坑）
+skills/    1 个路由技能 + 7 个域技能（含 ww-nsa-design）
 docs/      架构 / MCP 接入 / 兼容性
 ```
 
@@ -76,6 +77,17 @@ Claude Desktop / Cursor / Codex / DeepSeek Harness 的配置片段见 **[docs/MC
 ```
 
 agent 只需要看 `ok` 和 `checks`，不用理解每个工具。
+
+## 设计层
+
+选型发生在打开 CAD 之前。`design/design_calc` 是纯 Python 计算库（电机、气缸、丝杆、导轨、减速机、节拍、公差、强度），`design/knowledge` 是配套知识库。Agent 从技能 `ww-nsa-design` 进入，算完再交给 SolidWorks / NX / AutoCAD 技能。
+
+```bash
+# Windows PowerShell：$env:PYTHONPATH = "design"
+PYTHONPATH=design python -c "from design_calc import cylinder; print(cylinder.select_bore(500, 0.5, 'medium')['selected_bore_mm'])"
+```
+
+说明见 **[design/README.md](design/README.md)**。
 
 ## 各内核
 

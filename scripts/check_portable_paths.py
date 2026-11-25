@@ -22,6 +22,7 @@ DEFAULT_SCOPES = (
     "scripts/*.py",
     "hub/nsa_mcp_hub/**",
     "kernels/*/src/**",
+    "design/**/*.py",
 )
 
 

@@ -20,6 +20,7 @@ description: >
 
 | 用户要的事 | 加载这个技能 | 执行内核 | 引擎 |
 |---|---|---|---|
+| 非标设备/零件/工装/夹具：需求、机构方案、气缸电机丝杆导轨选型、节拍、公差 | `ww-nsa-design` | `design_calc` | 无，先算再建模 |
 | 二维绘图/标注/表格/块/图框/多页 PDF/DXF·DWG 导出、电气图、PLC 图 | `ww-autocad-automation` | `acadkit` | AutoCAD 2025 |
 | 零件/装配/钣金/工程图/STEP·STL·PDF 导出 | `ww-solidworks-automation` | `swkit` | SolidWorks 2025 |
 | 建模/布尔/装配/制图/STEP·IGES 导出 | `ww-nx-automation` | `nxkit` | UG NX 2512 |
@@ -32,7 +33,7 @@ description: >
 
 ## 第二步：跨域任务按这个顺序
 
-1. **需求/方案**（先文字，不碰软件）：把"要做什么"写成可验收的句子；
+1. **需求/方案/选型**（先文字和计算，不碰软件）：加载 `ww-nsa-design`，把节拍、力和标准件算完并确认；
 2. **结构建模**（SW 或 NX）：先出几何，再谈出图；
 3. **二维表达**（AutoCAD 或 SW 工程图）：标注、明细、图框；
 4. **导出与自检**：DWG/DXF/PDF/STEP，跑一次往返或差异比对；

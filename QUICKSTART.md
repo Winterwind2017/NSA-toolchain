@@ -43,7 +43,11 @@ python scripts/doctor.py
 # 1) 可制造性检查（纯规则，零额外依赖）：钣金/铣削/注塑/3D 打印，每条给"改哪儿"
 PYTHONPATH=kernels/acad/src python -c "from acadkit.dfm.rules import check_sheet_metal; print(check_sheet_metal(thickness=1.5, bend_radius=0.8))"
 
-# 2) 技能一致性（路由覆盖 + 快照 ↔ 注册表）
+# 2) 选型计算（纯 Python，零额外依赖）：500 N、0.5 MPa、中速 → 标准缸径
+# Windows PowerShell：$env:PYTHONPATH = "design"
+PYTHONPATH=design python -c "from design_calc import cylinder; print(cylinder.select_bore(500, 0.5, 'medium'))"
+
+# 3) 技能一致性（路由覆盖 + 快照 ↔ 注册表）
 python scripts/check_skills.py --check
 ```
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""全局一致性检查：路由 skill + 6 个域 skill + 各 kernel 注册表。
+"""全局一致性检查：路由 skill + 各域 skill + 各 kernel 注册表。
 
     python scripts/check_skills.py            # 报告（有问题退出码 = 失败项数）
     python scripts/check_skills.py --check    # 只当门用（同上，语义更明确）
