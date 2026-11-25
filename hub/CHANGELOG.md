@@ -2,6 +2,15 @@
 
 > 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
 
+## v1.1.0 —— 2026-11-25（设计层）
+
+新增，不改变 hub 的工具面，所以 `nsa_mcp_hub.__version__` 仍是 `0.2.0`。
+
+- `design/design_calc`：电机、气缸、丝杆、导轨、减速机、节拍、公差、强度等选型计算。
+- `design/knowledge`：非标设计知识库，入口 `design/knowledge/_index.md`。
+- 技能 `ww-nsa-design`：七段流程，先算完再交给 CAD / PLC 技能。路由已挂上。
+- 离线测试 `design/tests` 守住缸径、负载惯量、丝杆寿命、节拍并联、Goodman 和尺寸链。
+
 ## toolchain-v1.0 —— 2026-11-09（13 仓合一）
 
 - 6 内核（sw/acad/nx/gx/codesys/autoshop）+ 本网关 + 6 个技能仓，用 `git subtree`
