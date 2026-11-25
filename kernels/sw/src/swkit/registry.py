@@ -555,6 +555,10 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "sw_fillet_two_radii", "feature", "verified", "FeatureFillet3 两次等半径",
         "33.4.1：2 mm 和 5 mm 各一条边，两次体积都下降",
         "单条边上的可变半径会断开 COM，所以用两条边两个半径")),
+    ("sw_full_round", ToolEntry(
+        "sw_full_round", "feature", "verified", "FeatureFillet3 Ftyp=3 marks 2/512/4",
+        "33.4.1：80×20×30 板，体积 48000 降到 44566.37 mm3",
+        "侧面标记 2 和 4，中间面标记 512。Options 用 0；写成 2 时特征不生成")),
     ("sw_projected_zone", ToolEntry(
         "sw_projected_zone", "drawing", "verified", "SetFrameValues + SetFrameSymbols2",
         "33.4.1：基准读回 A-B，材料条件栏读回 P",
@@ -626,7 +630,7 @@ _IMPLEMENTED = {
     "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_preview_frame",
     "sw_preview_burst", "sw_shell", "sw_insert_weldment", "sw_structural_member",
     "sw_spur_gear", "sw_sprocket", "sw_triangular_rib", "sw_spring",
-    "sw_fillet_two_radii", "sw_projected_zone",
+    "sw_fillet_two_radii", "sw_full_round", "sw_projected_zone",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
     # 出图（verified/drawing.py，2026-10-20 真机 7/8；surface_finish 判据不可得，见下）

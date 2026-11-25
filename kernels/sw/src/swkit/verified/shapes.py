@@ -69,45 +69,104 @@ def extrude_polygon(doc: Any, points: Sequence[Point], depth_mm: float,
     return out
 
 
+def _face_box(face: Any) -> Tuple[float, float, float, float, float, float]:
+    raw = face.GetBox
+    box = raw if not callable(raw) else raw()
+    return tuple(float(v) for v in box)  # type: ignore[return-value]
+
+
+def _full_round_faces(faces: Sequence[Any]):
+    """最薄的一对对面做两个侧面，跨在它们之间的大面做中间面。"""
+    info = []
+    for face in faces:
+        box = _face_box(face)
+        center = tuple((box[i] + box[i + 3]) / 2.0 for i in range(3))
+        size = tuple(abs(box[i + 3] - box[i]) for i in range(3))
+        normal_axis = min(range(3), key=lambda axis: size[axis])
+        info.append((face, center, size, normal_axis))
+    best = None
+    for axis in range(3):
+        group = [item for item in info if item[3] == axis]
+        if len(group) < 2:
+            continue
+        group.sort(key=lambda item: item[1][axis])
+        distance = group[-1][1][axis] - group[0][1][axis]
+        if distance <= 1e-9:
+            continue
+        if best is None or distance < best[0]:
+            best = (distance, axis, group[0], group[-1])
+    if best is None:
+        return None
+    distance, axis, side1, side2 = best
+    center_face = None
+    center_area = -1.0
+    for face, _center, size, _normal in info:
+        if face is side1[0] or face is side2[0]:
+            continue
+        if size[axis] < distance * 0.8:
+            continue
+        area = size[0] * size[1] + size[1] * size[2] + size[2] * size[0]
+        if area > center_area:
+            center_area = area
+            center_face = face
+    if center_face is None:
+        return None
+    return side1[0], center_face, side2[0], distance
+
+
+def _select_face_mark(doc: Any, face: Any, append: bool, mark: int) -> bool:
+    box = _face_box(face)
+    point = tuple((box[i] + box[i + 3]) / 2.0 for i in range(3))
+    return bool(doc.Extension.SelectByID2(
+        "", "FACE", point[0], point[1], point[2], append, mark, none_dispatch(), 0))
+
+
 def full_round(doc: Any) -> Dict[str, Any]:
-    """整圆圆角：左右侧面加中间那一面。体积必须变化。"""
+    """整圆圆角。侧面标记 2 和 4，中间面标记 512。体积必须下降。"""
     out: Dict[str, Any] = {
-        "ok": False, "tool": "sw_full_round", "api": "FeatureFillet3 Ftyp=full_round",
+        "ok": False, "tool": "sw_full_round", "api": "FeatureFillet3 Ftyp=3 marks 2/512/4",
         "status": "unverified", "detail": {}, "checks": {},
     }
     bodies = list(doc.GetBodies2(0, True) or [])
-    faces = []
+    faces: list = []
     for body in bodies:
         raw = body.GetFaces
         faces.extend(list(raw if not callable(raw) else raw() or []))
-    if len(faces) < 3:
-        out["detail"]["error"] = "实体面少于 3"
+    picked = _full_round_faces(faces)
+    if picked is None:
+        out["detail"]["error"] = "找不到一对侧面和中间面"
         return out
-
-    def center(face):
-        raw = face.GetBox
-        box = raw if not callable(raw) else raw()
-        return tuple((box[i] + box[i + 3]) / 2.0 for i in range(3))
-
-    left = min(faces, key=lambda face: center(face)[0])
-    right = max(faces, key=lambda face: center(face)[0])
-    top = max(faces, key=lambda face: center(face)[1])
+    side1, center, side2, distance = picked
     before = _volume_mm3(doc)
     try:
-        left.Select2(False, 2)
-        top.Select2(True, 4)
-        right.Select2(True, 8)
+        doc.ClearSelection2(True)
+        picked_ok = [
+            _select_face_mark(doc, side1, False, 2),
+            _select_face_mark(doc, center, True, 512),
+            _select_face_mark(doc, side2, True, 4),
+        ]
+        out["detail"]["selected"] = picked_ok
+        if not all(picked_ok):
+            out["detail"]["error"] = "三个面没有都选上"
+            return out
         _sw, md = com_doc()
+        # Options 必须是 0。写成 2（等半径）时，整圆类型会被丢掉，特征不生成。
         md.FeatureManager.FeatureFillet3(
-            2, 0.0, 0.0, 0.0, 3, 0, 0, None, None, None, None, None, None, None)
+            0, 0.0, 0.0, 0.0, 3, 0, 0, None, None, None, None, None, None, None)
     except Exception as exc:  # noqa: BLE001
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         return out
     after = _volume_mm3(doc)
-    changed = before is not None and after is not None and abs(after - before) > 0.1
-    out["checks"] = {"volume_changed": changed}
-    out["detail"].update({"volume_before_mm3": before, "volume_after_mm3": after})
-    out["ok"] = changed
+    dropped = before is not None and after is not None and after < before - 0.1
+    out["checks"] = {"volume_dropped": dropped}
+    out["detail"].update({
+        "side_distance_mm": round(distance * 1000.0, 3),
+        "volume_before_mm3": before,
+        "volume_after_mm3": after,
+    })
+    if before is not None and after is not None:
+        out["detail"]["volume_delta_mm3"] = round(after - before, 3)
+    out["ok"] = dropped
     out["status"] = "verified" if out["ok"] else "unverified"
     return out
 
@@ -220,6 +279,8 @@ def fillet_edges(doc: Any, radius_mm: float = 2.0, kind: str = "variable",
     if kind_code is None:
         out["detail"]["error"] = "kind 只能是 uniform / variable / full_round"
         return out
+    if kind == "full_round":
+        return full_round(doc)
     before = shape_counts(doc)
     selected = _select_all_edges(doc, max_edges)
     if selected == 0:

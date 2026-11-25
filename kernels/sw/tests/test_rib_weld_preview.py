@@ -34,7 +34,7 @@ class _Feat:
 def test_registry_splits_live_results_from_open_gaps():
     verified = ("sw_insert_weldment", "sw_structural_member", "sw_spur_gear",
                 "sw_sprocket", "sw_triangular_rib", "sw_spring",
-                "sw_fillet_two_radii", "sw_projected_zone",
+                "sw_fillet_two_radii", "sw_full_round", "sw_projected_zone",
                 "sw_preview_frame", "sw_preview_burst")
     for name in verified:
         entry = REGISTRY[name]
@@ -75,6 +75,27 @@ def test_weldment_refuses_missing_profile_and_fake_cut_list(tmp_path):
     listed = SolidWorksAdvanced(type("App", (), {"_log": lambda *a, **k: None})()).weldment_cut_list()
     assert listed == []
     assert not os.path.exists(str(tmp_path / "no-such.sldlfp"))
+
+
+def test_full_round_picks_the_thin_pair():
+    class Face:
+        def __init__(self, box):
+            self.GetBox = box
+
+    faces = [
+        Face((0, 0, 0, 0.001, 0.02, 0.03)),
+        Face((0.079, 0, 0, 0.08, 0.02, 0.03)),
+        Face((0, 0, 0, 0.08, 0.001, 0.03)),
+        Face((0, 0.019, 0, 0.08, 0.02, 0.03)),
+        Face((0, 0, 0, 0.08, 0.02, 0.001)),
+        Face((0, 0, 0.029, 0.08, 0.02, 0.03)),
+    ]
+    from swkit.verified.shapes import _full_round_faces
+    picked = _full_round_faces(faces)
+    assert picked is not None
+    _side1, center, _side2, distance = picked
+    assert 0.015 < distance < 0.025
+    assert center.GetBox[4] - center.GetBox[1] > 0.015
 
 
 def test_projected_zone_uses_below_frame_text():

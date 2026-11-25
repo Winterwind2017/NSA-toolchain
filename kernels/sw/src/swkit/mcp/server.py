@@ -1624,6 +1624,18 @@ def sw_fillet_two_radii(radius1_mm: float = 2.0, radius2_mm: float = 5.0) -> Dic
     return _com(_do)
 
 
+@mcp.tool(name="sw_full_round")
+def sw_full_round() -> Dict[str, Any]:
+    """把最薄的一对对面做成整圆圆角。体积必须下降。"""
+    from ..verified.shapes import full_round
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档"}
+        return full_round(doc)
+    return _com(_do)
+
+
 @mcp.tool(name="sw_projected_zone")
 def sw_projected_zone(common_datum: str = "A-B", height_mm: float = 12.0) -> Dict[str, Any]:
     """在当前图纸上写公共基准，并把投影带记号 P 写进基准栏。"""
