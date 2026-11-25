@@ -2,6 +2,16 @@
 
 > 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
 
+## v1.3.1 —— 2026-11-25（焊件轮廓库定位）
+
+本机本来就有 SolidWorks 焊件轮廓，路径是
+`%ProgramData%\SOLIDWORKS\SOLIDWORKS 2025\weldment profiles`。
+之前没去读它，所以误判成没有库文件。
+
+- `weldment_library.default_profile()` 优先 ISO 方管，其次 GB 方钢、ANSI 方管。
+- ISO 方管读到的配置：`20 x 20 x 2`、`30 x 30 x 2.6`、`40 x 40 x 4`、`80 x 80 x 5`。
+- 不把 SolidWorks 自带轮廓复制进仓库。
+
 ## v1.3.0 —— 2026-11-25（焊件特征与窗口预览）
 
 本机 SolidWorks 2025（33.4.1）复跑：

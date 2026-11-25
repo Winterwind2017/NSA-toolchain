@@ -36,4 +36,4 @@ PYTHONPATH=design python -c "from design_calc import motor, cylinder, cycle_time
 
 `drive_audit.audit_linear_drive` 复核已经选定的丝杠或皮带电机：峰值、RMS、转速、惯量比、斜轴抱闸，丝杠还给了直径和长度就核临界转速。`gear.involute_xy` 只给标准直齿渐开线坐标。`delivery_gate.accept_new_file` 拒绝本轮开始之前就存在的 PDF / STEP。
 
-在本机 SolidWorks 2025（版本号 33.4.1）上：焊件特征 `InsertWeldmentFeature` 和 SolidWorks 窗口连续抓帧已经读回通过。筋特征接口能调用，但这台机器上返回 0，体积不变，所以仍是 `unverified`。形位公差框的读写函数已接上，投影公差带不在这份类型库里，请求它会失败。结构构件还要有真实轮廓文件，切割清单没有特征就返回空列表。
+在本机 SolidWorks 2025（版本号 33.4.1）上：焊件特征 `InsertWeldmentFeature` 和 SolidWorks 窗口连续抓帧已经读回通过。筋特征接口能调用，但这台机器上返回 0，体积不变，所以仍是 `unverified`。形位公差框的读写函数已接上，投影公差带不在这份类型库里，请求它会失败。结构构件的轮廓不复制进仓库。`weldment_library.default_profile()` 会找本机已安装的库，这台机器上是 ISO 方管，配置有 `20 x 20 x 2`、`30 x 30 x 2.6`、`40 x 40 x 4`、`80 x 80 x 5`。切割清单没有特征就返回空列表。

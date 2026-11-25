@@ -555,7 +555,8 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
     ("sw_structural_member", ToolEntry(
         "sw_structural_member", "weldment", "unverified", "IFeatureManager.InsertStructuralWeldment5",
         "轮廓文件存在，草图有线段，特征增加且类型名含 Structural",
-        "Path, ConnectedSegmentsOption, AllowProtrusion, Groups, ConfigurationName")),
+        "轮廓用 weldment_library.default_profile()，本机优先 ISO 方管。"
+        "配置名要从文件里读，例如 20 x 20 x 2，不是 Default")),
     ("sw_weldment_cut_list", ToolEntry(
         "sw_weldment_cut_list", "weldment", "unverified", "IFeature.GetTypeName2",
         "读到切割清单特征才 ok；没有就空列表",

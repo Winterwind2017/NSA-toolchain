@@ -1527,8 +1527,8 @@ def sw_insert_weldment() -> Dict[str, Any]:
 
 
 @mcp.tool(name="sw_structural_member")
-def sw_structural_member(profile_path: str, configuration: str = "Default") -> Dict[str, Any]:
-    """沿当前草图放结构构件。轮廓文件不存在就失败。"""
+def sw_structural_member(profile_path: str = "", configuration: str = "Default") -> Dict[str, Any]:
+    """沿当前草图放结构构件。不给路径时用本机焊件库里的 ISO 方管。"""
     from ..verified import weldment
     def _do():
         doc = _doc(_app())
