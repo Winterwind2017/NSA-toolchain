@@ -42,6 +42,34 @@ def geometry(module: float, z1: int, z2: int) -> dict:
     }
 
 
+def base_radius_mm(module: float, teeth: int, pressure_angle_deg: float = 20.0) -> float:
+    """标准直齿基圆半径。"""
+    if module <= 0 or teeth < 1:
+        raise ValueError("module / teeth 必须为正")
+    return module * teeth / 2.0 * math.cos(math.radians(pressure_angle_deg))
+
+
+def pitch_roll(pressure_angle_deg: float = 20.0) -> float:
+    """分度圆处的展开角，tan α。"""
+    return math.tan(math.radians(pressure_angle_deg))
+
+
+def involute_xy(base_radius_mm: float, roll: float) -> tuple[float, float]:
+    """
+    渐开线一点，基圆上 roll=0 时位于 (rb, 0)。
+
+    分度圆展开角用 pitch_roll()。这里只给齿廓坐标，不生成 SolidWorks 特征。
+    """
+    if base_radius_mm <= 0:
+        raise ValueError("基圆半径必须大于 0")
+    if roll < 0:
+        raise ValueError("展开角不能为负")
+    return (
+        base_radius_mm * (math.cos(roll) + roll * math.sin(roll)),
+        base_radius_mm * (math.sin(roll) - roll * math.cos(roll)),
+    )
+
+
 def pitch_speed_m_s(d_mm: float, rpm: float) -> float:
     """圆周速度 m/s。"""
     return math.pi * d_mm * rpm / 60000.0

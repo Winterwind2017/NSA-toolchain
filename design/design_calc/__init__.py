@@ -15,6 +15,7 @@ design_calc - 非标自动化设计计算工具库
     print(result)
 """
 
+from . import drive_audit
 from . import motor
 from . import cylinder
 from . import ballscrew
@@ -53,6 +54,7 @@ from . import ultra_high_pressure
 from . import nanomaterials
 
 __all__ = [
+    "drive_audit",
     "motor",
     "cylinder",
     "ballscrew",

@@ -32,11 +32,11 @@ from design_calc import pneumatic, cycle_time, tolerance, strength, transmission
 
 1. **需求。** 工件（材质、尺寸、重量）、动作、节拍、定位精度、空间、气源和电源。整理成参数表，等用户确认。
 2. **方案。** 先读 `design/knowledge/03-机构设计/` 和 `design/knowledge/14-典型机构设计/`。直线、旋转、夹持、输送各选一条，并写明为什么。
-3. **选型。** 只调用 `design_calc`，不口算。同一 `group` 的动作用 `cycle_time.from_steps` 取最长，再串联。气缸用 `cylinder.select_bore`，伺服用 `motor.servo_selection`，丝杆用 `ballscrew.life_hours` 和 `critical_speed`，导轨用 `linear_guide.linear_guide_selection`，减速机用 `reducer.recommend_type`，公差用 `tolerance.tolerance_chain_extreme`。
+3. **选型。** 只调用 `design_calc`，不口算。同一 `group` 的动作用 `cycle_time.from_steps` 取最长，再串联。气缸用 `cylinder.select_bore`，伺服用 `motor.servo_selection`，丝杆用 `ballscrew.life_hours` 和 `critical_speed`，导轨用 `linear_guide.linear_guide_selection`，减速机用 `reducer.recommend_type`，公差用 `tolerance.tolerance_chain_extreme`。电机选定后用 `drive_audit.audit_linear_drive` 复核峰值、RMS、转速、惯量比和抱闸；直齿齿廓坐标用 `gear.involute_xy`，它不生成 SolidWorks 特征。
 4. **详细设计。** 尺寸来自上一段的返回值。然后加载 `ww-solidworks-automation` 或 `ww-nx-automation`。
 5. **装配。** 干涉检查交给当前 CAD 域技能，分开时应为 0。
 6. **出图和 BOM。** 工程图交给 `ww-solidworks-automation` 或 `ww-autocad-automation`。
-7. **交付前。** 对照 `design/knowledge/07-DFM与失效案例/` 和 `design/knowledge/11-工程图与电气安全/`。
+7. **交付前。** 对照 `design/knowledge/07-DFM与失效案例/` 和 `design/knowledge/11-工程图与电气安全/`。导出的 PDF / STEP 用 `delivery_gate.accept_new_file`，修改时间必须晚于本轮开始，头签名必须对；同一路径重导时哈希必须变过。
 
 ## 怎么算做成
 

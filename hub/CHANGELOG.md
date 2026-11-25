@@ -2,6 +2,16 @@
 
 > 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
 
+## v1.2.0 —— 2026-11-25（驱动复核、齿廓、交付门禁）
+
+独立实现，不引入外部仓库的代码。hub 工具面未改，`nsa_mcp_hub.__version__` 仍是 `0.2.0`。
+
+- `drive_audit.audit_linear_drive`：丝杠或皮带，复核峰值、RMS、转速、惯量比、斜轴抱闸；丝杠给了直径和长度就核临界转速。
+- `gear.involute_xy`：标准直齿渐开线坐标。不生成 SolidWorks 特征。
+- `delivery_gate.accept_new_file`：PDF / STEP 必须是本轮新写的，头签名要能对上。
+
+筋特征、焊件和 SolidWorks 2026 形位公差仍未标成已验证。
+
 ## v1.1.0 —— 2026-11-25（设计层）
 
 新增，不改变 hub 的工具面，所以 `nsa_mcp_hub.__version__` 仍是 `0.2.0`。
