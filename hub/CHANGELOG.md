@@ -2,6 +2,17 @@
 
 > 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
 
+## v1.3.3 —— 2026-11-25（结构构件规格）
+
+`InsertStructuralWeldment` 本身不能选规格。构件生成后，用
+`IStructuralMemberFeatureData.ConfigurationName` 写回并重建。
+
+本机 ISO 方管、300 mm 直线：
+
+- `20 x 20 x 2`：体积 40109.7 mm³，配置名读回一致
+- `40 x 40 x 4`：体积 160438.9 mm³，配置名读回一致
+- `99 x 99 x 9`：不算通过
+
 ## v1.3.2 —— 2026-11-25（结构构件）
 
 线段数组传给 `StructuralMemberGroup` 会在 COM 边界丢掉。

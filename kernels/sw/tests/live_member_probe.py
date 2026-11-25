@@ -24,22 +24,26 @@ def main() -> int:
     app.Visible = True
     if os.environ.get("NSA_CLOSE_TEST_DOCS") == "1":
         app.CloseAllDocuments(True)
-    config = profile_configurations(app, found["path"])[0]
-    doc = pyw().Dispatch(new_part())
-    create_sketch(doc)
-    line(doc, 0, 0, 300, 0)
-    exit_sketch(doc)
-    result = structural_member(doc, found["path"], config)
-    print(json.dumps({
-        "config": config,
-        "ok": result.get("ok"),
-        "checks": result.get("checks"),
-        "new_types": result.get("detail", {}).get("new_types"),
-        "volume": result.get("detail", {}).get("volume_mm3"),
-        "config_error": result.get("detail", {}).get("configuration_error"),
-        "error": result.get("detail", {}).get("error"),
-    }, ensure_ascii=False))
-    return 0 if result.get("ok") else 1
+    names = profile_configurations(app, found["path"])
+    rows = []
+    for config in (names[0], "40 x 40 x 4", "99 x 99 x 9"):
+        doc = pyw().Dispatch(new_part())
+        create_sketch(doc)
+        line(doc, 0, 0, 300, 0)
+        exit_sketch(doc)
+        result = structural_member(doc, found["path"], config)
+        rows.append({
+            "config": config,
+            "ok": result.get("ok"),
+            "readback": result.get("detail", {}).get("configuration_readback"),
+            "volume": result.get("detail", {}).get("volume_mm3"),
+            "error": result.get("detail", {}).get("configuration_error"),
+        })
+        print(json.dumps(rows[-1], ensure_ascii=False))
+    small = rows[0]["volume"] or 0
+    large = rows[1]["volume"] or 0
+    good = rows[0]["ok"] and rows[1]["ok"] and large > small * 2 and rows[2]["ok"] is False
+    return 0 if good else 1
 
 
 if __name__ == "__main__":

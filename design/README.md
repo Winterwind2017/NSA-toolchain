@@ -36,4 +36,4 @@ PYTHONPATH=design python -c "from design_calc import motor, cylinder, cycle_time
 
 `drive_audit.audit_linear_drive` 复核已经选定的丝杠或皮带电机：峰值、RMS、转速、惯量比、斜轴抱闸，丝杠还给了直径和长度就核临界转速。`gear.involute_xy` 只给标准直齿渐开线坐标。`delivery_gate.accept_new_file` 拒绝本轮开始之前就存在的 PDF / STEP。
 
-在本机 SolidWorks 2025（版本号 33.4.1）上：焊件特征 `InsertWeldmentFeature` 和 SolidWorks 窗口连续抓帧已经读回通过。筋特征接口能调用，但这台机器上返回 0，体积不变，所以仍是 `unverified`。形位公差框的读写函数已接上，投影公差带不在这份类型库里，请求它会失败。结构构件先选中草图线段，再调用 `InsertStructuralWeldment`。本机用 ISO 方管的默认配置生成了 `WeldMemberFeat`，体积约 40110 mm³。规格列表能读到，但这个接口不能在调用时切换配置。切割清单没有特征就返回空列表。
+在本机 SolidWorks 2025（版本号 33.4.1）上：焊件特征 `InsertWeldmentFeature` 和 SolidWorks 窗口连续抓帧已经读回通过。筋特征接口能调用，但这台机器上返回 0，体积不变，所以仍是 `unverified`。形位公差框的读写函数已接上，投影公差带不在这份类型库里，请求它会失败。结构构件先选中草图线段，再调用 `InsertStructuralWeldment`，然后把请求的规格写进特征数据。本机 ISO 方管 `20 x 20 x 2` 的体积是 40109.7 mm³，`40 x 40 x 4` 是 160438.9 mm³，配置名都能读回。不存在的规格不会算通过。切割清单没有特征就返回空列表。

@@ -554,9 +554,9 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
         "必须走 comtypes。pywin32 报找不到成员。advanced.py 的旧方法不调用这个接口")),
     ("sw_structural_member", ToolEntry(
         "sw_structural_member", "weldment", "verified", "IFeatureManager.InsertStructuralWeldment",
-        "33.4.1：选中草图直线后生成 WeldMemberFeat，体积 40109.7 mm3",
-        "线段数组传给 StructuralMemberGroup 会丢。改成 Select4 再调无数组的旧接口。"
-        "轮廓默认 ISO 方管，用文件自己的默认配置")),
+        "33.4.1：20x20x2 体积 40109.7 mm3，改成 40x40x4 后 160438.9 mm3，配置名读回一致",
+        "先 Select4 再 InsertStructuralWeldment。规格用特征数据的 ConfigurationName 写回。"
+        "不存在的规格不会算通过")),
     ("sw_weldment_cut_list", ToolEntry(
         "sw_weldment_cut_list", "weldment", "unverified", "IFeature.GetTypeName2",
         "读到切割清单特征才 ok；没有就空列表",

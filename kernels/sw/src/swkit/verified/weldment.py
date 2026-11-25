@@ -75,6 +75,39 @@ def _sketch_segments(doc: Any) -> List[Any]:
     return list(raw or [])
 
 
+def _set_configuration(doc: Any, configuration: str, before_types: set) -> str:
+    """把刚生成的构件改成指定规格。读回的配置名不是所请求的就当失败。"""
+    from comtypes import POINTER
+
+    _sw, md = com_doc()
+    cand = val(md, "FirstFeature")
+    guard = 0
+    readback = ""
+    null_component = POINTER(_sw.IComponent2)()
+    while cand is not None and guard < 2000:
+        guard += 1
+        kind = str(val(cand, "GetTypeName2"))
+        nxt = val(cand, "GetNextFeature")
+        if kind not in before_types and _member_type(kind):
+            data = val(cand, "GetDefinition")
+            specific = data.QueryInterface(_sw.IStructuralMemberFeatureData)
+            if not specific.AccessSelections(md, null_component):
+                raise RuntimeError("AccessSelections 失败")
+            try:
+                specific.ConfigurationName = configuration
+                if not cand.ModifyDefinition(specific, md, null_component):
+                    raise RuntimeError("ModifyDefinition 返回 False")
+            finally:
+                try:
+                    specific.ReleaseSelectionAccess()
+                except Exception:  # noqa: BLE001
+                    pass
+            fresh = val(cand, "GetDefinition").QueryInterface(_sw.IStructuralMemberFeatureData)
+            readback = str(fresh.ConfigurationName or "")
+        cand = nxt
+    return readback
+
+
 def structural_member(doc: Any, profile_path: str, configuration: str = "Default") -> Dict[str, Any]:
     """沿草图线段放结构构件。先选中线段，再调不需要线段数组的旧接口。"""
     out: Dict[str, Any] = {
@@ -109,6 +142,14 @@ def structural_member(doc: Any, profile_path: str, configuration: str = "Default
         out["detail"]["error"] = "%s: %s" % (type(exc).__name__, exc)
         out["checks"] = {"profile_exists": True, "has_segments": True, "feature_added": False}
         return out
+    requested = "" if configuration in ("", "Default") else configuration
+    config_error = ""
+    readback = ""
+    if requested:
+        try:
+            readback = _set_configuration(doc, requested, before)
+        except Exception as exc:  # noqa: BLE001
+            config_error = "%s: %s" % (type(exc).__name__, exc)
     new_types = _new_types(doc, before)
     from .features import _volume_mm3
     volume = _volume_mm3(doc)
@@ -120,15 +161,18 @@ def structural_member(doc: Any, profile_path: str, configuration: str = "Default
         "type_matches": member,
         "has_volume": volume is not None and volume > 1.0,
     }
+    if requested:
+        checks["configuration"] = readback == requested and not config_error
     out["checks"] = checks
     out["detail"].update({
         "new_types": new_types,
         "segments": len(segments),
         "volume_mm3": volume,
-        "configuration_requested": configuration,
-        "configuration_note": "这个接口用轮廓文件的默认配置，不能在这里切换规格",
+        "configuration_requested": requested or "Default",
+        "configuration_readback": readback,
+        "configuration_error": config_error,
     })
-    out["ok"] = checks["feature_added"] and checks["type_matches"] and checks["has_volume"]
+    out["ok"] = all(checks.values())
     out["status"] = "verified" if out["ok"] else "unverified"
     return out
 
