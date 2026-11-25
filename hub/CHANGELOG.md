@@ -2,6 +2,21 @@
 
 > 只记"对外可见口径"的变化（工具面、判据口径、验收基线）。逐条实现细节看 `git log`。
 
+## v1.3.0 —— 2026-11-25（焊件特征与窗口预览）
+
+本机 SolidWorks 2025（33.4.1）复跑：
+
+- `sw_insert_weldment`：comtypes 调用 `InsertWeldmentFeature`，特征树出现 `WeldmentFeature`。
+- `sw_preview_frame` / `sw_preview_burst`：只抓 `SLDWORKS.exe` 窗口，两帧 BMP 均写出。不抓桌面。
+
+仍未通过，保持 `unverified`：
+
+- `sw_rib`：`InsertRib` 返回 0，体积不变。
+- `sw_gtol_frame`：框值读写已编码；本机类型库没有投影公差带。
+- `sw_structural_member`：要真实轮廓文件，这次没有可用的库文件。
+
+`advanced.py` 不再返回写死的方管切割清单。
+
 ## v1.2.0 —— 2026-11-25（驱动复核、齿廓、交付门禁）
 
 独立实现，不引入外部仓库的代码。hub 工具面未改，`nsa_mcp_hub.__version__` 仍是 `0.2.0`。

@@ -543,6 +543,36 @@ _UNVERIFIED: List[Tuple[str, ToolEntry]] = [
      ToolEntry("sw_flow_project", "meta", "unverified", "EFDApi.IDocument.CreateProject",
                "返回 IProject 对象，但 GetProjectsCount 仍 0 —— 工程没进列表",
                "整轮求解需先配边界条件/目标/网格，再 ApplyCalculationControlOptions")),
+    ("sw_rib", ToolEntry(
+        "sw_rib", "feature", "unverified", "IFeatureManager.InsertRib",
+        "特征 +1，类型名含 Rib，体积增加",
+        "2026-11-25 本机 33.4.1：comtypes 能调用，返回 0，体积保持 32000 mm3，特征不增加。"
+        "前视和上视草图直线都试过。接口已接上，几何还没做成")),
+    ("sw_insert_weldment", ToolEntry(
+        "sw_insert_weldment", "weldment", "verified", "IFeatureManager.InsertWeldmentFeature",
+        "33.4.1：新类型 WeldmentFeature，特征数增加",
+        "必须走 comtypes。pywin32 报找不到成员。advanced.py 的旧方法不调用这个接口")),
+    ("sw_structural_member", ToolEntry(
+        "sw_structural_member", "weldment", "unverified", "IFeatureManager.InsertStructuralWeldment5",
+        "轮廓文件存在，草图有线段，特征增加且类型名含 Structural",
+        "Path, ConnectedSegmentsOption, AllowProtrusion, Groups, ConfigurationName")),
+    ("sw_weldment_cut_list", ToolEntry(
+        "sw_weldment_cut_list", "weldment", "unverified", "IFeature.GetTypeName2",
+        "读到切割清单特征才 ok；没有就空列表",
+        "不再返回写死的方管清单")),
+    ("sw_gtol_frame", ToolEntry(
+        "sw_gtol_frame", "drawing", "unverified", "IGtol.SetFrameValues + GetFrameValues",
+        "读回的公差值和基准与写入一致",
+        "本机 tlb 0.33 有 SetFrameSymbols2 / GetFrameSymbols3，没有投影公差带。"
+        "原 sw_add_gtol 只证明符号数量 +1")),
+    ("sw_preview_frame", ToolEntry(
+        "sw_preview_frame", "view", "verified", "PrintWindow",
+        "33.4.1：只抓 SLDWORKS.exe，BMP 3493942 字节，头为 BM",
+        "不抓桌面。SaveBMP 仍是模型位图，这个工具是窗口画面")),
+    ("sw_preview_burst", ToolEntry(
+        "sw_preview_burst", "view", "verified", "PrintWindow",
+        "33.4.1：连续两帧都通过同一窗口过滤，各 3493942 字节",
+        "每一帧单独找窗口，找不到就失败")),
 ]
 
 # 注意：上表刻意保留重复键时的"后写覆盖"语义，避免手抖写重时静默丢条目。
@@ -564,7 +594,8 @@ _IMPLEMENTED = {
     "sw_sim_read", "sw_sim_solve", "sw_sim_addin_check",
     "sw_motion_list", "sw_motion_read",
     # 零件 / 特征（verified/part.py，2026-10-20 真机 8/8）
-    "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_shell",
+    "sw_get_bounding_box", "sw_take_photoview_screenshot", "sw_preview_frame",
+    "sw_preview_burst", "sw_shell", "sw_insert_weldment",
     "sw_linear_pattern", "sw_circular_pattern", "sw_split_line",
     "sw_thicken_surface", "sw_offset_surface",
     # 出图（verified/drawing.py，2026-10-20 真机 7/8；surface_finish 判据不可得，见下）

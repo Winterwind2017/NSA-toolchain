@@ -85,12 +85,9 @@ class SolidWorksAdvanced:
         self._log("INFO", f"添加圆角焊缝: R={radius}mm")
 
     def weldment_cut_list(self) -> List[Dict]:
-        """焊件切割清单"""
-        self._log("INFO", "生成焊件切割清单")
-        return [
-            {"item": "方管 40x40x3", "length": 1200, "qty": 2},
-            {"item": "方管 40x40x3", "length": 800, "qty": 2},
-        ]
+        """焊件切割清单。没有读到 SolidWorks 特征时返回空列表，不编示例。"""
+        self._log("INFO", "切割清单只来自特征树；请用 swkit.verified.weldment.read_cut_list")
+        return []
 
     # ==================== 模具功能 ====================
 

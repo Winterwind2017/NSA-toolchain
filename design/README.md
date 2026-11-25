@@ -36,4 +36,4 @@ PYTHONPATH=design python -c "from design_calc import motor, cylinder, cycle_time
 
 `drive_audit.audit_linear_drive` 复核已经选定的丝杠或皮带电机：峰值、RMS、转速、惯量比、斜轴抱闸，丝杠还给了直径和长度就核临界转速。`gear.involute_xy` 只给标准直齿渐开线坐标。`delivery_gate.accept_new_file` 拒绝本轮开始之前就存在的 PDF / STEP。
 
-筋特征、焊件、SolidWorks 2026 形位公差和桌面实时预览没有放进来。那些要在对应版本的 SolidWorks 上读回几何才能标成已验证，不能靠移植别人的脚本冒充。
+在本机 SolidWorks 2025（版本号 33.4.1）上：焊件特征 `InsertWeldmentFeature` 和 SolidWorks 窗口连续抓帧已经读回通过。筋特征接口能调用，但这台机器上返回 0，体积不变，所以仍是 `unverified`。形位公差框的读写函数已接上，投影公差带不在这份类型库里，请求它会失败。结构构件还要有真实轮廓文件，切割清单没有特征就返回空列表。

@@ -1502,6 +1502,97 @@ def sw_vba_dump(swp: str) -> Dict[str, Any]:
     return _com(lambda: vba.dump(swp))
 
 
+@mcp.tool(name="sw_rib")
+def sw_rib(thickness_mm: float = 3.0, two_sided: bool = True) -> Dict[str, Any]:
+    """筋。当前草图上调用 InsertRib。未复跑前 status 是 unverified。"""
+    from ..verified import rib
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        return rib.insert_rib(doc, thickness_mm=thickness_mm, two_sided=two_sided)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_insert_weldment")
+def sw_insert_weldment() -> Dict[str, Any]:
+    """插入焊件特征。成功与否看特征树，不看返回值。"""
+    from ..verified import weldment
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        return weldment.insert_weldment(doc)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_structural_member")
+def sw_structural_member(profile_path: str, configuration: str = "Default") -> Dict[str, Any]:
+    """沿当前草图放结构构件。轮廓文件不存在就失败。"""
+    from ..verified import weldment
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        return weldment.structural_member(doc, profile_path, configuration)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_weldment_cut_list")
+def sw_weldment_cut_list() -> Dict[str, Any]:
+    """读切割清单。没有特征就返回空列表。"""
+    from ..verified import weldment
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "items": [], "status": "unverified"}
+        return weldment.read_cut_list(doc)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_gtol_frame")
+def sw_gtol_frame(tol1: str = "0.1", datum1: str = "A", gcs: str = "b",
+                  projected_zone: bool = False) -> Dict[str, Any]:
+    """给当前图纸上新插入的形位公差写框并读回。投影公差带在本机类型库上会失败。"""
+    from ..verified import drawing, gtol_frame
+    def _do():
+        doc = _doc(_app())
+        if doc is None:
+            return {"ok": False, "error": "没有打开的文档", "status": "unverified"}
+        view = drawing.first_model_view(doc)
+        edges = drawing._view_edges(view) if view is not None else []
+        target = None
+        for entity in edges[:4]:
+            if not drawing._select_entity(doc, entity):
+                continue
+            try:
+                target = doc.InsertGtol()
+            except Exception as exc:  # noqa: BLE001
+                return {"ok": False, "status": "unverified",
+                        "error": "%s: %s" % (type(exc).__name__, exc)}
+            if target is not None:
+                break
+        if target is None:
+            return {"ok": False, "status": "unverified", "error": "InsertGtol 没有得到对象"}
+        return gtol_frame.apply_frame(
+            target, tol1=tol1, datum1=datum1, gcs=gcs, projected_zone=projected_zone)
+    return _com(_do)
+
+
+@mcp.tool(name="sw_preview_frame")
+def sw_preview_frame(path: str) -> Dict[str, Any]:
+    """抓取唯一的 SolidWorks 窗口，写成 BMP。抓不到该窗口就失败，不改抓桌面。"""
+    from ..preview import capture_solidworks
+    return capture_solidworks(path)
+
+
+@mcp.tool(name="sw_preview_burst")
+def sw_preview_burst(directory: str, frames: int = 3) -> Dict[str, Any]:
+    """连续抓几帧 SolidWorks 窗口。每一帧都要单独通过窗口过滤。"""
+    from ..preview import burst
+    return burst(directory, frames=frames)
+
+
 def main() -> None:
     mcp.run()
 
